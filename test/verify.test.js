@@ -3,7 +3,7 @@
  *
  * Every negative case here is load-bearing. A verifier suite that only proves the green
  * path passes is indistinguishable from a verifier that checks nothing — which is the exact
- * failure mode `enforcement-map.md` warns about. Each test mutates one thing in an
+ * failure mode `map/enforcement.md` warns about. Each test mutates one thing in an
  * otherwise-green repository and asserts the specific check fires.
  */
 
@@ -40,10 +40,12 @@ function assertFails(dir, code, note) {
   );
 }
 
-const CONTRACT = "src/.agents/cg/CONTRACT.md";
-const INHERITANCE = ".agents/cg/inheritance.json";
-const DESIGN_OPS = ".agents/cg/design/ops.md";
-const ENFORCEMENT = ".agents/cg/enforcement-map.md";
+const CONTRACT = "src/.agents/cg/contract.md";
+const INHERITANCE = ".agents/cg/map/inheritance.json";
+const DESIGN_OPS = ".agents/cg/principles/design/ops.md";
+const ENFORCEMENT = ".agents/cg/map/enforcement.md";
+const PRODUCT = ".agents/cg/principles/product.md";
+const ARCHITECTURE = ".agents/cg/principles/architecture.md";
 
 // ---------------------------------------------------------------- green path
 
@@ -95,7 +97,7 @@ test("[3] a deleted inherited rule line fails", () => {
   assertFails(dir, 3, "inherited rule removed by hand");
 });
 
-test("[6] an inheritance rule id absent from principles.md fails", () => {
+test("[6] an inheritance rule id absent from the principles files fails", () => {
   const dir = makeRepo();
   edit(dir, INHERITANCE, (t) => t.replace('"AP-01-01"', '"AP-99-99"'));
   assertFails(dir, 6, "dangling rule reference");
@@ -154,7 +156,7 @@ test("[1] a module folder missing CLAUDE.md fails", () => {
 
 test("[1] a pointer without the principles reference fails", () => {
   const dir = makeRepo();
-  edit(dir, "src/AGENTS.md", (t) => t.replace("`../.agents/cg/principles.md`", "somewhere"));
+  edit(dir, "src/AGENTS.md", (t) => t.replace("`../.agents/cg/principles/architecture.md`", "somewhere"));
   assertFails(dir, 1, "pointer missing principles reference");
 });
 
@@ -198,7 +200,7 @@ test("[9] a wrapper with no canonical source fails", () => {
 
 test("[9] a skill missing from the CONTRACT catalog fails", () => {
   const dir = makeRepo();
-  edit(dir, ".agents/cg/CONTRACT.md", (t) =>
+  edit(dir, ".agents/cg/contract.md", (t) =>
     t.replace("](../skills/cg-decide/SKILL.md)", "](elsewhere)"),
   );
   assertFails(dir, 9, "skill absent from catalog");
@@ -275,7 +277,7 @@ test("[10] an architecture principle with no enforcement-map row fails", () => {
 
 test("[10] a new architecture principle without its detector row fails", () => {
   const dir = makeRepo();
-  edit(dir, ".agents/cg/principles.md", (t) =>
+  edit(dir, ".agents/cg/principles/architecture.md", (t) =>
     t.replace(
       "## AP-05. Small configuration surface",
       "- **AP-01-04** — A rule invented without its detector must not merge.\n\n" +
@@ -301,7 +303,7 @@ test("[10] a duplicated architecture detector row fails", () => {
 
 test("parsePrinciples joins wrapped continuation lines into one rule", () => {
   const dir = makeRepo();
-  const rules = parsePrinciples(path.join(dir, ".agents", "cg", "principles.md"));
+  const rules = parsePrinciples(path.join(dir, ".agents", "cg", "principles", "architecture.md"));
   const text = rules.get("AP-01-02");
   assert.match(text, /same commit/);
   assert.ok(!text.includes("\n"), "a parsed rule must occupy exactly one line");
@@ -310,7 +312,7 @@ test("parsePrinciples joins wrapped continuation lines into one rule", () => {
 
 test("parsePrinciples rejects a duplicate rule id", () => {
   const dir = makeRepo();
-  const file = path.join(dir, ".agents", "cg", "principles.md");
+  const file = path.join(dir, ".agents", "cg", "principles", "architecture.md");
   fs.appendFileSync(file, "\n- **AP-01-01** — a second definition.\n");
   assert.throws(() => parsePrinciples(file), ContractError);
 });
@@ -319,4 +321,89 @@ test("splitLines treats a single trailing newline as a terminator", () => {
   assert.deepEqual(splitLines("a\nb\n"), ["a", "b"]);
   assert.deepEqual(splitLines("a\nb"), ["a", "b"]);
   assert.deepEqual(splitLines("a\n\n"), ["a", ""]);
+});
+
+// ------------------------------------------------- split principles files
+
+test("a shipped product.md with no rules is green, not an error", () => {
+  const dir = makeRepo();
+  const product = read(dir, PRODUCT);
+  assert.ok(!/^- \*\*PP-\d{2}-\d{2}\*\*/m.test(product), "fixture must ship PP-free");
+  assert.deepEqual(verify(dir).failures, []);
+});
+
+test("a product rule is loaded and inherited like an architecture one", () => {
+  const dir = makeRepo();
+  edit(dir, PRODUCT, (t) =>
+    `${t}\n## PP-01. Billing shape\n\n- **PP-01-01** — Every price is quoted in minor units.\n`,
+  );
+  edit(dir, ENFORCEMENT, (t) => `${t}\n| PP-01-01 | <no price field is a float> |\n`);
+  edit(dir, INHERITANCE, (t) => t.replace('"AP-01-01"', '"AP-01-01", "PP-01-01"'));
+  sync(dir);
+  assert.deepEqual(verify(dir).failures, []);
+  assert.match(read(dir, CONTRACT), /- \*\*PP-01-01\*\* — Every price is quoted in minor units\./);
+});
+
+test("an architecture rule redefined in product.md is refused by family", () => {
+  const dir = makeRepo();
+  edit(dir, PRODUCT, (t) => `${t}\n- **AP-01-01** — a second, conflicting definition.\n`);
+  const { failures } = verify(dir);
+  assert.ok(
+    failures.some((f) => /AP-01-01/.test(f) && /architecture\.md/.test(f)),
+    `the wrong file must be named, and the right one; got:\n${failures.join("\n") || "  (none)"}`,
+  );
+});
+
+test("a product rule filed in architecture.md is refused by family", () => {
+  const dir = makeRepo();
+  edit(dir, ARCHITECTURE, (t) => `${t}\n- **PP-09-09** — wrong file for this family.\n`);
+  const { failures } = verify(dir);
+  assert.ok(
+    failures.some((f) => /PP-09-09/.test(f) && /product\.md/.test(f)),
+    `expected a family mismatch naming product.md; got:\n${failures.join("\n") || "  (none)"}`,
+  );
+});
+
+// ------------------------------------------------------ no stale paths
+
+/**
+ * The rename that produced the current layout touched ~106 references. This is the detector
+ * that proves none survived — the same standard the framework demands of any rename it
+ * governs. Extend `STALE` whenever a governance path is renamed again.
+ */
+test("no shipped file references a pre-rename governance path", () => {
+  const STALE = [
+    /\.agents\/cg\/principles\.md/,
+    /\.agents\/cg\/enforcement-map\.md/,
+    /\.agents\/cg\/MAP\.md/,
+    /\.agents\/cg\/inheritance\.json/,
+    /\.agents\/cg\/CONTRACT\.md/,
+    /\.agents\/cg\/WORKFLOW\.md/,
+    /\.agents\/cg\/design\//,
+    /module-CONTRACT\.template\.md/,
+  ];
+  const repo = path.resolve(import.meta.dirname, "..");
+  const roots = ["src", "bin", "templates", "docs", "test", "README.md"];
+  const hits = [];
+
+  const walk = (target) => {
+    const stat = fs.statSync(target);
+    if (stat.isDirectory()) {
+      for (const name of fs.readdirSync(target)) walk(path.join(target, name));
+      return;
+    }
+    if (!/\.(js|md|json|yaml)$/.test(target)) return;
+    const text = fs.readFileSync(target, "utf8");
+    splitLines(text).forEach((line, index) => {
+      for (const pattern of STALE) {
+        // This test names the stale paths, so it must not flag its own list.
+        if (pattern.test(line) && !line.includes("/\\.agents\\/cg\\/")) {
+          hits.push(`${path.relative(repo, target)}:${index + 1}: ${line.trim()}`);
+        }
+      }
+    });
+  };
+  for (const root of roots) walk(path.join(repo, root));
+
+  assert.deepEqual(hits, [], `stale governance paths still referenced:\n${hits.join("\n")}`);
 });

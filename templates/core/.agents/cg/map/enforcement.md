@@ -1,6 +1,6 @@
 # Enforcement Map
 
-Companion to `.agents/cg/principles.md` and `.agents/cg/design/`. AP-01 requires a detector per
+Companion to `.agents/cg/principles/architecture.md` and `.agents/cg/principles/design/`. AP-01 requires a detector per
 enforceable rule; this file records which detector covers which rule ID.
 
 **A rule that claims enforceability without a detector is aspirational.** Track the gap; do not

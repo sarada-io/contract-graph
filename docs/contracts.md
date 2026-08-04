@@ -7,7 +7,7 @@ There are **two tiers**, and they answer different questions:
 
 | Tier | Artifact | Answers | Status |
 |---|---|---|---|
-| **Folder contract** | `<folder>/.agents/cg/CONTRACT.md` | what must remain true about this folder | built and verified |
+| **Folder contract** | `<folder>/.agents/cg/contract.md` | what must remain true about this folder | built and verified |
 | **Code contract** | one `XxxContract` type per directory | what this unit promises its callers | pattern documented; verification not built |
 
 The folder tier is what `cg verify` enforces today. The code tier is the structural pattern that
@@ -143,7 +143,7 @@ conveys.
 ## 5. What no annotation fixes
 
 Three things are not structural and must stay in prose, in the contract's doc comment or the owning
-`CONTRACT.md`:
+`contract.md`:
 
 - **Ordering.** `Plan → Execute → Verify` is a sequence. A composition edge is a "knows about"
   relation; a set of edges is a DAG, not a pipeline.

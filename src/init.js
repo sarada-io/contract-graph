@@ -62,7 +62,7 @@ export function init(repoRoot, { packs = [] } = {}) {
   }
 
   if (packs.length) {
-    const designDir = path.join(repoRoot, ".agents", "cg", "design");
+    const designDir = path.join(repoRoot, ".agents", "cg", "principles", "design");
     fs.mkdirSync(designDir, { recursive: true });
     for (const pack of packs) {
       const target = path.join(designDir, `${pack}.md`);

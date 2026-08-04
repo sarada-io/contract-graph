@@ -7,7 +7,7 @@ then loads only those.
 
 | If the task touches… | Load |
 |---|---|
-| <a capability, subsystem, or surface> | `<module>/.agents/cg/CONTRACT.md` |
+| <a capability, subsystem, or surface> | `<module>/.agents/cg/contract.md` |
 
 ## Loading rules
 

@@ -7,6 +7,8 @@ framework about not overstating enforcement should not overstate itself.
 
 - Three rule families with the per-rule modality marker, and a verifier that enforces both
   directions (an `invariant` owes exactly one enforcement-map row; a `guide` must have none).
+- Enforcement-map coverage for architecture and product rules: every `AP-`/`PP-` rule owes exactly
+  one row, and no row may cite a rule ID that no principles file defines.
 - Folder-scoped contracts with generated rule inheritance and drift rejection.
 - Contract self-sufficiency, machine-checked: no permanent contract may cite a transient plan.
 - Six lifecycle skills with a standardized next-action route.

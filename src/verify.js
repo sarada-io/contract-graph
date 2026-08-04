@@ -7,7 +7,7 @@
  *   3. Re-running the generator produces no diff — inherited block not stale or hand-edited.
  *   4. A `CONTRACT.md` over the suggested threshold advises; size alone never fails.
  *   5. No `CONTRACT.md` cites a transient plan path or ticket ID — self-sufficiency.
- *   6. Every rule ID in `inheritance.json` exists in `principles.md`.
+ *   6. Every rule ID in `map/inheritance.json` exists under `principles/`.
  *   7. Every entry's `depth` and `contract` path agree with its key.
  *   8. Every root entry file carries a current principle index.
  *   9. Every canonical skill uses the cg- namespace, valid frontmatter, UI metadata,
@@ -36,8 +36,10 @@ import {
   generateRoot,
   inheritancePath,
   loadInheritance,
-  parsePrinciples,
-  principlesPath,
+  loadPrinciples,
+  designRoot,
+  enforcementPath,
+  governanceContractPath,
   RULE_FAMILIES,
 } from "./model.js";
 
@@ -62,7 +64,7 @@ const DESIGN_RULE = /^- \*\*(DP-([A-Z]+)-\d{2}-\d{2})\*\* `(invariant|guide)` �
 const DESIGN_ID = /DP-[A-Z]+-\d{2}-\d{2}/g;
 const DESIGN_COST = /^ {2}\*\*Cost:\*\* \S.*$/;
 
-/** Architecture and product principles ship in `principles.md` as `XX-nn-nn`. */
+/** Architecture and product principles ship under `principles/` as `XX-nn-nn`. */
 const PRINCIPLE_ID = new RegExp(String.raw`(?:${RULE_FAMILIES.join("|")})-\d{2}-\d{2}`, "g");
 
 const read = (file) => fs.readFileSync(file, "utf8");
@@ -161,7 +163,7 @@ function parseSkillInterface(relative, text, fail) {
 
 export function checkSkills(fail, repoRoot, requiredSkills = CORE_CG_SKILLS) {
   const root = path.join(repoRoot, ".agents", "skills");
-  const catalogPath = path.join(repoRoot, ".agents", "cg", "CONTRACT.md");
+  const catalogPath = governanceContractPath(repoRoot);
   const catalog = exists(catalogPath) ? read(catalogPath) : "";
 
   const skillNames = listDirs(root).filter((name) =>
@@ -209,7 +211,7 @@ export function checkSkills(fail, repoRoot, requiredSkills = CORE_CG_SKILLS) {
     }
 
     if (!catalog.includes(`](../skills/${folderName}/SKILL.md)`)) {
-      fail(`[9] ${relative}: skill is missing from .agents/cg/CONTRACT.md catalog`);
+      fail(`[9] ${relative}: skill is missing from .agents/cg/contract.md catalog`);
     }
 
     const interfaceFile = path.join(root, folderName, "agents", "openai.yaml");
@@ -281,7 +283,7 @@ export function checkAgentRule(fail, repoRoot) {
  * One reader serves both coverage checks so the two can never disagree about what a row is.
  */
 function enforcementRowCells(repoRoot) {
-  const file = path.join(repoRoot, ".agents", "cg", "enforcement-map.md");
+  const file = enforcementPath(repoRoot);
   if (!exists(file)) return null;
   return splitLines(read(file))
     .filter((line) => line.startsWith("|"))
@@ -290,7 +292,7 @@ function enforcementRowCells(repoRoot) {
 
 /**
  * [10] Every architecture and product principle owes exactly one enforcement-map row, and the
- * map may not cite a principle ID `principles.md` does not define.
+ * map may not cite a principle ID no principles file defines.
  *
  * A design principle states its own modality, so a `guide` is legitimately absent from the map.
  * `AP-` and `PP-` rules carry no modality marker: the map claims a row for every one of them,
@@ -299,7 +301,7 @@ function enforcementRowCells(repoRoot) {
 export function checkPrincipleEnforcement(fail, repoRoot, rules) {
   const cells = enforcementRowCells(repoRoot);
   if (cells === null) {
-    if (rules.size) fail("[10] principles: missing `.agents/cg/enforcement-map.md`");
+    if (rules.size) fail("[10] principles: missing `.agents/cg/map/enforcement.md`");
     return;
   }
 
@@ -319,11 +321,11 @@ export function checkPrincipleEnforcement(fail, repoRoot, rules) {
 
 /** Verify the explicitly loaded, never-inherited design-principle sets. */
 export function checkDesignPrinciples(fail, repoRoot, folders = null) {
-  const designRoot = path.join(repoRoot, ".agents", "cg", "design");
-  if (!exists(designRoot)) return 0;
+  const root = designRoot(repoRoot);
+  if (!exists(root)) return 0;
 
   const files = fs
-    .readdirSync(designRoot)
+    .readdirSync(root)
     .filter((name) => name.endsWith(".md"))
     .sort();
 
@@ -335,7 +337,7 @@ export function checkDesignPrinciples(fail, repoRoot, folders = null) {
       continue;
     }
     const expectedSet = setName.toUpperCase().replace(/-/g, "");
-    const file = path.join(designRoot, filename);
+    const file = path.join(root, filename);
     const relative = rel(repoRoot, file);
     const lines = splitLines(read(file));
     let parsedInFile = 0;
@@ -389,7 +391,7 @@ export function checkDesignPrinciples(fail, repoRoot, folders = null) {
 
   const cells = enforcementRowCells(repoRoot);
   if (cells === null && rules.size) {
-    fail("[10] design principles: missing `.agents/cg/enforcement-map.md`");
+    fail("[10] design principles: missing `.agents/cg/map/enforcement.md`");
   }
   const enforcementIds = (cells ?? []).flatMap((cell) => cell.match(DESIGN_ID) ?? []);
 
@@ -440,10 +442,10 @@ function checkPointers(key, entry, fail, repoRoot) {
       continue;
     }
     const text = read(file);
-    if (!text.includes("`.agents/cg/CONTRACT.md`")) {
+    if (!text.includes("`.agents/cg/contract.md`")) {
       fail(`[1] ${key}/${pointer}: missing canonical module contract pointer`);
     }
-    if (!text.includes("`../.agents/cg/principles.md`")) {
+    if (!text.includes("../.agents/cg/principles/")) {
       fail(`[1] ${key}/${pointer}: missing canonical repository principles pointer`);
     }
   }
@@ -516,7 +518,7 @@ export function verify(repoRoot) {
   let rules;
   let folders;
   try {
-    rules = parsePrinciples(principlesPath(repoRoot));
+    rules = loadPrinciples(repoRoot);
     folders = loadInheritance(inheritancePath(repoRoot));
   } catch (error) {
     if (error instanceof ContractError || error instanceof SyntaxError) {
@@ -538,7 +540,7 @@ export function verify(repoRoot) {
     // for generation so one bad id does not mask the remaining checks.
     const unknown = entry.rules.filter((r) => !rules.has(r));
     if (unknown.length) {
-      fail(`[6] ${key}: rule id(s) not defined in principles.md: ${unknown.join(", ")}`);
+      fail(`[6] ${key}: rule id(s) not defined under principles/: ${unknown.join(", ")}`);
       continue;
     }
 

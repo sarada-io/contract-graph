@@ -24,17 +24,17 @@ This file defines the mandatory machine workflow for code tasks.
 
 After binding principles, contracts, accepted decisions, durable requirements, and existing green
 patterns have been applied, load only the design-principle set or sets relevant to the remaining
-fork from `.agents/cg/design/{saas,ux,ops}.md`. Cite any guide used and carry its stated cost into
+fork from `.agents/cg/principles/design/{saas,ux,ops}.md`. Cite any guide used and carry its stated cost into
 the assumption or decision. DP rules are explicit decision inputs, never inherited ambient rules.
 During harvest, use `cg-decide` D-5a: promote only a recurring decision that can be stated without
 its originating case, and route it once to a module contract, `AP`, `PP`, `DP`, or drop.
 
 ## Required Sequence
 
-1. Read `.agents/cg/CONTRACT.md`.
-2. Read `.agents/cg/principles.md` for global architecture rules.
+1. Read `.agents/cg/contract.md`.
+2. Read `.agents/cg/principles/architecture.md` for global architecture rules.
 3. Identify impacted modules.
-4. Lazy-load only required module contracts from `<module>/.agents/cg/CONTRACT.md`.
+4. Lazy-load only required module contracts from `<module>/.agents/cg/contract.md`.
 5. Use `cg-plan` to create or update the phase-wise roadmap for non-trivial work.
 6. Use `cg-prepare` to turn one selected phase into one prioritized, dependency-ordered Step queue
    in a single execution branch or worktree.
@@ -135,7 +135,7 @@ Do not read all contracts by default.
 
 ## Contract Update Triggers
 
-Update `<module>/.agents/cg/CONTRACT.md` when any of these change:
+Update `<module>/.agents/cg/contract.md` when any of these change:
 
 - dependency direction or allowed/forbidden imports
 - public entry points used by other modules
@@ -173,7 +173,7 @@ deleted), follow `.agents/skills/cg-complete/SKILL.md`. In short:
    `--stage close --preparation <destination-preparation.md>`. An empty cohort needs neither
    acceptance nor a route.
 3. Confirm every normative rule the plan introduced is stated in full in the
-   impacted `<module>/.agents/cg/CONTRACT.md` files.
+   impacted `<module>/.agents/cg/contract.md` files.
 4. If the plan contains accepted design rationale worth keeping, promote that
    content to a `docs-design/` document; otherwise let it go with the plan.
 5. Verify no permanent document depends on the plan:

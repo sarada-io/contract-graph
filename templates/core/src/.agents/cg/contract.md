@@ -1,11 +1,11 @@
 # src CONTRACT
 
-<!-- BEGIN INHERITED — generated from .agents/cg/principles.md · do not edit -->
+<!-- BEGIN INHERITED — generated from .agents/cg/principles/architecture.md · do not edit -->
 <!-- END INHERITED -->
 
 <!--
   Leave the two markers above empty and adjacent on a fresh install. This folder is listed in
-  `.agents/cg/inheritance.json` with the rule IDs that bind it; `cg sync` fills the block in
+  `.agents/cg/map/inheritance.json` with the rule IDs that bind it; `cg sync` fills the block in
   and `cg verify` fails if anyone hand-edits it. Never write rules between the markers by hand.
 
   This file is a working example, not a fixture. Rename the folder, rewrite every section,
@@ -43,8 +43,8 @@ beyond its window without loading it>
 
 ## Agent Workflow Hook
 Before changing this module:
-1. Read the inherited rules above; read `../.agents/cg/principles.md` for the full text.
-2. Read `../.agents/cg/WORKFLOW.md` and this contract.
+1. Read the inherited rules above; read `../.agents/cg/principles/architecture.md` for the full text.
+2. Read `../.agents/cg/workflow.md` and this contract.
 3. Update this contract when boundaries, invariants, dependency rules, or entry points change.
 
 ## Update Checklist

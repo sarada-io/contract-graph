@@ -39,28 +39,28 @@ These apply to every agent harness:
 
 ## Required Reading Order
 
-1. This file (`.agents/cg/CONTRACT.md`).
-2. `.agents/cg/principles.md` — architecture rules that cannot be violated.
-3. `.agents/cg/WORKFLOW.md` — mandatory agent workflow.
-4. `.agents/cg/MAP.md` — task-to-module contract mapping.
-5. `<module>/.agents/cg/CONTRACT.md` — lazy-loaded per impacted module.
+1. This file (`.agents/cg/contract.md`).
+2. `.agents/cg/principles/architecture.md` — architecture rules that cannot be violated.
+3. `.agents/cg/workflow.md` — mandatory agent workflow.
+4. `.agents/cg/map/routing.md` — task-to-module contract mapping.
+5. `<module>/.agents/cg/contract.md` — lazy-loaded per impacted module.
 
-Read on demand, not by default: `.agents/cg/design/<set>.md` (design principles, loaded when a fork
-touches the topic) and `.agents/cg/enforcement-map.md` (rule → detector).
+Read on demand, not by default: `.agents/cg/principles/design/<set>.md` (design principles, loaded when a fork
+touches the topic) and `.agents/cg/map/enforcement.md` (rule → detector).
 
 ## Mandatory Agent Workflow (Summary)
 
 For every non-trivial task:
 
 1. Read this constitution.
-2. Read `.agents/cg/principles.md` and `.agents/cg/WORKFLOW.md`.
+2. Read `.agents/cg/principles/architecture.md` and `.agents/cg/workflow.md`.
 3. Identify impacted modules from the request.
-4. Lazy-load only relevant module contracts via `.agents/cg/MAP.md`.
+4. Lazy-load only relevant module contracts via `.agents/cg/map/routing.md`.
 5. Use `cg-plan` to create or update the phase-wise roadmap for non-trivial work.
 6. Use `cg-prepare` to turn the selected phase into one dependency-ordered Step queue.
 7. Use `cg-execute` in the phase's single branch or worktree to run the earliest ready Step, one
    at a time, until the queue drains or every remaining Step is blocked.
-8. Update every affected `<module>/.agents/cg/CONTRACT.md` and detector inside the execution Step
+8. Update every affected `<module>/.agents/cg/contract.md` and detector inside the execution Step
    that changes its boundary, behavior, or invariant.
 9. Use `cg-complete` to verify the accumulated Steps, drive current-phase defects through
    corrective Steps, harvest durable knowledge, and close only when the phase gate passes.
@@ -80,14 +80,14 @@ Do not load all contracts by default.
 
 ## Governance Path Convention
 
-- Root CONTRACT: `.agents/cg/CONTRACT.md`
-- Architecture principles: `.agents/cg/principles.md`
-- Design principle sets: `.agents/cg/design/<set>.md`
-- Workflow: `.agents/cg/WORKFLOW.md`
-- Map: `.agents/cg/MAP.md`
-- Enforcement map: `.agents/cg/enforcement-map.md`
-- Rule-inheritance map (machine): `.agents/cg/inheritance.json`
-- Module contract: `<module>/.agents/cg/CONTRACT.md`
+- Root CONTRACT: `.agents/cg/contract.md`
+- Architecture principles: `.agents/cg/principles/architecture.md`
+- Design principle sets: `.agents/cg/principles/design/<set>.md`
+- Workflow: `.agents/cg/workflow.md`
+- Map: `.agents/cg/map/routing.md`
+- Enforcement map: `.agents/cg/map/enforcement.md`
+- Rule-inheritance map (machine): `.agents/cg/map/inheritance.json`
+- Module contract: `<module>/.agents/cg/contract.md`
 
 ## Governance
 
@@ -117,7 +117,7 @@ than only what was gained.
 **Rule IDs.** Rules carry family prefixes — `AP-` architecture, `DP-` design (set-scoped), `PP-`
 product — each numbered `<family>-<principle>-<rule>` and never renumbered. Append within a
 principle, redefine in place, never reuse. Changing an ID means updating
-`.agents/cg/inheritance.json`, `.agents/cg/enforcement-map.md`, and every module contract in the
+`.agents/cg/map/inheritance.json`, `.agents/cg/map/enforcement.md`, and every module contract in the
 same commit, then regenerating with `cg sync`.
 
 ## Planning and Docs Conventions
@@ -127,7 +127,7 @@ same commit, then regenerating with `cg sync`.
 - Documentation tiers by lifecycle: `.agents/cg/` files are permanent and self-contained; design
   records are permanent rationale; plans are transient (archived on completion, deleted later).
   Permanent documents never cite a plan path or plan ticket ID as the source of a rule — see the
-  Contract Self-Sufficiency Rule in `.agents/cg/WORKFLOW.md`.
+  Contract Self-Sufficiency Rule in `.agents/cg/workflow.md`.
 
 ## Verification
 
@@ -160,4 +160,4 @@ YAML frontmatter. Before starting a task, scan this catalog and follow every mat
 
 Every public framework skill must use the `cg-` prefix, carry valid `name` and `description`
 frontmatter, appear in this catalog, and end with the mandatory next-action response from
-`.agents/cg/WORKFLOW.md`. `cg verify` enforces those rules.
+`.agents/cg/workflow.md`. `cg verify` enforces those rules.

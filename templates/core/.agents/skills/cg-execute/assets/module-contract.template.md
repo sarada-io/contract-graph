@@ -1,11 +1,11 @@
 # <module-name> CONTRACT
 
-<!-- BEGIN INHERITED — generated from .agents/cg/principles.md · do not edit -->
+<!-- BEGIN INHERITED — generated from .agents/cg/principles/architecture.md · do not edit -->
 <!-- END INHERITED -->
 
 <!--
   Leave the two markers above empty and adjacent. Add this folder to
-  `.agents/cg/inheritance.json` with the rule IDs that bind it, then run
+  `.agents/cg/map/inheritance.json` with the rule IDs that bind it, then run
   `cg sync` — the generator fills the block in and `cg verify`
   fails if anyone hand-edits it. Never write rules between the markers by hand.
 -->
@@ -45,13 +45,13 @@
 
 ## Sibling Contracts
 <relative paths to the contracts this folder interacts with, so a scoped agent knows what
-exists beyond its window without loading it — e.g. `../../../<sibling-module>/.agents/cg/CONTRACT.md`>
+exists beyond its window without loading it — e.g. `../../../<sibling-module>/.agents/cg/contract.md`>
 
 ## Agent Workflow Hook
 Before changing this module:
-1. Read the inherited rules above; read `../../../.agents/cg/principles.md` for the full text if the
+1. Read the inherited rules above; read `../../../.agents/cg/principles/architecture.md` for the full text if the
    repository root is reachable.
-2. Read `../../../.agents/cg/WORKFLOW.md` and this contract.
+2. Read `../../../.agents/cg/workflow.md` and this contract.
 3. Update this contract when boundaries, invariants, dependency rules, or entry points change.
 
 ## Update Checklist

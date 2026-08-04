@@ -62,6 +62,13 @@ So each rule carries its own marker:
 |---|---|---|---|
 | `invariant` | yes, same commit | yes | a build failure |
 | `guide` | no, and one must not be demanded | no | a decision that went the other way |
+| *unmarked* (`AP-`, `PP-`) | yes where a test can express it | **yes, always** | a build failure |
+
+Only design principles carry a marker, because only they face the "is this testable or is it
+taste?" fork inside a single topic. Architecture and product principles are structural claims about
+the repository, so every one of them owes a row — and `cg verify` fails the build when one is
+missing. A rule no test can express still takes a row that says so in words, where a reviewer can
+argue with it. What it must never take is a plausible-sounding detector nobody wrote.
 
 ## 4. Load broad to narrow; decide narrow to broad
 
@@ -105,7 +112,7 @@ what was gained. Write the sentence you would least like to write.
 
 ## 7. A folder is a workspace
 
-A folder plus its `CONTRACT.md` is the smallest unit you can hand to a person or an agent with the
+A folder plus its `contract.md` is the smallest unit you can hand to a person or an agent with the
 instruction *change anything inside; keep the contract.* Two properties make that true, and both
 are obligations on the contract rather than on the worker:
 

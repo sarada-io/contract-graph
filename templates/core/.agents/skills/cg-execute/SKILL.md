@@ -80,7 +80,7 @@ Do not delegate these actions to `cg-document`, a later Step, or `cg-complete`. 
 the finished contract as evidence; none owns this Step's correctness.
 
 When creating a new module contract, use
-[the module contract template](assets/module-CONTRACT.template.md).
+[the module contract template](assets/module-contract.template.md).
 
 ## 4. Complete moves and restructures atomically
 

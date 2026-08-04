@@ -71,7 +71,7 @@ function main(argv) {
     if (!packs.length) {
       process.stdout.write("  add one later with `cg packs` then copy from templates/design/\n");
     }
-    process.stdout.write("  next: fill in Project Identity in .agents/cg/CONTRACT.md, then `cg sync`\n");
+    process.stdout.write("  next: fill in Project Identity in .agents/cg/contract.md, then `cg sync`\n");
     return 0;
   }
 

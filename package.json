@@ -1,6 +1,6 @@
 {
   "name": "contract-graph",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Bounded, verified context for coding agents. Your contracts form a graph; every rule ships with the test that fails when it breaks.",
   "type": "module",
   "bin": { "cg": "bin/cg.js" },

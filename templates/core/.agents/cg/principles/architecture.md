@@ -14,14 +14,14 @@ in this repository, independent of what it sells.
 | Family | ID form | What belongs here | Where it lives |
 |---|---|---|---|
 | **Architecture Principles** | `AP-<principle>-<rule>` | structural invariants, always loaded | this file |
-| **Design Principles** | `DP-<SET>-<principle>-<rule>` | topic-scoped design truths, loaded at a fork | `.agents/cg/design/<set>.md` |
-| **Product Principles** | `PP-<principle>-<rule>` | rules owed to *this* product's market and shape | this file, once you have any |
+| **Design Principles** | `DP-<SET>-<principle>-<rule>` | topic-scoped design truths, loaded at a fork | `principles/design/<set>.md` |
+| **Product Principles** | `PP-<principle>-<rule>` | rules owed to *this* product's market and shape | `principles/product.md` |
 
-**`PP` starts empty and that is deliberate.** A fresh repository has architecture and design
-guidance from the first commit and no product rules at all, because nobody has built the product
-yet. Product principles accrue through the decision harvest at phase close — the decisions your
-product forced, promoted once they recur. Add a `# Section 2 — Product Principles` heading when you
-have your first one.
+**`product.md` ships with no rules and that is deliberate.** A fresh repository has architecture
+and design guidance from the first commit and no product rules at all, because nobody has built the
+product yet. Product principles accrue through the decision harvest at phase close — the decisions
+your product forced, promoted once they recur. The file exists so the first one has a home to go
+to, not a heading to invent.
 
 - Cite the ID, never the position. `AP-01-01` is the first rule of Architecture Principle 01.
 - **IDs are never renumbered.** A new rule under an existing principle is appended as the next free
@@ -33,14 +33,17 @@ have your first one.
 
 | Content | File |
 |---|---|
-| Design principle sets | `.agents/cg/design/` |
-| Rule → detector map | `.agents/cg/enforcement-map.md` |
-| Governance and amendment | `.agents/cg/CONTRACT.md` |
-| Development workflow | `.agents/cg/WORKFLOW.md` |
+| Product principles | `.agents/cg/principles/product.md` |
+| Design principle sets | `.agents/cg/principles/design/` |
+| Rule → detector map | `.agents/cg/map/enforcement.md` |
+| Task → contract routing | `.agents/cg/map/routing.md` |
+| Rule → folder inheritance | `.agents/cg/map/inheritance.json` |
+| Governance and amendment | `.agents/cg/contract.md` |
+| Development workflow | `.agents/cg/workflow.md` |
 
 ---
 
-# Section 1 — Architecture Principles
+# Architecture Principles
 
 ## AP-01. The architecture is executable, not reviewable
 
@@ -145,7 +148,7 @@ understand it in a week?*
 
 Every rule above is a starting position, not scripture. Two honest ways to change one:
 
-- **Amend it.** Follow the amendment procedure in `.agents/cg/CONTRACT.md`: state what changed, why,
+- **Amend it.** Follow the amendment procedure in `.agents/cg/contract.md`: state what changed, why,
   **what it costs**, and the detector — in the same commit as the detector itself (AP-01-02).
 - **Delete it.** A rule you will not enforce is worse than no rule, because it teaches every agent
   that this file is decorative. Remove it and its enforcement-map row together.

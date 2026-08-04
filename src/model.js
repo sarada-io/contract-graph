@@ -11,12 +11,12 @@ import path from "node:path";
 export const BEGIN_MARKER = "<!-- BEGIN INHERITED";
 export const END_MARKER = "<!-- END INHERITED -->";
 export const BEGIN_LINE =
-  "<!-- BEGIN INHERITED — generated from .agents/cg/principles.md · do not edit -->";
+  "<!-- BEGIN INHERITED — generated from .agents/cg/principles/ · do not edit -->";
 
 export const ROOT_BEGIN_MARKER = "<!-- BEGIN PRINCIPLES INDEX";
 export const ROOT_END_MARKER = "<!-- END PRINCIPLES INDEX -->";
 export const ROOT_BEGIN_LINE =
-  "<!-- BEGIN PRINCIPLES INDEX — generated from .agents/cg/principles.md · do not edit -->";
+  "<!-- BEGIN PRINCIPLES INDEX — generated from .agents/cg/principles/ · do not edit -->";
 
 /**
  * Rule families that may be inherited into a folder contract, in document order.
@@ -39,6 +39,9 @@ export const FAMILY_BLURB = {
   AP: "Architecture Principles — structural; hold for any product built in this repository.",
   PP: "Product Principles — exist because of *this* product's market, pricing, and shape.",
 };
+
+/** Which file under `principles/` owns each inheritable family. */
+export const PRINCIPLE_FILENAME = { AP: "architecture.md", PP: "product.md" };
 
 export const MAX_CONTRACT_LINES = 200;
 
@@ -107,17 +110,41 @@ export const countLines = (text) => splitLines(text).length;
 
 export const cgRoot = (repoRoot) => path.join(repoRoot, ".agents", "cg");
 export const skillsRoot = (repoRoot) => path.join(repoRoot, ".agents", "skills");
-export const principlesPath = (repoRoot) => path.join(cgRoot(repoRoot), "principles.md");
-export const inheritancePath = (repoRoot) => path.join(cgRoot(repoRoot), "inheritance.json");
 
 /**
- * Return {ruleId: single-line full text} from principles.md.
+ * Governance layout. Every path the tool reads or writes is named here once, so a rename is
+ * one edit rather than a search across three modules and twenty templates.
+ */
+export const principlesRoot = (repoRoot) => path.join(cgRoot(repoRoot), "principles");
+export const architecturePath = (repoRoot) => path.join(principlesRoot(repoRoot), "architecture.md");
+export const productPath = (repoRoot) => path.join(principlesRoot(repoRoot), "product.md");
+export const designRoot = (repoRoot) => path.join(principlesRoot(repoRoot), "design");
+export const mapRoot = (repoRoot) => path.join(cgRoot(repoRoot), "map");
+export const inheritancePath = (repoRoot) => path.join(mapRoot(repoRoot), "inheritance.json");
+export const enforcementPath = (repoRoot) => path.join(mapRoot(repoRoot), "enforcement.md");
+export const routingPath = (repoRoot) => path.join(mapRoot(repoRoot), "routing.md");
+export const governanceContractPath = (repoRoot) => path.join(cgRoot(repoRoot), "contract.md");
+
+/**
+ * The files holding inheritable rules, in family order. `product.md` legitimately holds none
+ * on day one, so it is loaded permissively — an empty product file is a fresh repository,
+ * not a broken one.
+ */
+export const principleFiles = (repoRoot) => [
+  { file: architecturePath(repoRoot), family: "AP", allowEmpty: false },
+  { file: productPath(repoRoot), family: "PP", allowEmpty: true },
+];
+
+/**
+ * Return {ruleId: single-line full text} from one principles file.
  *
  * A rule is a `- **XX-pp-nn** — ...` bullet whose text may wrap onto indented continuation
  * lines. Continuations are joined and whitespace collapsed so the rule occupies exactly one
  * line in a generated digest, without losing wording.
+ *
+ * `allowEmpty` exists for `product.md`, which ships with no rules by design.
  */
-export function parsePrinciples(file) {
+export function parsePrinciples(file, { allowEmpty = false } = {}) {
   if (!exists(file)) throw new ContractError(`missing principles file: ${file}`);
 
   const rules = new Map();
@@ -152,8 +179,37 @@ export function parsePrinciples(file) {
   }
   flush();
 
-  if (rules.size === 0) throw new ContractError(`no XX-pp-nn rules parsed from ${file}`);
+  if (rules.size === 0 && !allowEmpty) {
+    throw new ContractError(`no XX-pp-nn rules parsed from ${file}`);
+  }
   return rules;
+}
+
+/**
+ * Merge every inheritable rule across the principles directory, in family order.
+ *
+ * Each family owns exactly one file, so the family guard below is what keeps the two files
+ * disjoint: a rule can only be defined twice if it is in the wrong file, and that is caught
+ * by name. There is deliberately no separate cross-file duplicate check — with one file per
+ * family it could never fire, and a check that cannot fire is worse than no check.
+ */
+export function loadPrinciples(repoRoot) {
+  const merged = new Map();
+  for (const { file, family, allowEmpty } of principleFiles(repoRoot)) {
+    for (const [ruleId, text] of parsePrinciples(file, { allowEmpty })) {
+      if (!ruleId.startsWith(`${family}-`)) {
+        throw new ContractError(
+          `${ruleId} is a ${ruleId.slice(0, 2)} rule and must not live in ` +
+            `${PRINCIPLE_FILENAME[family]}; move it to ${PRINCIPLE_FILENAME[ruleId.slice(0, 2)]}`,
+        );
+      }
+      merged.set(ruleId, text);
+    }
+  }
+  if (merged.size === 0) {
+    throw new ContractError(`no XX-pp-nn rules found under ${principlesRoot(repoRoot)}`);
+  }
+  return merged;
 }
 
 /**
@@ -162,7 +218,7 @@ export function parsePrinciples(file) {
  * Drives the generated index in every root entry file, so a harness that reads only
  * `AGENTS.md` still learns that the principles exist and what each one covers.
  */
-export function parsePrincipleIndex(file) {
+export function parsePrincipleIndex(file, { allowEmpty = false } = {}) {
   if (!exists(file)) throw new ContractError(`missing principles file: ${file}`);
 
   const index = [];
@@ -180,7 +236,7 @@ export function parsePrincipleIndex(file) {
     }
   }
 
-  if (index.length === 0) {
+  if (index.length === 0 && !allowEmpty) {
     throw new ContractError(`no \`## XX-nn. Title\` principle headings found in ${file}`);
   }
   const orphan = index.filter((e) => !counts.has(e.id)).map((e) => e.id);
@@ -190,25 +246,33 @@ export function parsePrincipleIndex(file) {
   return index.map((e) => ({ ...e, count: counts.get(e.id) }));
 }
 
+/** The merged principle index across every principles file, in family order. */
+export function loadPrincipleIndex(repoRoot) {
+  return principleFiles(repoRoot).flatMap(({ file, allowEmpty }) =>
+    parsePrincipleIndex(file, { allowEmpty }),
+  );
+}
+
 /** Render the principle index for a root entry file, without trailing newline. */
 export function renderRootIndex(repoRoot, prefix) {
-  const principles = parsePrincipleIndex(principlesPath(repoRoot));
+  const principles = loadPrincipleIndex(repoRoot);
   const total = principles.reduce((sum, e) => sum + e.count, 0);
-  const target = `${prefix}.agents/cg/principles.md`;
+  const target = `${prefix}.agents/cg/principles/`;
 
   const lines = [
     ROOT_BEGIN_LINE,
     "## Binding principles — index",
     "",
     `**You MUST read [\`${target}\`](${target}) before planning any change.** It is binding: where ` +
-      "your code and that file disagree, **the file wins and the code is wrong.** The index " +
-      `below lists what is in it (${total} rules) — the index is not the rule; cite rules by ID ` +
+      "your code and those files disagree, **the files win and the code is wrong.** The index " +
+      `below lists what is in them (${total} rules) — the index is not the rule; cite rules by ID ` +
       "(`AP-01-01`), never by position.",
   ];
   for (const family of RULE_FAMILIES) {
     const rows = principles.filter((e) => e.id.startsWith(`${family}-`));
     if (!rows.length) continue;
-    lines.push("", `**${FAMILY_BLURB[family]}**`, "");
+    const file = `${target}${PRINCIPLE_FILENAME[family]}`;
+    lines.push("", `[\`${file}\`](${file}) — **${FAMILY_BLURB[family]}**`, "");
     for (const { id, title, count } of rows) {
       lines.push(`- **${id}** ${title} — ${count} rule${count === 1 ? "" : "s"}`);
     }
@@ -219,7 +283,7 @@ export function renderRootIndex(repoRoot, prefix) {
 
 /** Render a complete root entry file: static preamble plus the generated index. */
 export function renderRootPointer(repoRoot, prefix, projectName) {
-  const contract = `${prefix}.agents/cg/CONTRACT.md`;
+  const contract = `${prefix}.agents/cg/contract.md`;
   return [
     `# ${projectName} — agent entry point`,
     "",
@@ -233,14 +297,14 @@ export function renderRootPointer(repoRoot, prefix, projectName) {
     "",
     "## Required reading order",
     "",
-    `1. [\`${prefix}.agents/cg/CONTRACT.md\`](${contract}) — constitution and harness notes.`,
-    `2. [\`${prefix}.agents/cg/principles.md\`](${prefix}.agents/cg/principles.md) — the binding ` +
+    `1. [\`${prefix}.agents/cg/contract.md\`](${contract}) — constitution and harness notes.`,
+    `2. [\`${prefix}.agents/cg/principles/\`](${prefix}.agents/cg/principles/) — the binding ` +
       "rules indexed above.",
-    `3. [\`${prefix}.agents/cg/WORKFLOW.md\`](${prefix}.agents/cg/WORKFLOW.md) — the mandatory ` +
+    `3. [\`${prefix}.agents/cg/workflow.md\`](${prefix}.agents/cg/workflow.md) — the mandatory ` +
       "agent workflow.",
-    `4. [\`${prefix}.agents/cg/MAP.md\`](${prefix}.agents/cg/MAP.md) — task-to-module contract ` +
-      "mapping.",
-    "5. `<module>/.agents/cg/CONTRACT.md` — lazy-loaded per impacted module; each one " +
+    `4. [\`${prefix}.agents/cg/map/routing.md\`](${prefix}.agents/cg/map/routing.md) — ` +
+      "task-to-module contract mapping.",
+    "5. `<module>/.agents/cg/contract.md` — lazy-loaded per impacted module; each one " +
       "repeats the rules that bind that module.",
     "",
     "Do not put instructions in this file — the index above is generated, and everything " +
@@ -341,7 +405,7 @@ export function renderAgentRule() {
     "# Contract Graph",
     "",
     "Before planning or changing code, read",
-    "[`../cg/CONTRACT.md`](../cg/CONTRACT.md) and follow its reading order.",
+    "[`../cg/contract.md`](../cg/contract.md) and follow its reading order.",
     "Use the matching [`../skills/cg-*/SKILL.md`](../skills/) for non-trivial lifecycle work.",
     "Binding guidance lives under `.agents/cg/`; canonical skills live under `.agents/skills/`.",
     "",
@@ -408,12 +472,14 @@ export function loadInheritance(file) {
   return folders;
 }
 
-/** Relative path from a contract's own directory to principles.md. */
+/** Relative path from a contract's own directory to the principles directory. */
 export function principlesPointer(repoRoot, contractPath) {
-  return path
-    .relative(path.dirname(contractPath), principlesPath(repoRoot))
-    .split(path.sep)
-    .join("/");
+  return (
+    path
+      .relative(path.dirname(contractPath), principlesRoot(repoRoot))
+      .split(path.sep)
+      .join("/") + "/"
+  );
 }
 
 /** Render the inherited-rules block for one folder, without trailing newline. */
@@ -421,7 +487,7 @@ export function renderBlock(repoRoot, entry, rules, contractPath) {
   const unknown = entry.rules.filter((r) => !rules.has(r));
   if (unknown.length) {
     throw new ContractError(
-      `${contractPath}: rule ids not defined in principles.md: ${unknown.join(", ")}`,
+      `${contractPath}: rule ids not defined under principles/: ${unknown.join(", ")}`,
     );
   }
   const ordered = [...entry.rules].sort(compareRules);

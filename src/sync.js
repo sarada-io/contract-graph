@@ -17,8 +17,7 @@ import {
   generateRoot,
   inheritancePath,
   loadInheritance,
-  parsePrinciples,
-  principlesPath,
+  loadPrinciples,
   skillsRoot,
 } from "./model.js";
 
@@ -36,7 +35,7 @@ function apply(unit, changed, dryRun) {
 }
 
 export function sync(repoRoot, { dryRun = false } = {}) {
-  const rules = parsePrinciples(principlesPath(repoRoot));
+  const rules = loadPrinciples(repoRoot);
   const folders = loadInheritance(inheritancePath(repoRoot));
   const changed = [];
 

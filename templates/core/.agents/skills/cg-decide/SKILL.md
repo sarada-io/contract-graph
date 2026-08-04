@@ -50,7 +50,7 @@ Use the first source that answers the fork:
 8. `DP-SAAS-01-02` — the narrower product scope and the simpler solo-maintainer operating model.
 
 Before using items 5–8, explicitly load only the applicable set or sets from
-`.agents/cg/design/{saas,ux,ops}.md`. A design guide answers only after sources 1–4 do not, and the
+`.agents/cg/principles/design/{saas,ux,ops}.md`. A design guide answers only after sources 1–4 do not, and the
 recorded assumption or decision must cite the guide ID and acknowledge its stated cost. Other
 applicable DP rules may answer the fork before these four general defaults; set order does not
 override a binding source.
