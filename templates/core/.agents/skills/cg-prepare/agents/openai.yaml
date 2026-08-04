@@ -1,0 +1,4 @@
+interface:
+  display_name: "Contract Graph Prepare"
+  short_description: "Prepare a continuous sequential Step queue"
+  default_prompt: "Use $cg-prepare to convert the selected phase or admitted cg-complete repair into one prioritized queue of contract-complete Steps with explicit dependencies, blockers, and state in a single execution context, then name the earliest Ready Step and the user's exact next action and skill."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Contract Graph Document"
+  short_description: "Maintain product docs and Mermaid diagrams"
+  default_prompt: "Use $cg-document to update and validate durable product documentation and diagrams, then name the user's exact next action and skill."

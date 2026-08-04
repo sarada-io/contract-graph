@@ -1,0 +1,15 @@
+{
+  "name": "contract-graph",
+  "version": "0.1.0",
+  "description": "Bounded, verified context for coding agents. Your contracts form a graph; every rule ships with the test that fails when it breaks.",
+  "type": "module",
+  "bin": { "cg": "bin/cg.js" },
+  "files": ["bin", "src", "templates", "docs", "README.md", "LICENSE"],
+  "engines": { "node": ">=18.17" },
+  "scripts": { "test": "node --test \"test/**/*.test.js\"" },
+  "keywords": ["contract-graph", "coding-agents", "governance", "architecture", "contracts", "ai-agents"],
+  "license": "Apache-2.0",
+  "repository": { "type": "git", "url": "git+https://github.com/sarada-io/contract-graph.git" },
+  "homepage": "https://github.com/sarada-io/contract-graph#readme",
+  "bugs": { "url": "https://github.com/sarada-io/contract-graph/issues" }
+}

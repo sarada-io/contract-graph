@@ -1,0 +1,4 @@
+interface:
+  display_name: "Contract Graph Decide"
+  short_description: "Log blockers and keep ready Steps moving"
+  default_prompt: "Use $cg-decide to classify this fork, record assumptions, log protected decisions against exact blocked Steps, keep dependency-safe Ready work moving, and name the user's exact next action and skill."
