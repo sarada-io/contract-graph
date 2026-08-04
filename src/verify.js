@@ -13,7 +13,8 @@
  *   9. Every canonical skill uses the cg- namespace, valid frontmatter, UI metadata,
  *      a catalog entry, and an exact generated Claude discovery wrapper.
  *  10. Design-principle sets have correct grammar, explicit modality and costs,
- *      modality-correct detector rows, unique IDs, and no inheritance entries.
+ *      modality-correct detector rows, unique IDs, and no inheritance entries; and every
+ *      architecture and product principle carries exactly one enforcement-map row.
  */
 
 import fs from "node:fs";
@@ -37,6 +38,7 @@ import {
   loadInheritance,
   parsePrinciples,
   principlesPath,
+  RULE_FAMILIES,
 } from "./model.js";
 
 const POINTERS = ["CLAUDE.md", "AGENTS.md"];
@@ -59,6 +61,9 @@ export const CORE_CG_SKILLS = [
 const DESIGN_RULE = /^- \*\*(DP-([A-Z]+)-\d{2}-\d{2})\*\* `(invariant|guide)` — (\S.*)$/;
 const DESIGN_ID = /DP-[A-Z]+-\d{2}-\d{2}/g;
 const DESIGN_COST = /^ {2}\*\*Cost:\*\* \S.*$/;
+
+/** Architecture and product principles ship in `principles.md` as `XX-nn-nn`. */
+const PRINCIPLE_ID = new RegExp(String.raw`(?:${RULE_FAMILIES.join("|")})-\d{2}-\d{2}`, "g");
 
 const read = (file) => fs.readFileSync(file, "utf8");
 const exists = (file) => fs.existsSync(file);
@@ -271,6 +276,47 @@ export function checkAgentRule(fail, repoRoot) {
   }
 }
 
+/**
+ * First-cell text of every enforcement-map table row, or `null` when the file is absent.
+ * One reader serves both coverage checks so the two can never disagree about what a row is.
+ */
+function enforcementRowCells(repoRoot) {
+  const file = path.join(repoRoot, ".agents", "cg", "enforcement-map.md");
+  if (!exists(file)) return null;
+  return splitLines(read(file))
+    .filter((line) => line.startsWith("|"))
+    .map((line) => line.split("|")[1] ?? "");
+}
+
+/**
+ * [10] Every architecture and product principle owes exactly one enforcement-map row, and the
+ * map may not cite a principle ID `principles.md` does not define.
+ *
+ * A design principle states its own modality, so a `guide` is legitimately absent from the map.
+ * `AP-` and `PP-` rules carry no modality marker: the map claims a row for every one of them,
+ * and this is the check that makes the claim true rather than decorative.
+ */
+export function checkPrincipleEnforcement(fail, repoRoot, rules) {
+  const cells = enforcementRowCells(repoRoot);
+  if (cells === null) {
+    if (rules.size) fail("[10] principles: missing `.agents/cg/enforcement-map.md`");
+    return;
+  }
+
+  const ids = cells.flatMap((cell) => cell.match(PRINCIPLE_ID) ?? []);
+  const count = (id) => ids.filter((x) => x === id).length;
+  for (const ruleId of rules.keys()) {
+    if (count(ruleId) !== 1) {
+      fail(`[10] principle \`${ruleId}\` must have exactly one enforcement-map row`);
+    }
+  }
+  for (const ruleId of [...new Set(ids)].sort()) {
+    if (!rules.has(ruleId)) {
+      fail(`[10] enforcement map references unknown principle ID \`${ruleId}\``);
+    }
+  }
+}
+
 /** Verify the explicitly loaded, never-inherited design-principle sets. */
 export function checkDesignPrinciples(fail, repoRoot, folders = null) {
   const designRoot = path.join(repoRoot, ".agents", "cg", "design");
@@ -341,17 +387,11 @@ export function checkDesignPrinciples(fail, repoRoot, folders = null) {
     }
   }
 
-  const enforcementFile = path.join(repoRoot, ".agents", "cg", "enforcement-map.md");
-  const enforcementIds = [];
-  if (!exists(enforcementFile)) {
-    if (rules.size) fail("[10] design principles: missing `.agents/cg/enforcement-map.md`");
-  } else {
-    for (const line of splitLines(read(enforcementFile))) {
-      if (!line.startsWith("|")) continue;
-      const firstCell = line.split("|")[1] ?? "";
-      enforcementIds.push(...(firstCell.match(DESIGN_ID) ?? []));
-    }
+  const cells = enforcementRowCells(repoRoot);
+  if (cells === null && rules.size) {
+    fail("[10] design principles: missing `.agents/cg/enforcement-map.md`");
   }
+  const enforcementIds = (cells ?? []).flatMap((cell) => cell.match(DESIGN_ID) ?? []);
 
   const count = (id) => enforcementIds.filter((x) => x === id).length;
   for (const [ruleId, modality] of rules) {
@@ -488,6 +528,7 @@ export function verify(repoRoot) {
   checkAgentRule(fail, repoRoot);
   const skillCount = checkSkills(fail, repoRoot);
   const designCount = checkDesignPrinciples(fail, repoRoot, folders);
+  checkPrincipleEnforcement(fail, repoRoot, rules);
 
   for (const [key, entry] of Object.entries(folders)) {
     checkMapShape(key, entry, fail);

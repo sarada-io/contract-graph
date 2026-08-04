@@ -261,6 +261,42 @@ test("[10] an enforcement row for an unknown design id fails", () => {
   assertFails(dir, 10, "enforcement map references a nonexistent rule");
 });
 
+// ------------------------------------------- architecture principle coverage
+
+test("[10] an architecture principle with no enforcement-map row fails", () => {
+  const dir = makeRepo();
+  edit(dir, ENFORCEMENT, (t) =>
+    splitLines(t)
+      .filter((l) => !l.startsWith("| AP-04-01 "))
+      .join("\n") + "\n",
+  );
+  assertFails(dir, 10, "every AP rule owes exactly one detector row");
+});
+
+test("[10] a new architecture principle without its detector row fails", () => {
+  const dir = makeRepo();
+  edit(dir, ".agents/cg/principles.md", (t) =>
+    t.replace(
+      "## AP-05. Small configuration surface",
+      "- **AP-01-04** — A rule invented without its detector must not merge.\n\n" +
+        "## AP-05. Small configuration surface",
+    ),
+  );
+  assertFails(dir, 10, "AP-01-02 is only real if adding a rule without a row fails");
+});
+
+test("[10] an enforcement row for an unknown architecture id fails", () => {
+  const dir = makeRepo();
+  edit(dir, ENFORCEMENT, (t) => `${t}\n| AP-99-99 | ghost detector |\n`);
+  assertFails(dir, 10, "enforcement map references a nonexistent principle");
+});
+
+test("[10] a duplicated architecture detector row fails", () => {
+  const dir = makeRepo();
+  edit(dir, ENFORCEMENT, (t) => `${t}\n| AP-04-01 | a second, competing detector |\n`);
+  assertFails(dir, 10, "exactly one row means one, not two");
+});
+
 // ---------------------------------------------------------------- model
 
 test("parsePrinciples joins wrapped continuation lines into one rule", () => {
