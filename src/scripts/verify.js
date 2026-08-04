@@ -27,7 +27,6 @@ import {
   MAX_CONTRACT_LINES,
   REQUIRED_SECTIONS,
   REQUIRED_SECTION_PATTERNS,
-  ROOT_POINTERS,
   PLAN_PATH,
   PLAN_TICKET,
   generate,
@@ -42,6 +41,7 @@ import {
   governanceContractPath,
   RULE_FAMILIES,
 } from "./model.js";
+import { ProfileError, resolveProfileSelection } from "./profiles.js";
 
 const POINTERS = ["CLAUDE.md", "AGENTS.md"];
 const SKILL_NAME = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -161,7 +161,12 @@ function parseSkillInterface(relative, text, fail) {
   return metadata;
 }
 
-export function checkSkills(fail, repoRoot, requiredSkills = CORE_CG_SKILLS) {
+export function checkSkills(
+  fail,
+  repoRoot,
+  requiredSkills = CORE_CG_SKILLS,
+  { skillWrappers = { template: "claude-wrapper" } } = {},
+) {
   const root = path.join(repoRoot, ".agents", "skills");
   const catalogPath = governanceContractPath(repoRoot);
   const catalog = exists(catalogPath) ? read(catalogPath) : "";
@@ -234,6 +239,8 @@ export function checkSkills(fail, repoRoot, requiredSkills = CORE_CG_SKILLS) {
       fail(`[9] ${interfaceRelative}: default prompt must name \`$${folderName}\``);
     }
 
+    if (!skillWrappers) continue;
+
     let wrapper;
     try {
       wrapper = generateClaudeSkillWrapper(repoRoot, file);
@@ -256,14 +263,16 @@ export function checkSkills(fail, repoRoot, requiredSkills = CORE_CG_SKILLS) {
     }
   }
 
-  const wrapperNames = listDirs(path.join(repoRoot, ".claude", "skills")).filter((name) =>
-    exists(path.join(repoRoot, ".claude", "skills", name, "SKILL.md")),
-  );
-  const extra = wrapperNames.filter((n) => !skillNames.includes(n));
-  if (extra.length) {
-    fail(
-      `[9] Contract Graph: Claude wrapper(s) have no canonical .agents/skills source: ${extra.sort().join(", ")}`,
+  if (skillWrappers) {
+    const wrapperNames = listDirs(path.join(repoRoot, ".claude", "skills")).filter((name) =>
+      exists(path.join(repoRoot, ".claude", "skills", name, "SKILL.md")),
     );
+    const extra = wrapperNames.filter((n) => !skillNames.includes(n));
+    if (extra.length) {
+      fail(
+        `[9] Contract Graph: Claude wrapper(s) have no canonical .agents/skills source: ${extra.sort().join(", ")}`,
+      );
+    }
   }
 
   return skillNames.length;
@@ -517,18 +526,20 @@ export function verify(repoRoot) {
 
   let rules;
   let folders;
+  let profile;
   try {
     rules = loadPrinciples(repoRoot);
     folders = loadInheritance(inheritancePath(repoRoot));
+    profile = resolveProfileSelection(repoRoot);
   } catch (error) {
-    if (error instanceof ContractError || error instanceof SyntaxError) {
+    if (error instanceof ContractError || error instanceof ProfileError || error instanceof SyntaxError) {
       return { failures: [error.message], advisories, counts: null };
     }
     throw error;
   }
 
   checkAgentRule(fail, repoRoot);
-  const skillCount = checkSkills(fail, repoRoot);
+  const skillCount = checkSkills(fail, repoRoot, CORE_CG_SKILLS, profile);
   const designCount = checkDesignPrinciples(fail, repoRoot, folders);
   checkPrincipleEnforcement(fail, repoRoot, rules);
 
@@ -561,7 +572,7 @@ export function verify(repoRoot) {
   }
 
   const projectName = path.basename(repoRoot);
-  for (const [relPath, prefix] of Object.entries(ROOT_POINTERS)) {
+  for (const [relPath, prefix] of Object.entries(profile.rootPointers)) {
     let generated;
     try {
       generated = generateRoot(repoRoot, relPath, prefix, projectName);
@@ -579,7 +590,7 @@ export function verify(repoRoot) {
     advisories,
     counts: {
       folders: Object.keys(folders).length,
-      roots: Object.keys(ROOT_POINTERS).length,
+      roots: Object.keys(profile.rootPointers).length,
       skills: skillCount,
       design: designCount,
     },

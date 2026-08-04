@@ -1,0 +1,8 @@
+{
+  "name": "copilot",
+  "displayName": "GitHub Copilot",
+  "rootPointers": {
+    ".github/copilot-instructions.md": "../"
+  },
+  "extends": []
+}

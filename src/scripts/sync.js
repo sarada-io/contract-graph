@@ -10,7 +10,6 @@ import fs from "node:fs";
 import path from "node:path";
 
 import {
-  ROOT_POINTERS,
   generate,
   generateAgentRule,
   generateClaudeSkillWrapper,
@@ -20,6 +19,7 @@ import {
   loadPrinciples,
   skillsRoot,
 } from "./model.js";
+import { resolveProfileSelection } from "./profiles.js";
 
 function write(file, text) {
   fs.mkdirSync(path.dirname(file), { recursive: true });
@@ -37,6 +37,7 @@ function apply(unit, changed, dryRun) {
 export function sync(repoRoot, { dryRun = false } = {}) {
   const rules = loadPrinciples(repoRoot);
   const folders = loadInheritance(inheritancePath(repoRoot));
+  const profile = resolveProfileSelection(repoRoot);
   const changed = [];
 
   // Generate the same units in both modes; `apply` is the only place that suppresses writes for
@@ -46,7 +47,7 @@ export function sync(repoRoot, { dryRun = false } = {}) {
   }
 
   const projectName = path.basename(repoRoot);
-  for (const [relPath, prefix] of Object.entries(ROOT_POINTERS)) {
+  for (const [relPath, prefix] of Object.entries(profile.rootPointers)) {
     apply(generateRoot(repoRoot, relPath, prefix, projectName), changed, dryRun);
   }
 
@@ -54,7 +55,7 @@ export function sync(repoRoot, { dryRun = false } = {}) {
 
   const skills = skillsRoot(repoRoot);
   let wrapperCount = 0;
-  if (fs.existsSync(skills)) {
+  if (profile.skillWrappers && fs.existsSync(skills)) {
     for (const name of fs.readdirSync(skills).sort()) {
       const skillFile = path.join(skills, name, "SKILL.md");
       if (!fs.existsSync(skillFile)) continue;
@@ -67,7 +68,7 @@ export function sync(repoRoot, { dryRun = false } = {}) {
     changed,
     counts: {
       folders: Object.keys(folders).length,
-      roots: Object.keys(ROOT_POINTERS).length,
+      roots: Object.keys(profile.rootPointers).length,
       wrappers: wrapperCount,
     },
   };

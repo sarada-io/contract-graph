@@ -22,6 +22,12 @@ import {
   splitLines,
   ContractError,
 } from "../src/scripts/model.js";
+import {
+  ProfileError,
+  availableProfiles,
+  loadProfileConfig,
+  resolveProfiles,
+} from "../src/scripts/profiles.js";
 
 /** A green repository: core template plus the named design packs, synced. */
 function makeRepo(packs = ["saas", "ops"]) {
@@ -47,6 +53,7 @@ function assertFails(dir, code, note) {
 
 const CONTRACT = "src/.agents/cg/contract.md";
 const INHERITANCE = ".agents/cg/map/inheritance.json";
+const PROFILE = ".agents/cg/map/profile.json";
 const DESIGN_OPS = ".agents/cg/principles/design/ops.md";
 const ENFORCEMENT = ".agents/cg/map/enforcement.md";
 const PRODUCT_START = ".agents/cg/principles/PP-00-start-here.md";
@@ -82,6 +89,140 @@ test("init never overwrites an existing file", () => {
 test("init rejects an unknown design pack by name", () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-test-"));
   assert.throws(() => init(dir, { packs: ["not-a-pack"] }), /unknown design pack/);
+});
+
+test("init persists the selected profiles and design packs", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-profile-record-"));
+  init(dir, { profiles: ["claude"], packs: ["ops"] });
+  assert.deepEqual(JSON.parse(read(dir, PROFILE)), {
+    profiles: ["claude"],
+    packs: ["ops"],
+  });
+});
+
+test("a Claude-only selection syncs and verifies without other root pointers", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-claude-only-"));
+  init(dir, { profiles: ["claude"] });
+  sync(dir);
+  assert.ok(fs.existsSync(path.join(dir, "CLAUDE.md")));
+  assert.ok(!fs.existsSync(path.join(dir, "AGENTS.md")));
+  assert.ok(!fs.existsSync(path.join(dir, ".github", "copilot-instructions.md")));
+  const result = verify(dir);
+  assert.deepEqual(result.failures, []);
+  assert.equal(result.counts.roots, 1);
+});
+
+test("a missing scaffold profile record fails verification", () => {
+  const dir = makeRepo();
+  fs.rmSync(path.join(dir, PROFILE));
+  assert.match(verify(dir).failures.join("\n"), /missing scaffold profile record/);
+});
+
+test("shipped profile configs validate and all resolves to their union", () => {
+  assert.deepEqual(availableProfiles(), ["all", "antigravity", "claude", "codex", "copilot"]);
+  const all = resolveProfiles(["all"]);
+  assert.deepEqual(all.rootPointers, {
+    "CLAUDE.md": "",
+    "AGENTS.md": "",
+    ".github/copilot-instructions.md": "../",
+  });
+  assert.deepEqual(all.skillWrappers, {
+    dir: ".claude/skills",
+    template: "claude-wrapper",
+  });
+});
+
+test("a malformed profile config fails with its filename and field", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "cg-profile-config-"));
+  const file = path.join(root, "broken.scaffolding.conf.json");
+  fs.writeFileSync(
+    file,
+    JSON.stringify({ name: "broken", displayName: "Broken", rootPointers: [], extends: [] }),
+  );
+  assert.throws(
+    () => loadProfileConfig("broken", { root }),
+    (error) =>
+      error instanceof ProfileError &&
+      error.message.includes(file) &&
+      error.message.includes("rootPointers"),
+  );
+});
+
+test("profile extends cycles are rejected by name", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "cg-profile-cycle-"));
+  for (const [name, parent] of [
+    ["one", "two"],
+    ["two", "one"],
+  ]) {
+    fs.writeFileSync(
+      path.join(root, `${name}.scaffolding.conf.json`),
+      `${JSON.stringify({ name, displayName: name, rootPointers: {}, extends: [parent] })}\n`,
+    );
+  }
+  assert.throws(() => resolveProfiles(["one"], { root }), /one -> two -> one/);
+});
+
+const PROFILE_ARTIFACTS = {
+  all: [
+    ".github/copilot-instructions.md",
+    "AGENTS.md",
+    "CLAUDE.md",
+    ...["cg-complete", "cg-decide", "cg-document", "cg-execute", "cg-plan", "cg-prepare"].map(
+      (name) => `.claude/skills/${name}/SKILL.md`,
+    ),
+  ],
+  antigravity: [],
+  claude: [
+    "CLAUDE.md",
+    ...["cg-complete", "cg-decide", "cg-document", "cg-execute", "cg-plan", "cg-prepare"].map(
+      (name) => `.claude/skills/${name}/SKILL.md`,
+    ),
+  ],
+  codex: ["AGENTS.md"],
+  copilot: [".github/copilot-instructions.md"],
+};
+
+function discoveryArtifacts(dir) {
+  return filesUnder(dir).filter(
+    (file) =>
+      ["AGENTS.md", "CLAUDE.md", ".github/copilot-instructions.md"].includes(file) ||
+      file.startsWith(".claude/skills/"),
+  );
+}
+
+for (const [profile, expected] of Object.entries(PROFILE_ARTIFACTS)) {
+  test(`profile ${profile} scaffolds exactly its declared discovery artifacts`, () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), `cg-profile-${profile}-`));
+    init(dir, { profiles: [profile] });
+    sync(dir);
+    assert.deepEqual(discoveryArtifacts(dir), expected.sort());
+    assert.deepEqual(verify(dir).failures, []);
+  });
+}
+
+test("a selected Claude profile fails when its wrappers are deleted", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-claude-wrapper-required-"));
+  init(dir, { profiles: ["claude"] });
+  sync(dir);
+  fs.rmSync(path.join(dir, ".claude", "skills", "cg-execute"), { recursive: true });
+  assertFails(dir, 9, "selected Claude profile requires wrappers");
+});
+
+test("a profile that never selected Claude is green without wrappers", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-no-claude-wrapper-"));
+  init(dir, { profiles: ["codex"] });
+  sync(dir);
+  assert.ok(!fs.existsSync(path.join(dir, ".claude")));
+  assert.deepEqual(verify(dir).failures, []);
+});
+
+test("an unknown profile fails by name and lists valid profiles", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-unknown-profile-"));
+  assert.throws(
+    () => init(dir, { profiles: ["cursor"] }),
+    /unknown profile\(s\): cursor\. Available: all, antigravity, claude, codex, copilot/,
+  );
+  assert.deepEqual(filesUnder(dir), []);
 });
 
 // ---------------------------------------------------------- contract drift
@@ -488,6 +629,7 @@ test("init round trip writes exactly the canonical mapped file set", () => {
       expected.push(path.posix.join(rule.target, within));
     }
   }
+  expected.push(PROFILE);
 
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-round-trip-"));
   init(dir, { packs });

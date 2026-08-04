@@ -13,7 +13,9 @@ framework about not overstating enforcement should not overstate itself.
 - Contract self-sufficiency, machine-checked: no permanent contract may cite a transient plan.
 - Six lifecycle skills with a standardized next-action route.
 - Decision harvest: triage into five destinations, batch acceptance at phase close, drain.
-- `cg init` / `sync` / `verify` / `packs`, with a fail-on-demand test suite.
+- `cg init` / `sync` / `verify` / `packs` / `profiles`, with a fail-on-demand test suite.
+- Selectable editor discovery profiles for Claude Code, Codex, GitHub Copilot, Antigravity, and
+  their `all` union, persisted and verified independently of universal governance.
 
 ## Designed, not built
 

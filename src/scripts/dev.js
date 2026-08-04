@@ -27,8 +27,8 @@ const TMP = path.join(REPO, "tmp");
 /**
  * Editors this helper knows how to talk about, and the artifact each one actually reads.
  *
- * This table is documentation, not enforcement — until profiles land (plan §B) every target
- * receives the same full scaffold. `open` is what you check by hand once it is open.
+ * Each target selects its real scaffolding profile. `open` is what you check by hand once the
+ * generated repository is open in that editor.
  */
 const TARGETS = {
   claude: {
@@ -38,7 +38,7 @@ const TARGETS = {
   },
   antigravity: {
     label: "Antigravity IDE",
-    reads: [".agents/rules/cg.md", "AGENTS.md"],
+    reads: [".agents/rules/cg.md"],
     open: "Antigravity — the workspace rule from .agents/rules/ should be listed",
   },
   codex: {
@@ -68,7 +68,7 @@ ${Object.entries(TARGETS)
 
 Notes:
   tmp/ is gitignored and safe to delete at any time.
-  Profiles do not filter yet (plan §B); every target currently gets the full scaffold.
+  Each target receives only its selected editor-discovery artifacts.
 `;
 
 /**
@@ -136,7 +136,7 @@ function main(argv) {
   if (existed) fs.rmSync(target, { recursive: true, force: true });
   fs.mkdirSync(target, { recursive: true });
 
-  init(target, { packs });
+  init(target, { packs, profiles: [name] });
   sync(target);
   const { failures, advisories, counts } = verify(target);
 

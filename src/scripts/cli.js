@@ -1,23 +1,26 @@
 #!/usr/bin/env node
-/** Contract Graph command line. `cg init | sync | verify | packs`. */
+/** Contract Graph command line. `cg init | sync | verify | packs | profiles`. */
 
 import path from "node:path";
 import process from "node:process";
 
 import { init, availableDesignPacks } from "./init.js";
+import { availableProfiles } from "./profiles.js";
 import { sync } from "./sync.js";
 import { verify } from "./verify.js";
 
 const USAGE = `cg — Contract Graph
 
 Usage:
-  cg init [dir] [--design a,b]   scaffold governance into a repository
-  cg sync [dir] [--check]        regenerate derived blocks, indexes, and wrappers
-  cg verify [dir] [--warn]       verify contracts, skills, and design principles
-  cg packs                       list available design-principle packs
+  cg init [dir] [--design a,b] [--profile a,b]   scaffold governance
+  cg sync [dir] [--check]                         regenerate derived artifacts
+  cg verify [dir] [--warn]                        verify governance
+  cg packs                                        list design-principle packs
+  cg profiles                                     list editor profiles
 
 Options:
   --design <list>   comma-separated design packs to install (init only)
+  --profile <list>  comma-separated editor profiles to install (init only; default: all)
   --check           report what sync would rewrite; change nothing
   --warn            report findings and exit 0 (verify only)
   -h, --help        show this message
@@ -26,14 +29,18 @@ Options:
 function parseArgs(argv) {
   const positional = [];
   const flags = {};
-  // Keep parsing deliberately small: commands share boolean flags, while --design is the
-  // only option that consumes a value (in either `--design x` or `--design=x` form).
+  // Keep parsing deliberately small: commands share boolean flags, while the init selection
+  // options consume values (in either `--name x` or `--name=x` form).
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === "--design") {
       flags.design = argv[++i] ?? "";
     } else if (arg.startsWith("--design=")) {
       flags.design = arg.slice("--design=".length);
+    } else if (arg === "--profile") {
+      flags.profile = argv[++i] ?? "";
+    } else if (arg.startsWith("--profile=")) {
+      flags.profile = arg.slice("--profile=".length);
     } else if (arg.startsWith("--")) {
       flags[arg.slice(2)] = true;
     } else {
@@ -60,18 +67,29 @@ function main(argv) {
     return 0;
   }
 
+  if (command === "profiles") {
+    const profiles = availableProfiles();
+    process.stdout.write(profiles.length ? `${profiles.join("\n")}\n` : "no editor profiles bundled\n");
+    return 0;
+  }
+
   if (command === "init") {
     const packs = (flags.design ?? "")
       .split(",")
       .map((s) => s.trim())
       .filter(Boolean);
-    const { written, skipped } = init(repoRoot, { packs });
+    const profiles = flags.profile
+      ? flags.profile.split(",").map((s) => s.trim()).filter(Boolean)
+      : undefined;
+    const result = init(repoRoot, { packs, profiles });
+    const { written, skipped } = result;
     process.stdout.write(
       `cg init: ${written.length} file(s) written` +
         (skipped.length ? `, ${skipped.length} left untouched (already present)` : "") +
-        `${packs.length ? `, design packs: ${packs.join(", ")}` : ", no design packs selected"}\n`,
+        `${result.packs.length ? `, design packs: ${result.packs.join(", ")}` : ", no design packs selected"}` +
+        `, profiles: ${result.profiles.join(", ")}\n`,
     );
-    if (!packs.length) {
+    if (!result.packs.length) {
       process.stdout.write("  add one later with `cg packs`, then re-run `cg init --design <pack>`\n");
     }
     process.stdout.write("  next: fill in Project Identity in .agents/cg/contract.md, then `cg sync`\n");

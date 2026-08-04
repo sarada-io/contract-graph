@@ -1,0 +1,8 @@
+{
+  "name": "codex",
+  "displayName": "Codex",
+  "rootPointers": {
+    "AGENTS.md": ""
+  },
+  "extends": []
+}
