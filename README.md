@@ -46,8 +46,9 @@ consistent. The detectors themselves live in your build, written by you.
 .agents/
   cg/
     principles/
-      architecture.md     AP-* rules — always loaded (source)
-      product.md          PP-* rules — ships with none; yours accrue here (source)
+      AP-01-executable.md one AP-nn file per architecture principle (source)
+      AP-02-contexts.md   filenames sort in principle-ID order (source)
+      PP-00-start-here.md inert example; real PP-nn files accrue here (source)
       design/saas.md      DP-SAAS-* rules for one topic, loaded at a fork (source)
     map/
       routing.md          task → which module contracts to load (source, a stub to fill)
@@ -66,14 +67,14 @@ CLAUDE.md                   (partly generated: the index block is the tool's,
   CLAUDE.md, AGENTS.md    pointers making the folder openable on its own (generated)
 ```
 
-Two groupings carry the weight. **`principles/`** holds the three rule families as three
-addresses — one per family, so a rule's home is decided by what kind of rule it is, not by which
-file had room. **`map/`** holds the three things that map one address space onto another: task →
-contract, rule → detector, rule → folder. Everything else at the top of `cg/` is a document you
-read start to finish.
+Two groupings carry the weight. **`principles/`** holds one prefixed file per architecture or
+product principle, plus selectively installed design-set files. A rule's family and principle ID
+decide its file, and `cg verify` rejects a mismatch. **`map/`** holds the three things that map one
+address space onto another: task → contract, rule → detector, rule → folder. Everything else at
+the top of `cg/` is a document you read start to finish.
 
-All lowercase, including module `contract.md`. The exception that used to exist — shouting
-`CONTRACT.md` next to `principles.md` — was a convention nobody could state a rule for.
+Filenames are lowercase except where they carry a canonical uppercase rule-family ID:
+`AP-01-executable.md`, but `contract.md`.
 
 The split that matters: **source files you write, generated files `cg sync` owns.** Every generated
 region sits between `BEGIN`/`END` markers, so a file can be partly yours and partly the tool's.
@@ -303,13 +304,26 @@ cg verify && cg sync --check
 
 That is the whole test. `verify` catches wrong; `sync --check` catches stale.
 
-**If you changed Contract Graph itself** — a script under `src/`, or a template:
+**If you changed Contract Graph itself** — a runtime script or any scaffolded deliverable under
+`src/`:
 
 ```bash
 npm test
 ```
 
-36 tests, 29 of them fail-on-demand. The suite's rule, stated at the top of
+The package source layout is explicit about what runs and what lands in a repository:
+
+```
+src/
+  scripts/       CLI implementation, loader, sync, verifier, and dev helper
+  principles/    flat AP-nn/PP-nn files; design/ contains opt-in packs
+  governance/    contract.md, workflow.md, and map/
+  skills/        canonical cg-* skill trees
+  scaffold/      rules/ and the starter module tree
+bin/cg.js        executable shim importing src/scripts/cli.js
+```
+
+45 tests include fail-on-demand cases for every verifier check. The suite's rule, stated at the top of
 [test/verify.test.js](test/verify.test.js): every negative case is load-bearing. A suite that only
 proves the green path passes is indistinguishable from a verifier that checks nothing — so each
 test mutates one thing in an otherwise-green repository and asserts that one specific check fires.

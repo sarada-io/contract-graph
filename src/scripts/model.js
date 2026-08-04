@@ -40,9 +40,6 @@ export const FAMILY_BLURB = {
   PP: "Product Principles — exist because of *this* product's market, pricing, and shape.",
 };
 
-/** Which file under `principles/` owns each inheritable family. */
-export const PRINCIPLE_FILENAME = { AP: "architecture.md", PP: "product.md" };
-
 export const MAX_CONTRACT_LINES = 200;
 
 /** Root entry file -> prefix that reaches `.agents/cg/` from that file's directory. */
@@ -113,11 +110,9 @@ export const skillsRoot = (repoRoot) => path.join(repoRoot, ".agents", "skills")
 
 /**
  * Governance layout. Every path the tool reads or writes is named here once, so a rename is
- * one edit rather than a search across three modules and twenty templates.
+ * one edit rather than a search across three modules and twenty deliverables.
  */
 export const principlesRoot = (repoRoot) => path.join(cgRoot(repoRoot), "principles");
-export const architecturePath = (repoRoot) => path.join(principlesRoot(repoRoot), "architecture.md");
-export const productPath = (repoRoot) => path.join(principlesRoot(repoRoot), "product.md");
 export const designRoot = (repoRoot) => path.join(principlesRoot(repoRoot), "design");
 export const mapRoot = (repoRoot) => path.join(cgRoot(repoRoot), "map");
 export const inheritancePath = (repoRoot) => path.join(mapRoot(repoRoot), "inheritance.json");
@@ -126,14 +121,53 @@ export const routingPath = (repoRoot) => path.join(mapRoot(repoRoot), "routing.m
 export const governanceContractPath = (repoRoot) => path.join(cgRoot(repoRoot), "contract.md");
 
 /**
- * The files holding inheritable rules, in family order. `product.md` legitimately holds none
- * on day one, so it is loaded permissively — an empty product file is a fresh repository,
- * not a broken one.
+ * The flat, filename-prefixed files holding inheritable rules, in filename order.
+ *
+ * `PP-00-start-here.md` is the one explicit empty meta file. Every real principle file must
+ * contain a heading and at least one rule; an unrelated Markdown filename is an error rather
+ * than governance that disappears silently.
  */
-export const principleFiles = (repoRoot) => [
-  { file: architecturePath(repoRoot), family: "AP", allowEmpty: false },
-  { file: productPath(repoRoot), family: "PP", allowEmpty: true },
-];
+export function principleFiles(repoRoot) {
+  const root = principlesRoot(repoRoot);
+  if (!exists(root)) throw new ContractError(`missing principles directory: ${root}`);
+
+  return fs
+    .readdirSync(root, { withFileTypes: true })
+    .filter((entry) => entry.isFile() && entry.name.endsWith(".md"))
+    .map((entry) => {
+      const match = /^(AP|PP)-(\d{2})-[a-z0-9]+(?:-[a-z0-9]+)*\.md$/.exec(entry.name);
+      if (!match) {
+        throw new ContractError(
+          `invalid principles filename ${entry.name}; expected AP-nn-slug.md or PP-nn-slug.md`,
+        );
+      }
+      return {
+        file: path.join(root, entry.name),
+        filename: entry.name,
+        family: match[1],
+        principle: `${match[1]}-${match[2]}`,
+        allowEmpty: match[1] === "PP" && match[2] === "00",
+      };
+    })
+    .sort((a, b) => a.filename.localeCompare(b.filename));
+}
+
+/** Yield Markdown lines outside fenced code blocks. Examples must remain visible but inert. */
+function markdownProseLines(text) {
+  const prose = [];
+  let fence = null;
+  for (const line of splitLines(text)) {
+    const marker = /^\s*(`{3,}|~{3,})/.exec(line);
+    if (marker) {
+      const next = marker[1][0];
+      if (fence === null) fence = next;
+      else if (fence === next) fence = null;
+      continue;
+    }
+    if (fence === null) prose.push(line);
+  }
+  return prose;
+}
 
 /**
  * Return {ruleId: single-line full text} from one principles file.
@@ -142,7 +176,7 @@ export const principleFiles = (repoRoot) => [
  * lines. Continuations are joined and whitespace collapsed so the rule occupies exactly one
  * line in a generated digest, without losing wording.
  *
- * `allowEmpty` exists for `product.md`, which ships with no rules by design.
+ * `allowEmpty` exists for `PP-00-start-here.md`, which ships with no rules by design.
  */
 export function parsePrinciples(file, { allowEmpty = false } = {}) {
   if (!exists(file)) throw new ContractError(`missing principles file: ${file}`);
@@ -159,7 +193,7 @@ export function parsePrinciples(file, { allowEmpty = false } = {}) {
     rules.set(currentId, text);
   };
 
-  for (const raw of splitLines(read(file))) {
+  for (const raw of markdownProseLines(read(file))) {
     const match = RULE_START.exec(raw);
     if (match) {
       flush();
@@ -185,26 +219,70 @@ export function parsePrinciples(file, { allowEmpty = false } = {}) {
   return rules;
 }
 
+/** Enforce the identity carried by one prefixed principles filename. */
+function assertPrincipleCorrespondence({ file, filename, principle }, rules) {
+  const headings = markdownProseLines(read(file))
+    .map((line) => PRINCIPLE_HEADING.exec(line)?.[1])
+    .filter(Boolean);
+
+  // `00` is meta, never a principle. Keep the exemption explicit so prose edits cannot turn it
+  // into a live principle accidentally.
+  if (principle === "PP-00") {
+    if (headings.length || rules.size) {
+      throw new ContractError(
+        `${filename} is a meta file and must not define a live principle heading or rule`,
+      );
+    }
+    return;
+  }
+
+  if (headings.length !== 1 || headings[0] !== principle) {
+    const found = headings.length ? headings.join(", ") : "none";
+    throw new ContractError(
+      `${filename} must contain only the \`## ${principle}.\` principle heading; found ${found}`,
+    );
+  }
+  for (const ruleId of rules.keys()) {
+    if (!ruleId.startsWith(`${principle}-`)) {
+      throw new ContractError(
+        `\`${ruleId}\` belongs in ${ruleId.slice(0, 5)}-*.md, not ${filename}`,
+      );
+    }
+  }
+}
+
 /**
- * Merge every inheritable rule across the principles directory, in family order.
- *
- * Each family owns exactly one file, so the family guard below is what keeps the two files
- * disjoint: a rule can only be defined twice if it is in the wrong file, and that is caught
- * by name. There is deliberately no separate cross-file duplicate check — with one file per
- * family it could never fire, and a check that cannot fire is worse than no check.
+ * Merge every inheritable rule across the principles directory, in filename order.
  */
 export function loadPrinciples(repoRoot) {
   const merged = new Map();
-  for (const { file, family, allowEmpty } of principleFiles(repoRoot)) {
-    for (const [ruleId, text] of parsePrinciples(file, { allowEmpty })) {
+  const owners = new Map();
+  const principleOwners = new Map();
+  for (const info of principleFiles(repoRoot)) {
+    const { file, filename, family, principle, allowEmpty } = info;
+    const rules = parsePrinciples(file, { allowEmpty });
+    assertPrincipleCorrespondence(info, rules);
+    for (const [ruleId, text] of rules) {
       if (!ruleId.startsWith(`${family}-`)) {
         throw new ContractError(
-          `${ruleId} is a ${ruleId.slice(0, 2)} rule and must not live in ` +
-            `${PRINCIPLE_FILENAME[family]}; move it to ${PRINCIPLE_FILENAME[ruleId.slice(0, 2)]}`,
+          `${ruleId} is a ${ruleId.slice(0, 2)} rule and must not live in ${filename}; ` +
+            `move it to a ${ruleId.slice(0, 2)}-nn-slug.md file`,
+        );
+      }
+      if (merged.has(ruleId)) {
+        throw new ContractError(
+          `duplicate rule id ${ruleId} across ${owners.get(ruleId)} and ${filename}`,
         );
       }
       merged.set(ruleId, text);
+      owners.set(ruleId, filename);
     }
+    if (principle !== "PP-00" && principleOwners.has(principle)) {
+      throw new ContractError(
+        `${principle} is defined by both ${principleOwners.get(principle)} and ${filename}`,
+      );
+    }
+    if (principle !== "PP-00") principleOwners.set(principle, filename);
   }
   if (merged.size === 0) {
     throw new ContractError(`no XX-pp-nn rules found under ${principlesRoot(repoRoot)}`);
@@ -223,7 +301,7 @@ export function parsePrincipleIndex(file, { allowEmpty = false } = {}) {
 
   const index = [];
   const counts = new Map();
-  for (const raw of splitLines(read(file))) {
+  for (const raw of markdownProseLines(read(file))) {
     const heading = PRINCIPLE_HEADING.exec(raw);
     if (heading) {
       index.push({ id: heading[1], title: heading[2] });
@@ -248,8 +326,8 @@ export function parsePrincipleIndex(file, { allowEmpty = false } = {}) {
 
 /** The merged principle index across every principles file, in family order. */
 export function loadPrincipleIndex(repoRoot) {
-  return principleFiles(repoRoot).flatMap(({ file, allowEmpty }) =>
-    parsePrincipleIndex(file, { allowEmpty }),
+  return principleFiles(repoRoot).flatMap(({ file, filename, allowEmpty }) =>
+    parsePrincipleIndex(file, { allowEmpty }).map((entry) => ({ ...entry, filename })),
   );
 }
 
@@ -271,10 +349,12 @@ export function renderRootIndex(repoRoot, prefix) {
   for (const family of RULE_FAMILIES) {
     const rows = principles.filter((e) => e.id.startsWith(`${family}-`));
     if (!rows.length) continue;
-    const file = `${target}${PRINCIPLE_FILENAME[family]}`;
-    lines.push("", `[\`${file}\`](${file}) — **${FAMILY_BLURB[family]}**`, "");
-    for (const { id, title, count } of rows) {
-      lines.push(`- **${id}** ${title} — ${count} rule${count === 1 ? "" : "s"}`);
+    lines.push("", `**${FAMILY_BLURB[family]}**`, "");
+    for (const { id, title, count, filename } of rows) {
+      const file = `${target}${filename}`;
+      lines.push(
+        `- [**${id}** ${title}](${file}) — ${count} rule${count === 1 ? "" : "s"}`,
+      );
     }
   }
   lines.push(ROOT_END_MARKER);

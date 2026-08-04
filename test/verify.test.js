@@ -13,10 +13,15 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 
-import { init } from "../src/scripts/init.js";
+import { init, SCAFFOLD_MAPPING, SOURCE_ROOT } from "../src/scripts/init.js";
 import { sync } from "../src/scripts/sync.js";
 import { verify } from "../src/scripts/verify.js";
-import { parsePrinciples, splitLines, ContractError } from "../src/scripts/model.js";
+import {
+  parsePrinciples,
+  loadPrinciples,
+  splitLines,
+  ContractError,
+} from "../src/scripts/model.js";
 
 /** A green repository: core template plus the named design packs, synced. */
 function makeRepo(packs = ["saas", "ops"]) {
@@ -44,8 +49,8 @@ const CONTRACT = "src/.agents/cg/contract.md";
 const INHERITANCE = ".agents/cg/map/inheritance.json";
 const DESIGN_OPS = ".agents/cg/principles/design/ops.md";
 const ENFORCEMENT = ".agents/cg/map/enforcement.md";
-const PRODUCT = ".agents/cg/principles/product.md";
-const ARCHITECTURE = ".agents/cg/principles/architecture.md";
+const PRODUCT_START = ".agents/cg/principles/PP-00-start-here.md";
+const ARCHITECTURE = ".agents/cg/principles/AP-01-executable.md";
 
 // ---------------------------------------------------------------- green path
 
@@ -156,7 +161,7 @@ test("[1] a module folder missing CLAUDE.md fails", () => {
 
 test("[1] a pointer without the principles reference fails", () => {
   const dir = makeRepo();
-  edit(dir, "src/AGENTS.md", (t) => t.replace("`../.agents/cg/principles/architecture.md`", "somewhere"));
+  edit(dir, "src/AGENTS.md", (t) => t.replace("../.agents/cg/principles/", "somewhere"));
   assertFails(dir, 1, "pointer missing principles reference");
 });
 
@@ -277,12 +282,8 @@ test("[10] an architecture principle with no enforcement-map row fails", () => {
 
 test("[10] a new architecture principle without its detector row fails", () => {
   const dir = makeRepo();
-  edit(dir, ".agents/cg/principles/architecture.md", (t) =>
-    t.replace(
-      "## AP-05. Small configuration surface",
-      "- **AP-01-04** — A rule invented without its detector must not merge.\n\n" +
-        "## AP-05. Small configuration surface",
-    ),
+  edit(dir, ARCHITECTURE, (t) =>
+    `${t}\n- **AP-01-04** — A rule invented without its detector must not merge.\n`,
   );
   assertFails(dir, 10, "AP-01-02 is only real if adding a rule without a row fails");
 });
@@ -303,7 +304,7 @@ test("[10] a duplicated architecture detector row fails", () => {
 
 test("parsePrinciples joins wrapped continuation lines into one rule", () => {
   const dir = makeRepo();
-  const rules = parsePrinciples(path.join(dir, ".agents", "cg", "principles", "architecture.md"));
+  const rules = parsePrinciples(path.join(dir, ARCHITECTURE));
   const text = rules.get("AP-01-02");
   assert.match(text, /same commit/);
   assert.ok(!text.includes("\n"), "a parsed rule must occupy exactly one line");
@@ -312,9 +313,47 @@ test("parsePrinciples joins wrapped continuation lines into one rule", () => {
 
 test("parsePrinciples rejects a duplicate rule id", () => {
   const dir = makeRepo();
-  const file = path.join(dir, ".agents", "cg", "principles", "architecture.md");
+  const file = path.join(dir, ARCHITECTURE);
   fs.appendFileSync(file, "\n- **AP-01-01** — a second definition.\n");
   assert.throws(() => parsePrinciples(file), ContractError);
+});
+
+test("loadPrinciples rejects a duplicate rule id across files and names the collision", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-duplicate-"));
+  const root = path.join(dir, ".agents", "cg", "principles");
+  fs.mkdirSync(root, { recursive: true });
+  fs.writeFileSync(
+    path.join(root, "AP-01-first.md"),
+    "## AP-01. First\n\n- **AP-01-01** — First definition.\n",
+  );
+  fs.writeFileSync(
+    path.join(root, "AP-01-second.md"),
+    "## AP-01. Second\n\n- **AP-01-01** — Conflicting definition.\n",
+  );
+
+  assert.throws(
+    () => loadPrinciples(dir),
+    /duplicate rule id AP-01-01 across AP-01-first\.md and AP-01-second\.md/,
+  );
+});
+
+test("loadPrinciples rejects a rule moved into a neighbouring principle file", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-correspondence-"));
+  const root = path.join(dir, ".agents", "cg", "principles");
+  fs.mkdirSync(root, { recursive: true });
+  fs.writeFileSync(
+    path.join(root, "AP-01-first.md"),
+    "## AP-01. First\n\n- **AP-01-01** — First rule.\n- **AP-02-01** — Moved rule.\n",
+  );
+  fs.writeFileSync(
+    path.join(root, "AP-02-second.md"),
+    "## AP-02. Second\n\n- **AP-02-02** — Rule left behind.\n",
+  );
+
+  assert.throws(
+    () => loadPrinciples(dir),
+    /`AP-02-01` belongs in AP-02-\*\.md, not AP-01-first\.md/,
+  );
 });
 
 test("splitLines treats a single trailing newline as a terminator", () => {
@@ -325,17 +364,22 @@ test("splitLines treats a single trailing newline as a terminator", () => {
 
 // ------------------------------------------------- split principles files
 
-test("a shipped product.md with no rules is green, not an error", () => {
+test("the shipped PP-00 start file has no rules and is green", () => {
   const dir = makeRepo();
-  const product = read(dir, PRODUCT);
-  assert.ok(!/^- \*\*PP-\d{2}-\d{2}\*\*/m.test(product), "fixture must ship PP-free");
+  assert.equal(
+    parsePrinciples(path.join(dir, PRODUCT_START), { allowEmpty: true }).size,
+    0,
+    "the visible fenced example must remain inert",
+  );
   assert.deepEqual(verify(dir).failures, []);
 });
 
 test("a product rule is loaded and inherited like an architecture one", () => {
   const dir = makeRepo();
-  edit(dir, PRODUCT, (t) =>
-    `${t}\n## PP-01. Billing shape\n\n- **PP-01-01** — Every price is quoted in minor units.\n`,
+  write(
+    dir,
+    ".agents/cg/principles/PP-01-billing.md",
+    "## PP-01. Billing shape\n\n- **PP-01-01** — Every price is quoted in minor units.\n",
   );
   edit(dir, ENFORCEMENT, (t) => `${t}\n| PP-01-01 | <no price field is a float> |\n`);
   edit(dir, INHERITANCE, (t) => t.replace('"AP-01-01"', '"AP-01-01", "PP-01-01"'));
@@ -344,32 +388,118 @@ test("a product rule is loaded and inherited like an architecture one", () => {
   assert.match(read(dir, CONTRACT), /- \*\*PP-01-01\*\* — Every price is quoted in minor units\./);
 });
 
-test("an architecture rule redefined in product.md is refused by family", () => {
+test("an architecture rule filed in a product principle file is refused by name", () => {
   const dir = makeRepo();
-  edit(dir, PRODUCT, (t) => `${t}\n- **AP-01-01** — a second, conflicting definition.\n`);
+  write(
+    dir,
+    ".agents/cg/principles/PP-01-wrong.md",
+    "## PP-01. Wrong family\n\n- **AP-01-01** — a second, conflicting definition.\n",
+  );
   const { failures } = verify(dir);
   assert.ok(
-    failures.some((f) => /AP-01-01/.test(f) && /architecture\.md/.test(f)),
-    `the wrong file must be named, and the right one; got:\n${failures.join("\n") || "  (none)"}`,
+    failures.some((f) => /AP-01-01/.test(f) && /PP-01-wrong\.md/.test(f)),
+    `the misplaced rule and wrong file must be named; got:\n${failures.join("\n") || "  (none)"}`,
   );
 });
 
-test("a product rule filed in architecture.md is refused by family", () => {
+test("a product rule filed in an architecture principle file is refused by name", () => {
   const dir = makeRepo();
   edit(dir, ARCHITECTURE, (t) => `${t}\n- **PP-09-09** — wrong file for this family.\n`);
   const { failures } = verify(dir);
   assert.ok(
-    failures.some((f) => /PP-09-09/.test(f) && /product\.md/.test(f)),
-    `expected a family mismatch naming product.md; got:\n${failures.join("\n") || "  (none)"}`,
+    failures.some((f) => /PP-09-09/.test(f) && /AP-01-executable\.md/.test(f)),
+    `expected a correspondence failure naming AP-01-executable.md; got:\n${failures.join("\n") || "  (none)"}`,
   );
+});
+
+// ------------------------------------------------------ scaffold mapping
+
+function filesUnder(root) {
+  const files = [];
+  const walk = (dir) => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const absolute = path.join(dir, entry.name);
+      if (entry.isDirectory()) walk(absolute);
+      else files.push(path.relative(root, absolute).split(path.sep).join("/"));
+    }
+  };
+  walk(root);
+  return files.sort();
+}
+
+function ruleMatchesSource(rule, relative) {
+  if (rule.select === "tree" || rule.select === "design-packs") {
+    return relative.startsWith(`${rule.source}/`);
+  }
+  if (rule.select === "top-level-markdown") {
+    return path.posix.dirname(relative) === rule.source && relative.endsWith(".md");
+  }
+  return false;
+}
+
+test("scaffold mapping covers every eligible src file exactly once", () => {
+  const eligible = filesUnder(SOURCE_ROOT).filter(
+    (file) => !file.startsWith("scripts/") && !file.startsWith("scaffold/profiles/"),
+  );
+  const uncovered = [];
+  const overlapping = [];
+  for (const file of eligible) {
+    const matches = SCAFFOLD_MAPPING.filter(
+      (rule) => rule.mode !== "never" && ruleMatchesSource(rule, file),
+    );
+    if (matches.length === 0) uncovered.push(file);
+    if (matches.length > 1) overlapping.push(`${file}: ${matches.map((rule) => rule.source).join(", ")}`);
+  }
+  assert.deepEqual(uncovered, [], `unmapped src files:\n${uncovered.join("\n")}`);
+  assert.deepEqual(overlapping, [], `multiply mapped src files:\n${overlapping.join("\n")}`);
+});
+
+test("init round trip writes exactly the canonical mapped file set", () => {
+  // This is intentionally independent of SCAFFOLD_MAPPING's targets. If a mapping target is
+  // mistyped, init follows the typo while this detector continues to assert the contract.
+  const canonical = [
+    {
+      source: "principles",
+      target: ".agents/cg/principles",
+      mode: "always",
+      select: "top-level-markdown",
+    },
+    {
+      source: "principles/design",
+      target: ".agents/cg/principles/design",
+      mode: "selected",
+      select: "design-packs",
+    },
+    { source: "governance", target: ".agents/cg", mode: "always", select: "tree" },
+    { source: "skills", target: ".agents/skills", mode: "always", select: "tree" },
+    { source: "scaffold/rules", target: ".agents/rules", mode: "always", select: "tree" },
+    { source: "scaffold/module", target: "src", mode: "always", select: "tree" },
+  ];
+  const packs = ["ops", "saas"];
+  const sourceFiles = filesUnder(SOURCE_ROOT);
+  const expected = [];
+  for (const rule of canonical) {
+    for (const file of sourceFiles.filter((candidate) => ruleMatchesSource(rule, candidate))) {
+      if (rule.mode === "selected") {
+        const pack = path.posix.basename(file, ".md");
+        if (!packs.includes(pack)) continue;
+      }
+      const within = path.posix.relative(rule.source, file);
+      expected.push(path.posix.join(rule.target, within));
+    }
+  }
+
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-round-trip-"));
+  init(dir, { packs });
+  assert.deepEqual(filesUnder(dir), expected.sort());
 });
 
 // ------------------------------------------------------ no stale paths
 
 /**
- * The rename that produced the current layout touched ~106 references. This is the detector
- * that proves none survived — the same standard the framework demands of any rename it
- * governs. Extend `STALE` whenever a governance path is renamed again.
+ * This detector proves no shipped or contributor-facing file still names an obsolete layout —
+ * the same standard the framework demands of any rename it governs. Extend `STALE` whenever a
+ * governance or implementation path is renamed again.
  */
 test("no shipped file references a pre-rename governance path", () => {
   const STALE = [
@@ -381,9 +511,14 @@ test("no shipped file references a pre-rename governance path", () => {
     /\.agents\/cg\/WORKFLOW\.md/,
     /\.agents\/cg\/design\//,
     /module-CONTRACT\.template\.md/,
+    /principles\/(?:architecture|product)\.md/,
+    /templates\//,
+    /src\/(?:model|init|sync|verify|dev)\.js/,
+    /bin\/cg\.js#L\d+/,
+    /bin\/cg\.js:\d+/,
   ];
   const repo = path.resolve(import.meta.dirname, "..");
-  const roots = ["src", "bin", "templates", "docs", "test", "README.md"];
+  const roots = ["src", "bin", "docs", "test", "README.md", "CONTRIBUTING.md", "package.json"];
   const hits = [];
 
   const walk = (target) => {

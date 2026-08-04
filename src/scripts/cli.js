@@ -72,7 +72,7 @@ function main(argv) {
         `${packs.length ? `, design packs: ${packs.join(", ")}` : ", no design packs selected"}\n`,
     );
     if (!packs.length) {
-      process.stdout.write("  add one later with `cg packs` then copy from templates/design/\n");
+      process.stdout.write("  add one later with `cg packs`, then re-run `cg init --design <pack>`\n");
     }
     process.stdout.write("  next: fill in Project Identity in .agents/cg/contract.md, then `cg sync`\n");
     return 0;

@@ -32,7 +32,7 @@ its originating case, and route it once to a module contract, `AP`, `PP`, `DP`, 
 ## Required Sequence
 
 1. Read `.agents/cg/contract.md`.
-2. Read `.agents/cg/principles/architecture.md` for global architecture rules.
+2. Read `.agents/cg/principles/` for global architecture and product rules.
 3. Identify impacted modules.
 4. Lazy-load only required module contracts from `<module>/.agents/cg/contract.md`.
 5. Use `cg-plan` to create or update the phase-wise roadmap for non-trivial work.

@@ -1,6 +1,6 @@
 # src CONTRACT
 
-<!-- BEGIN INHERITED — generated from .agents/cg/principles/architecture.md · do not edit -->
+<!-- BEGIN INHERITED — generated from .agents/cg/principles/ · do not edit -->
 <!-- END INHERITED -->
 
 <!--
@@ -43,7 +43,7 @@ beyond its window without loading it>
 
 ## Agent Workflow Hook
 Before changing this module:
-1. Read the inherited rules above; read `../.agents/cg/principles/architecture.md` for the full text.
+1. Read the inherited rules above; read `../.agents/cg/principles/` for the full text.
 2. Read `../.agents/cg/workflow.md` and this contract.
 3. Update this contract when boundaries, invariants, dependency rules, or entry points change.
 

@@ -50,8 +50,9 @@ exists to catch.
 
 ## Adding a design pack
 
-Add `templates/design/<name>.md`. The file name must be lowercase-kebab and its rules must carry the
-matching uppercase set token: `templates/design/ops.md` holds `DP-OPS-*`. The verifier checks this.
+Add `src/principles/design/<name>.md`. The file name must be lowercase-kebab and its rules must
+carry the matching uppercase set token: `src/principles/design/ops.md` holds `DP-OPS-*`. The
+verifier checks this.
 
 A pack should arrive with rules, not as an empty namespace — an empty set invites rules written to
 fill it.

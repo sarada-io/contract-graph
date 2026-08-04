@@ -1,6 +1,6 @@
 {
   "$comment": [
-    "Which rules from .agents/cg/principles/architecture.md bind which folder.",
+    "Which rules from .agents/cg/principles/ bind which folder.",
     "AUTHORED BY HAND. No check proves a scope is correct — the verifier only proves a rule ID exists.",
     "A wrongly narrow scope means a folder silently stops being told about a rule it must obey.",
     "When unsure, include the rule.",
