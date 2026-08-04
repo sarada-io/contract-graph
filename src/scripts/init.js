@@ -11,7 +11,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-export const TEMPLATES = path.join(HERE, "..", "templates");
+export const TEMPLATES = path.join(HERE, "..", "..", "templates");
 
 export function availableDesignPacks() {
   const dir = path.join(TEMPLATES, "design");
@@ -24,6 +24,8 @@ export function availableDesignPacks() {
 }
 
 function copyTree(from, to, written, skipped) {
+  // Record every outcome so the CLI can distinguish newly installed files from files that
+  // already belonged to the target repository.
   for (const entry of fs.readdirSync(from, { withFileTypes: true })) {
     const source = path.join(from, entry.name);
     const target = path.join(to, entry.name);
@@ -53,6 +55,8 @@ export function init(repoRoot, { packs = [] } = {}) {
   fs.mkdirSync(repoRoot, { recursive: true });
   copyTree(core, repoRoot, written, skipped);
 
+  // Validate pack names before copying any optional files. The core scaffold may already have
+  // been installed safely, but a misspelled pack must never become an arbitrary filesystem path.
   const available = availableDesignPacks();
   const unknown = packs.filter((p) => !available.includes(p));
   if (unknown.length) {

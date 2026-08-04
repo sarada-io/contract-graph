@@ -39,6 +39,8 @@ export function sync(repoRoot, { dryRun = false } = {}) {
   const folders = loadInheritance(inheritancePath(repoRoot));
   const changed = [];
 
+  // Generate the same units in both modes; `apply` is the only place that suppresses writes for
+  // a dry run, so `cg sync --check` reports exactly what a real sync would change.
   for (const entry of Object.values(folders)) {
     apply(generate(repoRoot, entry, rules), changed, dryRun);
   }

@@ -3,3 +3,8 @@ npm-debug.log*
 *.tgz
 .DS_Store
 .claude/settings.local.json
+
+# Local working files — never committed
+plan/
+tmp/
+build/

@@ -1,0 +1,19 @@
+#!/usr/bin/env sh
+# Developer convenience wrapper — NOT the published CLI.
+#
+# The shipped command is `bin/cg.js` (installed as `cg` from npm). This script is a local
+# shortcut for the dev helper only, so `./cg try claude` works without typing node paths.
+#
+# On Windows, or anywhere without a POSIX shell, use the npm script instead:
+#   npm run try -- claude
+set -e
+
+case "$1" in
+  try) shift; exec node "$(dirname "$0")/src/scripts/dev.js" "$@" ;;
+  "" | -h | --help) exec node "$(dirname "$0")/src/scripts/dev.js" --help ;;
+  *)
+    echo "./cg is the dev helper; it only knows \`try\`." >&2
+    echo "For the real CLI use: node bin/cg.js $*" >&2
+    exit 2
+    ;;
+esac

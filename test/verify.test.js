@@ -13,10 +13,10 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 
-import { init } from "../src/init.js";
-import { sync } from "../src/sync.js";
-import { verify } from "../src/verify.js";
-import { parsePrinciples, splitLines, ContractError } from "../src/model.js";
+import { init } from "../src/scripts/init.js";
+import { sync } from "../src/scripts/sync.js";
+import { verify } from "../src/scripts/verify.js";
+import { parsePrinciples, splitLines, ContractError } from "../src/scripts/model.js";
 
 /** A green repository: core template plus the named design packs, synced. */
 function makeRepo(packs = ["saas", "ops"]) {
