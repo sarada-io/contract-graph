@@ -788,6 +788,41 @@ test("sync refuses a root pointer with content but no H1 to anchor the block", (
   assert.match(read(dir, "CLAUDE.md"), /just some prose/, "the file must be left alone");
 });
 
+// -------------------------------------------------- narrowing a selection
+
+/**
+ * Deselecting a profile must not leave its artifacts behind unnoticed.
+ *
+ * Both checks used to sit *inside* a guard on the profile still being selected — so the
+ * moment you narrowed the selection, the check that would have caught the leftovers was the
+ * thing that got switched off. The repository kept a full discovery surface it no longer
+ * claimed to support, and `cg verify` said OK.
+ */
+test("[9] wrappers left by a deselected profile fail", () => {
+  const dir = makeRepo();
+  init(dir, { profiles: ["codex"] });
+  sync(dir);
+  assert.ok(fs.existsSync(path.join(dir, ".claude", "skills")), "the leftovers are still there");
+  assertFails(dir, 9, "wrappers no selected profile declares");
+});
+
+test("[8] a root pointer left by a deselected profile fails", () => {
+  const dir = makeRepo();
+  init(dir, { profiles: ["claude"] });
+  sync(dir);
+  assert.ok(fs.existsSync(path.join(dir, "AGENTS.md")), "the leftover is still there");
+  assertFails(dir, 8, "a generated entry point no profile writes");
+});
+
+test("a hand-written root file with no generated block is not an orphan", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-own-file-"));
+  fs.writeFileSync(path.join(dir, "AGENTS.md"), "# mine\n\nnotes.\n");
+  init(dir, { profiles: ["claude"] });
+  sync(dir);
+  assert.deepEqual(verify(dir).failures, [], "the repository's own file is none of our business");
+  assert.match(read(dir, "AGENTS.md"), /notes\./);
+});
+
 // ----------------------------------------------------------------- cli
 
 /**

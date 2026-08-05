@@ -259,20 +259,44 @@ async function main(argv) {
       ? flags.profile.split(",").map((s) => s.trim()).filter(Boolean)
       : undefined;
     const docs = await chooseDocsRoot(repoRoot, flags);
+
+    // One command, whatever the repository. Copying without generating leaves a scaffold
+    // that fails its own verifier — no root pointers, no wrappers, a stale inherited block —
+    // and every later `init` (a changed profile, a restored file) has the same gap. Sync is
+    // not a second concern; it produces half the scaffold.
     const result = init(repoRoot, { profiles, docs });
-    const { written, skipped } = result;
+    const { changed } = sync(repoRoot);
+    const { failures, advisories, counts } = verify(repoRoot);
+
     process.stdout.write(
-      `cg init: ${written.length} file(s) written` +
-        (skipped.length ? `, ${skipped.length} left untouched (already present)` : "") +
-        `, profiles: ${result.profiles.join(", ")}` +
-        `, docs: ${result.docs}/\n`,
+      `cg init: ${result.written.length} file(s) written` +
+        (result.skipped.length ? `, ${result.skipped.length} already present` : "") +
+        `, ${changed.length} generated` +
+        `\n  profiles: ${result.profiles.join(", ")} · docs: ${result.docs}/\n`,
     );
-    process.stdout.write("  next: fill in Project Identity in .agents/cg/contract.md, then `cg sync`\n");
+
+    for (const message of advisories) process.stdout.write(`  ${message}\n`);
+    if (failures.length) {
+      process.stderr.write(`cg init: FAIL — ${failures.length} problem(s) after scaffolding\n`);
+      for (const message of failures) process.stderr.write(`  ${message}\n`);
+      return 1;
+    }
+
+    process.stdout.write(
+      `  verified: ${counts.folders} contract(s), ${counts.roots} root entry file(s), ` +
+        `${counts.skills} skill(s), ${counts.design} fork-loaded principle(s)\n`,
+    );
     if (result.brownfield) {
+      const unmapped = counts.modules?.unmapped ?? 0;
       process.stdout.write(
-        "  this repository already has code, so no starter module was written.\n" +
-          "  run the `cg-warmup` skill once to map your real modules — until then `cg verify`\n" +
-          "  proves the scaffold is well-formed, not that your repository is governed.\n",
+        `\n  next: run the \`cg-warmup\` skill once` +
+          (unmapped ? ` — ${unmapped} module root(s) are not governed yet` : "") +
+          "\n        until then `cg verify: OK` means the scaffold is well-formed,\n" +
+          "        not that this repository is governed.\n",
+      );
+    } else {
+      process.stdout.write(
+        "\n  next: fill in Project Identity in .agents/cg/contract.md, then start with `cg-plan`.\n",
       );
     }
     return 0;

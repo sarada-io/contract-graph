@@ -9,10 +9,11 @@ Spec-driven workflows tell an agent what to build. Contract Graph makes the repo
 it shouldn't have built — including a test that proves each detector still works.
 
 ```bash
-npx contract-graph init . --profile all
-cg sync
-cg verify
+npx contract-graph init .
 ```
+
+One command, whatever the repository. It scaffolds, generates, verifies, and tells you the single
+next thing to do.
 
 Upgrading a repository scaffolded by 0.0.1? Version 0.1.0 moves the governance paths, renames the
 lifecycle skills, and retires `--design`/`--packs` in favour of the phase map. Follow
@@ -184,8 +185,8 @@ design records, guides, and diagrams — and can be entered for documentation al
 
 | Command | Does |
 |---|---|
-| `cg init [dir] --profile x,y --docs dir` | scaffold governance and selected editor discovery; defaults to `all` and `docs` |
-| `cg sync [dir]` | regenerate inherited blocks, principle indexes, and discovery wrappers |
+| `cg init [dir] --profile x,y --docs dir` | **the one command** — scaffold, generate, verify, and name the next action |
+| `cg sync [dir]` | regenerate inherited blocks, principle indexes, and discovery wrappers after you edit a source |
 | `cg sync --check` | report what sync would rewrite; change nothing (use in CI) |
 | `cg verify [dir]` | verify contracts, skills, and every principle family |
 | `cg modules [dir]` | list detected module roots and whether the map governs them; exits 1 while any is unmapped |
@@ -569,17 +570,19 @@ From the root of the repository you are governing:
 
 ```bash
 cg init .        # add --docs <dir> if docs/ exists and you want them elsewhere
-cg sync
-cg verify
-cg modules       # brownfield only: which module roots are still unmapped
 ```
 
-Order matters, and one step surprises people: **the `cg-*` skills do not exist in that repository
-until `cg sync` has run.** `sync` generates the `.claude/skills/` wrappers, so an editor opened
-before it will not offer them. Sync first, then open the repo.
+That is the whole sequence. `init` copies the sources, runs `sync` to generate the derived
+artifacts, runs `verify`, and prints the one next action — because copying without generating
+leaves a scaffold that fails its own verifier, and that is not a state worth handing anybody.
 
-On a repository that already has code, `cg init` says so and skips the starter module rather than
-inventing one; run the `cg-warmup` skill once to map the real modules.
+It exits **1** if the result does not verify, so a broken scaffold cannot be mistaken for a good one.
+
+On a repository that already has code it skips the starter module rather than inventing one, lists
+the module roots nothing governs yet, and points you at the `cg-warmup` skill.
+
+**The `cg-*` skills only exist in the repository after `init` has run** — it generates the
+`.claude/skills/` wrappers — so open the repo in your editor afterwards, not before.
 
 ### 6. Verify
 

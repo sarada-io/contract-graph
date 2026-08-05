@@ -39,6 +39,8 @@ import {
   loadInheritance,
   loadPrinciples,
   loadPhases,
+  ROOT_POINTERS,
+  ROOT_BEGIN_MARKER,
   phaseTokens,
   principlesRoot,
   principleFiles,
@@ -280,10 +282,22 @@ export function checkSkills(
     }
   }
 
-  if (skillWrappers) {
-    const wrapperNames = listDirs(path.join(repoRoot, ".claude", "skills")).filter((name) =>
-      exists(path.join(repoRoot, ".claude", "skills", name, "SKILL.md")),
-    );
+  // Deliberately outside the `skillWrappers` guard. Putting it inside meant deselecting the
+  // Claude profile also disabled the check that would have noticed its wrappers were still
+  // there — the guard sat inside the thing it was meant to guard against, and a narrowed
+  // selection left a full discovery surface the repository no longer claimed to support.
+  const wrapperNames = listDirs(path.join(repoRoot, ".claude", "skills")).filter((name) =>
+    exists(path.join(repoRoot, ".claude", "skills", name, "SKILL.md")),
+  );
+  if (!skillWrappers) {
+    if (wrapperNames.length) {
+      fail(
+        "[9] Contract Graph: .claude/skills/ holds wrapper(s) " +
+          `(${wrapperNames.sort().join(", ")}) but no selected profile declares them — ` +
+          "delete them, or re-select a profile that does",
+      );
+    }
+  } else {
     const extra = wrapperNames.filter((n) => !skillNames.includes(n));
     if (extra.length) {
       fail(
@@ -637,6 +651,20 @@ export function verify(repoRoot) {
     if (generated.current !== generated.desired) {
       fail(`[3] ${entry.contract}: inherited block is stale or was hand-edited. Run \`cg sync\`.`);
     }
+  }
+
+  // Same shape as the orphan wrapper check: narrowing the profile selection used to leave a
+  // fully generated entry point behind, silently. A file carrying the generated index whose
+  // profile is no longer selected is stale; one without it is the repository's own file and
+  // is none of our business.
+  for (const relPath of Object.keys(ROOT_POINTERS)) {
+    if (relPath in profile.rootPointers) continue;
+    const file = path.join(repoRoot, relPath);
+    if (!exists(file) || !read(file).includes(ROOT_BEGIN_MARKER)) continue;
+    fail(
+      `[8] ${relPath}: carries a generated principle index but no selected profile writes it — ` +
+        "delete it, or re-select the profile that owns it",
+    );
   }
 
   const projectName = path.basename(repoRoot);
