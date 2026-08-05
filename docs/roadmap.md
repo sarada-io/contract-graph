@@ -11,9 +11,12 @@ framework about not overstating enforcement should not overstate itself.
   one row, and no row may cite a rule ID that no principles file defines.
 - Folder-scoped contracts with generated rule inheritance and drift rejection.
 - Contract self-sufficiency, machine-checked: no permanent contract may cite a transient plan.
-- Six lifecycle skills with a standardized next-action route.
+- Five lifecycle skills with a standardized next-action route, named so alphabetical order is
+  workflow order.
 - Decision harvest: triage into five destinations, batch acceptance at phase close, drain.
-- `cg init` / `sync` / `verify` / `packs`, with a fail-on-demand test suite.
+- `cg init` / `sync` / `verify` / `packs` / `profiles`, with a fail-on-demand test suite.
+- Selectable editor discovery profiles for Claude Code, Codex, GitHub Copilot, Antigravity, and
+  their `all` union, persisted and verified independently of universal governance.
 
 ## Designed, not built
 
@@ -61,7 +64,7 @@ off the safety argument.
 
 | Question | Why it is open |
 |---|---|
-| Precedence between two design sets that reach opposite recommendations on a fork touching both domains. | Undefined today. |
+| Precedence between two domain sets that reach opposite recommendations on a fork touching both domains. | Undefined today. |
 | Whether an imported rule needs a marker distinguishing it from one earned here. | An import arrives with the rule but not the case or the cost. |
 | Whether authority is a repository, per-phase, or per-invocation setting. | Per-invocation is most flexible and least auditable. |
 
@@ -77,8 +80,8 @@ never enforced before. Principles reduce the reasoning a model must do; they do 
 | Skill | Work | Model |
 |---|---|---|
 | `cg-plan`, `cg-prepare` | decomposition, novel decisions, detector design | the capable one |
-| `cg-execute` | apply a cold-start brief with named paths, contracts, and a runnable gate | the cheap one |
-| `cg-complete` | verification and triage | in between |
+| `cg-produce` | apply a cold-start brief with named paths, contracts, and a runnable gate | the cheap one |
+| `cg-sign-off` | verification and triage | in between |
 
 `cg-prepare` already emits briefs meant to be executable without chat history, which is exactly the
 artifact the split needs.

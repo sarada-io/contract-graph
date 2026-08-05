@@ -1,0 +1,4 @@
+interface:
+  display_name: "Contract Graph Produce"
+  short_description: "Run ready Steps serially until blocked or done"
+  default_prompt: "Use $cg-produce to run the earliest Ready Step with implementation, tests, contracts, detectors, and gates, recalculate the queue after each verified handoff, and continue serially until all Steps complete or no Ready work remains; then name the user's exact next action and skill."

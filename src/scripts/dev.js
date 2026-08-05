@@ -27,18 +27,18 @@ const TMP = path.join(REPO, "tmp");
 /**
  * Editors this helper knows how to talk about, and the artifact each one actually reads.
  *
- * This table is documentation, not enforcement — until profiles land (plan §B) every target
- * receives the same full scaffold. `open` is what you check by hand once it is open.
+ * Each target selects its real scaffolding profile. `open` is what you check by hand once the
+ * generated repository is open in that editor.
  */
 const TARGETS = {
   claude: {
     label: "Claude Code",
     reads: [".claude/skills/cg-*/SKILL.md", "CLAUDE.md", ".agents/"],
-    open: "claude, then run /cg-plan — the six cg-* skills should be offered",
+    open: "claude, then run /cg-plan — the five cg-* skills should be offered",
   },
   antigravity: {
     label: "Antigravity IDE",
-    reads: [".agents/rules/cg.md", "AGENTS.md"],
+    reads: [".agents/rules/cg.md"],
     open: "Antigravity — the workspace rule from .agents/rules/ should be listed",
   },
   codex: {
@@ -56,8 +56,8 @@ const TARGETS = {
 const USAGE = `cg dev helper — scaffold a throwaway repo you can open in a real editor
 
 Usage:
-  npm run try -- <target> [--design a,b]   scaffold tmp/<target> and verify it
-  ./cg try <target> [--design a,b]         same, POSIX shells
+  npm run try -- <target> [--packs a,b]   scaffold tmp/<target> and verify it
+  ./cg try <target> [--packs a,b]         same, POSIX shells
 
 Targets:
 ${Object.entries(TARGETS)
@@ -68,7 +68,7 @@ ${Object.entries(TARGETS)
 
 Notes:
   tmp/ is gitignored and safe to delete at any time.
-  Profiles do not filter yet (plan §B); every target currently gets the full scaffold.
+  Each target receives only its selected editor-discovery artifacts.
 `;
 
 /**
@@ -125,18 +125,18 @@ function main(argv) {
     return 2;
   }
 
-  const designIndex = args.findIndex((a) => a === "--design");
+  const packsIndex = args.findIndex((a) => a === "--packs");
   const packs =
-    designIndex >= 0 && args[designIndex + 1]
-      ? args[designIndex + 1].split(",").map((p) => p.trim()).filter(Boolean)
-      : ["saas", "ops"];
+    packsIndex >= 0 && args[packsIndex + 1]
+      ? args[packsIndex + 1].split(",").map((p) => p.trim()).filter(Boolean)
+      : ["saas", "operations"];
 
   const target = resolveTarget(name);
   const existed = fs.existsSync(target);
   if (existed) fs.rmSync(target, { recursive: true, force: true });
   fs.mkdirSync(target, { recursive: true });
 
-  init(target, { packs });
+  init(target, { packs, profiles: [name] });
   sync(target);
   const { failures, advisories, counts } = verify(target);
 

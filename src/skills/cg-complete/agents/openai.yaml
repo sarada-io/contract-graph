@@ -1,4 +1,0 @@
-interface:
-  display_name: "Contract Graph Complete"
-  short_description: "Verify and close a continuous Step queue"
-  default_prompt: "Use $cg-complete to verify that every prepared Step completed through a dependency-safe continuous sequential history, drive corrective Steps when needed, hand out-of-phase work or roadmap corrections to planning, close only on a green gate, and name the user's exact next action and skill."

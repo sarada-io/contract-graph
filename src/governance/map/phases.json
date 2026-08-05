@@ -1,0 +1,25 @@
+{
+  "_comment": "Which rule families and domain sets each lifecycle phase loads. Keyed on family and set token, never on filename, so principle files can be reorganised without touching this map. `always` means load if the repository selected it — a repo that installed no domain packs is still valid. `conditional` means load only when the work touches that domain.",
+  "phases": {
+    "plan": {
+      "always": ["AP", "PP"],
+      "conditional": ["DP-SAAS", "DP-UX", "DP-SECURITY"]
+    },
+    "prepare": {
+      "always": ["AP", "PP"],
+      "conditional": ["DP-SAAS", "DP-UX", "DP-OPERATIONS", "DP-SECURITY", "DP-PERFORMANCE"]
+    },
+    "produce": {
+      "always": ["AP", "PP"],
+      "conditional": ["DP-OPERATIONS", "DP-PERFORMANCE", "DP-SECURITY", "DP-UX"]
+    },
+    "sign-off": {
+      "always": ["AP", "PP"],
+      "conditional": ["DP-OPERATIONS", "DP-SECURITY"]
+    },
+    "unblock": {
+      "always": ["AP", "PP"],
+      "conditional": ["DP-SAAS", "DP-UX", "DP-OPERATIONS", "DP-SECURITY", "DP-PERFORMANCE"]
+    }
+  }
+}

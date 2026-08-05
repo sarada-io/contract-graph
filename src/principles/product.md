@@ -1,4 +1,4 @@
-# Product Principles — start here
+# Product Principles
 
 This file has no rules yet, and that is correct. A `PP-` rule is one you owe to *this* product's
 market, pricing, or shape — not one that would hold for any repository. On day one you have none,
@@ -9,7 +9,7 @@ Product principles accrue instead: an unspecified detail gets decided from the p
 logged, the same decision recurs, and at a phase close the decision harvest promotes it here. See
 `.agents/cg/workflow.md`.
 
-Your first file will be `PP-01-billing.md` and look like this:
+Your first principle goes in this file and looks like this:
 
 ```markdown
 ## PP-01. Billing shape

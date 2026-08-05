@@ -51,7 +51,7 @@ These are independent, and the grid has occupants in every cell:
 
 ### Modality is per-rule
 
-The tempting design is "design principles are guides and never own a detector." It is wrong, and
+The tempting design is "domain principles are guides and never own a detector." It is wrong, and
 the trace-id example shows why: it is an observability truth *and* it is testable. People navigate
 by **topic**, not by modality. Filing a rule elsewhere because it happens to be testable puts it
 where nobody searches.
@@ -64,7 +64,7 @@ So each rule carries its own marker:
 | `guide` | no, and one must not be demanded | no | a decision that went the other way |
 | *unmarked* (`AP-`, `PP-`) | yes where a test can express it | **yes, always** | a build failure |
 
-Only design principles carry a marker, because only they face the "is this testable or is it
+Only domain principles carry a marker, because only they face the "is this testable or is it
 taste?" fork inside a single topic. Architecture and product principles are structural claims about
 the repository, so every one of them owes a row — and `cg verify` fails the build when one is
 missing. A rule no test can express still takes a row that says so in words, where a reviewer can

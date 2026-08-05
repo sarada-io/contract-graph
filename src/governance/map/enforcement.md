@@ -1,7 +1,7 @@
 # Enforcement Map
 
-Companion to `.agents/cg/principles/AP-nn-*.md`, `.agents/cg/principles/PP-nn-*.md`, and
-`.agents/cg/principles/design/`. AP-01 requires a detector per
+Companion to `.agents/cg/principles/architecture.md`, `.agents/cg/principles/product.md`, and
+`.agents/cg/principles/domains/`. AP-01 requires a detector per
 enforceable rule; this file records which detector covers which rule ID.
 
 **A rule that claims enforceability without a detector is aspirational.** Track the gap; do not
@@ -69,5 +69,5 @@ in the same commit as the test.
 
 ## Adding a rule
 
-When a rule is added to `principles.md` or a design set, add its row here **in the same commit**
+When a rule is added to `principles.md` or a domain set, add its row here **in the same commit**
 (AP-01-02). The detector lands in that commit too — not the next one.

@@ -10,11 +10,30 @@ Node 18.17+. No dependencies to install — that is deliberate, and a PR adding 
 needs to argue for it. This is a tool whose whole job is trust; every dependency is supply-chain
 surface on a verifier.
 
+## Trying a scaffold locally
+
+```bash
+./cg try claude          # POSIX shells
+npm run try -- claude    # everywhere, including Windows
+```
+
+Scaffolds a throwaway repository in `tmp/<target>`, runs `init` → `sync` → `verify`, and reports
+which artifacts the named editor actually reads. `tmp/` is gitignored and safe to delete.
+
+`cg verify` proves a scaffold is well-formed; `./cg try` is how you check an editor finds it. The
+second is not something the verifier can close on its own.
+
+The helper is `src/scripts/dev.js`, and it is **excluded from the published package** by the
+`"!src/scripts/dev.js"` entry in `files`. It is repository tooling: it writes to `tmp/`, it is
+reached only through `./cg` and `npm run try`, and neither of those ships. A test asserts the
+exclusion holds, because `files` includes `src` and the default for anything added there is to
+reach users.
+
 ## The rule that applies to this repository too
 
 **A rule and its enforcing test land in the same commit.** A PR that adds a check to `verify.js`
 without a fail-on-demand test in `test/` will be asked for the test. A PR that adds a rule to a
-design pack without either a detector (`invariant`) or a cost clause (`guide`) will be asked for
+domain pack without either a detector (`invariant`) or a cost clause (`guide`) will be asked for
 that.
 
 ### Fail-on-demand, specifically
@@ -27,7 +46,7 @@ check that does nothing.
 one thing, `assertFails(dir, code, note)` asserts the right code fires and prints every actual
 failure when it does not.
 
-## Changing a design pack
+## Changing a domain pack
 
 A pack rule is either:
 
@@ -48,10 +67,11 @@ exists to catch.
 **Rule IDs are never renumbered.** Append within a principle; redefine in place; never reuse. Set
 *names* may be renamed, split, or merged — they are routing labels, not identities.
 
-## Adding a design pack
+## Adding a domain pack
 
-Add `src/principles/design/<name>.md`. The file name must be lowercase-kebab and its rules must
-carry the matching uppercase set token: `src/principles/design/ops.md` holds `DP-OPS-*`. The
+Add `src/principles/domains/<name>.md`. The file name must be lowercase-kebab and its rules must
+carry the matching uppercase set token: `src/principles/domains/operations.md` holds
+`DP-OPERATIONS-*`. The
 verifier checks this.
 
 A pack should arrive with rules, not as an empty namespace — an empty set invites rules written to

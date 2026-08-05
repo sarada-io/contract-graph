@@ -1,0 +1,12 @@
+{
+  "name": "claude",
+  "displayName": "Claude Code",
+  "rootPointers": {
+    "CLAUDE.md": ""
+  },
+  "skillWrappers": {
+    "dir": ".claude/skills",
+    "template": "claude-wrapper"
+  },
+  "extends": []
+}

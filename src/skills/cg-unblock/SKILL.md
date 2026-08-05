@@ -1,9 +1,9 @@
 ---
-name: cg-decide
-description: Resolve forks across Contract Graph without serial chat interruptions. Use throughout cg-plan, cg-prepare, cg-execute, and cg-complete whenever requirements leave a choice, a contract may change, or work may need owner approval. Classifies blockers, applies recorded decisions and reversible defaults, writes assumption ledgers, routes genuinely material decisions through the repository decision log, and keeps the earliest dependency-safe ready Step moving while blocked Steps wait.
+name: cg-unblock
+description: Resolve forks across Contract Graph without serial chat interruptions. Use throughout cg-plan, cg-prepare, cg-produce, and cg-sign-off whenever requirements leave a choice, a contract may change, or work may need owner approval. Classifies blockers, applies recorded decisions and reversible defaults, writes assumption ledgers, routes genuinely material decisions through the repository decision log, and keeps the earliest dependency-safe ready Step moving while blocked Steps wait.
 ---
 
-# Contract Graph Decide
+# Contract Graph Unblock
 
 Decide from contracts first. Escalate only when the owner must accept the blast radius.
 
@@ -13,7 +13,7 @@ Finish with all five true:
 
 1. Every implementation fork is resolved, deferred safely, or logged once for owner review.
 2. Reversible choices are recorded in the plan's `Assumptions` ledger.
-3. Material or protected choices are recorded in `docs-plans/decision-log.md`.
+3. Material or protected choices are recorded in `docs/plans/decision-log.md`.
 4. Execution continues on all work that is not genuinely blocked.
 5. The user-facing response names the next action, next skill, input artifact, and readiness
    condition.
@@ -40,17 +40,17 @@ apply D-2, record any required assumption, and continue. D-3 still overrides bot
 Use the first source that answers the fork:
 
 1. Binding principles and folder/module contracts.
-2. Accepted decisions in `docs-plans/decision-log.md`.
+2. Accepted decisions in `docs/plans/decision-log.md`.
 3. Permanent design records and published product requirements.
 4. The repository's walking skeleton or an already-green neighboring implementation.
-5. `DP-OPS-01-01` — the option with the smaller rollback and migration cost.
-6. `DP-OPS-01-02` — the option with fewer seams, writers, credentials, and moving parts.
+5. `DP-OPERATIONS-01-01` — the option with the smaller rollback and migration cost.
+6. `DP-OPERATIONS-01-02` — the option with fewer seams, writers, credentials, and moving parts.
 7. `DP-SAAS-01-01` — configuration instead of structural change, only when the configuration
    surface permits it.
 8. `DP-SAAS-01-02` — the narrower product scope and the simpler solo-maintainer operating model.
 
 Before using items 5–8, explicitly load only the applicable set or sets from
-`.agents/cg/principles/design/{saas,ux,ops}.md`. A design guide answers only after sources 1–4 do not, and the
+`.agents/cg/principles/domains/{saas,ux,ops}.md`. A design guide answers only after sources 1–4 do not, and the
 recorded assumption or decision must cite the guide ID and acknowledge its stated cost. Other
 applicable DP rules may answer the fork before these four general defaults; set order does not
 override a binding source.
@@ -128,7 +128,7 @@ Classify each candidate once. Do not promote a one-off merely because it was dif
 | Module or folder `CONTRACT.md` | The rule binds one owned implementation boundary, behavior, interface, or operating assumption. | State it in full and deliver its detector in the same execution change. |
 | Architecture Principle (`AP-`) | The structural invariant must hold for any product built in the repository. | Add the binding rule, enforcement-map row, detector, inheritance scope, and regenerated contracts together. |
 | Product Principle (`PP-`) | The binding rule exists because of this product's market, pricing, or shape. | Add the binding rule, enforcement-map row, detector, inheritance scope, and regenerated contracts together. |
-| Design Principle (`DP-`) | The recurring decision aid belongs to one explicit design set but should not become ambient contract inheritance. | Declare modality: an `invariant` gets a detector and enforcement-map row in the same change; a `guide` states its cost and gets no map row. |
+| Design Principle (`DP-`) | The recurring decision aid belongs to one explicit domain set but should not become ambient contract inheritance. | Declare modality: an `invariant` gets a detector and enforcement-map row in the same change; a `guide` states its cost and gets no map row. |
 | Drop | The result is case-specific, superseded, duplicated, or cannot stand without its originating case. | Leave no permanent rule; retain only history still required by the active plan. |
 
 Promotion is delivery work, not a decision-log edit alone. Route it through the Contract Graph phase whose
@@ -150,20 +150,20 @@ Choose exactly one immediate route:
 
 - decision resolved or a reversible assumption recorded: recalculate queue state and return to the
   invoking Contract Graph skill with the updated decision or assumption artifact;
-- owner answers required and no Step is ready: ask for the consolidated answers, keep `cg-decide`
+- owner answers required and no Step is ready: ask for the consolidated answers, keep `cg-unblock`
   as the next skill, and name every blocking decision-log entry;
-- independent work remains: return to `cg-execute` with the earliest `Ready` Step.
+- independent work remains: return to `cg-produce` with the earliest `Ready` Step.
 
 End the user-facing response with:
 
 ```markdown
 ## Next action — <Decision applied | Owner decision required | Independent work ready>
 - **User action:** <one concrete action>
-- **Next input:** <$cg-plan | $cg-prepare | $cg-execute | $cg-complete | $cg-decide> — <updated assumption, decision set, plan, preparation, earliest Ready Step, or corrective brief>
+- **Next input:** <$cg-plan | $cg-prepare | $cg-produce | $cg-sign-off | $cg-unblock> — <updated assumption, decision set, plan, preparation, earliest Ready Step, or corrective brief>
 - **Blocked by:** <exact decision, prerequisite, or failing gate>   <!-- omit unless the status is non-advancing -->
 ```
 
-Do not end with a decision survey alone. Name the caller to resume, or name `cg-decide` when the
+Do not end with a decision survey alone. Name the caller to resume, or name `cg-unblock` when the
 user's answer must first be recorded and applied.
 
 ## Completion check

@@ -1,12 +1,12 @@
 ---
 name: cg-plan
-description: Create or revise a phase-wise Contract Graph roadmap from binding contracts, measured repository truth, and cg-complete successor handovers. Use when a broad product, architecture, migration, restructuring, or completion finding must be divided into ordered phases before one phase is prepared as sequential executable Steps. Defines phase outcomes, dependencies, acceptance gates, risks, assumptions, and status without allocating files, Steps, branches, or execution contexts; hands one selected phase to cg-prepare.
+description: Create or revise a phase-wise Contract Graph roadmap from binding contracts, measured repository truth, and cg-sign-off successor handovers. Use when a broad product, architecture, migration, restructuring, or completion finding must be divided into ordered phases before one phase is prepared as sequential executable Steps. Defines phase outcomes, dependencies, acceptance gates, risks, assumptions, and status without allocating files, Steps, branches, or execution contexts; hands one selected phase to cg-prepare.
 ---
 
 # Contract Graph Plan
 
 Turn a broad outcome into an ordered phase roadmap. Do not prepare implementation Steps here.
-Read `.agents/skills/cg-decide/SKILL.md` alongside this skill.
+Read `.agents/skills/cg-unblock/SKILL.md` alongside this skill.
 
 ## Required outcome
 
@@ -31,8 +31,8 @@ Before writing or revising the roadmap:
 3. Load only contracts needed to understand the target and confirmed dependencies.
 4. Inspect the actual source, tests, resources, build graph, and current worktree.
 5. Run the repository's contract gate and the narrowest useful baseline.
-6. Read accepted decisions and use `cg-decide` for unresolved forks.
-7. If invoked from `cg-complete`, validate the completion handover's evidence, affected scope,
+6. Read accepted decisions and use `cg-unblock` for unresolved forks.
+7. If invoked from `cg-sign-off`, validate the completion handover's evidence, affected scope,
    contract and decision impact, proposed acceptance gate, dependencies, blocking status, and
    reason it cannot be repaired safely within its source phase.
 
@@ -99,7 +99,7 @@ Detailed Step tests and per-Step `Done when` commands belong to `cg-prepare`.
 
 ## 6. Record decisions and assumptions
 
-Use `cg-decide` to:
+Use `cg-unblock` to:
 
 - apply existing contracts and accepted decisions;
 - record reversible assumptions with a bounded reversal;
@@ -132,7 +132,7 @@ Status: <Proposed | Active | Complete>
 <phase graph, blockers, cost, operations>
 
 ## Completion handovers
-<unconsumed or consumed successor inputs from cg-complete>
+<unconsumed or consumed successor inputs from cg-sign-off>
 
 ## Programme completion gate
 <command or objective evidence>
@@ -150,7 +150,7 @@ Select exactly one phase whose prerequisites are satisfied. Give `cg-prepare`:
 `cg-prepare` may refine implementation Steps but must not change the phase outcome. A changed
 outcome returns to `cg-plan`.
 
-For a `cg-complete` successor handover, first place the finding into a new or existing roadmap
+For a `cg-sign-off` successor handover, first place the finding into a new or existing roadmap
 phase with an explicit dependency on its source phase. Do not pass an unplanned defect directly to
 execution or treat a handover as evidence that the source phase passed. Mark it Consumed with the
 receiving phase only after that phase exists.
@@ -160,7 +160,7 @@ receiving phase only after that phase exists.
 Choose exactly one immediate route from the measured roadmap:
 
 - selected phase ready: use `cg-prepare` with that phase;
-- protected decision blocks selection: use `cg-decide` with the exact decision-log entry;
+- protected decision blocks selection: use `cg-unblock` with the exact decision-log entry;
 - programme outcome already complete: name no next skill.
 
 End the user-facing response with:
@@ -168,7 +168,7 @@ End the user-facing response with:
 ```markdown
 ## Next action — <Ready | Blocked | Programme complete>
 - **User action:** <one concrete action>
-- **Next input:** <$cg-prepare | $cg-decide | None — programme complete> — <exact roadmap, selected phase, handover, or decision entry>
+- **Next input:** <$cg-prepare | $cg-unblock | None — programme complete> — <exact roadmap, selected phase, handover, or decision entry>
 - **Blocked by:** <exact decision, prerequisite, or failing gate>   <!-- omit unless the status is non-advancing -->
 ```
 
