@@ -43,14 +43,14 @@ Use the first source that answers the fork:
 2. Accepted decisions in `docs/plans/decision-log.md`.
 3. Permanent design records and published product requirements.
 4. The repository's walking skeleton or an already-green neighboring implementation.
-5. `DP-OPERATIONS-01-01` — the option with the smaller rollback and migration cost.
-6. `DP-OPERATIONS-01-02` — the option with fewer seams, writers, credentials, and moving parts.
-7. `DP-SAAS-01-01` — configuration instead of structural change, only when the configuration
+5. `OP-01-01` — the option with the smaller rollback and migration cost.
+6. `OP-01-02` — the option with fewer seams, writers, credentials, and moving parts.
+7. `DP-01-01` — configuration instead of structural change, only when the configuration
    surface permits it.
-8. `DP-SAAS-01-02` — the narrower product scope and the simpler solo-maintainer operating model.
+8. `DP-01-02` — the narrower product scope and the simpler solo-maintainer operating model.
 
 Before using items 5–8, explicitly load only the applicable set or sets from
-`.agents/cg/principles/domains/{saas,ux,ops}.md`. A design guide answers only after sources 1–4 do not, and the
+`.agents/cg/principles/{saas,ux,ops}.md`. A design guide answers only after sources 1–4 do not, and the
 recorded assumption or decision must cite the guide ID and acknowledge its stated cost. Other
 applicable DP rules may answer the fork before these four general defaults; set order does not
 override a binding source.
@@ -128,8 +128,8 @@ Classify each candidate once. Do not promote a one-off merely because it was dif
 | Module or folder `CONTRACT.md` | The rule binds one owned implementation boundary, behavior, interface, or operating assumption. | State it in full and deliver its detector in the same execution change. |
 | Architecture Principle (`AP-`) | The structural invariant must hold for any product built in the repository. | Add the binding rule, enforcement-map row, detector, inheritance scope, and regenerated contracts together. |
 | Product Principle (`PP-`) | The binding rule exists because of this product's market, pricing, or shape. | Add the binding rule, enforcement-map row, detector, inheritance scope, and regenerated contracts together. |
-| Design Principle (`DP-`) | The recurring decision aid belongs to one explicit domain set but should not become ambient contract inheritance. | Declare modality: an `invariant` gets a detector and enforcement-map row in the same change; a `guide` states its cost and gets no map row. |
-| Drop | The result is case-specific, superseded, duplicated, or cannot stand without its originating case. | Leave no permanent rule; retain only history still required by the active plan. |
+| A fork-loaded family — design (`DP-`), operations (`OP-`), user experience (`UP-`), security (`SP-`) | The recurring decision aid belongs to one domain and is consulted at a fork, but must not become ambient contract inheritance. | Declare modality: an `invariant` gets a detector and enforcement-map row in the same change; a `guide` states its cost and gets no map row. |
+| Drop | The result is case-specific, superseded, duplicated, or cannot stand without its originating case. | Leave no permanent rule, and record why beside the decision ID in the phase-close classification manifest. A resolved decision is binding authority until it is promoted or dropped, so one that vanishes from the log with no reason takes a rule the repository was following with it. The manifest is archived with the phase; the log still drains. |
 
 Promotion is delivery work, not a decision-log edit alone. Route it through the Contract Graph phase whose
 acceptance gate can prove the destination's obligations.

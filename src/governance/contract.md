@@ -25,9 +25,15 @@ binding rules are duplicated into every module contract rather than left behind 
 
 | Family | ID form | What belongs there | Where it lives |
 |---|---|---|---|
-| **Architecture Principles** | `AP-<principle>-<rule>` | structural invariants, always loaded | `principles/architecture.md` |
-| **Domain Principles** | `DP-<SET>-<principle>-<rule>` | topic-scoped design truths, loaded at a fork | `principles/domains/<set>.md` |
-| **Product Principles** | `PP-<principle>-<rule>` | rules owed to *this* product's market and shape | `principles/product.md` |
+| **Architecture** | `AP-<principle>-<rule>` | structural invariants — always loaded, inherited into every contract | `principles/architecture.md` |
+| **Product** | `PP-<principle>-<rule>` | rules owed to *this* product's market and shape — inherited, starts empty | `principles/product.md` |
+| **Design** | `DP-<principle>-<rule>` | product shape, configuration, tenancy, caching — loaded at a fork | `principles/design.md` |
+| **Operations** | `OP-<principle>-<rule>` | delivery, migration, rollback, recovery — loaded at a fork | `principles/operations.md` |
+| **User Experience** | `UP-<principle>-<rule>` | interaction, disclosure, perceived responsiveness — loaded at a fork | `principles/ux.md` |
+| **Security** | `SP-<principle>-<rule>` | trust boundaries, authorization, exposure — loaded at a fork | `principles/security.md` |
+
+The four fork-loaded families are never inherited into a contract: an unavoidable guide is just a
+rule. `.agents/cg/map/phases.json` records which families each lifecycle phase reads.
 
 `product.md` ships with no rules deliberately: a fresh repository inherits nobody
 else's product opinions. Product principles accrue through the decision harvest at phase close.
@@ -65,12 +71,12 @@ These apply to every agent harness:
 ## Required Reading Order
 
 1. This file (`.agents/cg/contract.md`).
-2. `.agents/cg/principles/` — prefixed architecture and product rules that cannot be violated.
+2. `.agents/cg/principles/architecture.md` and `product.md` — the inherited rules that cannot be violated.
 3. `.agents/cg/workflow.md` — mandatory agent workflow.
 4. `.agents/cg/map/routing.md` — task-to-module contract mapping.
 5. `<module>/.agents/cg/contract.md` — lazy-loaded per impacted module.
 
-Read on demand, not by default: `.agents/cg/principles/domains/<set>.md` (domain principles, loaded when a fork
+Read on demand, not by default: `.agents/cg/principles/{design,operations,ux,security}.md` (loaded when a fork
 touches the topic) and `.agents/cg/map/enforcement.md` (rule → detector).
 
 ## Mandatory Agent Workflow (Summary)
@@ -108,7 +114,8 @@ Do not load all contracts by default.
 - Root CONTRACT: `.agents/cg/contract.md`
 - Architecture principles: `.agents/cg/principles/architecture.md`
 - Product principles: `.agents/cg/principles/product.md`
-- Domain principle sets: `.agents/cg/principles/domains/<set>.md`
+- Fork-loaded families: `.agents/cg/principles/{design,operations,ux,security}.md`
+- Phase map: `.agents/cg/map/phases.json`
 - Workflow: `.agents/cg/workflow.md`
 - Map: `.agents/cg/map/routing.md`
 - Enforcement map: `.agents/cg/map/enforcement.md`
@@ -186,6 +193,7 @@ YAML frontmatter. Before starting a task, scan this catalog and follow every mat
 | [`cg-produce`](../skills/cg-produce/SKILL.md) | Run ready Steps serially, co-delivering implementation, tests, contracts, and detectors until the queue drains or only blocked work remains. |
 | [`cg-sign-off`](../skills/cg-sign-off/SKILL.md) | Verify the Step history, drive current-phase defects through corrective Steps, harvest decisions and knowledge, close only on a green phase gate — and own the durable design records, product/operator guidance, and diagrams the phase leaves behind. Also entered standalone for documentation alone. |
 | [`cg-unblock`](../skills/cg-unblock/SKILL.md) | **Throughout non-trivial Contract Graph work.** Resolve reversible forks, log assumptions, and route protected decisions without stopping unrelated work. |
+| [`cg-warmup`](../skills/cg-warmup/SKILL.md) | **Once, at adoption, on a repository that already has code.** Discover the real module roots, write a contract per module from the code that is there, fill the inheritance and routing maps, and resolve every principle finding to a detector, a proposed exception, or a corrective Step. Logs what needs your answer as `DL-02` entries rather than asking in chat. |
 
 Every public framework skill must use the `cg-` prefix, carry valid `name` and `description`
 frontmatter, appear in this catalog, and end with the mandatory next-action response from

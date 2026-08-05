@@ -14,7 +14,7 @@ framework about not overstating enforcement should not overstate itself.
 - Five lifecycle skills with a standardized next-action route, named so alphabetical order is
   workflow order.
 - Decision harvest: triage into five destinations, batch acceptance at phase close, drain.
-- `cg init` / `sync` / `verify` / `packs` / `profiles`, with a fail-on-demand test suite.
+- `cg init` / `sync` / `verify` / `modules` / `harvest` / `profiles`, with a fail-on-demand test suite.
 - Selectable editor discovery profiles for Claude Code, Codex, GitHub Copilot, Antigravity, and
   their `all` union, persisted and verified independently of universal governance.
 
@@ -64,7 +64,7 @@ off the safety argument.
 
 | Question | Why it is open |
 |---|---|
-| Precedence between two domain sets that reach opposite recommendations on a fork touching both domains. | Undefined today. |
+| Precedence between two fork-loaded families that reach opposite recommendations on a fork touching both. | Undefined today. |
 | Whether an imported rule needs a marker distinguishing it from one earned here. | An import arrives with the rule but not the case or the cost. |
 | Whether authority is a repository, per-phase, or per-invocation setting. | Per-invocation is most flexible and least auditable. |
 

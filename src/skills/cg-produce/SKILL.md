@@ -32,7 +32,10 @@ Do not start if the brief lacks priority, dependencies, blockers, queue state, e
 state, editable paths, required contract changes, work, handoff, or `Done when`.
 
 1. Read the constitution, principles, workflow, mapped contracts, selected phase, preparation
-   record, decisions, and every `cg-*` skill named by the brief.
+   record, and every `cg-*` skill named by the brief. Read `docs/plans/decision-log.md` alongside
+   them: its *Resolved* entries are authority for any fork this Step meets — ranked above the
+   walking skeleton and neighbouring green code by `cg-unblock` D-2 — while *Pending your review*
+   entries are not authority at all, and a Step blocked on one stays blocked.
 2. Recalculate queue states and confirm this is the lowest-numbered `Ready` Step.
 3. Confirm the branch or worktree and baseline match the preparation.
 4. Verify every declared prerequisite handoff and the latest accumulated phase state.

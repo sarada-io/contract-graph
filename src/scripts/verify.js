@@ -12,8 +12,8 @@
  *   8. Every root entry file carries a current principle index.
  *   9. Every canonical skill uses the cg- namespace, valid frontmatter, UI metadata,
  *      a catalog entry, and an exact generated Claude discovery wrapper.
- *  11. The phase map names only real families and installed domain sets, and every
- *      installed set is reachable from at least one phase.
+ *  11. The phase map names only real rule families, and every family that ships is
+ *      reachable from at least one phase.
  *  10. Design-principle sets have correct grammar, explicit modality and costs,
  *      modality-correct detector rows, unique IDs, and no inheritance entries; and every
  *      architecture and product principle carries exactly one enforcement-map row.
@@ -40,12 +40,15 @@ import {
   loadPrinciples,
   loadPhases,
   phaseTokens,
-  domainsRoot,
+  principlesRoot,
+  principleFiles,
+  FORK_FAMILIES,
   RULE_FAMILIES as FAMILIES,
   enforcementPath,
   governanceContractPath,
   RULE_FAMILIES,
 } from "./model.js";
+import { moduleCoverage } from "./modules.js";
 import { ProfileError, resolveProfileSelection } from "./profiles.js";
 
 const POINTERS = ["CLAUDE.md", "AGENTS.md"];
@@ -56,9 +59,10 @@ const SKILL_LINE_BUDGET = 500;
 const WRAPPER_LINE_BUDGET = 12;
 
 /**
- * The five lifecycle skills, in the order their names sort. Alphabetical order is the
- * workflow order on purpose — an editor listing them gives the sequence for free, and
- * `cg-unblock` sorts last because it is entered from any of the other four.
+ * The canonical skills, in the order their names sort. Alphabetical order is meaningful on
+ * purpose — an editor listing them gives the sequence for free. The first four are the
+ * lifecycle loop; `cg-unblock` follows because it is entered from any of them rather than
+ * being a stage; `cg-warmup` is last because it is run once, at adoption, and never again.
  */
 export const CORE_CG_SKILLS = [
   "cg-plan",
@@ -66,12 +70,16 @@ export const CORE_CG_SKILLS = [
   "cg-produce",
   "cg-sign-off",
   "cg-unblock",
+  "cg-warmup",
 ];
 
-/** Domain sets ship as `<lowercase>.md` holding `DP-<UPPERCASE>-nn-nn` rules. */
-const DESIGN_RULE = /^- \*\*(DP-([A-Z]+)-\d{2}-\d{2})\*\* `(invariant|guide)` — (\S.*)$/;
-const DESIGN_ID = /DP-[A-Z]+-\d{2}-\d{2}/g;
-const DESIGN_COST = /^ {2}\*\*Cost:\*\* \S.*$/;
+/** Fork-loaded families declare a modality per rule; inherited families never do. */
+const FORK_ALT = FORK_FAMILIES.join("|");
+const FORK_RULE = new RegExp(
+  String.raw`^- \*\*((${FORK_ALT})-\d{2}-\d{2})\*\* \x60(invariant|guide)\x60 — (\S.*)$`,
+);
+const FORK_ID = new RegExp(String.raw`(?:${FORK_ALT})-\d{2}-\d{2}`, "g");
+const FORK_COST = /^ {2}\*\*Cost:\*\* \S.*$/;
 
 /** Architecture and product principles ship under `principles/` as `XX-nn-nn`. */
 const PRINCIPLE_ID = new RegExp(String.raw`(?:${RULE_FAMILIES.join("|")})-\d{2}-\d{2}`, "g");
@@ -312,7 +320,7 @@ function enforcementRowCells(repoRoot) {
  * [10] Every architecture and product principle owes exactly one enforcement-map row, and the
  * map may not cite a principle ID no principles file defines.
  *
- * A domain principle states its own modality, so a `guide` is legitimately absent from the map.
+ * A fork-loaded principle states its own modality, so a `guide` is legitimately absent from the map.
  * `AP-` and `PP-` rules carry no modality marker: the map claims a row for every one of them,
  * and this is the check that makes the claim true rather than decorative.
  */
@@ -354,78 +362,63 @@ export function checkPhases(fail, repoRoot) {
     return;
   }
 
-  const root = domainsRoot(repoRoot);
-  const installed = exists(root)
-    ? fs
-        .readdirSync(root)
-        .filter((name) => name.endsWith(".md"))
-        .map((name) => `DP-${name.replace(/\.md$/, "").toUpperCase().replace(/-/g, "")}`)
-    : [];
-  const known = new Set([...FAMILIES, ...installed]);
+  // Every family ships; the phase map is the only thing that decides where each is loaded.
+  const present = principleFiles(repoRoot).map((info) => info.family);
+  const known = new Set([...FAMILIES, ...FORK_FAMILIES]);
 
   const named = phaseTokens(phases);
   for (const token of named) {
     if (!known.has(token)) {
       fail(
-        `[11] map/phases.json: token \`${token}\` matches no rule family or installed domain set` +
-          `${installed.length ? ` (installed: ${installed.sort().join(", ")})` : " (no domain packs installed)"}`,
+        `[11] map/phases.json: token \`${token}\` matches no rule family; expected one of ` +
+          `${[...known].join(", ")}`,
       );
     }
   }
 
-  for (const token of installed) {
-    if (!named.includes(token)) {
+  for (const family of present) {
+    if (!named.includes(family)) {
       fail(
-        `[11] map/phases.json: domain set \`${token}\` is installed but no phase loads it — ` +
+        `[11] map/phases.json: \`${family}\` principles are installed but no phase loads them — ` +
           "governance no phase reads is governance nobody reads",
       );
     }
   }
 }
 
-export function checkDesignPrinciples(fail, repoRoot, folders = null) {
-  const root = domainsRoot(repoRoot);
+export function checkForkPrinciples(fail, repoRoot, folders = null) {
+  const root = principlesRoot(repoRoot);
   if (!exists(root)) return 0;
 
-  const files = fs
-    .readdirSync(root)
-    .filter((name) => name.endsWith(".md"))
-    .sort();
-
   const rules = new Map();
-  for (const filename of files) {
-    const setName = filename.replace(/\.md$/, "");
-    if (!/^[a-z][a-z0-9-]*$/.test(setName)) {
-      fail(`[10] domain principles: set file \`${filename}\` must be lowercase-kebab`);
-      continue;
-    }
-    const expectedSet = setName.toUpperCase().replace(/-/g, "");
-    const file = path.join(root, filename);
+  for (const info of principleFiles(repoRoot).filter((entry) => !entry.inherited)) {
+    const { file, filename, family } = info;
     const relative = rel(repoRoot, file);
     const lines = splitLines(read(file));
+    const marker = `- **${family}-`;
     let parsedInFile = 0;
 
     lines.forEach((line, index) => {
-      if (!line.startsWith("- **DP-")) return;
+      if (!/^- \*\*[A-Z]{2}-/.test(line)) return;
       const number = index + 1;
-      const match = DESIGN_RULE.exec(line);
+      const match = FORK_RULE.exec(line);
       if (!match) {
         fail(
-          `[10] ${relative}:${number}: malformed domain-principle rule; expected ` +
-            "`DP-SET-nn-nn`, `invariant` or `guide`, and rule text",
+          `[10] ${relative}:${number}: malformed rule; expected ` +
+            `\`${family}-nn-nn\`, \`invariant\` or \`guide\`, and rule text`,
         );
         return;
       }
-      const [, ruleId, actualSet, modality] = match;
+      const [, ruleId, actualFamily, modality] = match;
       parsedInFile += 1;
-      if (actualSet !== expectedSet) {
+      if (actualFamily !== family) {
         fail(
-          `[10] ${relative}:${number}: \`${ruleId}\` belongs in the ` +
-            `${actualSet.toLowerCase()}.md set, not ${filename}`,
+          `[10] ${relative}:${number}: \`${ruleId}\` is a ${actualFamily} rule and does not ` +
+            `belong in ${filename}`,
         );
       }
       if (rules.has(ruleId)) {
-        fail(`[10] domain principles: duplicate rule ID \`${ruleId}\``);
+        fail(`[10] fork principles: duplicate rule ID \`${ruleId}\``);
       } else {
         rules.set(ruleId, modality);
       }
@@ -433,13 +426,13 @@ export function checkDesignPrinciples(fail, repoRoot, folders = null) {
       // A guide owes exactly one non-empty Cost clause before the next rule starts.
       let nextRule = lines.length;
       for (let i = number; i < lines.length; i += 1) {
-        if (lines[i].startsWith("- **DP-")) {
+        if (lines[i].startsWith(marker)) {
           nextRule = i;
           break;
         }
       }
       const costLines = lines.slice(number, nextRule).filter((l) => l.startsWith("  **Cost:**"));
-      const validCosts = costLines.filter((l) => DESIGN_COST.test(l));
+      const validCosts = costLines.filter((l) => FORK_COST.test(l));
       if (modality === "guide" && validCosts.length !== 1) {
         fail(
           `[10] ${relative}:${number}: guide \`${ruleId}\` must have exactly one non-empty \`Cost:\` clause`,
@@ -448,31 +441,31 @@ export function checkDesignPrinciples(fail, repoRoot, folders = null) {
     });
 
     if (parsedInFile === 0) {
-      fail(`[10] ${relative}: domain set file has no valid rules`);
+      fail(`[10] ${relative}: ${family} principle file has no valid rules`);
     }
   }
 
   const cells = enforcementRowCells(repoRoot);
   if (cells === null && rules.size) {
-    fail("[10] domain principles: missing `.agents/cg/map/enforcement.md`");
+    fail("[10] fork principles: missing `.agents/cg/map/enforcement.md`");
   }
-  const enforcementIds = (cells ?? []).flatMap((cell) => cell.match(DESIGN_ID) ?? []);
+  const enforcementIds = (cells ?? []).flatMap((cell) => cell.match(FORK_ID) ?? []);
 
   const count = (id) => enforcementIds.filter((x) => x === id).length;
   for (const [ruleId, modality] of rules) {
     if (modality === "invariant" && count(ruleId) !== 1) {
-      fail(`[10] design invariant \`${ruleId}\` must have exactly one enforcement-map row`);
+      fail(`[10] invariant \`${ruleId}\` must have exactly one enforcement-map row`);
     }
     if (modality === "guide" && count(ruleId)) {
-      fail(`[10] design guide \`${ruleId}\` must not have an enforcement-map row`);
+      fail(`[10] guide \`${ruleId}\` must not have an enforcement-map row`);
     }
   }
   for (const ruleId of [...new Set(enforcementIds)].sort()) {
     if (!rules.has(ruleId)) {
-      fail(`[10] enforcement map references unknown domain-principle ID \`${ruleId}\``);
+      fail(`[10] enforcement map references unknown principle ID \`${ruleId}\``);
     }
     if (count(ruleId) > 1) {
-      fail(`[10] enforcement map contains duplicate domain-principle ID \`${ruleId}\``);
+      fail(`[10] enforcement map contains duplicate principle ID \`${ruleId}\``);
     }
   }
 
@@ -481,14 +474,18 @@ export function checkDesignPrinciples(fail, repoRoot, folders = null) {
     try {
       map = JSON.parse(read(inheritancePath(repoRoot))).folders ?? {};
     } catch (error) {
-      fail(`[10] domain principles: cannot inspect inheritance.json: ${error.message}`);
+      fail(`[10] fork principles: cannot inspect inheritance.json: ${error.message}`);
       map = {};
     }
   }
   for (const [key, entry] of Object.entries(map)) {
     for (const ruleId of entry.rules ?? []) {
-      if (String(ruleId).startsWith("DP-")) {
-        fail(`[10] ${key}: domain principle \`${ruleId}\` must be loaded explicitly, never inherited`);
+      const family = String(ruleId).slice(0, 2);
+      if (FORK_FAMILIES.includes(family)) {
+        fail(
+          `[10] ${key}: \`${ruleId}\` is loaded at a fork and must never be inherited — ` +
+            "an unavoidable guide is just a rule",
+        );
       }
     }
   }
@@ -596,10 +593,22 @@ export function verify(repoRoot) {
   // trees relocates the self-sufficiency check with them.
   const planPath = planPathPattern(profile.docs);
 
+  // Advisory, never a failure: detection reads build manifests and is a heuristic, and a
+  // heuristic that fails the build is one everyone learns to bypass. But an unmapped module
+  // is the difference between "the scaffold is well-formed" and "this repository is
+  // governed", so it must not be silent either.
+  const coverage = moduleCoverage(repoRoot, folders);
+  for (const module of coverage.unmapped) {
+    advisories.push(
+      `[0] ${module.path}/ looks like a module root (${module.manifest}) but no entry in ` +
+        "map/inheritance.json governs it — run the `cg-warmup` skill once, or record why it is excluded",
+    );
+  }
+
   checkAgentRule(fail, repoRoot);
   checkPhases(fail, repoRoot);
   const skillCount = checkSkills(fail, repoRoot, CORE_CG_SKILLS, profile);
-  const designCount = checkDesignPrinciples(fail, repoRoot, folders);
+  const designCount = checkForkPrinciples(fail, repoRoot, folders);
   checkPrincipleEnforcement(fail, repoRoot, rules);
 
   for (const [key, entry] of Object.entries(folders)) {
@@ -652,6 +661,7 @@ export function verify(repoRoot) {
       roots: Object.keys(profile.rootPointers).length,
       skills: skillCount,
       design: designCount,
+      modules: { detected: coverage.detected.length, unmapped: coverage.unmapped.length },
     },
   };
 }

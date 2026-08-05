@@ -24,7 +24,7 @@ This file defines the mandatory machine workflow for code tasks.
 
 After binding principles, contracts, accepted decisions, durable requirements, and existing green
 patterns have been applied, load only the domain-principle set or sets relevant to the remaining
-fork from `.agents/cg/principles/domains/<set>.md`. Cite any guide used and carry its stated cost into
+fork from `.agents/cg/principles/<family>.md`. Cite any guide used and carry its stated cost into
 the assumption or decision. DP rules are explicit decision inputs, never inherited ambient rules.
 During harvest, use `cg-unblock` D-5a: promote only a recurring decision that can be stated without
 its originating case, and route it once to a module contract, `AP`, `PP`, `DP`, or drop.
@@ -165,7 +165,7 @@ deleted), follow `.agents/skills/cg-sign-off/SKILL.md`. In short:
    harvest must not default to every resolved decision. Require that classification IDs exactly
    equal the eligible decision IDs. Other resolved decisions and every pending decision remain in
    the log for their own cohort or answer. Validate the transient manifest before any later gate:
-   `python3 scripts/contracts/verify_decision_harvest.py --manifest <decision-harvest.json>
+   `cg harvest <decision-harvest.json>
    --decision-log docs/plans/decision-log.md`.
 2. For a non-empty cohort, obtain one batch acceptance and route it through `cg-prepare`. The
    first prepared harvest Step carries the accepted classification digest, and its drain IDs

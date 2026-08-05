@@ -47,11 +47,11 @@ These are independent, and the grid has occupants in every cell:
 |---|---|---|
 | **Universal** | *rule and detector land in the same commit* | *prefer fewer seams, writers, and credentials* |
 | **Product** | *tenant is a path prefix behind one construction seam* | *prefer a subtree delete over a relational cascade* |
-| **Topic-scoped** | *every request carries a trace id* | *keep the admin configurator exposable to a tenant* |
+| **Fork-loaded** | *every request carries a trace id* | *keep the admin configurator exposable to a tenant* |
 
 ### Modality is per-rule
 
-The tempting design is "domain principles are guides and never own a detector." It is wrong, and
+The tempting design is "fork-loaded principles are guides and never own a detector." It is wrong, and
 the trace-id example shows why: it is an observability truth *and* it is testable. People navigate
 by **topic**, not by modality. Filing a rule elsewhere because it happens to be testable puts it
 where nobody searches.
@@ -64,8 +64,8 @@ So each rule carries its own marker:
 | `guide` | no, and one must not be demanded | no | a decision that went the other way |
 | *unmarked* (`AP-`, `PP-`) | yes where a test can express it | **yes, always** | a build failure |
 
-Only domain principles carry a marker, because only they face the "is this testable or is it
-taste?" fork inside a single topic. Architecture and product principles are structural claims about
+Only the fork-loaded families — `DP`, `OP`, `UP`, `SP` — carry a marker, because only they face
+the "is this testable or is it taste?" fork inside a single topic. Architecture and product principles are structural claims about
 the repository, so every one of them owes a row — and `cg verify` fails the build when one is
 missing. A rule no test can express still takes a row that says so in words, where a reviewer can
 argue with it. What it must never take is a plausible-sounding detector nobody wrote.
@@ -76,17 +76,20 @@ argue with it. What it must never take is a plausible-sounding detector nobody w
 
 | Tier | Loaded |
 |---|---|
-| `AP` | always |
-| `DP-<SET>` | at a fork, only the sets it touches |
-| `PP` | when the work touches this product's specifics |
+| `AP` | always — inherited into every contract |
+| `PP` | always — inherited, and empty until your product earns a rule |
+| `DP` `OP` `UP` `SP` | at a fork, only the families it touches — never inherited |
+
+Which families a phase reads is `map/phases.json`, not a per-repository install choice: all six
+ship, and the map decides where each is loaded.
 
 **Precedence order** — what wins when two rules pull different ways:
 
 - **An invariant never yields.** A guide cannot argue with a failing build, and no preference may
   be cited to justify one. Two genuinely conflicting invariants are a defect in the rule set that
   needs an amendment, not a judgement call at the seam.
-- **Between guides, the most specific wins.** `PP` beats `DP` beats a general `AP` preference,
-  because the narrower rule was written knowing more.
+- **Between guides, the most specific wins.** `PP` beats a fork-loaded family (`DP`, `OP`, `UP`,
+  `SP`) beats a general `AP` preference, because the narrower rule was written knowing more.
 
 You read the general thing first because it is almost always relevant, and apply the specific thing
 last because it is closer to the case in front of you.

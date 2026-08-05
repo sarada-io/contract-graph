@@ -1,25 +1,25 @@
 {
-  "_comment": "Which rule families and domain sets each lifecycle phase loads. Keyed on family and set token, never on filename, so principle files can be reorganised without touching this map. `always` means load if the repository selected it — a repo that installed no domain packs is still valid. `conditional` means load only when the work touches that domain.",
+  "_comment": "Which rule families each lifecycle phase loads. `always` families are inherited into every contract and are read on every task. `conditional` families are loaded only when the work touches that domain — an unavoidable guide is just a rule, which is why they are never inherited. Every family that ships must be named by at least one phase; `cg verify` fails otherwise.",
   "phases": {
     "plan": {
       "always": ["AP", "PP"],
-      "conditional": ["DP-SAAS", "DP-UX", "DP-SECURITY"]
+      "conditional": ["DP", "UP", "SP"]
     },
     "prepare": {
       "always": ["AP", "PP"],
-      "conditional": ["DP-SAAS", "DP-UX", "DP-OPERATIONS", "DP-SECURITY", "DP-PERFORMANCE"]
+      "conditional": ["DP", "UP", "OP", "SP"]
     },
     "produce": {
       "always": ["AP", "PP"],
-      "conditional": ["DP-OPERATIONS", "DP-PERFORMANCE", "DP-SECURITY", "DP-UX"]
+      "conditional": ["OP", "UP", "SP"]
     },
     "sign-off": {
       "always": ["AP", "PP"],
-      "conditional": ["DP-OPERATIONS", "DP-SECURITY"]
+      "conditional": ["OP", "SP"]
     },
     "unblock": {
       "always": ["AP", "PP"],
-      "conditional": ["DP-SAAS", "DP-UX", "DP-OPERATIONS", "DP-SECURITY", "DP-PERFORMANCE"]
+      "conditional": ["DP", "UP", "OP", "SP"]
     }
   }
 }

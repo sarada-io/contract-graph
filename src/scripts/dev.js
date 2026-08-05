@@ -34,7 +34,7 @@ const TARGETS = {
   claude: {
     label: "Claude Code",
     reads: [".claude/skills/cg-*/SKILL.md", "CLAUDE.md", ".agents/"],
-    open: "claude, then run /cg-plan — the five cg-* skills should be offered",
+    open: "claude, then run /cg-plan — the six cg-* skills should be offered",
   },
   antigravity: {
     label: "Antigravity IDE",
@@ -56,8 +56,8 @@ const TARGETS = {
 const USAGE = `cg dev helper — scaffold a throwaway repo you can open in a real editor
 
 Usage:
-  npm run try -- <target> [--packs a,b]   scaffold tmp/<target> and verify it
-  ./cg try <target> [--packs a,b]         same, POSIX shells
+  npm run try -- <target>                scaffold tmp/<target> and verify it
+  ./cg try <target>                      same, POSIX shells
 
 Targets:
 ${Object.entries(TARGETS)
@@ -125,24 +125,18 @@ function main(argv) {
     return 2;
   }
 
-  const packsIndex = args.findIndex((a) => a === "--packs");
-  const packs =
-    packsIndex >= 0 && args[packsIndex + 1]
-      ? args[packsIndex + 1].split(",").map((p) => p.trim()).filter(Boolean)
-      : ["saas", "operations"];
 
   const target = resolveTarget(name);
   const existed = fs.existsSync(target);
   if (existed) fs.rmSync(target, { recursive: true, force: true });
   fs.mkdirSync(target, { recursive: true });
 
-  init(target, { packs, profiles: [name] });
+  init(target, { profiles: [name] });
   sync(target);
   const { failures, advisories, counts } = verify(target);
 
   const rel = path.relative(process.cwd(), target) || ".";
   process.stdout.write(`${existed ? "replaced" : "created"} ${rel}\n`);
-  process.stdout.write(`  packs: ${packs.join(", ") || "(none)"}\n`);
   process.stdout.write(
     `  scaffolded: ${counts.folders} contract(s), ${counts.roots} root file(s), ` +
       `${counts.skills} skill(s), ${counts.design} design rule(s)\n`,

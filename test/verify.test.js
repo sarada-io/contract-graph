@@ -16,6 +16,8 @@ import path from "node:path";
 import test from "node:test";
 
 import { init, SCAFFOLD_MAPPING, SOURCE_ROOT } from "../src/scripts/init.js";
+import { checkHarvest } from "../src/scripts/harvest.js";
+import { detectModuleRoots, moduleCoverage } from "../src/scripts/modules.js";
 import { sync } from "../src/scripts/sync.js";
 import { verify } from "../src/scripts/verify.js";
 import {
@@ -32,9 +34,9 @@ import {
 } from "../src/scripts/profiles.js";
 
 /** A green repository: core template plus the named domain packs, synced. */
-function makeRepo(packs = ["saas", "operations"]) {
+function makeRepo() {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-test-"));
-  init(dir, { packs });
+  init(dir, {});
   sync(dir);
   return dir;
 }
@@ -57,7 +59,7 @@ const CONTRACT = "src/.agents/cg/contract.md";
 const INHERITANCE = ".agents/cg/map/inheritance.json";
 const PROFILE = ".agents/cg/map/profile.json";
 const MANIFEST = ".agents/cg/map/manifest.json";
-const DOMAIN_OPS = ".agents/cg/principles/domains/operations.md";
+const OPERATIONS = ".agents/cg/principles/operations.md";
 const ENFORCEMENT = ".agents/cg/map/enforcement.md";
 const PRODUCT = ".agents/cg/principles/product.md";
 const ARCHITECTURE = ".agents/cg/principles/architecture.md";
@@ -70,7 +72,7 @@ test("a freshly initialised repository verifies green", () => {
   assert.deepEqual(failures, []);
   assert.equal(counts.folders, 1);
   assert.equal(counts.roots, 3);
-  assert.equal(counts.skills, 5);
+  assert.equal(counts.skills, 6);
   assert.ok(counts.design > 0);
 });
 
@@ -83,25 +85,16 @@ test("init never overwrites an existing file", () => {
   const dir = makeRepo();
   const sentinel = "# mine, not yours\n";
   write(dir, CONTRACT, sentinel);
-  const { written, skipped } = init(dir, { packs: [] });
+  const { written, skipped } = init(dir, {});
   assert.deepEqual(written, []);
   assert.ok(skipped.length > 0);
   assert.equal(read(dir, CONTRACT), sentinel);
 });
 
-test("init rejects an unknown domain pack by name", () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-test-"));
-  assert.throws(() => init(dir, { packs: ["not-a-pack"] }), /unknown domain pack/);
-});
-
 test("init persists the selected profiles and domain packs", () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-profile-record-"));
-  init(dir, { profiles: ["claude"], packs: ["operations"] });
-  assert.deepEqual(JSON.parse(read(dir, PROFILE)), {
-    profiles: ["claude"],
-    packs: ["operations"],
-    docs: "docs",
-  });
+  init(dir, { profiles: ["claude"] });
+  assert.deepEqual(JSON.parse(read(dir, PROFILE)), { profiles: ["claude"], docs: "docs" });
 });
 
 test("a Claude-only selection syncs and verifies without other root pointers", () => {
@@ -171,14 +164,14 @@ const PROFILE_ARTIFACTS = {
     ".github/copilot-instructions.md",
     "AGENTS.md",
     "CLAUDE.md",
-    ...["cg-plan", "cg-prepare", "cg-produce", "cg-sign-off", "cg-unblock"].map(
+    ...["cg-plan", "cg-prepare", "cg-produce", "cg-sign-off", "cg-unblock", "cg-warmup"].map(
       (name) => `.claude/skills/${name}/SKILL.md`,
     ),
   ],
   antigravity: [],
   claude: [
     "CLAUDE.md",
-    ...["cg-plan", "cg-prepare", "cg-produce", "cg-sign-off", "cg-unblock"].map(
+    ...["cg-plan", "cg-prepare", "cg-produce", "cg-sign-off", "cg-unblock", "cg-warmup"].map(
       (name) => `.claude/skills/${name}/SKILL.md`,
     ),
   ],
@@ -216,7 +209,7 @@ for (const [profile, expected] of Object.entries(PROFILE_ARTIFACTS)) {
 test("every profile scaffolds byte-identical universal governance", () => {
   const universal = (profile) => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), `cg-neutral-${profile}-`));
-    init(dir, { profiles: [profile], packs: ["saas", "operations"] });
+    init(dir, { profiles: [profile] });
     sync(dir);
     return filesUnder(dir)
       .filter((file) => !isDiscoveryArtifact(file))
@@ -395,31 +388,31 @@ test("[9] a missing core skill fails", () => {
   assertFails(dir, 9, "core skill removed");
 });
 
-// --------------------------------------------------- domain principles
+// ----------------------------------------------------- fork principles
 
 test("[10] a guide carrying an enforcement-map row fails", () => {
   const dir = makeRepo();
-  const guide = /- \*\*(DP-OPERATIONS-\d{2}-\d{2})\*\* `guide`/.exec(read(dir, DOMAIN_OPS));
-  assert.ok(guide, "fixture must contain an OPS guide");
+  const guide = /- \*\*(OP-\d{2}-\d{2})\*\* `guide`/.exec(read(dir, OPERATIONS));
+  assert.ok(guide, "fixture must contain an OP guide");
   edit(dir, ENFORCEMENT, (t) => `${t}\n| ${guide[1]} | some detector |\n`);
   assertFails(dir, 10, "guide must not be in the enforcement map");
 });
 
 test("[10] an invariant with no enforcement-map row fails", () => {
   const dir = makeRepo();
-  edit(dir, DOMAIN_OPS, (t) => t.replace("`guide`", "`invariant`"));
+  edit(dir, OPERATIONS, (t) => t.replace("** `guide` —", "** `invariant` —"));
   assertFails(dir, 10, "invariant owes exactly one detector row");
 });
 
-test("[10] a rule filed in the wrong set file fails", () => {
+test("[10] a rule filed in the wrong family file fails", () => {
   const dir = makeRepo();
-  edit(dir, DOMAIN_OPS, (t) => t.replace(/\*\*DP-OPERATIONS-/, "**DP-SAAS-"));
-  assertFails(dir, 10, "rule set token disagrees with its file");
+  edit(dir, OPERATIONS, (t) => t.replace(/\*\*OP-/, "**SP-"));
+  assertFails(dir, 10, "a rule whose family disagrees with its file");
 });
 
 test("[10] a guide with no Cost clause fails", () => {
   const dir = makeRepo();
-  edit(dir, DOMAIN_OPS, (t) =>
+  edit(dir, OPERATIONS, (t) =>
     splitLines(t)
       .filter((l) => !l.startsWith("  **Cost:**"))
       .join("\n") + "\n",
@@ -427,21 +420,21 @@ test("[10] a guide with no Cost clause fails", () => {
   assertFails(dir, 10, "guide owes exactly one Cost clause");
 });
 
-test("[10] a malformed design rule line fails", () => {
+test("[10] a malformed fork rule line fails", () => {
   const dir = makeRepo();
-  edit(dir, DOMAIN_OPS, (t) => t.replace(/`(invariant|guide)` — /, ""));
+  edit(dir, OPERATIONS, (t) => t.replace(/`(invariant|guide)` — /, ""));
   assertFails(dir, 10, "rule missing its modality marker");
 });
 
-test("[10] an inherited domain principle fails", () => {
+test("[10] an inherited fork principle fails", () => {
   const dir = makeRepo();
-  edit(dir, INHERITANCE, (t) => t.replace('"AP-01-01"', '"DP-OPERATIONS-01-01"'));
+  edit(dir, INHERITANCE, (t) => t.replace('"AP-01-01"', '"OP-01-01"'));
   assertFails(dir, 10, "DP must be loaded explicitly, never inherited");
 });
 
-test("[10] an enforcement row for an unknown design id fails", () => {
+test("[10] an enforcement row for an unknown fork id fails", () => {
   const dir = makeRepo();
-  edit(dir, ENFORCEMENT, (t) => `${t}\n| DP-OPERATIONS-99-99 | ghost detector |\n`);
+  edit(dir, ENFORCEMENT, (t) => `${t}\n| OP-99-99 | ghost detector |\n`);
   assertFails(dir, 10, "enforcement map references a nonexistent rule");
 });
 
@@ -480,6 +473,355 @@ test("[10] a duplicated architecture detector row fails", () => {
   assertFails(dir, 10, "exactly one row means one, not two");
 });
 
+// ---------------------------------------------------------- decision harvest
+
+/**
+ * The harvest is the one hand-off that can silently lose governance.
+ *
+ * A resolved decision is binding authority under `cg-unblock` D-2 until it is promoted or
+ * dropped, and the log drains at phase close — so the manifest is the only durable record
+ * that a dropped decision ever existed. These checks shipped as an instruction to run a
+ * Python script no scaffold creates; a check nobody can run is exactly what this project
+ * refuses to count as enforcement.
+ */
+const COHORT = {
+  cohort: "phase-3",
+  eligibleDecisionIds: ["DL-01-01", "DL-02-03"],
+  classifications: [
+    {
+      id: "DL-01-01",
+      destination: "AP",
+      rule: "Every request entering the system carries a trace id.",
+      detector: "middleware test asserts a trace id on every inbound request",
+    },
+    { id: "DL-02-03", destination: "drop", reason: "superseded by the tenancy contract" },
+  ],
+};
+
+function harvestFixture(mutate = (m) => m) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-harvest-"));
+  const manifest = structuredClone(COHORT);
+  mutate(manifest);
+  const file = path.join(dir, "harvest.json");
+  fs.writeFileSync(file, `${JSON.stringify(manifest, null, 2)}\n`);
+  fs.writeFileSync(
+    path.join(dir, "log.md"),
+    "# Decision log\n\n## Pending your review\n\n_(none)_\n\n## Resolved\n\n" +
+      "### DL-01-01 — trace ids\nanswered.\n\n### DL-02-03 — tenancy\nanswered.\n",
+  );
+  return { dir, file, log: path.join(dir, "log.md") };
+}
+
+const harvestFailures = (mutate, options) => {
+  const { file, log } = harvestFixture(mutate);
+  return checkHarvest(file, { decisionLog: log, ...options }).failures.join("\n");
+};
+
+test("a well-formed harvest cohort passes and reports a stable digest", () => {
+  const { file, log } = harvestFixture();
+  const first = checkHarvest(file, { decisionLog: log });
+  assert.deepEqual(first.failures, []);
+  assert.deepEqual(first.counts, { eligible: 2, promoted: 1, dropped: 1 });
+  assert.match(first.digest, /^[0-9a-f]{16}$/);
+  // The digest tracks content, not file order — otherwise it cannot prove the accepted set
+  // survived the handoff unchanged.
+  const { file: reordered, log: log2 } = harvestFixture((m) => m.classifications.reverse());
+  assert.equal(checkHarvest(reordered, { decisionLog: log2 }).digest, first.digest);
+});
+
+test("a dropped decision without a reason fails — the manifest is its only record", () => {
+  assert.match(
+    harvestFailures((m) => delete m.classifications[1].reason),
+    /DL-02-03 is dropped without a reason/,
+  );
+});
+
+test("cohort membership must be exact in both directions", () => {
+  assert.match(harvestFailures((m) => m.classifications.pop()), /not classified: DL-02-03/);
+  assert.match(
+    harvestFailures((m) =>
+      m.classifications.push({ id: "DL-09-99", destination: "drop", reason: "x" }),
+    ),
+    /not in the cohort: DL-09-99/,
+  );
+});
+
+test("a promoted rule may not take its authority from a transient source", () => {
+  assert.match(
+    harvestFailures((m) => (m.classifications[0].rule = "Per DL-01-01, carry a trace id.")),
+    /citing the decision it came from/,
+  );
+  assert.match(
+    harvestFailures((m) => (m.classifications[0].rule = "See docs/plans/roadmap.md.")),
+    /citing a transient plan path/,
+  );
+  assert.match(
+    harvestFailures((m) => (m.classifications[0].rule = "As agreed in CS-4.2, carry a trace id.")),
+    /citing a plan ticket id/,
+  );
+});
+
+test("a promotion owes what its destination owes", () => {
+  assert.match(harvestFailures((m) => delete m.classifications[0].detector), /owes a detector/);
+  assert.match(
+    harvestFailures((m) => {
+      m.classifications[0].destination = "DP";
+      delete m.classifications[0].detector;
+    }),
+    /without `modality`/,
+  );
+  assert.match(
+    harvestFailures((m) => {
+      m.classifications[0].destination = "DP";
+      m.classifications[0].modality = "guide";
+      delete m.classifications[0].detector;
+    }),
+    /owes a cost clause/,
+  );
+});
+
+test("a decision that is not Resolved is never eligible", () => {
+  assert.match(
+    harvestFailures((m) => {
+      m.eligibleDecisionIds = ["DL-01-01", "DL-02-99"];
+      m.classifications[1] = { id: "DL-02-99", destination: "drop", reason: "x" };
+    }),
+    /not in the log's Resolved section: DL-02-99/,
+  );
+});
+
+test("closing requires acceptance covering exactly the cohort", () => {
+  assert.match(harvestFailures((m) => m, { stage: "close" }), /must carry an `acceptance` block/);
+  const accept = (m, over) => {
+    m.acceptance = {
+      status: "accepted",
+      acceptedBy: "owner",
+      acceptedAt: "2026-08-05T10:00:00Z",
+      acceptedDecisionIds: over ?? m.eligibleDecisionIds,
+    };
+  };
+  assert.deepEqual(
+    checkHarvest(harvestFixture((m) => accept(m)).file, { stage: "close" }).failures,
+    [],
+  );
+  assert.match(
+    harvestFailures((m) => accept(m, ["DL-01-01"]), { stage: "close" }),
+    /must cover exactly the cohort/,
+  );
+  assert.match(
+    harvestFailures((m) => {
+      accept(m);
+      m.acceptance.status = "pending";
+    }, { stage: "close" }),
+    /expected `accepted`/,
+  );
+});
+
+test("an empty cohort closes without acceptance", () => {
+  const { file } = harvestFixture((m) => {
+    m.eligibleDecisionIds = [];
+    m.classifications = [];
+  });
+  assert.deepEqual(checkHarvest(file, { stage: "close" }).failures, []);
+});
+
+test("the prepared drain route must carry the accepted digest and every drain id", () => {
+  const { dir, file, log } = harvestFixture((m) => {
+    m.acceptance = {
+      status: "accepted",
+      acceptedBy: "owner",
+      acceptedAt: "2026-08-05T10:00:00Z",
+      acceptedDecisionIds: m.eligibleDecisionIds,
+    };
+  });
+  const { digest } = checkHarvest(file, { decisionLog: log });
+  const prep = path.join(dir, "preparation.md");
+
+  fs.writeFileSync(prep, "# Preparation\n\nno route recorded here\n");
+  assert.match(
+    checkHarvest(file, { stage: "close", preparation: prep }).failures.join("\n"),
+    /does not carry classification digest/,
+  );
+
+  fs.writeFileSync(prep, `# Preparation\n\ndigest ${digest}\ndrain: DL-01-01\n`);
+  assert.match(
+    checkHarvest(file, { stage: "close", preparation: prep }).failures.join("\n"),
+    /omits drain id\(s\): DL-02-03/,
+  );
+
+  fs.writeFileSync(prep, `# Preparation\n\ndigest ${digest}\ndrain: DL-01-01, DL-02-03\n`);
+  assert.deepEqual(checkHarvest(file, { stage: "close", preparation: prep }).failures, []);
+});
+
+// ------------------------------------------------------ module discovery
+
+/**
+ * The gap warmup exists to close, made visible.
+ *
+ * A freshly initialised brownfield repository verifies green while governing none of its
+ * real modules — the inheritance map ships with one example entry, so the verifier checks
+ * that entry and nothing else. Detection reads build manifests, so it is a heuristic and
+ * reports as an advisory rather than a failure; a heuristic that fails the build is one
+ * everyone learns to bypass.
+ */
+function brownfieldRepo(layout) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-modules-"));
+  for (const [file, body] of Object.entries(layout)) {
+    fs.mkdirSync(path.join(dir, path.dirname(file)), { recursive: true });
+    fs.writeFileSync(path.join(dir, file), body);
+  }
+  return dir;
+}
+
+test("module detection reads build manifests and skips vendored trees", () => {
+  const dir = brownfieldRepo({
+    "go.mod": "module example.com/app\n",
+    "web/package.json": "{}\n",
+    "services/billing/go.mod": "module example.com/billing\n",
+    "node_modules/junk/package.json": "{}\n",
+    "vendor/dep/go.mod": "module vendored\n",
+    "api/handler.go": "// no manifest of its own\n",
+  });
+  const found = detectModuleRoots(dir).map((m) => m.path);
+  assert.deepEqual(found, [".", "services/billing", "web"]);
+});
+
+test("an unmapped module root is reported as an advisory, not a failure", () => {
+  const dir = brownfieldRepo({
+    "go.mod": "module example.com/app\n",
+    "web/package.json": "{}\n",
+    "api/handler.go": "// code\n",
+  });
+  init(dir, {});
+  sync(dir);
+  const { failures, advisories, counts } = verify(dir);
+
+  assert.deepEqual(failures, [], "an unmapped module must never fail the build on a heuristic");
+  assert.equal(counts.modules.detected, 2);
+  assert.equal(counts.modules.unmapped, 2);
+  assert.match(advisories.join("\n"), /web\/ looks like a module root \(package\.json\)/);
+  assert.match(advisories.join("\n"), /cg-warmup/, "the advisory must name the way out");
+});
+
+test("a brownfield init leaves no starter module mapped", () => {
+  const dir = brownfieldRepo({ "go.mod": "module x\n", "api/handler.go": "// code\n" });
+  init(dir, {});
+  assert.deepEqual(
+    JSON.parse(read(dir, INHERITANCE)).folders,
+    {},
+    "a map entry for the skipped starter module would dangle and break the first sync",
+  );
+  assert.doesNotThrow(() => sync(dir));
+  assert.deepEqual(verify(dir).failures, []);
+});
+
+test("mapping a parent covers the modules beneath it", () => {
+  const dir = brownfieldRepo({
+    "services/billing/go.mod": "module b\n",
+    "services/orders/go.mod": "module o\n",
+  });
+  init(dir, {});
+  const { unmapped: before } = moduleCoverage(dir, {});
+  assert.equal(before.length, 2);
+  const { unmapped: after } = moduleCoverage(dir, { services: {} });
+  assert.deepEqual(after, [], "a contract on services/ governs what is under it");
+});
+
+// ------------------------------------------------------ brownfield safety
+
+/**
+ * The starter module tree is a worked example for a repository with no modules yet.
+ * Writing it into a repository that already has modules invents one that does not exist,
+ * and `cg verify` would then pass while governing none of the real ones.
+ */
+test("init scaffolds the starter module only into an empty repository", () => {
+  const greenfield = fs.mkdtempSync(path.join(os.tmpdir(), "cg-greenfield-"));
+  const green = init(greenfield, {});
+  assert.equal(green.brownfield, false);
+  assert.ok(fs.existsSync(path.join(greenfield, "src", ".agents", "cg", "contract.md")));
+
+  const brown = fs.mkdtempSync(path.join(os.tmpdir(), "cg-brown-module-"));
+  fs.mkdirSync(path.join(brown, "api"));
+  fs.writeFileSync(path.join(brown, "api", "handler.go"), "// existing\n");
+  const result = init(brown, {});
+  assert.equal(result.brownfield, true);
+  assert.ok(!fs.existsSync(path.join(brown, "src")), "must not invent a module that does not exist");
+  assert.ok(fs.existsSync(path.join(brown, ".agents", "cg", "contract.md")), "governance still lands");
+});
+
+test("a repository holding only README, LICENSE and git metadata still counts as empty", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-nearly-empty-"));
+  fs.writeFileSync(path.join(dir, "README.md"), "# new project\n");
+  fs.writeFileSync(path.join(dir, "LICENSE"), "Apache-2.0\n");
+  fs.mkdirSync(path.join(dir, ".git"));
+  assert.equal(init(dir, {}).brownfield, false);
+  assert.ok(fs.existsSync(path.join(dir, "src", ".agents", "cg", "contract.md")));
+});
+
+/**
+ * `sync` owns the region between its markers, never the whole file.
+ *
+ * A repository adopting Contract Graph usually already has a root `CLAUDE.md`. Replacing it
+ * wholesale destroys hand-written instructions with no recovery but git — and `sync` is the
+ * very next command `init` tells you to run.
+ */
+test("sync preserves a hand-written root pointer and adds its block under the H1", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-brownfield-"));
+  init(dir, {});
+  const mine = "# Our house rules\n\nAlways run `make lint` before pushing.\n";
+  write(dir, "CLAUDE.md", mine);
+
+  sync(dir);
+  const after = read(dir, "CLAUDE.md");
+  assert.match(after, /# Our house rules/);
+  assert.match(after, /make lint/, "hand-written guidance must survive");
+  assert.match(after, /BEGIN PRINCIPLES INDEX/);
+  assert.deepEqual(verify(dir).failures, []);
+  assert.deepEqual(sync(dir).changed, [], "a second sync must rewrite nothing");
+});
+
+test("sync refuses a root pointer with content but no H1 to anchor the block", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-brownfield-noh1-"));
+  init(dir, {});
+  write(dir, "CLAUDE.md", "just some prose with no heading at all\n");
+  assert.throws(() => sync(dir), /no H1 to anchor/);
+  assert.match(read(dir, "CLAUDE.md"), /just some prose/, "the file must be left alone");
+});
+
+// ----------------------------------------------------------------- cli
+
+/**
+ * A retired flag must fail, not be ignored.
+ *
+ * Selection moved into `map/phases.json` in 0.1.0 and `--packs` was retired. Swallowed as an
+ * unknown boolean, it left its value to be read as a positional argument and scaffolded a
+ * repository silently, exit code 0. An upgrade failure that reports success is worse than one
+ * that stops.
+ */
+test("the CLI refuses an unknown option instead of ignoring it", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-cli-flags-"));
+  const target = path.join(dir, "repo");
+  const run = (args) => {
+    try {
+      execFileSync(process.execPath, [path.join(SOURCE_ROOT, "..", "bin", "cg.js"), ...args], {
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "pipe"],
+      });
+      return { code: 0 };
+    } catch (error) {
+      return { code: error.status, stderr: error.stderr ?? "" };
+    }
+  };
+
+  const retired = run(["init", target, "--packs", "saas"]);
+  assert.equal(retired.code, 1);
+  assert.match(retired.stderr, /unknown option `--packs`/);
+  assert.match(retired.stderr, /--profile/, "the error must list what is valid");
+  assert.ok(!fs.existsSync(target), "a refused invocation must scaffold nothing");
+
+  assert.equal(run(["init", target]).code, 0);
+});
+
 // ------------------------------------------------------------- manifest
 
 /**
@@ -490,7 +832,7 @@ test("[10] a duplicated architecture detector row fails", () => {
  */
 test("init records every file it installed, with the version that installed it", () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-manifest-"));
-  const { written } = init(dir, { packs: ["saas", "operations"] });
+  const { written } = init(dir, {});
   const manifest = JSON.parse(read(dir, MANIFEST));
   const shipped = JSON.parse(
     fs.readFileSync(path.join(SOURCE_ROOT, "..", "package.json"), "utf8"),
@@ -519,7 +861,7 @@ test("init records every file it installed, with the version that installed it",
  */
 test("the recorded hash matches what init wrote, and sync-owned files are excluded", () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-manifest-hash-"));
-  init(dir, { packs: ["saas"] });
+  init(dir, {});
   const manifest = JSON.parse(read(dir, MANIFEST));
   for (const [relative, entry] of Object.entries(manifest.files)) {
     const actual = crypto
@@ -536,7 +878,7 @@ test("a later init never refreshes the baseline of a file the user edited", () =
   const dir = makeRepo();
   const before = JSON.parse(read(dir, MANIFEST)).files[CONTRACT].sha256;
   write(dir, CONTRACT, "# mine, not yours\n");
-  init(dir, { packs: [] });
+  init(dir, {});
   const after = JSON.parse(read(dir, MANIFEST)).files[CONTRACT].sha256;
   assert.equal(after, before, "the baseline must survive a user edit, or upgrade is blind");
 });
@@ -545,7 +887,7 @@ test("a file already present when cg arrives is recorded as adopted", () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-adopt-"));
   fs.mkdirSync(path.join(dir, "src", ".agents", "cg"), { recursive: true });
   fs.writeFileSync(path.join(dir, CONTRACT), "# pre-existing\n");
-  init(dir, { packs: [] });
+  init(dir, {});
   const entry = JSON.parse(read(dir, MANIFEST)).files[CONTRACT];
   assert.equal(entry.adopted, true, "its contents predate this install and are not what shipped");
   assert.ok(!JSON.parse(read(dir, MANIFEST)).files[".agents/cg/contract.md"].adopted);
@@ -554,14 +896,6 @@ test("a file already present when cg arrives is recorded as adopted", () => {
 // ------------------------------------------------------------ phase map
 
 const PHASES = ".agents/cg/map/phases.json";
-
-test("init narrows the phase map to the installed domain packs", () => {
-  const dir = makeRepo(["saas"]);
-  const tokens = JSON.stringify(JSON.parse(read(dir, PHASES)).phases);
-  assert.match(tokens, /DP-SAAS/);
-  assert.ok(!tokens.includes("DP-SECURITY"), "an uninstalled set must not survive narrowing");
-  assert.deepEqual(verify(dir).failures, []);
-});
 
 test("[11] a phase naming an unknown token fails", () => {
   const dir = makeRepo();
@@ -575,9 +909,9 @@ test("[11] a phase naming a misspelled family fails", () => {
   assertFails(dir, 11, "phase map cites a nonexistent rule family");
 });
 
-test("[11] an installed domain set no phase loads fails", () => {
+test("[11] an installed family no phase loads fails", () => {
   const dir = makeRepo();
-  edit(dir, PHASES, (t) => t.replaceAll('"DP-OPERATIONS",', "").replaceAll('"DP-OPERATIONS"', '""'));
+  edit(dir, PHASES, (t) => t.replaceAll('"OP",', "").replaceAll('"OP"', '""'));
   edit(dir, PHASES, (t) => t.replace(/"",?/g, "").replace(/,(\s*])/g, "$1"));
   assertFails(dir, 11, "an installed set unreachable from every phase");
 });
@@ -594,7 +928,7 @@ test("[11] a phase map missing a lifecycle phase fails", () => {
 
 test("[11] a phase naming the same token twice fails", () => {
   const dir = makeRepo();
-  edit(dir, PHASES, (t) => t.replace('"always": [\n        "AP",', '"always": [\n        "AP",\n        "AP",'));
+  edit(dir, PHASES, (t) => t.replace('"AP", "PP"', '"AP", "AP", "PP"'));
   assertFails(dir, 11, "a duplicated token in one phase");
 });
 
@@ -748,7 +1082,7 @@ function filesUnder(root) {
 }
 
 function ruleMatchesSource(rule, relative) {
-  if (rule.select === "tree" || rule.select === "domain-packs") {
+  if (rule.select === "tree") {
     return relative.startsWith(`${rule.source}/`);
   }
   if (rule.select === "top-level-markdown") {
@@ -784,12 +1118,6 @@ test("init round trip writes exactly the canonical mapped file set", () => {
       mode: "always",
       select: "top-level-markdown",
     },
-    {
-      source: "principles/domains",
-      target: ".agents/cg/principles/domains",
-      mode: "selected",
-      select: "domain-packs",
-    },
     { source: "governance", target: ".agents/cg", mode: "always", select: "tree" },
     { source: "skills", target: ".agents/skills", mode: "always", select: "tree" },
     { source: "scaffold/rules", target: ".agents/rules", mode: "always", select: "tree" },
@@ -798,15 +1126,10 @@ test("init round trip writes exactly the canonical mapped file set", () => {
     { source: "scaffold/docs/design", target: "docs/design", mode: "always", select: "tree" },
     { source: "scaffold/docs/guides", target: "docs/guides", mode: "always", select: "tree" },
   ];
-  const packs = ["operations", "saas"];
-  const sourceFiles = filesUnder(SOURCE_ROOT);
+    const sourceFiles = filesUnder(SOURCE_ROOT);
   const expected = [];
   for (const rule of canonical) {
     for (const file of sourceFiles.filter((candidate) => ruleMatchesSource(rule, candidate))) {
-      if (rule.mode === "selected") {
-        const pack = path.posix.basename(file, ".md");
-        if (!packs.includes(pack)) continue;
-      }
       const within = path.posix.relative(rule.source, file);
       expected.push(path.posix.join(rule.target, within));
     }
@@ -814,7 +1137,7 @@ test("init round trip writes exactly the canonical mapped file set", () => {
   expected.push(PROFILE, MANIFEST);
 
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-round-trip-"));
-  init(dir, { packs });
+  init(dir, {});
   assert.deepEqual(filesUnder(dir), expected.sort());
 });
 
@@ -840,7 +1163,7 @@ test("every document tree the shipped skills reference is scaffolded", () => {
   assert.ok(referenced.size > 0, "expected the shipped skills to name at least one document tree");
 
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-doc-trees-"));
-  init(dir, { packs: [] });
+  init(dir, {});
   const missing = [...referenced]
     .sort()
     .filter((tree) => !fs.existsSync(path.join(dir, "docs", tree)));
@@ -852,7 +1175,7 @@ test("every document tree the shipped skills reference is scaffolded", () => {
 
 test("a chosen docs root relocates the trees and is recorded", () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-docs-root-"));
-  init(dir, { packs: [], docs: "handbook" });
+  init(dir, { docs: "handbook" });
   sync(dir);
   assert.ok(fs.existsSync(path.join(dir, "handbook", "plans", "decision-log.md")));
   assert.ok(fs.existsSync(path.join(dir, "handbook", "design", "README.md")));
@@ -863,8 +1186,8 @@ test("a chosen docs root relocates the trees and is recorded", () => {
 
 test("a recorded docs root survives a re-run that does not name one", () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-docs-sticky-"));
-  init(dir, { packs: [], docs: "handbook" });
-  const second = init(dir, { packs: [] });
+  init(dir, { docs: "handbook" });
+  const second = init(dir, {});
   assert.equal(second.docs, "handbook");
   assert.ok(!fs.existsSync(path.join(dir, "docs")), "must not silently create a second tree");
 });
@@ -876,7 +1199,7 @@ test("a recorded docs root survives a re-run that does not name one", () => {
  */
 test("[5] a contract citing a relocated plans path fails", () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-docs-selfsuff-"));
-  init(dir, { packs: ["saas", "operations"], docs: "handbook" });
+  init(dir, { docs: "handbook" });
   sync(dir);
   edit(dir, CONTRACT, (t) => `${t}\nSee handbook/plans/roadmap.md for the rule.\n`);
   assertFails(dir, 5, "relocated transient plan path");
@@ -884,8 +1207,8 @@ test("[5] a contract citing a relocated plans path fails", () => {
 
 test("init rejects a docs root that is not a single directory name", () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-docs-invalid-"));
-  assert.throws(() => init(dir, { packs: [], docs: "a/b" }), /invalid docs root/);
-  assert.throws(() => init(dir, { packs: [], docs: ".hidden" }), /invalid docs root/);
+  assert.throws(() => init(dir, { docs: "a/b" }), /invalid docs root/);
+  assert.throws(() => init(dir, { docs: ".hidden" }), /invalid docs root/);
 });
 
 // ------------------------------------------------------ no stale paths
@@ -916,9 +1239,25 @@ test("no shipped file references a pre-rename governance path", () => {
     /\bcg\-decide\b/,
     /\bcg\-complete\b/,
     /\bcg\-document\b/,
+    // The harvest check the skills used to name but nothing shipped. `cg harvest` replaces it.
+    // A plain word has nothing to escape, so the character class is what stops this pattern
+    // from matching its own source line.
+    /verify_decision_[h]arvest/,
+    /scripts\/contracts\//,
   ];
   const repo = path.resolve(import.meta.dirname, "..");
-  const roots = ["src", "bin", "docs", "test", "README.md", "CONTRIBUTING.md", "package.json"];
+  // `.github` is walked because CI is the first thing a rename breaks and the last place
+  // anyone looks — a stale flag there fails on push rather than in review.
+  const roots = [
+    "src",
+    "bin",
+    "docs",
+    "test",
+    ".github",
+    "README.md",
+    "CONTRIBUTING.md",
+    "package.json",
+  ];
   /**
    * The migration guide's job is to name what was renamed, so it is the one shipped file
    * allowed to carry obsolete names. Exempt it by path rather than by pattern, so adding a
@@ -933,7 +1272,7 @@ test("no shipped file references a pre-rename governance path", () => {
       for (const name of fs.readdirSync(target)) walk(path.join(target, name));
       return;
     }
-    if (!/\.(js|md|json|yaml)$/.test(target)) return;
+    if (!/\.(js|md|json|ya?ml)$/.test(target)) return;
     if (EXEMPT.has(path.relative(repo, target).split(path.sep).join("/"))) return;
     const text = fs.readFileSync(target, "utf8");
     splitLines(text).forEach((line, index) => {

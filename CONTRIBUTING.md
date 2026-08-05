@@ -33,7 +33,7 @@ reach users.
 
 **A rule and its enforcing test land in the same commit.** A PR that adds a check to `verify.js`
 without a fail-on-demand test in `test/` will be asked for the test. A PR that adds a rule to a
-domain pack without either a detector (`invariant`) or a cost clause (`guide`) will be asked for
+fork-loaded principle file without either a detector (`invariant`) or a cost clause (`guide`) will be asked for
 that.
 
 ### Fail-on-demand, specifically
@@ -46,7 +46,7 @@ check that does nothing.
 one thing, `assertFails(dir, code, note)` asserts the right code fires and prints every actual
 failure when it does not.
 
-## Changing a domain pack
+## Changing a fork-loaded principle file
 
 A pack rule is either:
 
@@ -67,11 +67,11 @@ exists to catch.
 **Rule IDs are never renumbered.** Append within a principle; redefine in place; never reuse. Set
 *names* may be renamed, split, or merged — they are routing labels, not identities.
 
-## Adding a domain pack
+## Adding a fork-loaded principle file
 
-Add `src/principles/domains/<name>.md`. The file name must be lowercase-kebab and its rules must
-carry the matching uppercase set token: `src/principles/domains/operations.md` holds
-`DP-OPERATIONS-*`. The
+Add `src/principles/<name>.md`. The file name must be lowercase-kebab and its rules must
+carry the matching uppercase set token: `src/principles/operations.md` holds
+`OP-*`. The
 verifier checks this.
 
 A pack should arrive with rules, not as an empty namespace — an empty set invites rules written to
