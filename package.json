@@ -9,6 +9,7 @@
   "files": [
     "bin",
     "src",
+    "!src/scripts/dev.js",
     "docs",
     "README.md",
     "LICENSE"

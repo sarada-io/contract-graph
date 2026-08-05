@@ -2,6 +2,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { DEFAULT_DOCS_ROOT } from "./model.js";
+
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 export const PROFILE_CONFIG_ROOT = path.join(HERE, "..", "scaffold", "profiles");
 const CONFIG_SUFFIX = ".scaffolding.conf.json";
@@ -172,7 +174,13 @@ export function loadProfileSelection(repoRoot, { allowMissing = false } = {}) {
   if (!Array.isArray(parsed.packs) || parsed.packs.some((pack) => typeof pack !== "string")) {
     throw new ProfileError(`${file}: packs must be an array of names`);
   }
-  return { profiles, packs: [...new Set(parsed.packs)] };
+  // `docs` is optional on read so a repository scaffolded before it existed still loads;
+  // `cg init` and `cg upgrade` write it, so it becomes present on the next run.
+  const docs = parsed.docs ?? DEFAULT_DOCS_ROOT;
+  if (!safeRelativePath(docs) || docs.split(/[\\/]/).length !== 1) {
+    throw new ProfileError(`${file}: docs must be a single safe directory name`);
+  }
+  return { profiles, packs: [...new Set(parsed.packs)], docs };
 }
 
 export function resolveProfileSelection(repoRoot) {

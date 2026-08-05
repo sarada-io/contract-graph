@@ -1,35 +1,37 @@
 # Lifecycle
 
-Six skills, one `cg-` namespace. They specify responsibilities and evidence, not a particular
+Five skills, one `cg-` namespace. They specify responsibilities and evidence, not a particular
 coding agent — a repository supplies its own contract hierarchy, decision log, verification
 command, and document locations.
+
+**Their names sort into their sequence.** `cg-plan` → `cg-prepare` → `cg-produce` → `cg-sign-off`
+is alphabetical order, so an editor listing the namespace shows the workflow. `cg-unblock` sorts
+last because it is not a stage: it is entered from any of the other four.
 
 | Skill | Responsibility |
 |---|---|
 | `cg-plan` | Convert a broad outcome into an ordered phase roadmap. Owns programme shape, dependencies, phase acceptance, risk, and status — not execution allocation. |
 | `cg-prepare` | Select one phase and convert it into one prioritized queue of contract-complete Steps with explicit dependencies, blockers, and state, in a single execution branch or worktree. |
-| `cg-execute` | Run the earliest ready Step; deliver implementation, tests, contract updates, and detectors as one independently valid change; recalculate the queue; continue serially. |
-| `cg-decide` | Govern forks across the lifecycle: apply contract-backed or reversible defaults, record assumptions, log blocked Steps, keep independent work moving. |
-| `cg-complete` | Verify every prepared Step completed through a dependency-safe history; drive current-phase defects through corrective Steps; harvest decisions and knowledge; close only on a green gate. |
-| `cg-document` | Maintain durable design records, product and operator guidance, and diagrams. Never owns contract correctness. |
+| `cg-produce` | Run the earliest ready Step; deliver implementation, tests, contract updates, and detectors as one independently valid change; recalculate the queue; continue serially. |
+| `cg-sign-off` | Verify every prepared Step completed through a dependency-safe history; drive current-phase defects through corrective Steps; harvest decisions; close only on a green gate. Owns the durable record too — design records, product and operator guidance, and diagrams — and is entered standalone when only documentation is needed. Never owns contract correctness. |
+| `cg-unblock` | Govern forks across the lifecycle: apply contract-backed or reversible defaults, record assumptions, log blocked Steps, keep independent work moving. |
 
 ```mermaid
 flowchart TD
     Contracts["Binding contracts"] --> Plan["cg-plan"]
     Plan --> Prepare["cg-prepare<br/>(one selected phase)"]
-    Prepare --> Execute["cg-execute<br/>(earliest Ready Step)"]
-    Execute -->|"recalculate; ready work remains"| Execute
-    Execute -->|"all Steps complete"| Complete["cg-complete"]
-    Complete -->|"corrective Step"| Execute
-    Complete -->|"remaining order changes"| Prepare
-    Execute --> Contracts
-    Complete -->|"successor or roadmap handover"| Plan
-    Decide["cg-decide"] -.-> Plan
-    Decide -.-> Prepare
-    Decide -.->|"answer recorded; recalculate"| Execute
-    Decide -.-> Complete
-    Execute -.-> Document["cg-document"]
-    Complete -.-> Document
+    Prepare --> Produce["cg-produce<br/>(earliest Ready Step)"]
+    Produce -->|"recalculate; ready work remains"| Produce
+    Produce -->|"all Steps complete"| SignOff["cg-sign-off<br/>(close + durable record)"]
+    SignOff -->|"corrective Step"| Produce
+    SignOff -->|"remaining order changes"| Prepare
+    Produce --> Contracts
+    SignOff -->|"successor or roadmap handover"| Plan
+    Docs["Documentation only"] -.->|"standalone entry"| SignOff
+    Unblock["cg-unblock"] -.-> Plan
+    Unblock -.-> Prepare
+    Unblock -.->|"answer recorded; recalculate"| Produce
+    Unblock -.-> SignOff
 ```
 
 ## Why plan and prepare are separate
@@ -73,8 +75,8 @@ truthful against its contracts after every Step.**
 
 ## Completion is a repair loop, not a review
 
-`cg-complete` directly fixes only integration composition and emergent tests. A behaviour-,
-boundary-, invariant-, or contract-affecting defect re-enters `cg-execute` as a corrective Step so
+`cg-sign-off` directly fixes only integration composition and emergent tests. A behaviour-,
+boundary-, invariant-, or contract-affecting defect re-enters `cg-produce` as a corrective Step so
 its implementation, tests, contract, and detector remain one independently valid change.
 
 A finding may leave a green phase only when it is genuinely outside that phase. A failing phase gate

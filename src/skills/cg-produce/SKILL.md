@@ -1,12 +1,12 @@
 ---
-name: cg-execute
+name: cg-produce
 description: Execute a prepared Contract Graph queue continuously and sequentially in one phase branch or worktree. Use with cg-prepare Step briefs that define priority, dependencies, blockers, expected state, editable paths, contract changes, handoff evidence and runnable gates. Selects the earliest Ready Step, delivers implementation, tests, resources, dependencies, contracts and detectors as one independently valid change, recalculates the queue after each verified handoff, and continues until every Step is complete or no ready work remains.
 ---
 
-# Contract Graph Execute
+# Contract Graph Produce
 
 Run the prepared queue with one Step `In progress` at a time. Do not redesign the phase, create
-another execution branch, run Steps concurrently, or defer contract truth. Read `cg-decide`, the
+another execution branch, run Steps concurrently, or defer contract truth. Read `cg-unblock`, the
 preparation record, and the selected Step brief before acting.
 
 ## Required outcome
@@ -76,7 +76,7 @@ For every changed behavior, boundary, invariant, public entry point, or operatio
 5. Update inheritance mappings and synchronize generated blocks when required.
 6. Run the repository contract gate before the Step is complete.
 
-Do not delegate these actions to `cg-document`, a later Step, or `cg-complete`. Those may consume
+Do not delegate these actions to a later Step or to `cg-sign-off`. Those may consume
 the finished contract as evidence; none owns this Step's correctness.
 
 When creating a new module contract, use
@@ -103,7 +103,7 @@ its removal condition.
 ## 5. Handle unexpected scope
 
 - Edit only paths declared by the Step brief.
-- Use `cg-decide` when new evidence creates a protected design choice.
+- Use `cg-unblock` when new evidence creates a protected design choice.
 - Continue work that remains inside the Step and can still produce one coherent verified handoff.
 - Return to `cg-prepare` when a new path, dependency, contract, or ordering change is required.
 - If the Step cannot finish, leave the repository at its last contract-complete verified handoff,
@@ -135,12 +135,12 @@ Sequential execution removes ownership races; it does not authorize silent scope
 **Moves**
 
 - Prove the destination works and source ownership is absent.
-- Leave only final cross-Step composition assertions to `cg-complete`.
+- Leave only final cross-Step composition assertions to `cg-sign-off`.
 
 ## 7. Durable non-contract documentation
 
 If the Step changes product behavior, operator procedures, architecture rationale, or diagrams, use
-`cg-document` for the documentation paths assigned to this Step.
+`cg-sign-off` on its standalone path for the documentation paths assigned to this Step.
 
 This never delays contract co-delivery. Product documentation is additional durable evidence, not
 the source of the rule.
@@ -166,11 +166,11 @@ state in the phase's single execution context.
 
 Choose exactly one immediate route:
 
-- all Steps are `Complete`: use `cg-complete` with the preparation record and all Step reports;
-- a `Ready` Step remains but the current execution run must yield: use `cg-execute` with the
+- all Steps are `Complete`: use `cg-sign-off` with the preparation record and all Step reports;
+- a `Ready` Step remains but the current execution run must yield: use `cg-produce` with the
   recalculated earliest `Ready` Step brief;
 - scope or ordering changed: use `cg-prepare` with the exact finding;
-- no Step is `Ready` and protected decisions remain: use `cg-decide` with the consolidated
+- no Step is `Ready` and protected decisions remain: use `cg-unblock` with the consolidated
   decision-log set;
 - no Step is `Ready` because of external prerequisites only: name no next skill until one changes.
 
@@ -179,13 +179,13 @@ End the user-facing response with:
 ```markdown
 ## Next action — <Queue complete | Ready handoff | Re-preparation required | Queue blocked>
 - **User action:** <one concrete action>
-- **Next input:** <$cg-execute | $cg-complete | $cg-prepare | $cg-decide | None — waiting on prerequisite> — <earliest Ready Step brief, Step report set, preparation finding, or blocker set>
+- **Next input:** <$cg-produce | $cg-sign-off | $cg-prepare | $cg-unblock | None — waiting on prerequisite> — <earliest Ready Step brief, Step report set, preparation finding, or blocker set>
 - **Blocked by:** <exact decision, prerequisite, or failing gate>   <!-- omit unless the status is non-advancing -->
 ```
 
 Do not stop for a user-facing response after every green Step while the current run can safely
 continue. When yielding, name the recalculated earliest `Ready` Step, the consolidated blocker set,
-or the exact evidence bundle that allows `cg-complete` to start.
+or the exact evidence bundle that allows `cg-sign-off` to start.
 
 ## Completion check
 

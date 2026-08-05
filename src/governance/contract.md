@@ -25,11 +25,11 @@ binding rules are duplicated into every module contract rather than left behind 
 
 | Family | ID form | What belongs there | Where it lives |
 |---|---|---|---|
-| **Architecture Principles** | `AP-<principle>-<rule>` | structural invariants, always loaded | `principles/AP-nn-*.md` |
-| **Design Principles** | `DP-<SET>-<principle>-<rule>` | topic-scoped design truths, loaded at a fork | `principles/design/<set>.md` |
-| **Product Principles** | `PP-<principle>-<rule>` | rules owed to *this* product's market and shape | `principles/PP-nn-*.md` |
+| **Architecture Principles** | `AP-<principle>-<rule>` | structural invariants, always loaded | `principles/architecture.md` |
+| **Domain Principles** | `DP-<SET>-<principle>-<rule>` | topic-scoped design truths, loaded at a fork | `principles/domains/<set>.md` |
+| **Product Principles** | `PP-<principle>-<rule>` | rules owed to *this* product's market and shape | `principles/product.md` |
 
-`PP-00-start-here.md` ships with no rules deliberately: a fresh repository inherits nobody
+`product.md` ships with no rules deliberately: a fresh repository inherits nobody
 else's product opinions. Product principles accrue through the decision harvest at phase close.
 
 - Cite the ID, never the position. `AP-01-01` is the first rule of Architecture Principle 01.
@@ -70,7 +70,7 @@ These apply to every agent harness:
 4. `.agents/cg/map/routing.md` — task-to-module contract mapping.
 5. `<module>/.agents/cg/contract.md` — lazy-loaded per impacted module.
 
-Read on demand, not by default: `.agents/cg/principles/design/<set>.md` (design principles, loaded when a fork
+Read on demand, not by default: `.agents/cg/principles/domains/<set>.md` (domain principles, loaded when a fork
 touches the topic) and `.agents/cg/map/enforcement.md` (rule → detector).
 
 ## Mandatory Agent Workflow (Summary)
@@ -83,11 +83,11 @@ For every non-trivial task:
 4. Lazy-load only relevant module contracts via `.agents/cg/map/routing.md`.
 5. Use `cg-plan` to create or update the phase-wise roadmap for non-trivial work.
 6. Use `cg-prepare` to turn the selected phase into one dependency-ordered Step queue.
-7. Use `cg-execute` in the phase's single branch or worktree to run the earliest ready Step, one
+7. Use `cg-produce` in the phase's single branch or worktree to run the earliest ready Step, one
    at a time, until the queue drains or every remaining Step is blocked.
 8. Update every affected `<module>/.agents/cg/contract.md` and detector inside the execution Step
    that changes its boundary, behavior, or invariant.
-9. Use `cg-complete` to verify the accumulated Steps, drive current-phase defects through
+9. Use `cg-sign-off` to verify the accumulated Steps, drive current-phase defects through
    corrective Steps, harvest durable knowledge, and close only when the phase gate passes.
 
 A task that changes module behavior but skips contract updates is incomplete.
@@ -106,9 +106,9 @@ Do not load all contracts by default.
 ## Governance Path Convention
 
 - Root CONTRACT: `.agents/cg/contract.md`
-- Architecture principles: `.agents/cg/principles/AP-nn-*.md`
-- Product principles: `.agents/cg/principles/PP-nn-*.md`
-- Design principle sets: `.agents/cg/principles/design/<set>.md`
+- Architecture principles: `.agents/cg/principles/architecture.md`
+- Product principles: `.agents/cg/principles/product.md`
+- Domain principle sets: `.agents/cg/principles/domains/<set>.md`
 - Workflow: `.agents/cg/workflow.md`
 - Map: `.agents/cg/map/routing.md`
 - Enforcement map: `.agents/cg/map/enforcement.md`
@@ -153,7 +153,7 @@ same commit, then regenerating with `cg sync`.
 ## Planning and Docs Conventions
 
 - Every plan carries an `## Assumptions` ledger — the decisions taken without asking, each with the
-  prior applied and the single edit that reverses it. See `.agents/skills/cg-decide/SKILL.md`.
+  prior applied and the single edit that reverses it. See `.agents/skills/cg-unblock/SKILL.md`.
 - Documentation tiers by lifecycle: `.agents/cg/` files are permanent and self-contained; design
   records are permanent rationale; plans are transient (archived on completion, deleted later).
   Permanent documents never cite a plan path or plan ticket ID as the source of a rule — see the
@@ -183,10 +183,9 @@ YAML frontmatter. Before starting a task, scan this catalog and follow every mat
 |---|---|
 | [`cg-plan`](../skills/cg-plan/SKILL.md) | Turn a broad outcome into an ordered phase roadmap with prerequisites, acceptance gates, risks, assumptions, and status — but no execution Steps. |
 | [`cg-prepare`](../skills/cg-prepare/SKILL.md) | Select one phase and prepare one prioritized queue of contract-complete Steps with explicit dependencies and blockers in one execution branch or worktree. |
-| [`cg-execute`](../skills/cg-execute/SKILL.md) | Run ready Steps serially, co-delivering implementation, tests, contracts, and detectors until the queue drains or only blocked work remains. |
-| [`cg-decide`](../skills/cg-decide/SKILL.md) | **Throughout non-trivial Contract Graph work.** Resolve reversible forks, log assumptions, and route protected decisions without stopping unrelated work. |
-| [`cg-complete`](../skills/cg-complete/SKILL.md) | Verify the Step history, drive current-phase defects through corrective Steps, harvest decisions and knowledge, and close only on a green phase gate. |
-| [`cg-document`](../skills/cg-document/SKILL.md) | Maintain durable design records, product/operator guidance, and diagrams without owning contract updates. |
+| [`cg-produce`](../skills/cg-produce/SKILL.md) | Run ready Steps serially, co-delivering implementation, tests, contracts, and detectors until the queue drains or only blocked work remains. |
+| [`cg-sign-off`](../skills/cg-sign-off/SKILL.md) | Verify the Step history, drive current-phase defects through corrective Steps, harvest decisions and knowledge, close only on a green phase gate — and own the durable design records, product/operator guidance, and diagrams the phase leaves behind. Also entered standalone for documentation alone. |
+| [`cg-unblock`](../skills/cg-unblock/SKILL.md) | **Throughout non-trivial Contract Graph work.** Resolve reversible forks, log assumptions, and route protected decisions without stopping unrelated work. |
 
 Every public framework skill must use the `cg-` prefix, carry valid `name` and `description`
 frontmatter, appear in this catalog, and end with the mandatory next-action response from

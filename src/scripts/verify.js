@@ -12,6 +12,8 @@
  *   8. Every root entry file carries a current principle index.
  *   9. Every canonical skill uses the cg- namespace, valid frontmatter, UI metadata,
  *      a catalog entry, and an exact generated Claude discovery wrapper.
+ *  11. The phase map names only real families and installed domain sets, and every
+ *      installed set is reachable from at least one phase.
  *  10. Design-principle sets have correct grammar, explicit modality and costs,
  *      modality-correct detector rows, unique IDs, and no inheritance entries; and every
  *      architecture and product principle carries exactly one enforcement-map row.
@@ -27,7 +29,7 @@ import {
   MAX_CONTRACT_LINES,
   REQUIRED_SECTIONS,
   REQUIRED_SECTION_PATTERNS,
-  PLAN_PATH,
+  planPathPattern,
   PLAN_TICKET,
   generate,
   generateAgentRule,
@@ -36,7 +38,10 @@ import {
   inheritancePath,
   loadInheritance,
   loadPrinciples,
-  designRoot,
+  loadPhases,
+  phaseTokens,
+  domainsRoot,
+  RULE_FAMILIES as FAMILIES,
   enforcementPath,
   governanceContractPath,
   RULE_FAMILIES,
@@ -50,16 +55,20 @@ const SKILL_INTERFACE_KEYS = ["display_name", "short_description", "default_prom
 const SKILL_LINE_BUDGET = 500;
 const WRAPPER_LINE_BUDGET = 12;
 
+/**
+ * The five lifecycle skills, in the order their names sort. Alphabetical order is the
+ * workflow order on purpose — an editor listing them gives the sequence for free, and
+ * `cg-unblock` sorts last because it is entered from any of the other four.
+ */
 export const CORE_CG_SKILLS = [
   "cg-plan",
   "cg-prepare",
-  "cg-execute",
-  "cg-decide",
-  "cg-complete",
-  "cg-document",
+  "cg-produce",
+  "cg-sign-off",
+  "cg-unblock",
 ];
 
-/** Design sets ship as `<lowercase>.md` holding `DP-<UPPERCASE>-nn-nn` rules. */
+/** Domain sets ship as `<lowercase>.md` holding `DP-<UPPERCASE>-nn-nn` rules. */
 const DESIGN_RULE = /^- \*\*(DP-([A-Z]+)-\d{2}-\d{2})\*\* `(invariant|guide)` — (\S.*)$/;
 const DESIGN_ID = /DP-[A-Z]+-\d{2}-\d{2}/g;
 const DESIGN_COST = /^ {2}\*\*Cost:\*\* \S.*$/;
@@ -303,7 +312,7 @@ function enforcementRowCells(repoRoot) {
  * [10] Every architecture and product principle owes exactly one enforcement-map row, and the
  * map may not cite a principle ID no principles file defines.
  *
- * A design principle states its own modality, so a `guide` is legitimately absent from the map.
+ * A domain principle states its own modality, so a `guide` is legitimately absent from the map.
  * `AP-` and `PP-` rules carry no modality marker: the map claims a row for every one of them,
  * and this is the check that makes the claim true rather than decorative.
  */
@@ -328,9 +337,54 @@ export function checkPrincipleEnforcement(fail, repoRoot, rules) {
   }
 }
 
-/** Verify the explicitly loaded, never-inherited design-principle sets. */
+/** Verify the explicitly loaded, never-inherited domain-principle sets. */
+/**
+ * The phase map is only worth having if it cannot drift from what is installed.
+ *
+ * Two directions, because each catches what the other cannot. A typo'd token would
+ * silently load nothing; an installed set no phase names is governance nobody reads —
+ * the same failure an unchecked enforcement map produces, one axis over.
+ */
+export function checkPhases(fail, repoRoot) {
+  let phases;
+  try {
+    phases = loadPhases(repoRoot);
+  } catch (error) {
+    fail(`[11] ${error.message}`);
+    return;
+  }
+
+  const root = domainsRoot(repoRoot);
+  const installed = exists(root)
+    ? fs
+        .readdirSync(root)
+        .filter((name) => name.endsWith(".md"))
+        .map((name) => `DP-${name.replace(/\.md$/, "").toUpperCase().replace(/-/g, "")}`)
+    : [];
+  const known = new Set([...FAMILIES, ...installed]);
+
+  const named = phaseTokens(phases);
+  for (const token of named) {
+    if (!known.has(token)) {
+      fail(
+        `[11] map/phases.json: token \`${token}\` matches no rule family or installed domain set` +
+          `${installed.length ? ` (installed: ${installed.sort().join(", ")})` : " (no domain packs installed)"}`,
+      );
+    }
+  }
+
+  for (const token of installed) {
+    if (!named.includes(token)) {
+      fail(
+        `[11] map/phases.json: domain set \`${token}\` is installed but no phase loads it — ` +
+          "governance no phase reads is governance nobody reads",
+      );
+    }
+  }
+}
+
 export function checkDesignPrinciples(fail, repoRoot, folders = null) {
-  const root = designRoot(repoRoot);
+  const root = domainsRoot(repoRoot);
   if (!exists(root)) return 0;
 
   const files = fs
@@ -342,7 +396,7 @@ export function checkDesignPrinciples(fail, repoRoot, folders = null) {
   for (const filename of files) {
     const setName = filename.replace(/\.md$/, "");
     if (!/^[a-z][a-z0-9-]*$/.test(setName)) {
-      fail(`[10] design principles: set file \`${filename}\` must be lowercase-kebab`);
+      fail(`[10] domain principles: set file \`${filename}\` must be lowercase-kebab`);
       continue;
     }
     const expectedSet = setName.toUpperCase().replace(/-/g, "");
@@ -357,7 +411,7 @@ export function checkDesignPrinciples(fail, repoRoot, folders = null) {
       const match = DESIGN_RULE.exec(line);
       if (!match) {
         fail(
-          `[10] ${relative}:${number}: malformed design-principle rule; expected ` +
+          `[10] ${relative}:${number}: malformed domain-principle rule; expected ` +
             "`DP-SET-nn-nn`, `invariant` or `guide`, and rule text",
         );
         return;
@@ -371,7 +425,7 @@ export function checkDesignPrinciples(fail, repoRoot, folders = null) {
         );
       }
       if (rules.has(ruleId)) {
-        fail(`[10] design principles: duplicate rule ID \`${ruleId}\``);
+        fail(`[10] domain principles: duplicate rule ID \`${ruleId}\``);
       } else {
         rules.set(ruleId, modality);
       }
@@ -394,13 +448,13 @@ export function checkDesignPrinciples(fail, repoRoot, folders = null) {
     });
 
     if (parsedInFile === 0) {
-      fail(`[10] ${relative}: design set file has no valid rules`);
+      fail(`[10] ${relative}: domain set file has no valid rules`);
     }
   }
 
   const cells = enforcementRowCells(repoRoot);
   if (cells === null && rules.size) {
-    fail("[10] design principles: missing `.agents/cg/map/enforcement.md`");
+    fail("[10] domain principles: missing `.agents/cg/map/enforcement.md`");
   }
   const enforcementIds = (cells ?? []).flatMap((cell) => cell.match(DESIGN_ID) ?? []);
 
@@ -415,10 +469,10 @@ export function checkDesignPrinciples(fail, repoRoot, folders = null) {
   }
   for (const ruleId of [...new Set(enforcementIds)].sort()) {
     if (!rules.has(ruleId)) {
-      fail(`[10] enforcement map references unknown design-principle ID \`${ruleId}\``);
+      fail(`[10] enforcement map references unknown domain-principle ID \`${ruleId}\``);
     }
     if (count(ruleId) > 1) {
-      fail(`[10] enforcement map contains duplicate design-principle ID \`${ruleId}\``);
+      fail(`[10] enforcement map contains duplicate domain-principle ID \`${ruleId}\``);
     }
   }
 
@@ -427,14 +481,14 @@ export function checkDesignPrinciples(fail, repoRoot, folders = null) {
     try {
       map = JSON.parse(read(inheritancePath(repoRoot))).folders ?? {};
     } catch (error) {
-      fail(`[10] design principles: cannot inspect inheritance.json: ${error.message}`);
+      fail(`[10] domain principles: cannot inspect inheritance.json: ${error.message}`);
       map = {};
     }
   }
   for (const [key, entry] of Object.entries(map)) {
     for (const ruleId of entry.rules ?? []) {
       if (String(ruleId).startsWith("DP-")) {
-        fail(`[10] ${key}: design principle \`${ruleId}\` must be loaded explicitly, never inherited`);
+        fail(`[10] ${key}: domain principle \`${ruleId}\` must be loaded explicitly, never inherited`);
       }
     }
   }
@@ -500,10 +554,10 @@ function checkBudget(entry, text, advise) {
   }
 }
 
-function checkSelfSufficiency(entry, text, fail) {
+function checkSelfSufficiency(entry, text, fail, planPath) {
   splitLines(text).forEach((line, index) => {
     const number = index + 1;
-    if (PLAN_PATH.test(line)) {
+    if (planPath.test(line)) {
       fail(
         `[5] ${entry.contract}:${number}: cites a transient plan path — a permanent contract may ` +
           "cite a permanent design record, never a plan",
@@ -538,7 +592,12 @@ export function verify(repoRoot) {
     throw error;
   }
 
+  // Derived from the repository's own recorded docs root, so relocating the document
+  // trees relocates the self-sufficiency check with them.
+  const planPath = planPathPattern(profile.docs);
+
   checkAgentRule(fail, repoRoot);
+  checkPhases(fail, repoRoot);
   const skillCount = checkSkills(fail, repoRoot, CORE_CG_SKILLS, profile);
   const designCount = checkDesignPrinciples(fail, repoRoot, folders);
   checkPrincipleEnforcement(fail, repoRoot, rules);
@@ -565,7 +624,7 @@ export function verify(repoRoot) {
 
     checkSections(key, entry, generated.current, fail);
     checkBudget(entry, generated.current, (m) => advisories.push(m));
-    checkSelfSufficiency(entry, generated.current, fail);
+    checkSelfSufficiency(entry, generated.current, fail, planPath);
     if (generated.current !== generated.desired) {
       fail(`[3] ${entry.contract}: inherited block is stale or was hand-edited. Run \`cg sync\`.`);
     }

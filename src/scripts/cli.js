@@ -1,26 +1,30 @@
 #!/usr/bin/env node
 /** Contract Graph command line. `cg init | sync | verify | packs | profiles`. */
 
+import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
+import readline from "node:readline";
 
-import { init, availableDesignPacks } from "./init.js";
-import { availableProfiles } from "./profiles.js";
+import { DEFAULT_DOCS_ROOT } from "./model.js";
+import { init, availableDomainPacks } from "./init.js";
+import { availableProfiles, loadProfileSelection } from "./profiles.js";
 import { sync } from "./sync.js";
 import { verify } from "./verify.js";
 
 const USAGE = `cg — Contract Graph
 
 Usage:
-  cg init [dir] [--design a,b] [--profile a,b]   scaffold governance
+  cg init [dir] [--packs a,b] [--profile a,b] [--docs dir]    scaffold governance
   cg sync [dir] [--check]                         regenerate derived artifacts
   cg verify [dir] [--warn]                        verify governance
-  cg packs                                        list design-principle packs
+  cg packs                                        list domain-principle packs
   cg profiles                                     list editor profiles
 
 Options:
-  --design <list>   comma-separated design packs to install (init only)
+  --packs <list>    comma-separated domain packs to install (init only)
   --profile <list>  comma-separated editor profiles to install (init only; default: all)
+  --docs <dir>      directory to hold plans/, design/, and guides/ (init only; default: docs)
   --check           report what sync would rewrite; change nothing
   --warn            report findings and exit 0 (verify only)
   -h, --help        show this message
@@ -33,14 +37,18 @@ function parseArgs(argv) {
   // options consume values (in either `--name x` or `--name=x` form).
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
-    if (arg === "--design") {
-      flags.design = argv[++i] ?? "";
-    } else if (arg.startsWith("--design=")) {
-      flags.design = arg.slice("--design=".length);
+    if (arg === "--packs") {
+      flags.packs = argv[++i] ?? "";
+    } else if (arg.startsWith("--packs=")) {
+      flags.packs = arg.slice("--packs=".length);
     } else if (arg === "--profile") {
       flags.profile = argv[++i] ?? "";
     } else if (arg.startsWith("--profile=")) {
       flags.profile = arg.slice("--profile=".length);
+    } else if (arg === "--docs") {
+      flags.docs = argv[++i] ?? "";
+    } else if (arg.startsWith("--docs=")) {
+      flags.docs = arg.slice("--docs=".length);
     } else if (arg.startsWith("--")) {
       flags[arg.slice(2)] = true;
     } else {
@@ -50,7 +58,87 @@ function parseArgs(argv) {
   return { positional, flags };
 }
 
-function main(argv) {
+/**
+ * One readline interface for a whole exchange. Opening a fresh one per question closes
+ * stdin after the first answer, so any follow-up question reads EOF immediately.
+ */
+function prompter() {
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+  // Pulling lines from the async iterator rather than using `rl.question` keeps answers
+  // that were already buffered readable, and turns end-of-input into an ordinary error
+  // instead of an await that never settles.
+  const lines = rl[Symbol.asyncIterator]();
+  return {
+    async ask(question) {
+      process.stdout.write(question);
+      const { value, done } = await lines.next();
+      if (done) throw new Error("no answer received before input closed");
+      return value.trim();
+    },
+    close: () => rl.close(),
+  };
+}
+
+const isUsableRootName = (name) =>
+  Boolean(name) && !name.startsWith(".") && name.split(/[\\/]/).length === 1;
+
+/**
+ * Decide where `plans/`, `design/`, and `guides/` go.
+ *
+ * A repository that already owns `docs/` is asked rather than merged into silently. `init`
+ * never overwrites, so the merge would in fact be safe — but "safe" and "expected" are
+ * different things, and quietly adding three directories to a tree someone else curates is
+ * the kind of surprise this tool exists to avoid.
+ */
+async function chooseDocsRoot(repoRoot, flags) {
+  if (flags.docs !== undefined) {
+    if (!isUsableRootName(flags.docs)) {
+      throw new Error(`invalid --docs value \`${flags.docs}\`: expected a single directory name`);
+    }
+    return flags.docs;
+  }
+
+  const recorded = loadProfileSelection(repoRoot, { allowMissing: true })?.docs;
+  if (recorded) return recorded;
+
+  const candidate = path.join(repoRoot, DEFAULT_DOCS_ROOT);
+  const occupied = fs.existsSync(candidate) && fs.readdirSync(candidate).length > 0;
+  if (!occupied) return DEFAULT_DOCS_ROOT;
+
+  if (!process.stdin.isTTY) {
+    throw new Error(
+      `\`${DEFAULT_DOCS_ROOT}/\` already exists and this is not an interactive terminal. ` +
+        `Re-run with \`--docs ${DEFAULT_DOCS_ROOT}\` to use it, or \`--docs <dir>\` to pick another.`,
+    );
+  }
+
+  process.stdout.write(
+    `cg init: \`${DEFAULT_DOCS_ROOT}/\` already exists here.\n` +
+      `  Contract Graph adds ${DEFAULT_DOCS_ROOT}/plans/, ${DEFAULT_DOCS_ROOT}/design/, and ` +
+      `${DEFAULT_DOCS_ROOT}/guides/.\n` +
+      "  Nothing existing is replaced — init never overwrites a file.\n",
+  );
+
+  const prompt = prompter();
+  try {
+    const reuse = (await prompt.ask(`  Use \`${DEFAULT_DOCS_ROOT}/\` for these? [Y/n] `)).toLowerCase();
+    if (reuse === "" || reuse === "y" || reuse === "yes") return DEFAULT_DOCS_ROOT;
+
+    const chosen = await prompt.ask("  Directory to bootstrap instead: ");
+    if (!isUsableRootName(chosen)) {
+      throw new Error(`invalid directory name \`${chosen}\`: expected a single directory name`);
+    }
+    return chosen;
+  } catch (error) {
+    throw new Error(
+      `${error.message}. Re-run with \`--docs <dir>\` to choose without being asked.`,
+    );
+  } finally {
+    prompt.close();
+  }
+}
+
+async function main(argv) {
   const [command, ...rest] = argv;
   if (!command || command === "-h" || command === "--help" || command === "help") {
     process.stdout.write(USAGE);
@@ -62,8 +150,8 @@ function main(argv) {
   const repoRoot = path.resolve(positional[0] ?? ".");
 
   if (command === "packs") {
-    const packs = availableDesignPacks();
-    process.stdout.write(packs.length ? `${packs.join("\n")}\n` : "no design packs bundled\n");
+    const packs = availableDomainPacks();
+    process.stdout.write(packs.length ? `${packs.join("\n")}\n` : "no domain packs bundled\n");
     return 0;
   }
 
@@ -74,23 +162,25 @@ function main(argv) {
   }
 
   if (command === "init") {
-    const packs = (flags.design ?? "")
+    const packs = (flags.packs ?? "")
       .split(",")
       .map((s) => s.trim())
       .filter(Boolean);
     const profiles = flags.profile
       ? flags.profile.split(",").map((s) => s.trim()).filter(Boolean)
       : undefined;
-    const result = init(repoRoot, { packs, profiles });
+    const docs = await chooseDocsRoot(repoRoot, flags);
+    const result = init(repoRoot, { packs, profiles, docs });
     const { written, skipped } = result;
     process.stdout.write(
       `cg init: ${written.length} file(s) written` +
         (skipped.length ? `, ${skipped.length} left untouched (already present)` : "") +
-        `${result.packs.length ? `, design packs: ${result.packs.join(", ")}` : ", no design packs selected"}` +
-        `, profiles: ${result.profiles.join(", ")}\n`,
+        `${result.packs.length ? `, packs: ${result.packs.join(", ")}` : ", no domain packs selected"}` +
+        `, profiles: ${result.profiles.join(", ")}` +
+        `, docs: ${result.docs}/\n`,
     );
     if (!result.packs.length) {
-      process.stdout.write("  add one later with `cg packs`, then re-run `cg init --design <pack>`\n");
+      process.stdout.write("  add one later with `cg packs`, then re-run `cg init --packs <pack>`\n");
     }
     process.stdout.write("  next: fill in Project Identity in .agents/cg/contract.md, then `cg sync`\n");
     return 0;
@@ -117,7 +207,7 @@ function main(argv) {
     if (!failures.length) {
       process.stdout.write(
         `cg verify: OK — ${counts.folders} folder contract(s), ${counts.roots} root entry file(s), ` +
-          `${counts.skills} skill(s), and ${counts.design} design principle(s) verified\n`,
+          `${counts.skills} skill(s), and ${counts.design} domain principle(s) verified\n`,
       );
       return 0;
     }
@@ -132,7 +222,7 @@ function main(argv) {
 }
 
 try {
-  process.exit(main(process.argv.slice(2)));
+  process.exit(await main(process.argv.slice(2)));
 } catch (error) {
   process.stderr.write(`cg: ${error.message}\n`);
   process.exit(1);

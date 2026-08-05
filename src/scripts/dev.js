@@ -34,7 +34,7 @@ const TARGETS = {
   claude: {
     label: "Claude Code",
     reads: [".claude/skills/cg-*/SKILL.md", "CLAUDE.md", ".agents/"],
-    open: "claude, then run /cg-plan — the six cg-* skills should be offered",
+    open: "claude, then run /cg-plan — the five cg-* skills should be offered",
   },
   antigravity: {
     label: "Antigravity IDE",
@@ -56,8 +56,8 @@ const TARGETS = {
 const USAGE = `cg dev helper — scaffold a throwaway repo you can open in a real editor
 
 Usage:
-  npm run try -- <target> [--design a,b]   scaffold tmp/<target> and verify it
-  ./cg try <target> [--design a,b]         same, POSIX shells
+  npm run try -- <target> [--packs a,b]   scaffold tmp/<target> and verify it
+  ./cg try <target> [--packs a,b]         same, POSIX shells
 
 Targets:
 ${Object.entries(TARGETS)
@@ -125,11 +125,11 @@ function main(argv) {
     return 2;
   }
 
-  const designIndex = args.findIndex((a) => a === "--design");
+  const packsIndex = args.findIndex((a) => a === "--packs");
   const packs =
-    designIndex >= 0 && args[designIndex + 1]
-      ? args[designIndex + 1].split(",").map((p) => p.trim()).filter(Boolean)
-      : ["saas", "ops"];
+    packsIndex >= 0 && args[packsIndex + 1]
+      ? args[packsIndex + 1].split(",").map((p) => p.trim()).filter(Boolean)
+      : ["saas", "operations"];
 
   const target = resolveTarget(name);
   const existed = fs.existsSync(target);

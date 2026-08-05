@@ -1,12 +1,12 @@
 ---
 name: cg-prepare
-description: Prepare one selected Contract Graph phase as a prioritized queue of dependency-safe executable Steps. Use after cg-plan fixes the phase outcome and acceptance gate, or when cg-complete returns corrective work that changes the remaining queue. Measures affected source, tests, resources, dependencies, contracts and detectors; gives every Step explicit dependencies, blockers and state; defines one shared execution branch or worktree; and emits cold-start briefs that let cg-execute run ready Steps serially until completion or a genuine queue-wide block. Does not allocate parallel tracks, per-Step branches, merge order, or concurrent handoffs.
+description: Prepare one selected Contract Graph phase as a prioritized queue of dependency-safe executable Steps. Use after cg-plan fixes the phase outcome and acceptance gate, or when cg-sign-off returns corrective work that changes the remaining queue. Measures affected source, tests, resources, dependencies, contracts and detectors; gives every Step explicit dependencies, blockers and state; defines one shared execution branch or worktree; and emits cold-start briefs that let cg-produce run ready Steps serially until completion or a genuine queue-wide block. Does not allocate parallel tracks, per-Step branches, merge order, or concurrent handoffs.
 ---
 
 # Contract Graph Prepare
 
 Turn one accepted phase into one ordered execution queue. Do not implement the phase or edit
-permanent contracts here. Read `cg-decide` while preparing.
+permanent contracts here. Read `cg-unblock` while preparing.
 
 ## Required outcome
 
@@ -39,7 +39,7 @@ Preparation starts only when:
 
 If preparation reveals that the outcome or acceptance gate must change, return to `cg-plan`.
 
-When `cg-complete` returns corrective work, preserve its reproduction, expected and actual result,
+When `cg-sign-off` returns corrective work, preserve its reproduction, expected and actual result,
 affected paths, contract and detector impact, dependencies, and `Done when` evidence. Re-prepare the
 remaining Step sequence only when the current phase outcome and gate remain unchanged. A
 successor-planning handover first goes through `cg-plan`.
@@ -49,7 +49,7 @@ phase while the source phase is still completing. Reserve the first prepared har
 cohort, set it `Blocked` on source-phase completion, and make every later Step remain Waiting behind
 the harvest Step. Its cold-start brief must carry the exact source manifest path, cohort ID,
 classification digest, and drain IDs exactly equal the eligible decision IDs. After writing the
-route, resume `cg-complete` for the source phase; do not begin destination execution yet.
+route, resume `cg-sign-off` for the source phase; do not begin destination execution yet.
 
 Run the narrowest useful baseline plus the repository contract gate and record existing failures.
 
@@ -113,7 +113,7 @@ Apply these rules to every Step:
 - A behavior, boundary, invariant, entry point, or operational-assumption change owns the matching
   contract and detector update.
 - A new or changed rule and its detector land with the implementation.
-- No Step depends on `cg-document`, `cg-complete`, or a later cleanup Step to make its contract
+- No Step depends on `cg-sign-off` or a later cleanup Step to make its contract
   truthful.
 - If a contract change is too wide for one Step, split the behavior before execution; never split
   contract truth from that behavior.
@@ -202,7 +202,7 @@ Every Step has one runnable `Done when` command. It includes:
 - the full build when the repository requires it; and
 - a clean or explicitly accounted-for worktree result.
 
-Separately list `cg-complete` checks that only make sense after the full sequence:
+Separately list `cg-sign-off` checks that only make sense after the full sequence:
 
 - declared graph equals built graph;
 - exactly one final owner, writer, route, or resource;
@@ -225,7 +225,7 @@ Blocked by: <decision IDs or external prerequisites | None>
 Status: <Waiting | Ready | Blocked>
 
 ## Read first
-<contracts, decisions, phase, preparation, cg-execute, cg-decide, optional cg-document>
+<contracts, decisions, phase, preparation, cg-produce, cg-unblock>
 
 ## Goal
 <one observable outcome>
@@ -268,17 +268,17 @@ Status: <Waiting | Ready | Blocked>
 - [ ] Completion owns only emergent integrated tests and phase-close records.
 - [ ] Every Step has a cold-start brief and one `Done when`.
 
-Do not hand the earliest `Ready` Step to `cg-execute` until this gate passes.
+Do not hand the earliest `Ready` Step to `cg-produce` until this gate passes.
 
 ## 10. Next-action response
 
 Choose exactly one immediate route:
 
-- gate passed and a Step is ready: use `cg-execute` with the earliest `Ready` Step brief;
-- accepted harvest route prepared before its source closes: resume `cg-complete` with the source
+- gate passed and a Step is ready: use `cg-produce` with the earliest `Ready` Step brief;
+- accepted harvest route prepared before its source closes: resume `cg-sign-off` with the source
   phase, accepted manifest, and destination preparation;
 - phase outcome or acceptance changed: use `cg-plan` with the preparation finding;
-- protected decisions leave no Step ready: use `cg-decide` with the consolidated decision-log set;
+- protected decisions leave no Step ready: use `cg-unblock` with the consolidated decision-log set;
 - external prerequisites leave no Step ready: name no next skill until one is satisfied.
 
 End the user-facing response with:
@@ -286,7 +286,7 @@ End the user-facing response with:
 ```markdown
 ## Next action — <Ready | Blocked | Returned to planning>
 - **User action:** <one concrete action>
-- **Next input:** <$cg-execute | $cg-plan | $cg-decide | None — waiting on prerequisite> — <exact preparation record and earliest Ready Step brief, finding, or blocker set>
+- **Next input:** <$cg-produce | $cg-plan | $cg-unblock | None — waiting on prerequisite> — <exact preparation record and earliest Ready Step brief, finding, or blocker set>
 - **Blocked by:** <exact decision, prerequisite, or failing gate>   <!-- omit unless the status is non-advancing -->
 ```
 

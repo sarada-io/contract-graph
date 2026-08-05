@@ -21,7 +21,7 @@ export const ROOT_BEGIN_LINE =
 /**
  * Rule families that may be inherited into a folder contract, in document order.
  *
- * `DP` is deliberately absent. Design principles are topic-scoped and loaded at a fork;
+ * `DP` is deliberately absent. Domain principles are topic-scoped and loaded at a fork;
  * inheriting a guide would make it unavoidable, and an unavoidable guide is just a rule.
  */
 export const RULE_FAMILIES = ["AP", "PP"];
@@ -72,12 +72,27 @@ export const REQUIRED_SECTION_PATTERNS = {
   folder: [/^## .*Invariants\s*$/m],
 };
 
+/** Default root for the three scaffolded document trees. Overridable at `cg init`. */
+export const DEFAULT_DOCS_ROOT = "docs";
+
+/** The document trees `init` creates under the docs root, and what each one is for. */
+export const DOCS_TREES = Object.freeze({
+  plans: "transient — roadmaps, preparation records, and the decision log",
+  design: "permanent — design records a contract may cite",
+  guides: "permanent — operator and product guidance",
+});
+
 /**
  * The Contract Self-Sufficiency Rule, machine-checked. A permanent contract may cite
  * permanent design records, never a transient plan path or a plan ticket ID.
  * `XX-pp-nn` rule IDs are contract IDs, not ticket IDs, and are exempt.
+ *
+ * The pattern is derived from the repository's recorded docs root rather than hardcoded,
+ * so relocating the trees relocates the check with them. A rule that only holds at the
+ * default path is a rule the first repository to move its docs would escape.
  */
-export const PLAN_PATH = /docs-plans\//;
+export const planPathPattern = (docsRoot = DEFAULT_DOCS_ROOT) =>
+  new RegExp(`${docsRoot.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}/plans/`);
 export const PLAN_TICKET = new RegExp(
   String.raw`\b(?!(?:${FAMILY_ALT})-)[A-Z]{2,6}-\d+(?:\.\d+)+\b`,
 );
@@ -113,19 +128,82 @@ export const skillsRoot = (repoRoot) => path.join(repoRoot, ".agents", "skills")
  * one edit rather than a search across three modules and twenty deliverables.
  */
 export const principlesRoot = (repoRoot) => path.join(cgRoot(repoRoot), "principles");
-export const designRoot = (repoRoot) => path.join(principlesRoot(repoRoot), "design");
+export const domainsRoot = (repoRoot) => path.join(principlesRoot(repoRoot), "domains");
 export const mapRoot = (repoRoot) => path.join(cgRoot(repoRoot), "map");
 export const inheritancePath = (repoRoot) => path.join(mapRoot(repoRoot), "inheritance.json");
 export const enforcementPath = (repoRoot) => path.join(mapRoot(repoRoot), "enforcement.md");
 export const routingPath = (repoRoot) => path.join(mapRoot(repoRoot), "routing.md");
-export const governanceContractPath = (repoRoot) => path.join(cgRoot(repoRoot), "contract.md");
+export const phasesPath = (repoRoot) => path.join(mapRoot(repoRoot), "phases.json");
+export const manifestPath = (repoRoot) => path.join(mapRoot(repoRoot), "manifest.json");
+
+/** Lifecycle phases a repository can scope principle loading to. */
+export const PHASE_NAMES = Object.freeze(["plan", "prepare", "produce", "sign-off", "unblock"]);
 
 /**
- * The flat, filename-prefixed files holding inheritable rules, in filename order.
+ * Read `map/phases.json`: which rule families and domain sets each phase loads.
  *
- * `PP-00-start-here.md` is the one explicit empty meta file. Every real principle file must
- * contain a heading and at least one rule; an unrelated Markdown filename is an error rather
- * than governance that disappears silently.
+ * Tokens, not filenames. `AP`, `PP`, and `DP-<SET>` survive any reorganisation of the
+ * principle files, which is the point — loading and layout should not be able to break
+ * each other. `always` means *load if the repository selected it*, never *must exist*:
+ * `DP` is excluded from inheritance on purpose, so a repo with no domain packs is valid.
+ */
+export function loadPhases(repoRoot) {
+  const file = phasesPath(repoRoot);
+  if (!exists(file)) throw new ContractError(`missing phase map: ${file}`);
+
+  let parsed;
+  try {
+    parsed = JSON.parse(read(file));
+  } catch (error) {
+    throw new ContractError(`${file}: invalid JSON: ${error.message}`);
+  }
+  const phases = parsed?.phases;
+  if (!phases || typeof phases !== "object" || Array.isArray(phases)) {
+    throw new ContractError(`${file}: expected a \`phases\` object`);
+  }
+
+  const missing = PHASE_NAMES.filter((name) => !(name in phases));
+  if (missing.length) throw new ContractError(`${file}: missing phase(s): ${missing.join(", ")}`);
+  const extra = Object.keys(phases).filter((name) => !PHASE_NAMES.includes(name));
+  if (extra.length) throw new ContractError(`${file}: unknown phase(s): ${extra.join(", ")}`);
+
+  const result = {};
+  for (const [name, entry] of Object.entries(phases)) {
+    for (const key of ["always", "conditional"]) {
+      if (!Array.isArray(entry?.[key]) || entry[key].some((v) => typeof v !== "string")) {
+        throw new ContractError(`${file}: ${name}.${key} must be an array of tokens`);
+      }
+    }
+    const seen = new Set();
+    for (const token of [...entry.always, ...entry.conditional]) {
+      if (seen.has(token)) {
+        throw new ContractError(`${file}: ${name} names \`${token}\` more than once`);
+      }
+      seen.add(token);
+    }
+    result[name] = { always: [...entry.always], conditional: [...entry.conditional] };
+  }
+  return result;
+}
+
+/** Every token any phase names, deduplicated. */
+export const phaseTokens = (phases) =>
+  [...new Set(Object.values(phases).flatMap((p) => [...p.always, ...p.conditional]))].sort();
+export const governanceContractPath = (repoRoot) => path.join(cgRoot(repoRoot), "contract.md");
+
+/** One file per rule family. Filename order is family order, and `architecture` sorts first. */
+export const PRINCIPLE_FILES = Object.freeze({
+  "architecture.md": "AP",
+  "product.md": "PP",
+});
+
+/**
+ * The principle files holding inheritable rules, in filename order.
+ *
+ * One file per family, each holding that family's `## XX-nn.` sections. `product.md` ships
+ * with no rules and no headings by design — you inherit nobody else's product opinions — so
+ * it alone may be empty. An unrelated Markdown filename is an error rather than governance
+ * that disappears silently.
  */
 export function principleFiles(repoRoot) {
   const root = principlesRoot(repoRoot);
@@ -135,18 +213,18 @@ export function principleFiles(repoRoot) {
     .readdirSync(root, { withFileTypes: true })
     .filter((entry) => entry.isFile() && entry.name.endsWith(".md"))
     .map((entry) => {
-      const match = /^(AP|PP)-(\d{2})-[a-z0-9]+(?:-[a-z0-9]+)*\.md$/.exec(entry.name);
-      if (!match) {
+      const family = PRINCIPLE_FILES[entry.name];
+      if (!family) {
         throw new ContractError(
-          `invalid principles filename ${entry.name}; expected AP-nn-slug.md or PP-nn-slug.md`,
+          `invalid principles filename ${entry.name}; expected one of ` +
+            `${Object.keys(PRINCIPLE_FILES).join(", ")}`,
         );
       }
       return {
         file: path.join(root, entry.name),
         filename: entry.name,
-        family: match[1],
-        principle: `${match[1]}-${match[2]}`,
-        allowEmpty: match[1] === "PP" && match[2] === "00",
+        family,
+        allowEmpty: family === "PP",
       };
     })
     .sort((a, b) => a.filename.localeCompare(b.filename));
@@ -176,7 +254,7 @@ function markdownProseLines(text) {
  * lines. Continuations are joined and whitespace collapsed so the rule occupies exactly one
  * line in a generated digest, without losing wording.
  *
- * `allowEmpty` exists for `PP-00-start-here.md`, which ships with no rules by design.
+ * `allowEmpty` exists for `product.md`, which ships with no rules by design.
  */
 export function parsePrinciples(file, { allowEmpty = false } = {}) {
   if (!exists(file)) throw new ContractError(`missing principles file: ${file}`);
@@ -219,33 +297,74 @@ export function parsePrinciples(file, { allowEmpty = false } = {}) {
   return rules;
 }
 
-/** Enforce the identity carried by one prefixed principles filename. */
-function assertPrincipleCorrespondence({ file, filename, principle }, rules) {
-  const headings = markdownProseLines(read(file))
-    .map((line) => PRINCIPLE_HEADING.exec(line)?.[1])
-    .filter(Boolean);
+/**
+ * Return [{principle, ruleIds}] for one file, in document order.
+ *
+ * Rules appearing before any heading are collected under `null`, which the correspondence
+ * check rejects by name rather than silently attributing them to nothing.
+ */
+export function parseRuleSections(file) {
+  const sections = [];
+  let current = { principle: null, ruleIds: [] };
+  for (const raw of markdownProseLines(read(file))) {
+    const heading = PRINCIPLE_HEADING.exec(raw);
+    if (heading) {
+      if (current.principle !== null || current.ruleIds.length) sections.push(current);
+      current = { principle: heading[1], ruleIds: [] };
+      continue;
+    }
+    const rule = RULE_START.exec(raw);
+    if (rule) current.ruleIds.push(rule[1]);
+  }
+  if (current.principle !== null || current.ruleIds.length) sections.push(current);
+  return sections;
+}
 
-  // `00` is meta, never a principle. Keep the exemption explicit so prose edits cannot turn it
-  // into a live principle accidentally.
-  if (principle === "PP-00") {
-    if (headings.length || rules.size) {
+/**
+ * Enforce the identity a principles file carries: its family, its headings, and — the part
+ * a filename cannot express once a file holds several principles — that every rule sits
+ * under the heading matching its own principle number.
+ *
+ * Without the heading check, `AP-01-03` filed under `## AP-04.` parses cleanly, inherits
+ * cleanly, and lands in the generated digest under a principle it does not belong to. That
+ * was unreachable while each file held exactly one principle and the filename carried the
+ * ID; it became reachable the moment the families were collapsed into one file each.
+ */
+function assertPrincipleCorrespondence({ file, filename, family }, rules) {
+  const sections = parseRuleSections(file);
+  const seen = new Set();
+
+  for (const { principle, ruleIds } of sections) {
+    if (principle === null) {
       throw new ContractError(
-        `${filename} is a meta file and must not define a live principle heading or rule`,
+        `${filename}: rule(s) ${ruleIds.join(", ")} appear before any \`## ${family}-nn.\` heading`,
       );
     }
-    return;
+    if (!principle.startsWith(`${family}-`)) {
+      throw new ContractError(
+        `${filename} holds ${family} principles; \`## ${principle}.\` belongs in another file`,
+      );
+    }
+    if (seen.has(principle)) {
+      throw new ContractError(`${filename} defines \`## ${principle}.\` more than once`);
+    }
+    seen.add(principle);
+
+    for (const ruleId of ruleIds) {
+      const owner = ruleId.slice(0, ruleId.lastIndexOf("-"));
+      if (owner !== principle) {
+        throw new ContractError(
+          `${filename}: \`${ruleId}\` sits under \`## ${principle}.\` but belongs to ` +
+            `\`## ${owner}.\``,
+        );
+      }
+    }
   }
 
-  if (headings.length !== 1 || headings[0] !== principle) {
-    const found = headings.length ? headings.join(", ") : "none";
-    throw new ContractError(
-      `${filename} must contain only the \`## ${principle}.\` principle heading; found ${found}`,
-    );
-  }
   for (const ruleId of rules.keys()) {
-    if (!ruleId.startsWith(`${principle}-`)) {
+    if (!ruleId.startsWith(`${family}-`)) {
       throw new ContractError(
-        `\`${ruleId}\` belongs in ${ruleId.slice(0, 5)}-*.md, not ${filename}`,
+        `\`${ruleId}\` is a ${ruleId.slice(0, 2)} rule and does not belong in ${filename}`,
       );
     }
   }
@@ -259,16 +378,10 @@ export function loadPrinciples(repoRoot) {
   const owners = new Map();
   const principleOwners = new Map();
   for (const info of principleFiles(repoRoot)) {
-    const { file, filename, family, principle, allowEmpty } = info;
+    const { file, filename, allowEmpty } = info;
     const rules = parsePrinciples(file, { allowEmpty });
     assertPrincipleCorrespondence(info, rules);
     for (const [ruleId, text] of rules) {
-      if (!ruleId.startsWith(`${family}-`)) {
-        throw new ContractError(
-          `${ruleId} is a ${ruleId.slice(0, 2)} rule and must not live in ${filename}; ` +
-            `move it to a ${ruleId.slice(0, 2)}-nn-slug.md file`,
-        );
-      }
       if (merged.has(ruleId)) {
         throw new ContractError(
           `duplicate rule id ${ruleId} across ${owners.get(ruleId)} and ${filename}`,
@@ -277,12 +390,15 @@ export function loadPrinciples(repoRoot) {
       merged.set(ruleId, text);
       owners.set(ruleId, filename);
     }
-    if (principle !== "PP-00" && principleOwners.has(principle)) {
-      throw new ContractError(
-        `${principle} is defined by both ${principleOwners.get(principle)} and ${filename}`,
-      );
+    for (const { principle } of parseRuleSections(file)) {
+      if (principle === null) continue;
+      if (principleOwners.has(principle)) {
+        throw new ContractError(
+          `${principle} is defined by both ${principleOwners.get(principle)} and ${filename}`,
+        );
+      }
+      principleOwners.set(principle, filename);
     }
-    if (principle !== "PP-00") principleOwners.set(principle, filename);
   }
   if (merged.size === 0) {
     throw new ContractError(`no XX-pp-nn rules found under ${principlesRoot(repoRoot)}`);
@@ -537,7 +653,7 @@ export function loadInheritance(file) {
       // "malformed rule id" would not explain why a well-formed DP id is refused.
       if (String(ruleId).startsWith("DP-")) {
         throw new ContractError(
-          `[10] ${key}: design principle '${ruleId}' must be loaded explicitly at a fork, ` +
+          `[10] ${key}: domain principle '${ruleId}' must be loaded explicitly at a fork, ` +
             "never inherited — an unavoidable guide is just a rule",
         );
       }
