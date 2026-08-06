@@ -114,3 +114,64 @@ export function moduleCoverage(repoRoot, folders) {
     unmapped: detected.filter((m) => !covers(m.path) && !(m.path === "." && rootIsContainer)),
   };
 }
+
+/** Directories that hold tests or fixtures rather than the boundaries a contract describes. */
+const NOT_A_BOUNDARY = new Set(["test", "tests", "spec", "specs", "__tests__", "it", "e2e", "fixtures"]);
+
+/**
+ * Implementation files, in any language the manifest table above can detect.
+ *
+ * Build-script extensions are deliberately absent — `.kts`, `.gradle`, `.sbt`. A `build.gradle.kts`
+ * beside a module's source made the module root itself look code-bearing, which collapsed the
+ * shared prefix to nothing and reported every module as having exactly one sub-boundary. Excluding
+ * by extension rather than by filename matters: `build.ts` and `settings.js` are ordinary source.
+ */
+const SOURCE_FILE =
+  /\.(java|kt|scala|go|rs|py|rb|php|cs|fs|swift|m|mm|c|h|cc|cpp|hpp|ts|tsx|js|jsx|mjs|cjs|vue|svelte)$/i;
+
+/**
+ * Count the sub-boundaries a module actually contains.
+ *
+ * `cg modules` reads build manifests, and no manifest declares a package — so the level of the
+ * graph that matters most for routing is exactly the level detection is blind to. Measured: a
+ * ten-module repository whose hand-written contracts had eleven package-level children, where
+ * one adoption run wrote nineteen sub-module contracts and another declared every module a leaf.
+ *
+ * The heuristic: descend past the single-child chain every language puts in front of its source
+ * (`src/main/java/com/acme/thing`), then count the code-bearing directories at the point where it
+ * first branches. A flat module branches nowhere and returns 0, which is what a real leaf looks
+ * like. Test trees are excluded — they mirror the production shape and would double every count.
+ */
+export function subBoundaryCount(repoRoot, modulePath) {
+  const root = path.join(repoRoot, modulePath);
+  const codeDirs = [];
+
+  const walk = (dir, segments) => {
+    let entries;
+    try {
+      entries = fs.readdirSync(dir, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    const hasCode = entries.some(
+      (e) => e.isFile() && SOURCE_FILE.test(e.name) && !(e.name in MANIFESTS),
+    );
+    if (hasCode) codeDirs.push(segments);
+    for (const entry of entries) {
+      if (!entry.isDirectory()) continue;
+      if (SKIP.has(entry.name) || NOT_A_BOUNDARY.has(entry.name)) continue;
+      walk(path.join(dir, entry.name), [...segments, entry.name]);
+    }
+  };
+  walk(root, []);
+  if (codeDirs.length < 2) return 0;
+
+  // The branch point is where the shared prefix of every code directory ends.
+  let shared = 0;
+  for (;;) {
+    const head = codeDirs[0][shared];
+    if (head === undefined || !codeDirs.every((s) => s[shared] === head)) break;
+    shared += 1;
+  }
+  return new Set(codeDirs.filter((s) => s.length > shared).map((s) => s[shared])).size;
+}

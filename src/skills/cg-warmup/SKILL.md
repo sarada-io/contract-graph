@@ -104,6 +104,24 @@ Search for it. Names vary — the tell is a directory of governance prose, not c
 Rule IDs that no longer resolve are the strongest signal: a comment citing `PP-01-04` when no
 `PP-` rule exists means a predecessor defined it and was removed underneath the code.
 
+**But most identifiers in a codebase are work items, not rules, and chasing them wastes the run.**
+The grammar around the ID settles it in one read:
+
+| The sentence says | It is | What to do |
+|---|---|---|
+| *per* X · X *forbids* · *violates* X · *waived under* X · *enforced by* X | a **rule** | a predecessor signal — follow it |
+| *scheduled in* X · *deferred to* X · *delivered in* X · X *closed it* · *pending* X | a **work item** | not a predecessor; stop digging |
+
+A rule is obeyed; a work item is scheduled. `CS-5.1`, `Card 6`, `PHASE-3`, `JIRA-412` are plan and
+ticket references — a deleted planning document, which is ordinary in any repository with history
+and tells you nothing about governance. Do not reconstruct one.
+
+The ID is not the finding. **The sentence around it may still be.** "The `CS-5.6` gate fails
+production verification on unaccepted critical findings" names a real constraint the build obeys —
+that is a §9 harvest candidate. Take the constraint, verify it against the code, and drop the
+identifier: a rule that cites a ticket expires when the ticket does, and `cg verify` fails a
+contract that cites one.
+
 **Search the working tree only.** Do not recover a deleted principles file, contract, or decision
 log out of version control and copy it forward. Version control tells you what a rule *was*, never
 that the code still obeys it — the file was deleted, and a rule resurrected from history is an

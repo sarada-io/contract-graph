@@ -51,7 +51,7 @@ import {
   governanceContractPath,
   RULE_FAMILIES,
 } from "./model.js";
-import { moduleCoverage } from "./modules.js";
+import { moduleCoverage, subBoundaryCount } from "./modules.js";
 import { ProfileError, resolveProfileSelection } from "./profiles.js";
 
 const POINTERS = ["CLAUDE.md", "AGENTS.md"];
@@ -596,6 +596,82 @@ function checkSelfSufficiency(entry, text, fail, planPath) {
 }
 
 /**
+ * Catch a module claiming to be a leaf while holding many separate boundaries.
+ *
+ * The downward edge is the product, and it is the one level `cg modules` is structurally blind
+ * to: no build manifest declares a package. Measured across two adoption runs of the same
+ * repository — one wrote nineteen sub-module contracts, the other declared all ten modules leaves
+ * and wrote none. The instruction to descend was identical in both; prose did not carry it.
+ *
+ * So this is mechanical. A contract may say `None — leaf` for any reason it likes, but not while
+ * its source branches into a dozen independent packages without comment. Advisory, because the
+ * count is a heuristic over directory shape and a module may genuinely own several packages as
+ * one boundary — the threshold is set where that stops being plausible.
+ */
+const LEAF_CLAIM = /^##[ \t]+Child Contracts[ \t]*$/m;
+const SUB_BOUNDARY_ADVISORY_FLOOR = 3;
+
+function checkLeafClaims(repoRoot, folders, advise) {
+  for (const [key, entry] of Object.entries(folders)) {
+    let body;
+    try {
+      body = fs.readFileSync(path.join(repoRoot, entry.contract), "utf8");
+    } catch {
+      continue;
+    }
+    const match = LEAF_CLAIM.exec(body);
+    if (!match) continue;
+
+    const after = body.slice(match.index + match[0].length);
+    const section = after.split(/^## /m)[0];
+    const claimsLeaf = /\bnone\b/i.test(section) && !section.includes("contract.md");
+    if (!claimsLeaf) continue;
+
+    const count = subBoundaryCount(repoRoot, key);
+    if (count >= SUB_BOUNDARY_ADVISORY_FLOOR) {
+      advise(
+        `[0] ${key}: declares no child contracts, but its source branches into ${count} separate ` +
+          "packages — either they decompose into sub-module contracts, or the contract should say " +
+          "why they are one boundary",
+      );
+    }
+  }
+}
+
+/**
+ * Catch a warmup that reported success without finishing.
+ *
+ * Measured on two real adoption runs. One left `Project Identity` as its shipped placeholder —
+ * the root of the graph, the first thing every session reads — and nothing objected, because the
+ * repository contract is not in `map/inheritance.json` so no section check covers it. The same
+ * run wrote no findings file at all, which means the per-unit loop never recorded anything and a
+ * context break would have restarted the work from zero.
+ *
+ * Both are advisory. A greenfield repository legitimately has neither yet: `init` tells that user
+ * to fill the identity themselves, and there is no loop to leave findings behind. The findings
+ * check is therefore gated on a map that something already populated.
+ */
+function checkWarmupCompletion(repoRoot, folders, docsRoot, advise) {
+  const contract = governanceContractPath(repoRoot);
+  if (exists(contract) && read(contract).includes("<!-- Replace this section")) {
+    advise(
+      "[0] .agents/cg/contract.md still carries a `Replace this section` placeholder — the root " +
+        "of the graph is the first thing every session reads, and nothing else fills it",
+    );
+  }
+
+  if (!Object.keys(folders).length) return;
+  const findings = path.join(repoRoot, docsRoot, "plans", "warmup-findings.md");
+  if (!exists(findings)) {
+    advise(
+      `[0] ${docsRoot}/plans/warmup-findings.md is absent although ${Object.keys(folders).length} ` +
+        "folder(s) are mapped — `cg-warmup` records each unit's findings there as it goes, so an " +
+        "absent file means the loop kept its state in context and a break would restart it",
+    );
+  }
+}
+
+/**
  * Catch a graph that was generated rather than written.
  *
  * Measured on a real adoption run: an agent decided ten contracts was mechanical work, wrote a
@@ -688,6 +764,8 @@ export function verify(repoRoot) {
   }
 
   checkTemplatedContracts(repoRoot, folders, (m) => advisories.push(m));
+  checkWarmupCompletion(repoRoot, folders, profile.docs, (m) => advisories.push(m));
+  checkLeafClaims(repoRoot, folders, (m) => advisories.push(m));
 
   checkAgentRule(fail, repoRoot);
   checkPhases(fail, repoRoot);

@@ -17,7 +17,7 @@ import test from "node:test";
 
 import { init, SCAFFOLD_MAPPING, SOURCE_ROOT } from "../src/scripts/init.js";
 import { checkHarvest } from "../src/scripts/harvest.js";
-import { detectModuleRoots, moduleCoverage } from "../src/scripts/modules.js";
+import { detectModuleRoots, moduleCoverage, subBoundaryCount } from "../src/scripts/modules.js";
 import { sync } from "../src/scripts/sync.js";
 import { verify } from "../src/scripts/verify.js";
 import {
@@ -943,6 +943,19 @@ test("cg-warmup searches for a predecessor framework before authoring anything",
     /detector that loses its rule/i,
     "an orphaned predecessor detector must be reported, not just noticed",
   );
+
+  // Observed live: an agent found `CS-5.6` in a build file and started hunting a predecessor
+  // framework. It is a work-item id from a deleted plan — 14 refs, 11 files, all dead ends.
+  // The grammar separates them: a rule is obeyed, a work item is scheduled.
+  assert.match(skill, /work items, not rules/i, "warmup must separate rule ids from ticket ids");
+  for (const cue of ["scheduled in", "deferred to", "forbids"]) {
+    assert.ok(skill.includes(cue), `the discriminator needs the \`${cue}\` cue`);
+  }
+  assert.match(
+    skill,
+    /The ID is not the finding/,
+    "a dead identifier can still wrap a live constraint — take the constraint, drop the id",
+  );
 });
 
 /**
@@ -1215,6 +1228,118 @@ test("verify flags a contract set that was generated rather than written", () =>
   assert.ok(
     !verify(dir).advisories.some((m) => m.includes("identical rule set")),
     "a scope that varies per module must not be flagged",
+  );
+});
+
+/**
+ * `subBoundaryCount` descends past the single-child chain every language puts in front of its
+ * source, then counts where it first branches. The bug worth pinning: a build script beside the
+ * source made the module root itself look code-bearing, which collapsed the shared prefix to
+ * nothing and reported every module in a ten-module repository as having exactly one boundary.
+ */
+test("sub-boundary counting ignores build scripts and test trees", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-subcount-"));
+  const mk = (rel, body = "x") => {
+    fs.mkdirSync(path.join(dir, path.dirname(rel)), { recursive: true });
+    fs.writeFileSync(path.join(dir, rel), body);
+  };
+
+  // A build manifest at the module root, production packages, and a mirrored test tree.
+  mk("svc/build.gradle.kts", "plugins { java }\n");
+  for (const pkg of ["billing", "identity", "search"]) {
+    mk(`svc/src/main/java/com/acme/${pkg}/Thing.java`, "class Thing {}");
+    mk(`svc/src/test/java/com/acme/${pkg}/ThingTest.java`, "class ThingTest {}");
+  }
+  assert.equal(
+    subBoundaryCount(dir, "svc"),
+    3,
+    "the manifest must not count as source, and the test tree must not double the count",
+  );
+
+  // A genuinely flat module branches nowhere.
+  mk("flat/build.gradle.kts", "plugins { java }\n");
+  mk("flat/src/main/java/com/acme/flat/A.java", "class A {}");
+  mk("flat/src/main/java/com/acme/flat/B.java", "class B {}");
+  assert.equal(subBoundaryCount(dir, "flat"), 0, "a flat module is a real leaf");
+});
+
+/**
+ * The downward edge is the product, and it is the level `cg modules` is blind to — no build
+ * manifest declares a package. Measured across two adoption runs of one repository: nineteen
+ * sub-module contracts from one, zero from the other, with the identical instruction to descend.
+ * Prose did not carry it, so this is mechanical.
+ */
+test("verify flags a module claiming to be a leaf while holding many packages", () => {
+  const dir = makeRepo();
+  const contract = "src/.agents/cg/contract.md";
+
+  // A build script beside the source made the module root itself look code-bearing, which
+  // collapsed the shared prefix and reported every module as having exactly one sub-boundary.
+  fs.writeFileSync(path.join(dir, "src", "build.gradle.kts"), "plugins { java }\n");
+
+  // A flat module: one package, genuinely a leaf.
+  fs.mkdirSync(path.join(dir, "src", "lib", "core"), { recursive: true });
+  fs.writeFileSync(path.join(dir, "src", "lib", "core", "a.ts"), "export const a = 1;\n");
+  write(dir, contract, read(dir, contract).replace(
+    /^## Child Contracts$[\s\S]*?(?=^## )/m,
+    "## Child Contracts\nNone — leaf module\n\n",
+  ));
+  sync(dir);
+  assert.ok(
+    !verify(dir).advisories.some((m) => m.includes("declares no child")),
+    "a module with one package must not be nagged",
+  );
+
+  // Now branch it into four independent packages; the leaf claim stops being plausible.
+  for (const pkg of ["billing", "identity", "search", "reporting"]) {
+    fs.mkdirSync(path.join(dir, "src", "lib", pkg), { recursive: true });
+    fs.writeFileSync(path.join(dir, "src", "lib", pkg, "index.ts"), "export const x = 1;\n");
+  }
+  const advisory = verify(dir).advisories.find((m) => m.includes("declares no child"));
+  assert.ok(advisory, `expected a leaf-claim advisory, got: ${verify(dir).advisories.join(" | ")}`);
+  assert.match(advisory, /5 separate packages/);
+
+  // Declaring the children silences it — the point is the edge, not the count.
+  write(dir, contract, read(dir, contract).replace(
+    "None — leaf module",
+    "- `lib/billing/.agents/cg/contract.md` — money movement",
+  ));
+  sync(dir);
+  assert.ok(
+    !verify(dir).advisories.some((m) => m.includes("declares no child")),
+    "a declared child set must clear the advisory",
+  );
+});
+
+/**
+ * Two failure modes seen on a real run that reported success: the root of the graph left as its
+ * shipped placeholder, and no findings file at all — meaning the per-unit loop kept its state in
+ * context, so a break would have restarted the work.
+ */
+test("verify flags a warmup that reported success without finishing", () => {
+  const dir = makeRepo();
+  const root = ".agents/cg/contract.md";
+
+  const initial = verify(dir).advisories;
+  assert.ok(
+    initial.some((m) => m.includes("Replace this section")),
+    "the shipped root contract carries the placeholder and should say so",
+  );
+
+  write(dir, root, read(dir, root).replace(/<!-- Replace this section[\s\S]*?-->/, "A billing platform."));
+  const filled = verify(dir).advisories;
+  assert.ok(!filled.some((m) => m.includes("Replace this section")), "a filled root clears it");
+
+  // The findings advisory is gated on a populated map: a greenfield repo has no loop to record.
+  assert.ok(
+    filled.some((m) => m.includes("warmup-findings.md")),
+    `expected the findings advisory once folders are mapped, got: ${filled.join(" | ")}`,
+  );
+  fs.mkdirSync(path.join(dir, "docs", "plans"), { recursive: true });
+  fs.writeFileSync(path.join(dir, "docs", "plans", "warmup-findings.md"), "# findings\n");
+  assert.ok(
+    !verify(dir).advisories.some((m) => m.includes("warmup-findings.md")),
+    "a present findings file clears it",
   );
 });
 
