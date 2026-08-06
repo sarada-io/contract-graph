@@ -3,8 +3,17 @@
 What is built, what is designed and unbuilt, and what is undecided. Kept honest on purpose — a
 framework about not overstating enforcement should not overstate itself.
 
+The north star is a complete, top-down software context graph: a fresh agent routes from the
+repository contract to the relevant module and sub-module contracts, understands how each unit is
+used by its parent, and reaches the correct implementation boundary without scanning unrelated
+source. Verification and governance exist to keep that graph trustworthy.
+
 ## Built
 
+- Repository and mapped-folder contracts that carry bounded context, public entry points,
+  invariants, verification commands, and links to related contracts.
+- Task-to-contract routing and editor entry points that give a fresh agent a deterministic first
+  path into the graph.
 - Three rule families with the per-rule modality marker, and a verifier that enforces both
   directions (an `invariant` owes exactly one enforcement-map row; a `guide` must have none).
 - Enforcement-map coverage for architecture and product rules: every `AP-`/`PP-` rule owes exactly
@@ -29,6 +38,8 @@ is only as good as the discipline that wrote it, which is the property Contract 
 A one-field annotation makes the edge structural, and cross-checking declared edges against injected
 types catches both directions of drift. Until this lands:
 
+- the authored contract hierarchy is useful for navigation, but its completeness cannot be trusted
+  without occasionally returning to source;
 - closure per folder can be asserted but not verified;
 - a subtree cannot be handed to an agent with confidence that it is the whole subtree.
 

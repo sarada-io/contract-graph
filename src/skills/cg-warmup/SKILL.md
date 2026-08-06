@@ -1,6 +1,6 @@
 ---
 name: cg-warmup
-description: Adopt Contract Graph into a repository that already has code. Run once, after cg init, before the lifecycle skills are useful. Discovers the real module roots, writes one folder contract per module from the code that is actually there, fills the inheritance and routing maps, and assesses the existing repository against the binding principles — routing every finding to a detector, a recorded exception, or a corrective Step. Never reports a compliance score, never edits behaviour, and never marks a rule enforced that no detector proves.
+description: Adopt Contract Graph into a repository that already has code. Run once, after cg init, before the lifecycle skills are useful. Finds any predecessor governance framework and carries its rules forward rather than writing over them, discovers the real module roots, writes one folder contract per module from the code that is actually there, fills the inheritance and routing maps, assesses the repository against the binding principles, and harvests the rules the code already enforces into product and architecture principles so no later session has to re-read the code to learn them — listing every new rule for the owner to confirm. Never reports a compliance score, never edits behaviour, never deletes or runs the predecessor, and never marks a rule enforced that no detector proves.
 ---
 
 # Contract Graph Warmup
@@ -25,19 +25,75 @@ executable.
 
 ## Required outcome
 
-Finish with all eight true:
+Finish with all ten true:
 
-1. Every real module root is discovered and either mapped or explicitly excluded with a reason.
-2. Every mapped module has a `contract.md` describing the code that is there — not an aspiration.
-3. `map/inheritance.json` names, for each module, the rules that actually bind it.
-4. `map/routing.md` routes a task to the module contracts it touches.
-5. Every principle assessment lands as a detector, a proposed exception, or a corrective Step.
-6. Every open question is a decision-log entry or a recorded assumption — none was asked in chat.
-7. The report states coverage and the limits of its own evidence.
-8. The user-facing response names the next action, next skill, input artifact, and readiness
-   condition.
+1. Any predecessor governance framework is found, read, and carried forward or logged — never
+   silently replaced.
+2. Every real module root is discovered and either mapped or explicitly excluded with a reason.
+3. Every mapped module has a `contract.md` describing the code that is there — not an aspiration.
+4. `map/inheritance.json` names, for each module, the rules that actually bind it.
+5. `map/routing.md` routes a task to the module contracts it touches.
+6. Every principle assessment lands as a detector, a proposed exception, or a corrective Step.
+7. The rules the code already enforces are written as principles, bound, and listed for the owner
+   to confirm — so no later session has to re-read the code to learn them.
+8. Every open question is a decision-log entry or a recorded assumption — none was asked in chat.
+9. The report states coverage and the limits of its own evidence.
+10. The user-facing response names the next action, next skill, input artifact, and readiness
+    condition.
 
-## 1. Discover the module roots
+## 1. Look for the framework that came before
+
+**Do this first, before writing a single contract.** A repository adopting Contract Graph rarely
+starts from nothing. It usually has months of hand-written governance — an older contract format, a
+principles file with its own IDs, its own verifier scripts, its own decision log. If you discover
+that *after* authoring ten contracts, you have already written over it.
+
+Contract Graph is only worth adopting if what it produces is at least as strong as what it
+replaces. That is a claim, and this section is where you owe the evidence for it.
+
+Search for it. Names vary — the tell is a directory of governance prose, not code:
+
+| Where to look | What you are looking for |
+|---|---|
+| `.agents/`, `.claude/`, `.cursor/`, `.github/` | skill or instruction sets other than `cg-*` |
+| repository root, `docs*/` | `CONTRIBUTING`, architecture-decision records, a principles or conventions file |
+| `scripts/`, `tools/`, `bin/` | governance verifiers — anything that reads a contract or principles file |
+| the build file | tasks wired into `check`, `test`, or `lint` that run those verifiers |
+| any second decision log | a populated ledger under a different path than `docs/plans/decision-log.md` |
+
+Rule IDs that no longer resolve are the strongest signal: a comment citing `PP-01-04` when no
+`PP-` rule exists means a predecessor defined it and was removed underneath the code.
+
+When you find one, do these three things:
+
+- **Read its rules before writing yours.** Every rule the predecessor asserted is either
+  reproduced in the new graph — as a principle, a contract invariant, or an enforcement-map row —
+  or it is a deliberate drop. There is no third case. A rule that quietly fails to reappear is the
+  regression this step exists to prevent.
+- **Carry its product rules into `principles/product.md` now.** That file ships empty because a
+  greenfield repository has not earned a `PP-` rule yet, and rules accrue there through decision
+  harvest over several phases. A repository with a predecessor has already done that work. Waiting
+  for those rules to re-accrue drops them, and the drop is invisible: the architecture family is
+  pre-seeded and will look complete while the product family is empty. Copy each rule across with
+  its ID where the ID still fits, restate it in full, and give it a row in the enforcement map
+  naming the detector that already proves it.
+- **A detector that loses its rule is the highest-severity finding here.** The predecessor's map
+  is where you find them: a passing test bound to a rule ID that no longer exists is now
+  deletable, and nothing in the new constitution argues back. List every one in the report even
+  when the rule is carried forward, because the binding is what makes it safe, not the test.
+- **Record the comparison.** Report it under *Predecessor* (§9): rules carried forward, rules
+  dropped and why, and anything the old framework enforced that the new one does not yet. If the
+  new coverage is *weaker* anywhere, say so in that sentence — do not average it away against the
+  places it is stronger.
+- **Never delete it, and never run it.** Its scripts read paths that may no longer exist, and
+  deleting a toolchain is not reversible by one edit. Retiring it is a `DL-02` with options, and
+  the fact that it is wired into the build — so the build now fails for a governance reason — is
+  part of that entry, not a separate cleanup.
+
+If you find nothing, say that in the report. "No predecessor framework found" is a real finding;
+its absence is why nobody should later ask what happened to the old rules.
+
+## 2. Discover the module roots
 
 Start with the tool, which reads build manifests rather than guessing from directory shape:
 
@@ -80,9 +136,9 @@ Exclude, with a stated reason rather than silently: vendored or generated trees,
 fixtures, and anything the repository already ignores.
 
 Do **not** stop and ask the owner to confirm the list. Proceed on the roots a manifest identified,
-recording that as an assumption, and raise only the genuinely ambiguous ones — §6.
+recording that as an assumption, and raise only the genuinely ambiguous ones — §8.
 
-## 2. Write one contract per module
+## 3. Write one contract per module
 
 Copy [the module contract template](assets/module-contract.template.md) for each module. It
 already carries the two `BEGIN/END INHERITED` markers in the right place — leave them empty and
@@ -103,16 +159,16 @@ Two rules that decide whether this is worth doing at all:
 
 - **Describe what is true, not what you wish were true.** A contract that states the boundary
   you intend to have is a plan, and plans belong in `docs/plans/`. If the code violates the
-  boundary you want, write the boundary that exists and open a finding under §5.
+  boundary you want, write the boundary that exists and open a finding under §6.
 - **State it in full.** A contract may never cite a plan path or a ticket as the source of a
   rule — `cg verify` fails the build for it, because a contract that depends on a deletable
   file is a contract that expires.
 
 Leave `<!-- Replace this section -->` markers only where you genuinely could not determine the
-answer. Each one is a question for §6 — a marker with no entry behind it is a hole nobody will
+answer. Each one is a question for §8 — a marker with no entry behind it is a hole nobody will
 find again.
 
-## 3. Fill the inheritance map
+## 4. Fill the inheritance map
 
 `map/inheritance.json` decides which rules are stamped into which contract. Nothing infers it
 and nothing checks a scope is *correct* — the verifier proves only that a rule ID exists.
@@ -135,7 +191,7 @@ reported, so the count going down is your progress.
 An entry may govern a parent: a contract on `services/` covers `services/billing/` beneath it.
 Prefer that where the modules genuinely share a boundary, and separate contracts where they do not.
 
-## 4. Fill the routing map
+## 5. Fill the routing map
 
 `map/routing.md` ships as a stub because only the repository knows its own capabilities. Add one
 row per capability, surface, or subsystem, naming the module contracts a task touching it must
@@ -145,7 +201,7 @@ Write the rows in the words a request arrives in — "checkout fails at payment"
 "PaymentServiceImpl" — because the routing table is read by whoever received the request, before
 they know which class is involved.
 
-## 5. Assess the repository against the principles
+## 6. Assess the repository against the principles
 
 This is the part that must not overclaim.
 
@@ -179,7 +235,84 @@ score hides it.
 **Warmup never edits behaviour.** It writes governance, detectors, and findings. The moment a
 finding requires a code change, it becomes a Step for `cg-produce`.
 
-## 6. Raise what needs the owner — in the log, not in chat
+## 7. Harvest the rules the code already enforces
+
+§6 asks what the principles say about this repository. This section asks the opposite, and it is
+the one that decides whether adoption was worth doing: **what does this repository already know
+that no principle states?**
+
+A mature codebase is full of decided rules. A single seam constructs every storage path. One class
+is the only place authorization is evaluated. No module outside one adapter package imports the
+cloud SDK. Those are constraints somebody chose, and the code obeys them — but they exist only as
+a pattern a reader has to re-derive. Leave them there and every future session pays to read the
+code again to learn what the last session already knew. **The graph is not complete until the
+rules in the code are in the contract.** That is the whole economic case for this step.
+
+### What qualifies
+
+A candidate is a rule only when all four hold. Anything failing one is a description, and
+descriptions belong in the contract sections you already wrote:
+
+1. **It constrains, rather than describes.** "Repositories live in `data/`" is a description.
+   "Nothing outside `data/` opens a database connection" is a rule — it forbids something.
+2. **The code obeys it today**, and you can name the files that prove it.
+3. **A violation would be a defect**, not a preference. If you cannot say what breaks, it is a
+   style note.
+4. **No existing rule already covers it.** A restatement of `AP-02-02` in local vocabulary makes
+   the graph longer without making it stronger.
+
+The strongest source is the one §1 already found: **a detector that enforces no rule.** Somebody
+wrote a test to hold a line. The line is the rule; write it down and bind them.
+
+### Which family it goes in
+
+| The rule is… | Family | Notes |
+|---|---|---|
+| structural, and would hold for any repository | `AP-` | append as a new principle number; it is inherited everywhere, so the bar is high |
+| true because of *this* product's market, pricing, shape, or tenancy model | `PP-` | `product.md`; this is the family a brownfield repository has most of and ships with none of |
+| a lean between two workable designs | fork file | `design.md`, `operations.md`, `ux.md`, `security.md`, as a `guide` with its cost |
+
+Two errors to avoid, in the order they are tempting:
+
+- **Do not file a product rule as an architecture rule.** Tenancy is the usual casualty. "Every
+  document lives under a tenant path prefix" is a real, testable, load-bearing rule — and it is a
+  `PP-` rule, because a single-tenant repository inheriting it could never satisfy it. The test is
+  whether a repository building something else would be *wrong* to adopt it.
+- **Do not file a testable rule as a `guide`.** A `guide` is where a rule goes when no detector
+  could exist, never where one goes because writing the detector is work. If you can describe the
+  test, the rule is an `invariant` or an `AP-`/`PP-` rule and owes its row.
+
+### What each harvested rule owes
+
+Every `AP-` and `PP-` rule needs **exactly one enforcement-map row** — `cg verify` fails without
+it. Write the row even when the detector does not exist yet; mark it `*(not yet built)*` and it
+becomes tracked debt rather than a silent gap. Where §1 or §6 found a detector that already proves
+the rule, name it and the debt is closed on arrival.
+
+Then bind it: add the rule ID to the modules it governs in `map/inheritance.json` and run
+`cg sync`. A rule bound to nothing governs nothing.
+
+### When a harvested rule contradicts a binding principle
+
+This is common and it is *information*, not an obstacle. The code was built to a rule that the
+architecture principles disagree with, and one of the two is wrong.
+
+Never resolve it yourself and never quietly drop the harvested rule. Raise a `DL-02` naming the
+architecture rule, the harvested rule, the code that follows the harvested one, and what it would
+cost to move either way. The owner decides which is authoritative — this is the same `D-3` floor
+as §8: a binding principle is not yours to waive, and neither is a rule the whole codebase
+already follows.
+
+### Keep it proportionate
+
+Harvest the rules that would change what an agent does. A repository will yield somewhere between
+a handful and a few dozen; a hundred means you are transcribing the code rather than governing it,
+and a graph nobody finishes reading is the failure mode §6's line budget exists to prevent.
+
+Every harvested rule is listed for confirmation in §9 before this skill finishes. You write them;
+the owner keeps them.
+
+## 8. Raise what needs the owner — in the log, not in chat
 
 Warmup does not interview you. It decides what it can from the code and the principles, records
 what it decided, logs what it genuinely cannot decide, and hands you **one consolidated set at the
@@ -192,7 +325,7 @@ Route every open question by what it would cost to be wrong:
 |---|---|---|
 | a module root a build manifest identified | proceed; record an assumption | reversible by one edit to `inheritance.json` |
 | a boundary with no manifest behind it — a package tree, a shared directory | **`DL-02`** | wrong here makes several contracts wrong, and no default is safe |
-| which rules bind a module | proceed, including the rule when unsure | §3 — the broad scope is the visible error |
+| which rules bind a module | proceed, including the rule when unsure | §4 — the broad scope is the visible error |
 | an exception to a binding principle | **`DL-02`, always** | a binding principle is protected; it is never yours to waive quietly |
 | a contract section you could not determine | marker, plus **`DL-02`** when the boundary is material | otherwise the marker is the record |
 
@@ -218,10 +351,18 @@ Two rules that make this work rather than becoming a queue nobody drains:
 Stop and ask in chat only if nothing else can proceed — which, for warmup, essentially means the
 repository has no discoverable modules at all.
 
-## 7. Report coverage honestly
+## 9. Report coverage honestly
 
 ```markdown
 # Warmup report
+
+## Predecessor
+- framework found: <none | what it was, and where>
+- rules it stated: <n> — <by family>
+- rules carried forward: <n> — <as principles, contract invariants, or enforcement-map rows>
+- rules deliberately dropped: <n> — <each with its reason>
+- detectors that lost their rule: <n> — <each test, and the rule ID that no longer resolves>
+- still enforced by it and not yet by this graph: <n> — <which, and the DL-02 that decides them>
 
 ## Modules
 - discovered: <n> — <how: build file, ownership boundary>
@@ -236,6 +377,18 @@ repository has no discoverable modules at all.
 - enforced (detector exists and passes): <n>
 - assessed by reading (evidence, not proof): <n>
 - unknown (needs running or instrumenting): <n>
+
+## New principles — please confirm
+Harvested from the code (§7). Each is a rule this repository already follows that no principle
+stated. They are written, bound, and green — this list is for you to keep, reword, or delete.
+
+| ID | Rule | Why it is that family | Evidence in the code | Detector |
+|---|---|---|---|---|
+| <PP-nn-nn> | <the rule, stated in full> | <product-specific / structural / a lean> | <the files that prove it> | <name, or `not yet built`> |
+
+- contradicting a binding principle: <n> — <each is a `DL-02`, listed under *Waiting on you*>
+- **To delete one:** remove it from the principle file, its enforcement-map row, and its entries in
+  `map/inheritance.json`, then run `cg sync`.
 
 ## Findings
 - detectors written now: <n>
@@ -255,7 +408,14 @@ in it stopped the rest of the work. The principles section is the honest one. If
 so plainly — that is the true state of a repository at adoption, and pretending otherwise makes
 the first real violation a surprise instead of a caught defect.
 
-## 8. Next-action response
+**New principles is the section to read second**, and it is a different kind of ask. Those rules
+are already written and already green; nothing waits on the reply. What the owner is confirming is
+that each one is a rule they want to keep, in the words they would have used — because from here
+on it binds every agent that reads the graph. Present the whole set at once, never one at a time,
+and never ask for approval before writing them: an unwritten rule leaves the code as the only
+record of itself, which is the cost this step exists to remove.
+
+## 10. Next-action response
 
 Choose exactly one immediate route:
 
@@ -278,6 +438,12 @@ End the user-facing response with:
 
 ## Completion check
 
+- [ ] A predecessor framework was searched for, and the report says what was found — including
+      "none".
+- [ ] Every rule the predecessor asserted is carried forward or listed as a deliberate drop.
+- [ ] The predecessor's product rules are in `principles/product.md`, not left to re-accrue.
+- [ ] Every predecessor detector whose rule ID no longer resolves is named in the report.
+- [ ] Nothing belonging to the predecessor was deleted or executed.
 - [ ] `cg modules` exits 0, or every remaining row is excluded with a stated reason.
 - [ ] Every module root is mapped or excluded with a stated reason.
 - [ ] Every mapped module has a contract describing code that exists.
@@ -286,6 +452,13 @@ End the user-facing response with:
 - [ ] `inheritance.json` scopes were widened rather than guessed narrow.
 - [ ] `routing.md` is written in the words requests arrive in.
 - [ ] Every finding is a detector, a recorded exception, or a corrective Step.
+- [ ] The rules the code already enforces are written as principles, not left in the code.
+- [ ] Every harvested rule is in the right family — no product rule filed as `AP-`, no testable
+      rule filed as a `guide`.
+- [ ] Every harvested `AP-`/`PP-` rule has one enforcement-map row and is bound in
+      `inheritance.json`.
+- [ ] Every harvested rule contradicting a binding principle is a `DL-02`, not a silent choice.
+- [ ] The harvested set is listed in the report for the owner to confirm, in one place.
 - [ ] Every open question is a `DL-02` entry or a recorded assumption — none was asked in chat.
 - [ ] Every `<!-- Replace -->` marker has a decision-log entry behind it.
 - [ ] Pending questions were presented once, as a consolidated set.

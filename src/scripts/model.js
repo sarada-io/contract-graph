@@ -501,8 +501,9 @@ export function renderRootPointer(repoRoot, prefix, projectName) {
   return [
     `# ${projectName} — agent entry point`,
     "",
-    `**Start here: [\`${contract}\`](${contract})** — the repository constitution. It sets the ` +
-      "required reading order, the module contract map, and the harness notes.",
+    `**Start here: [\`${contract}\`](${contract})** — the root of the project's context graph. ` +
+      "It explains the system, sets the reading order, and routes work into module and sub-module " +
+      "contracts before implementation code is read.",
     "",
     "`.agents/cg/` is a dot-directory. If your tool's indexer skips hidden paths, open " +
       "these files by exact path rather than relying on search.",
@@ -517,9 +518,10 @@ export function renderRootPointer(repoRoot, prefix, projectName) {
     `3. [\`${prefix}.agents/cg/workflow.md\`](${prefix}.agents/cg/workflow.md) — the mandatory ` +
       "agent workflow.",
     `4. [\`${prefix}.agents/cg/map/routing.md\`](${prefix}.agents/cg/map/routing.md) — ` +
-      "task-to-module contract mapping.",
-    "5. `<module>/.agents/cg/contract.md` — lazy-loaded per impacted module; each one " +
-      "repeats the rules that bind that module.",
+      "the first task-to-module edge in the context graph.",
+    "5. `<module>/.agents/cg/contract.md`, then its relevant child contracts — traverse until " +
+      "the responsible boundary is clear; only then read implementation. Each contract repeats " +
+      "the rules that bind its folder.",
     "",
     "Do not put instructions in this file — the index above is generated, and everything " +
       "else belongs under `.agents/cg/`. Regenerate with `cg sync`.",
@@ -657,7 +659,8 @@ export function renderAgentRule() {
     "# Contract Graph",
     "",
     "Before planning or changing code, read",
-    "[`../cg/contract.md`](../cg/contract.md) and follow its reading order.",
+    "[`../cg/contract.md`](../cg/contract.md) and traverse its context graph from repository to",
+    "module to relevant sub-module before reading implementation code.",
     "Use the matching [`../skills/cg-*/SKILL.md`](../skills/) for non-trivial lifecycle work.",
     "Binding guidance lives under `.agents/cg/`; canonical skills live under `.agents/skills/`.",
     "",

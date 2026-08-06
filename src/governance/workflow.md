@@ -33,8 +33,9 @@ its originating case, and route it once to a module contract, `AP`, `PP`, `DP`, 
 
 1. Read `.agents/cg/contract.md`.
 2. Read `.agents/cg/principles/` for global architecture and product rules.
-3. Identify impacted modules.
-4. Lazy-load only required module contracts from `<module>/.agents/cg/contract.md`.
+3. Identify impacted modules through `.agents/cg/map/routing.md`.
+4. Load those module contracts, then traverse their child-contract links until the smallest
+   responsible boundary is clear. Read implementation only after this context path is known.
 5. Use `cg-plan` to create or update the phase-wise roadmap for non-trivial work.
 6. Use `cg-prepare` to turn one selected phase into one prioritized, dependency-ordered Step queue
    in a single execution branch or worktree.
@@ -130,9 +131,13 @@ consolidated blocker or decision set. When no lifecycle work remains, say `None`
 
 Do not read all contracts by default.
 
-- Start with modules explicitly touched by the task.
+- Start with module contracts selected by the task-to-contract routing map.
+- Descend through explicitly named child contracts to locate the responsible sub-module.
 - Add neighbor module contracts only after cross-module impact is confirmed.
-- Stop loading more contracts once constraints are clear.
+- Stop loading contracts once constraints are clear, then inspect source inside that boundary.
+
+The contracts are the reusable context map. Source code proves and implements their claims; it is
+not the first mechanism for rediscovering the map on every session.
 
 ## Contract Update Triggers
 

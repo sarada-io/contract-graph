@@ -857,6 +857,187 @@ test("the CLI refuses an unknown option instead of ignoring it", () => {
   assert.equal(run(["init", target]).code, 0);
 });
 
+/**
+ * A repository that documents under `docs-plans/` gets a second, empty `docs/plans/` — and
+ * now two files both look like the decision log. The first brownfield adoption run spent a
+ * `DL-02` entry discovering that. `init` never overwrites, so creating the tree is correct;
+ * doing it without a word is what made it a surprise.
+ */
+test("init names an existing split documentation convention instead of silently doubling it", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-docs-rival-"));
+  for (const tree of ["docs-plans", "docs-design", "docs-guides", "src"]) {
+    fs.mkdirSync(path.join(dir, tree), { recursive: true });
+    fs.writeFileSync(path.join(dir, tree, "README.md"), "# existing\n");
+  }
+
+  const output = execFileSync(
+    process.execPath,
+    [path.join(SOURCE_ROOT, "..", "bin", "cg.js"), "init", dir],
+    { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] },
+  );
+
+  for (const tree of ["docs-design", "docs-guides", "docs-plans"]) {
+    assert.match(output, new RegExp(`\`${tree}/\``), `init must name ${tree}/`);
+    assert.ok(
+      fs.existsSync(path.join(dir, tree, "README.md")),
+      "the existing tree must be left exactly as it was",
+    );
+  }
+  assert.match(output, /two documentation trees/);
+  assert.ok(fs.existsSync(path.join(dir, "docs", "plans")), "the cg tree is still created");
+
+  // A directory that merely starts with the same word is not a documentation convention.
+  const plain = fs.mkdtempSync(path.join(os.tmpdir(), "cg-docs-plain-"));
+  fs.mkdirSync(path.join(plain, "test-fixtures"), { recursive: true });
+  fs.writeFileSync(path.join(plain, "test-fixtures", "a.txt"), "x\n");
+  const quiet = execFileSync(
+    process.execPath,
+    [path.join(SOURCE_ROOT, "..", "bin", "cg.js"), "init", plain],
+    { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] },
+  );
+  assert.ok(!/two documentation trees/.test(quiet), "no false positive on an unrelated directory");
+});
+
+/**
+ * Warmup is the only skill that meets a repository with months of hand-written governance
+ * already in it. Writing ten contracts before noticing the predecessor means writing over
+ * it, so the search has to come first and the comparison has to be reported — otherwise
+ * "the new files are at least as strong" is an assertion with no evidence behind it.
+ */
+test("cg-warmup searches for a predecessor framework before authoring anything", () => {
+  const skill = fs.readFileSync(
+    path.join(SOURCE_ROOT, "skills", "cg-warmup", "SKILL.md"),
+    "utf8",
+  );
+  const heading = (text) => skill.indexOf(`\n## ${text}`);
+
+  const predecessor = heading("1. Look for the framework that came before");
+  assert.ok(predecessor > 0, "warmup must have a predecessor step");
+  assert.ok(
+    predecessor < heading("3. Write one contract per module"),
+    "the search must come before contract authoring, or it is archaeology after the fact",
+  );
+
+  assert.match(skill, /never run it|never delete it/i, "the predecessor is read, not executed");
+  assert.match(skill, /^## Predecessor$/m, "the report owes a predecessor section");
+  assert.match(
+    skill,
+    /carried forward/,
+    "the comparison must state which predecessor rules survived",
+  );
+
+  // Measured on the first real adoption: the architecture family is pre-seeded and looked
+  // complete, while 23 product rules and 10 requirements silently became zero. Harvest is the
+  // right route for a rule nobody has written yet and the wrong one for a rule already written.
+  assert.match(
+    skill,
+    /product rules into `principles\/product\.md`/,
+    "predecessor product rules must be carried over, not left to re-accrue through harvest",
+  );
+
+  // Same run: eleven passing tenant-isolation tests kept passing while the rule IDs behind
+  // them stopped resolving. A green test bound to nothing is deletable by the next agent.
+  assert.match(
+    skill,
+    /detector that loses its rule/i,
+    "an orphaned predecessor detector must be reported, not just noticed",
+  );
+});
+
+/**
+ * The economic case for warmup: a rule that exists only as a pattern in the code is re-derived
+ * by every session that meets it. Measured on the first adoption — 23 product rules and 10
+ * requirements were already written down in that repository and the graph came out with none.
+ * Harvesting has to happen while the code is being read, not after the contracts are written.
+ */
+test("cg-warmup harvests the rules the code enforces into principles", () => {
+  const skill = fs.readFileSync(
+    path.join(SOURCE_ROOT, "skills", "cg-warmup", "SKILL.md"),
+    "utf8",
+  );
+  const heading = (text) => skill.indexOf(`\n## ${text}`);
+
+  const harvest = heading("7. Harvest the rules the code already enforces");
+  assert.ok(harvest > 0, "warmup must have a harvest step");
+  assert.ok(
+    harvest > heading("6. Assess the repository against the principles"),
+    "harvest reads the code after the assessment has established what the principles already cover",
+  );
+  assert.ok(harvest < heading("9. Report coverage honestly"), "harvest precedes the report");
+
+  // Family placement is the whole difficulty. A product rule filed as `AP-` binds repositories
+  // that can never satisfy it; a testable rule filed as a `guide` buys silence for the price
+  // of the detector.
+  assert.match(skill, /Do not file a product rule as an architecture rule/);
+  assert.match(skill, /Do not file a testable rule as a `guide`/);
+
+  // Every AP-/PP- rule owes an enforcement-map row — `cg verify` fails without one, so a
+  // harvest step that does not say so produces a repository that cannot verify.
+  assert.match(skill, /exactly one enforcement-map row/);
+  assert.match(skill, /inheritance\.json/, "a harvested rule bound to nothing governs nothing");
+
+  // A harvested rule contradicting a binding principle is the owner's call, never warmup's.
+  assert.match(skill, /contradicts a binding principle/i);
+
+  // The owner confirms the set; they do not approve it in advance, which would leave the rules
+  // unwritten and the code as their only record.
+  assert.match(skill, /^## New principles — please confirm$/m);
+  assert.match(skill, /never ask for approval before writing them/);
+});
+
+/**
+ * A fork-loaded principle is shipped to every repository that loads that family. A rule naming
+ * one product's roles or artifacts reads as a rule about *their* product and is silently wrong
+ * everywhere else. Two shipped rules had this defect — a "customer-care agent" who "does not
+ * leave the ticket surface", and a "super-admin configurator" — both lifted verbatim from the
+ * repository the principles were extracted from.
+ */
+test("no shipped principle names one product's roles or artifacts", () => {
+  // Split so this file is not its own match when the stale-path detector walks the tree.
+  const vocabulary = [
+    "merchant",
+    "storefront",
+    "super-" + "admin",
+    "customer-care",
+    "ticket surface",
+  ];
+  const dir = path.join(SOURCE_ROOT, "principles");
+
+  for (const file of fs.readdirSync(dir).filter((name) => name.endsWith(".md"))) {
+    const body = fs.readFileSync(path.join(dir, file), "utf8");
+    for (const [index, line] of body.split("\n").entries()) {
+      for (const word of vocabulary) {
+        assert.ok(
+          !line.toLowerCase().includes(word),
+          `principles/${file}:${index + 1}: names \`${word}\` — a principle shipped to every ` +
+            "repository must state the generic lean, not one product's vocabulary",
+        );
+      }
+    }
+  }
+});
+
+/**
+ * The fork families exist so a brownfield repository inherits something better than an empty
+ * file. They were extracted from one real codebase; that extraction is only useful if it kept
+ * the leans and dropped the specifics.
+ */
+test("every fork-loaded family ships a usable starter set", () => {
+  const dir = path.join(SOURCE_ROOT, "principles");
+  const forkFiles = { "design.md": "DP", "operations.md": "OP", "ux.md": "UP", "security.md": "SP" };
+
+  for (const [file, family] of Object.entries(forkFiles)) {
+    const body = fs.readFileSync(path.join(dir, file), "utf8");
+    const rules = body.match(new RegExp(String.raw`^- \*\*${family}-\d{2}-\d{2}\*\* \``, "gm")) ?? [];
+    assert.ok(
+      rules.length >= 4,
+      `principles/${file}: ${rules.length} rule(s) — a family thin enough to skip is one nobody loads`,
+    );
+    const sections = body.match(new RegExp(String.raw`^## ${family}-\d{2}\. `, "gm")) ?? [];
+    assert.ok(sections.length >= 2, `principles/${file}: needs more than one principle heading`);
+  }
+});
+
 // ------------------------------------------------------------- manifest
 
 /**

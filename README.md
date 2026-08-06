@@ -1,12 +1,16 @@
 # Contract Graph
 
-**Bounded, verified context for coding agents.**
+**A top-down software context graph for coding agents.**
 
-Your contracts form a graph. Agents traverse it instead of reading your codebase — and every
-rule ships with the test that fails when it breaks.
+Your repository is explained as contracts from repository → module → sub-module. An agent traverses
+those contracts to locate a change before it reads implementation code, so a new session loads the
+smallest relevant context instead of rediscovering the whole system.
 
-Spec-driven workflows tell an agent what to build. Contract Graph makes the repository reject what
-it shouldn't have built — including a test that proves each detector still works.
+Once that context graph exists, its boundaries can be protected: contract violations become
+detectable, machine-expressible rules gain tests, and governance follows. Enforcement is a
+consequence of keeping the project context truthful, not the reason the project exists.
+
+Read the [project vision](docs/vision.md) for the complete model and its current limits.
 
 ```bash
 npx contract-graph init .
@@ -24,20 +28,27 @@ in place.
 
 ## What it actually does
 
-Three things, and it is worth being concrete about them.
+Four things, in causal order.
 
-**1. It writes governance into your repository as files.** `cg init` scaffolds a `.agents/` tree:
-the six principle families, a rule → detector map, a phase map, a routing map, six skills, and the three `docs/` trees those skills write into. These are plain
-Markdown and JSON. Nothing is hidden in a database or a service, and the tool is not running when
-your agent reads them.
+**1. It makes project structure readable as contracts.** The repository contract explains the
+whole system. Each module contract explains why that module exists, how the project uses it, its
+entry points and boundaries, and the child contracts that decompose it. Sub-module contracts repeat
+the pattern at a narrower scope. The result is project context an agent can traverse top to bottom
+without first reverse-engineering it from source.
 
-**2. It generates the derived copies and refuses to let them drift.** Several files are *outputs*,
+**2. It routes each task into the smallest relevant context.** `map/routing.md` maps an incoming
+capability or surface to its first module contracts. The agent follows contract links downward only
+until the change surface is clear, then reads code inside that boundary. A later session can take
+the same path without paying the discovery cost again.
+
+**3. It scaffolds and synchronizes the context system.** `cg init` writes the `.agents/` contract,
+map, principle, and skill trees as plain Markdown and JSON. Several files are *outputs*,
 not sources: the rule block inherited into each module `contract.md`, the principle index in your
 selected editor entry files, and—when Claude is selected—the discovery wrapper for each skill.
 `cg sync` regenerates them; `cg verify` fails if a selected artifact was hand-edited or left stale.
 You edit the source, never the copy.
 
-**3. It fails your build when governance and code disagree.** `cg verify` exits non-zero when a
+**4. It protects the graph once it exists.** `cg verify` exits non-zero when a
 contract is missing a required section, cites a transient plan, or has a stale inherited block —
 and when a rule has no row in the enforcement map. That last one is what keeps the rules honest:
 you cannot add a rule and postpone its detector, because the postponement is itself a build
@@ -54,7 +65,7 @@ consistent. The detectors themselves live in your build, written by you.
   cg/
     principles/
       architecture.md     every AP-nn principle, one `## AP-nn.` section each (source)
-      product.md          starts empty; your PP-nn sections accrue here (source)
+      product.md          ships empty; PP-nn accrue here, or arrive via cg-warmup (source)
       design.md           DP-* — product shape, tenancy, caching (source, fork-loaded)
       operations.md       OP-* — delivery, migration, rollback (source, fork-loaded)
       ux.md               UP-* — interaction and perceived responsiveness (source, fork-loaded)
@@ -108,14 +119,32 @@ region sits between `BEGIN`/`END` markers, so a file can be partly yours and par
 
 ## Why this exists
 
-An agent will violate a rule that lives only in prose, and nobody will catch it. So Contract Graph's
-first principle is about its own principles:
+Every new agent session begins with a context problem. The implementation contains the answer, but
+recovering it requires broad search: which module owns the behaviour, how that module participates
+in the system, which sub-module implements the relevant part, and what neighbouring code must not
+change. Most of the source read during that search is discarded once the real change surface is
+found.
+
+Contract Graph moves that explanation into durable, recursively linked contracts. The repository
+contract points to modules; each module contract explains its role in the project and points to
+sub-module contracts; those contracts continue until the responsible unit is clear. Source reading
+then starts inside a known boundary rather than being the mechanism for discovering the boundary.
+
+The intended sequence is:
+
+```text
+request → routing map → module contract → sub-module contract → relevant source → verification
+```
+
+Keeping this graph trustworthy creates the enforcement layer. An agent will violate a contract
+that cannot reject violations, so Contract Graph's first architecture principle is:
 
 > **AP-01-02** — A rule and its enforcing test land in **the same commit**. A documentation change
 > introducing a constraint without its detector is incomplete and must not merge.
 
-Everything else follows. A rule with no detector is aspirational, and the framework says so out
-loud rather than pretending otherwise.
+Rules and governance follow from protecting the context graph. They are not substitutes for it: a
+repository with extensive enforcement but contracts that cannot locate a change has missed the
+project's purpose.
 
 ## What you get
 
@@ -159,8 +188,13 @@ Architecture and product rules carry no marker and owe a row **unconditionally**
 fails the build when an `AP-` or `PP-` rule has none, and when a row cites a rule ID no principles
 file defines. The map cannot quietly fall behind the rules it claims to cover.
 
-**Two tiers of contract.** A `contract.md` per folder states its boundary, invariants, and entry
-points; a `XxxContract` type per directory states what that unit promises its callers, with
+**A recursive context graph.** A `contract.md` per mapped folder states how that folder is used by
+its parent, its responsibility, boundaries, entry points, and the contracts below it. The routing
+map selects the first module; child-contract links narrow the path from module to sub-module. See
+[the vision](docs/vision.md).
+
+**Two tiers of contract.** The folder `contract.md` is the context node an agent reads; a
+`XxxContract` type per directory states what that unit promises its callers, with
 implementations confined to a sibling `impl/`. Callers see only the contract — that single rule is
 what makes change free on either side of it. See [docs/contracts.md](docs/contracts.md).
 
@@ -169,9 +203,10 @@ boundary, invariants, and entry points in full. It inherits binding rules throug
 that `cg verify` rejects if hand-edited. Contracts may not cite a transient plan as the source of
 a rule — that check is machine-enforced, not a convention.
 
-**A folder is a workspace.** Any module folder opens on its own with complete governing context:
-its contract, the rules that bind it, and pointers a scoped agent can follow. Hand someone a
-folder and say *change anything inside; keep the contract.*
+**A folder is a workspace.** Any mapped module folder opens on its own with bounded project context:
+how the project uses it, the contracts below and beside it, the rules that bind it, and the
+verification command for its boundary. Hand someone a folder and say *change anything inside; keep
+the contract.*
 
 **Six skills, harness-neutral, and their names sort into the order you use them.** `cg-plan` →
 `cg-prepare` → `cg-produce` → `cg-sign-off` is the loop, so an editor listing the `cg-` namespace
@@ -294,10 +329,25 @@ module from the code that is actually there, fills `inheritance.json` and `routi
 through the principles — resolving every finding to a detector, an exception proposed with its
 cost, or a corrective Step.
 
+Two things it does that only matter on a repository with history:
+
+- **It looks for the framework that came before, first.** An older contract format, a principles
+  file with its own IDs, its own verifier scripts. Every rule that framework asserted is carried
+  forward or listed as a deliberate drop, and any of its detectors whose rule ID no longer
+  resolves is named — a passing test bound to nothing is deletable by the next agent. It never
+  deletes or runs what it finds; retiring a toolchain is a decision, not a cleanup.
+- **It harvests the rules your code already enforces.** One seam that builds every storage path,
+  one class that decides authorization, one package that may import the vendor SDK — constraints
+  somebody chose, which exist only as a pattern each new session has to re-derive. Warmup writes
+  them as `PP-` or `AP-` rules with their enforcement rows and bindings, and lists every one in
+  its report for you to keep, reword, or delete. Until a rule is in the graph, the code is its
+  only record, and reading the code is what you pay for it.
+
 It does not interview you. Anything it cannot settle from the code — an ambiguous boundary, an
-exception to a binding principle — becomes a `DL-02` entry in `docs/plans/decision-log.md`, and you
-get **one consolidated list at the end** rather than a question per module. Nothing logged stops
-the rest of the work. It never produces a compliance score and never changes behaviour.
+exception to a binding principle, a harvested rule that contradicts one — becomes a `DL-02` entry
+in `docs/plans/decision-log.md`, and you get **one consolidated list at the end** rather than a
+question per module. Nothing logged stops the rest of the work. It never produces a compliance
+score and never changes behaviour.
 `cg modules` exiting 0 is how you know it is done, and after that you never run it again.
 
 Until then, take `cg verify: OK` for what it is: the scaffold is well-formed, not that your
@@ -315,7 +365,7 @@ fork that touches them, which `map/phases.json` decides.
 | File | Rules | Loaded | Holds |
 |---|---|---|---|
 | `architecture.md` | `AP-*` | always, inherited | structural invariants for any product built here |
-| `product.md` | `PP-*` | always, inherited | rules owed to *this* product; starts empty |
+| `product.md` | `PP-*` | always, inherited | rules owed to *this* product; ships empty, filled by `cg-warmup` or by decision harvest |
 | `design.md` | `DP-*` | at a fork | product shape, configuration, tenancy, caching |
 | `operations.md` | `OP-*` | at a fork | delivery, migration, rollback, recovery |
 | `ux.md` | `UP-*` | at a fork | interaction, disclosure, perceived responsiveness |

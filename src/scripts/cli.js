@@ -120,6 +120,45 @@ function prompter() {
 const isUsableRootName = (name) =>
   Boolean(name) && !name.startsWith(".") && name.split(/[\\/]/).length === 1;
 
+const DOCS_SUBTREES = ["plans", "design", "guides"];
+
+/**
+ * Find documentation trees this repository already keeps under a *split* convention —
+ * `docs-plans/`, `doc-design/` — rather than nested inside one root.
+ *
+ * `chooseDocsRoot` cannot adopt these: the model is one root holding three subdirectories,
+ * and there is no single directory to point at. But saying nothing is worse. A repository
+ * with populated `docs-plans/` silently gains an empty `docs/plans/`, and now two files
+ * both look like the decision log — which is exactly the finding that came back from the
+ * first brownfield run. Naming it at init costs one line and saves that discovery.
+ */
+function detectRivalDocTrees(repoRoot, chosenRoot) {
+  let entries;
+  try {
+    entries = fs.readdirSync(repoRoot, { withFileTypes: true });
+  } catch {
+    return [];
+  }
+
+  return entries
+    .filter((entry) => entry.isDirectory() && entry.name !== chosenRoot)
+    .map((entry) => entry.name)
+    .filter((name) => {
+      const match = /^[a-z]+[-_](plans?|design|guides?)$/.exec(name);
+      if (!match) return false;
+      const subtree = match[1].replace(/s$/, "");
+      return DOCS_SUBTREES.some((known) => known.replace(/s$/, "") === subtree);
+    })
+    .filter((name) => {
+      try {
+        return fs.readdirSync(path.join(repoRoot, name)).length > 0;
+      } catch {
+        return false;
+      }
+    })
+    .sort();
+}
+
 /**
  * Decide where `plans/`, `design/`, and `guides/` go.
  *
@@ -276,6 +315,19 @@ async function main(argv) {
     );
 
     for (const message of advisories) process.stdout.write(`  ${message}\n`);
+
+    const rivals = detectRivalDocTrees(repoRoot, result.docs);
+    if (rivals.length) {
+      process.stdout.write(
+        `\n  note: this repository already documents under ${rivals.map((n) => `\`${n}/\``).join(", ")}.\n` +
+          `        Contract Graph keeps plans, design, and guides inside one root, so it\n` +
+          `        created \`${result.docs}/\` beside them — you now have two documentation trees.\n` +
+          `        Re-run with \`--docs <dir>\` to choose another root, or migrate the existing\n` +
+          `        trees into \`${result.docs}/\`. \`cg-warmup\` will raise this as a decision if you\n` +
+          `        leave it.\n`,
+      );
+    }
+
     if (failures.length) {
       process.stderr.write(`cg init: FAIL — ${failures.length} problem(s) after scaffolding\n`);
       for (const message of failures) process.stderr.write(`  ${message}\n`);

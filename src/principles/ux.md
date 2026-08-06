@@ -9,8 +9,13 @@ designs both meet the target.
 
 ## UP-01. The surface carries the task
 
-- **UP-01-01** `guide` — A customer-care agent does not leave the ticket surface to find task-relevant detail.
-  **Cost:** The ticket surface must absorb progressive detail and bounded integrations, increasing its UI responsibility.
+- **UP-01-01** `guide` — Prefer the surface where a task begins to carry everything that task
+  needs, over sending someone elsewhere to find it.
+  **Cost:** That surface absorbs progressive detail and bounded integrations, and its UI responsibility grows accordingly.
+
+- **UP-01-02** `guide` — Prefer telling someone honestly that a request cannot be completed over
+  returning something plausible that was not actually established.
+  **Cost:** An honest refusal is a designed state with its own copy, its own follow-up path, and a worse demo.
 
 ## UP-02. Perceived responsiveness
 

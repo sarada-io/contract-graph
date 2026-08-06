@@ -36,3 +36,18 @@ judgement marked `invariant` would be a detector nobody can write.
 - **SP-03-01** `guide` — Prefer treating anything that crossed a trust boundary as untrusted
   again on the far side.
   **Cost:** Re-validation duplicates checks a caller already performed, and shows up as latency on paths you control.
+
+- **SP-03-02** `guide` — Prefer an identifier that reaches a surface being opaque and
+  non-enumerable, resolved back to the internal one server-side.
+  **Cost:** A resolution step on every request, and a mapping that is now itself a thing to store, cache, and revoke.
+
+- **SP-03-03** `guide` — Prefer an identifier that crosses a trust boundary carrying its own
+  integrity proof over one trusted because of where it arrived from.
+  **Cost:** Signing and verification on a hot path, plus key distribution and rotation for the signing key.
+
+## SP-04. When the guarantee is not the engine's
+
+- **SP-04-01** `guide` — Where the platform offers no primitive for a boundary you need, prefer
+  stating plainly that the application layer is the whole control over describing the boundary as
+  though the platform enforced it.
+  **Cost:** The rules implementing that control become security-severity, so a failing detector there stops being a style violation.

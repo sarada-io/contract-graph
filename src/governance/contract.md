@@ -1,7 +1,9 @@
-# Repository Constitution
+# Repository Context and Constitution
 
-The single entry point for agent operations. All project-specific instructions, architecture, and
-workflow live under `.agents/cg/`.
+The root node of this repository's context graph and the single entry point for agent operations.
+It explains the product at repository scale, then routes work into module and sub-module contracts
+before implementation code is read. Project-specific instructions, architecture, and workflow live
+under `.agents/cg/`.
 
 **Audience:** the maintainer, every future contributor, and every coding agent working in this
 repository. Agents MUST read this constitution and the binding principles before planning a
@@ -20,6 +22,24 @@ or change guidance in this file and the other `.agents/cg/` files instead.
 `.agents/cg/` is a dot-directory. Harnesses whose file indexer skips hidden paths must open these
 files by exact path; that is why the principle index is duplicated into the root entry files and the
 binding rules are duplicated into every module contract rather than left behind a pointer.
+
+## Purpose — navigate context before code
+
+Contract Graph represents this software from broad to narrow:
+
+```text
+this repository contract → module contract → sub-module contract → relevant implementation
+```
+
+Each folder contract must explain how its unit is used by its parent, what it owns, which public
+entry points cross its boundary, and which child contracts continue the explanation. The routing
+map selects the first module contract for an incoming task; contract links then narrow the context
+until the responsible implementation boundary is clear.
+
+Agents still read code to make changes. They do so **after** locating the change through contracts,
+instead of scanning the repository to reconstruct the same architecture on every new session.
+Rules, detectors, and governance protect this context graph once it exists; they are consequences
+of keeping it truthful, not a substitute for making the software navigable.
 
 ## How to read the principles
 
@@ -61,7 +81,9 @@ These apply to every agent harness:
 ## Project Identity
 
 <!-- Replace this section. State what this repository builds, its stable technical identity
-     (package root, module prefix, configuration prefix), and its pipeline or request shape. -->
+     (package root, module prefix, configuration prefix), and its pipeline or request shape.
+     Name the top-level modules and say how the product uses each one. This is the first context
+     a new agent receives before routing into their contracts. -->
 
 ### What This Product Is Not
 
@@ -74,7 +96,9 @@ These apply to every agent harness:
 2. `.agents/cg/principles/architecture.md` and `product.md` — the inherited rules that cannot be violated.
 3. `.agents/cg/workflow.md` — mandatory agent workflow.
 4. `.agents/cg/map/routing.md` — task-to-module contract mapping.
-5. `<module>/.agents/cg/contract.md` — lazy-loaded per impacted module.
+5. `<module>/.agents/cg/contract.md` — how each impacted module participates in the project.
+6. Follow that contract's child links into `<sub-module>/.agents/cg/contract.md` only as far as the
+   request requires; read implementation after the responsible boundary is clear.
 
 Read on demand, not by default: `.agents/cg/principles/{design,operations,ux,security}.md` (loaded when a fork
 touches the topic) and `.agents/cg/map/enforcement.md` (rule → detector).
@@ -85,8 +109,9 @@ For every non-trivial task:
 
 1. Read this constitution.
 2. Read `.agents/cg/principles/` and `.agents/cg/workflow.md`.
-3. Identify impacted modules from the request.
-4. Lazy-load only relevant module contracts via `.agents/cg/map/routing.md`.
+3. Route the request to its first impacted modules through `.agents/cg/map/routing.md`.
+4. Traverse module and sub-module contracts top to bottom until the smallest responsible boundary
+   is clear; only then inspect implementation code.
 5. Use `cg-plan` to create or update the phase-wise roadmap for non-trivial work.
 6. Use `cg-prepare` to turn the selected phase into one dependency-ordered Step queue.
 7. Use `cg-produce` in the phase's single branch or worktree to run the earliest ready Step, one
@@ -101,13 +126,18 @@ A task that changes module behavior but skips contract updates is incomplete.
 Every Contract Graph skill response ends by naming one concrete user action, the exact next skill or an
 explicit terminal `None`, its input artifact, and — when blocked — the exact blocker.
 
-## CONTRACT Lazy-Loading Policy (Token Efficiency)
+## Contract Traversal and Lazy-Loading Policy
 
 Do not load all contracts by default.
 
-1. Start with modules directly mentioned by the task.
-2. Add neighbor module contracts only when cross-module impact is confirmed.
-3. Stop loading more once implementation constraints are clear.
+1. Use `map/routing.md` to select the first module contracts named by the task.
+2. Descend through the contracts those modules name for their sub-modules.
+3. Add a neighbour's contract only when a public boundary or cross-module impact is confirmed.
+4. Stop loading contracts once the responsible implementation and its constraints are clear.
+
+This is the project's token-saving mechanism: durable contracts replace repeated architectural
+rediscovery. It does not forbid reading code; it confines that reading to the area already selected
+by the graph.
 
 ## Governance Path Convention
 
