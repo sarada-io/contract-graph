@@ -72,11 +72,21 @@ export const ROOT_POINTERS = {
   ".github/copilot-instructions.md": "../",
 };
 
+/**
+ * `## Child Contracts` is required rather than optional, and the requirement is the cheap half
+ * of a capability the roadmap lists as unbuilt. Nothing here can yet prove a *declared* child
+ * is the whole set — that needs composition edges. What it can prove is that the question was
+ * answered: a contract either names its children or says `None — leaf module`. Left optional,
+ * the section is simply absent on every contract nobody thought about, and an agent cannot tell
+ * a leaf from an omission. The graph's downward path is the product; a missing edge is not a
+ * formatting defect.
+ */
 export const REQUIRED_SECTIONS = {
   module: [
     "## Module Identity",
     "## Allowed Responsibilities",
     "## Forbidden Responsibilities",
+    "## Child Contracts",
     "## Verify Command",
     "## Sibling Contracts",
     "## Agent Workflow Hook",
@@ -84,6 +94,7 @@ export const REQUIRED_SECTIONS = {
   folder: [
     "## Scope",
     "## Forbidden Responsibilities",
+    "## Child Contracts",
     "## Verify Command",
     "## Sibling Contracts",
   ],

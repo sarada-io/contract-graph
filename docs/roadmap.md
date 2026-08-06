@@ -14,6 +14,11 @@ source. Verification and governance exist to keep that graph trustworthy.
   invariants, verification commands, and links to related contracts.
 - Task-to-contract routing and editor entry points that give a fresh agent a deterministic first
   path into the graph.
+- A required `## Child Contracts` section on every contract, so a unit either names the children
+  that decompose it or states it is a leaf. This is the declarable half of composition; the
+  declaration is not yet checked against the implementation.
+- Brownfield warmup that descends below build-manifest modules, writing sub-module contracts where
+  a module holds more than one boundary and declaring each child in its parent.
 - Three rule families with the per-rule modality marker, and a verifier that enforces both
   directions (an `invariant` owes exactly one enforcement-map row; a `guide` must have none).
 - Enforcement-map coverage for architecture and product rules: every `AP-`/`PP-` rule owes exactly
@@ -40,6 +45,8 @@ types catches both directions of drift. Until this lands:
 
 - the authored contract hierarchy is useful for navigation, but its completeness cannot be trusted
   without occasionally returning to source;
+- a declared child set is proven *present* — the section cannot be silently omitted — but not
+  proven *complete*: an undeclared child still passes;
 - closure per folder can be asserted but not verified;
 - a subtree cannot be handed to an agent with confidence that it is the whole subtree.
 

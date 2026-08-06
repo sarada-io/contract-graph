@@ -30,7 +30,8 @@ Finish with all ten true:
 1. Any predecessor governance framework is found, read, and carried forward or logged — never
    silently replaced.
 2. Every real module root is discovered and either mapped or explicitly excluded with a reason.
-3. Every mapped module has a `contract.md` describing the code that is there — not an aspiration.
+3. Every mapped folder has a `contract.md` describing the code that is there — not an aspiration —
+   and every module that holds more than one boundary declares its children.
 4. `map/inheritance.json` names, for each module, the rules that actually bind it.
 5. `map/routing.md` routes a task to the module contracts it touches.
 6. Every principle assessment lands as a detector, a proposed exception, or a corrective Step.
@@ -138,22 +139,48 @@ fixtures, and anything the repository already ignores.
 Do **not** stop and ask the owner to confirm the list. Proceed on the roots a manifest identified,
 recording that as an assumption, and raise only the genuinely ambiguous ones — §8.
 
-## 3. Write one contract per module
+## 3. Write the contract hierarchy
 
 Copy [the module contract template](assets/module-contract.template.md) for each module. It
 already carries the two `BEGIN/END INHERITED` markers in the right place — leave them empty and
 adjacent, because `cg sync` fills that block and `cg verify` rejects a hand-edited one.
 
-For each module, read its code first, then state:
+A contract earns its place by letting an agent route *without* reading the code underneath it.
+Four of its fields carry that weight, and they are the ones a description-shaped contract omits:
 
-- **Module Identity** — what it is, in one sentence a newcomer would recognise.
-- **Allowed Responsibilities** — what belongs here.
-- **Forbidden Responsibilities** — what must never move here. This is the section that does the
-  work; a contract with an empty one governs nothing.
-- **Invariants** — what must hold no matter who edits it.
-- **Entry Points** — how callers reach it.
-- **Verify Command** — a command that actually runs today, even if it only builds this module.
-- **Sibling Contracts** — the modules it may depend on, and the direction.
+- **Project role** — why the parent system contains this unit and what it does with it. Not what
+  the code is; what the system needed.
+- **Parent contract** and **Used by** — the edges back up and inward, so a unit found from below
+  can be placed without a search.
+- **Child Contracts** — the edges down, and the section that decides whether this is a graph or a
+  list. Name each child and say in a phrase how it decomposes this responsibility. Where the unit
+  is genuinely the smallest owned boundary, write `None — leaf module`; `cg verify` requires the
+  section, so an empty one is an omission nobody can distinguish from a leaf.
+
+Then the boundary itself: **Allowed** and **Forbidden Responsibilities** (the section that does
+the work — one left empty governs nothing), **Invariants**, **Entry Points**, a **Verify Command**
+that runs today, and **Sibling Contracts** with their direction.
+
+### Descend where a module holds more than one boundary
+
+`cg modules` stops at build manifests, and most real modules are not the smallest unit anybody
+works in. A module whose source splits into packages that own separate responsibilities — each
+with its own callers, its own persistence, its own reason to change — is a parent, and stopping
+there leaves an agent reading the whole module to find one of them.
+
+Descend when **all three** hold, and stop otherwise:
+
+1. The candidate owns a responsibility you can state without mentioning its siblings.
+2. It has its own entry points — something outside it enters here specifically.
+3. A change confined to it would not touch the others.
+
+Use [the sub-module template](assets/submodule-contract.template.md), map it in
+`inheritance.json` with `"kind": "folder"` and a `depth` matching its segment count, and add it to
+the parent's **Child Contracts**. A child that exists but is not declared by its parent is
+unreachable by traversal, which is the same as not existing.
+
+Two or three levels is normal. Do not descend to every directory — a contract per package turns
+the graph into the file tree, and a file tree is what the agent already had.
 
 Two rules that decide whether this is worth doing at all:
 
@@ -237,16 +264,17 @@ finding requires a code change, it becomes a Step for `cg-produce`.
 
 ## 7. Harvest the rules the code already enforces
 
-§6 asks what the principles say about this repository. This section asks the opposite, and it is
-the one that decides whether adoption was worth doing: **what does this repository already know
-that no principle states?**
+You have been reading code since §3. This section is what stops that reading from being thrown
+away: **whatever you learned that the next session would otherwise have to learn again belongs in
+the graph before this skill ends.**
 
-A mature codebase is full of decided rules. A single seam constructs every storage path. One class
-is the only place authorization is evaluated. No module outside one adapter package imports the
-cloud SDK. Those are constraints somebody chose, and the code obeys them — but they exist only as
-a pattern a reader has to re-derive. Leave them there and every future session pays to read the
-code again to learn what the last session already knew. **The graph is not complete until the
-rules in the code are in the contract.** That is the whole economic case for this step.
+Most of it already landed — a boundary is a contract section, a decomposition is a child contract.
+What is left over is the constraints. A single seam constructs every storage path. One class is
+the only place authorization is evaluated. No module outside one adapter package imports the cloud
+SDK. Those are decisions somebody made and the code obeys, held nowhere but in the shape of the
+code, so every future session pays to re-derive them. Written down, they also happen to be
+enforceable — but the reason to write them is that re-reading the code is the cost this whole
+project exists to remove.
 
 ### What qualifies
 
@@ -266,11 +294,11 @@ wrote a test to hold a line. The line is the rule; write it down and bind them.
 
 ### Which family it goes in
 
-| The rule is… | Family | Notes |
-|---|---|---|
-| structural, and would hold for any repository | `AP-` | append as a new principle number; it is inherited everywhere, so the bar is high |
-| true because of *this* product's market, pricing, shape, or tenancy model | `PP-` | `product.md`; this is the family a brownfield repository has most of and ships with none of |
-| a lean between two workable designs | fork file | `design.md`, `operations.md`, `ux.md`, `security.md`, as a `guide` with its cost |
+| The rule is… | Family |
+|---|---|
+| structural, and would hold for any repository | `AP-` — inherited everywhere, so the bar is high |
+| true because of *this* product's market, pricing, shape, or tenancy | `PP-` — the family a brownfield repository has most of and ships with none of |
+| a lean between two workable designs | a fork file, as a `guide` with its cost |
 
 Two errors to avoid, in the order they are tempting:
 
@@ -285,32 +313,24 @@ Two errors to avoid, in the order they are tempting:
 ### What each harvested rule owes
 
 Every `AP-` and `PP-` rule needs **exactly one enforcement-map row** — `cg verify` fails without
-it. Write the row even when the detector does not exist yet; mark it `*(not yet built)*` and it
-becomes tracked debt rather than a silent gap. Where §1 or §6 found a detector that already proves
-the rule, name it and the debt is closed on arrival.
-
-Then bind it: add the rule ID to the modules it governs in `map/inheritance.json` and run
-`cg sync`. A rule bound to nothing governs nothing.
+it. Write the row even when the detector does not exist yet; mark it `*(not yet built)*` and it is
+tracked debt rather than a silent gap. Then bind it in `map/inheritance.json` and run `cg sync`: a
+rule bound to nothing governs nothing.
 
 ### When a harvested rule contradicts a binding principle
 
-This is common and it is *information*, not an obstacle. The code was built to a rule that the
-architecture principles disagree with, and one of the two is wrong.
-
-Never resolve it yourself and never quietly drop the harvested rule. Raise a `DL-02` naming the
-architecture rule, the harvested rule, the code that follows the harvested one, and what it would
-cost to move either way. The owner decides which is authoritative — this is the same `D-3` floor
-as §8: a binding principle is not yours to waive, and neither is a rule the whole codebase
-already follows.
+Common, and it is *information*. The code was built to a rule the architecture principles disagree
+with, and one of the two is wrong. Never resolve it yourself and never quietly drop the harvested
+rule — raise a `DL-02` naming both rules, the code that follows the harvested one, and the cost of
+moving either way. Same `D-3` floor as §8: a binding principle is not yours to waive, and neither
+is a rule the whole codebase already follows.
 
 ### Keep it proportionate
 
-Harvest the rules that would change what an agent does. A repository will yield somewhere between
-a handful and a few dozen; a hundred means you are transcribing the code rather than governing it,
-and a graph nobody finishes reading is the failure mode §6's line budget exists to prevent.
-
-Every harvested rule is listed for confirmation in §9 before this skill finishes. You write them;
-the owner keeps them.
+Harvest what would change what an agent does. A repository yields a handful to a few dozen; a
+hundred means you are transcribing the code rather than governing it, and a graph nobody finishes
+reading has lost the argument it was making. Every harvested rule is listed for confirmation in
+§9 — you write them, the owner keeps them.
 
 ## 8. Raise what needs the owner — in the log, not in chat
 
@@ -446,7 +466,11 @@ End the user-facing response with:
 - [ ] Nothing belonging to the predecessor was deleted or executed.
 - [ ] `cg modules` exits 0, or every remaining row is excluded with a stated reason.
 - [ ] Every module root is mapped or excluded with a stated reason.
-- [ ] Every mapped module has a contract describing code that exists.
+- [ ] Every mapped folder has a contract describing code that exists.
+- [ ] Every contract states Project role, Parent contract, and Used by — the edges that let an
+      agent route without reading the code underneath.
+- [ ] Every contract declares its Child Contracts, or says `None — leaf`.
+- [ ] Every child contract is declared by its parent; none is reachable only by file search.
 - [ ] No contract cites a plan path or a ticket as the source of a rule.
 - [ ] Every `Forbidden Responsibilities` section says something.
 - [ ] `inheritance.json` scopes were widened rather than guessed narrow.

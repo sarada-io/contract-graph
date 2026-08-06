@@ -54,6 +54,12 @@ and when a rule has no row in the enforcement map. That last one is what keeps t
 you cannot add a rule and postpone its detector, because the postponement is itself a build
 failure.
 
+`## Child Contracts` is one of the required sections, and it is required for the traversal rather
+than the governance: a contract either names the children that decompose it or states `None —
+leaf`. Left optional it would simply be absent wherever nobody thought about it, and an agent
+cannot tell a leaf from an omission. What is *not* yet checked is whether a declared child set is
+the whole set — see [the roadmap](docs/roadmap.md).
+
 What it does **not** do: it does not run your tests, read your source, or check that a detector is
 correct. It checks that every rule *has* one and that the governance files are internally
 consistent. The detectors themselves live in your build, written by you.

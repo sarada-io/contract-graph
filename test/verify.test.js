@@ -25,6 +25,7 @@ import {
   loadPrinciples,
   splitLines,
   ContractError,
+  REQUIRED_SECTIONS,
 } from "../src/scripts/model.js";
 import {
   ProfileError,
@@ -914,7 +915,7 @@ test("cg-warmup searches for a predecessor framework before authoring anything",
   const predecessor = heading("1. Look for the framework that came before");
   assert.ok(predecessor > 0, "warmup must have a predecessor step");
   assert.ok(
-    predecessor < heading("3. Write one contract per module"),
+    predecessor < heading("3. Write the contract hierarchy"),
     "the search must come before contract authoring, or it is archaeology after the fact",
   );
 
@@ -983,6 +984,64 @@ test("cg-warmup harvests the rules the code enforces into principles", () => {
   // unwritten and the code as their only record.
   assert.match(skill, /^## New principles — please confirm$/m);
   assert.match(skill, /never ask for approval before writing them/);
+});
+
+/**
+ * The downward edge is the product. Composition edges — proving a *declared* child set is the
+ * whole set — are designed and unbuilt, but the cheap half is available now: require the section
+ * so a contract either names its children or says it is a leaf. Left optional, the section is
+ * simply absent wherever nobody thought about it, and an agent cannot tell a leaf from an
+ * omission. `docs/vision.md`: a contract that cannot say where to go next is prose, not a node.
+ */
+test("a contract with no Child Contracts section fails verification", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-children-"));
+  init(dir, {});
+  sync(dir);
+  assert.equal(verify(dir).failures.length, 0, "the shipped scaffold must already satisfy this");
+
+  const contract = path.join(dir, "src", ".agents", "cg", "contract.md");
+  const body = fs.readFileSync(contract, "utf8");
+  assert.match(body, /^## Child Contracts$/m, "the module scaffold ships the section");
+
+  fs.writeFileSync(contract, body.replace(/^## Child Contracts$/m, "## Notes"));
+  const { failures } = verify(dir);
+  assert.ok(
+    failures.some((message) => message.includes("Child Contracts")),
+    `expected a Child Contracts failure, got: ${failures.join(" | ") || "none"}`,
+  );
+});
+
+/**
+ * `cg-warmup` copies its own template rather than the scaffold's, so the two drift silently and
+ * the drift only shows up in an adopted repository. It has happened once: the scaffold gained the
+ * traversal fields and warmup kept writing contracts without them.
+ */
+test("the warmup templates carry the same sections as the scaffold", () => {
+  const sections = (file) =>
+    fs
+      .readFileSync(file, "utf8")
+      .split("\n")
+      .filter((line) => line.startsWith("## "));
+
+  const scaffold = sections(path.join(SOURCE_ROOT, "scaffold", "module", ".agents", "cg", "contract.md"));
+  const warmup = sections(path.join(SOURCE_ROOT, "skills", "cg-warmup", "assets", "module-contract.template.md"));
+  assert.deepEqual(warmup, scaffold, "warmup's module template must match the scaffold's contract");
+
+  for (const field of ["- Project role:", "- Parent contract:", "- Used by:"]) {
+    for (const file of ["scaffold/module/.agents/cg/contract.md", "skills/cg-warmup/assets/module-contract.template.md"]) {
+      assert.match(
+        fs.readFileSync(path.join(SOURCE_ROOT, file), "utf8"),
+        new RegExp(`^${field.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&")}`, "m"),
+        `${file} is missing \`${field}\` — the edge that places a unit in its parent's context`,
+      );
+    }
+  }
+
+  // A sub-module contract is `kind: "folder"`, and warmup cannot write one without a template.
+  const sub = sections(path.join(SOURCE_ROOT, "skills", "cg-warmup", "assets", "submodule-contract.template.md"));
+  for (const required of REQUIRED_SECTIONS.folder) {
+    assert.ok(sub.includes(required), `the sub-module template is missing \`${required}\``);
+  }
 });
 
 /**
