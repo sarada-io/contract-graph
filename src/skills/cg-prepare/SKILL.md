@@ -95,6 +95,7 @@ Inventory every affected item:
 | test/fixture | source | target/consumer | move/update/delete | test task | ordered Steps | named test |
 | resource/config | source | target/app | move/retain | runtime | ordered Steps | startup/test |
 | dependency | source/consumer | final module | add/remove/scope | modules | ordered Steps | dependency scan |
+| new component/library/sub-module | — | its own contract | create | parent + callers | creating Step | `cg verify` |
 | `.agents/cg` rule | governance owner | same/new contract | update/create | humans/agents | changing Step | detector |
 | detector | test/script owner | enforcing location | add/update | contract rule | same Step | fail-on-demand |
 | durable document | document owner | final document | update/create | humans/agents | describing Step | link/content gate |
@@ -112,6 +113,10 @@ Apply these rules to every Step:
 
 - A behavior, boundary, invariant, entry point, or operational-assumption change owns the matching
   contract and detector update.
+- A Step that introduces a self-sufficient unit — one delivering a nameable functionality and
+  reaching outside itself only rarely — owns that unit's contract, its `inheritance.json` entry,
+  and the line added to its parent's Child Contracts. `cg verify` fails a parent that declares no
+  children while its source branches, so this cannot be deferred to a later Step.
 - A new or changed rule and its detector land with the implementation.
 - No Step depends on `cg-sign-off` or a later cleanup Step to make its contract
   truthful.
@@ -261,6 +266,8 @@ Status: <Waiting | Ready | Blocked>
 - [ ] Steps have one stable priority order and explicit dependency edges.
 - [ ] Every Step has a valid initial queue state and exact blocker references.
 - [ ] Every Step owns its contract and detector changes.
+- [ ] Every Step creating a self-sufficient unit owns its contract and its parent's Child
+      Contracts line.
 - [ ] Every atomic move stays inside one Step.
 - [ ] Every repeated path has an explicit before/after handoff.
 - [ ] One execution context and baseline are named.

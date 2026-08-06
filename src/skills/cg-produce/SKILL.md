@@ -85,6 +85,24 @@ the finished contract as evidence; none owns this Step's correctness.
 When creating a new module contract, use
 [the module contract template](assets/module-contract.template.md).
 
+### A new self-sufficient unit owes a contract in the Step that creates it
+
+A component, library, sub-module, or module is self-sufficient when it delivers a nameable
+functionality and reaches outside itself only rarely. The moment a Step creates one, it owes four
+things together — the same co-delivery rule as a rule and its detector:
+
+1. its own `contract.md`, from the template;
+2. an entry in `map/inheritance.json` with the rules that bind it, then `cg sync`;
+3. a line in the **parent's Child Contracts** naming it and what it decomposes — an undeclared
+   child is unreachable by traversal, which is the same as not existing;
+4. `cg verify` green, which **fails** a parent that declares no children while its source branches.
+
+Greenfield is where this is cheap and where it is skipped. A boundary is obvious in the Step that
+introduces it and archaeology six phases later; retrofitting the graph is what `cg-warmup` exists
+to do for repositories that never did this, and it costs far more than doing it here. If the unit
+is genuinely not self-sufficient — it changes only when a sibling changes — do not give it a
+contract; say in the parent why those packages are one boundary.
+
 ## 4. Complete moves and restructures atomically
 
 For every move assigned to the Step:
@@ -199,6 +217,8 @@ or the exact evidence bundle that allows `cg-sign-off` to start.
 - [ ] Every expected starting state and prerequisite handoff matched.
 - [ ] Every attempted Step is either `Complete` or explicitly `Blocked` from a verified state.
 - [ ] Every behavior change has its contract update.
+- [ ] Every new self-sufficient unit has its own contract, its inheritance entry, and a line in
+      its parent's Child Contracts.
 - [ ] Every rule and detector landed together and fails on demand.
 - [ ] Only declared paths changed.
 - [ ] Positive and negative tests pass.

@@ -1205,15 +1205,16 @@ test("verify flags a contract set that was generated rather than written", () =>
   write(dir, INHERITANCE, JSON.stringify(map, null, 2));
   sync(dir);
 
-  const { failures, advisories } = verify(dir);
-  assert.deepEqual(failures, [], "a templated graph is well-formed — that is the whole problem");
+  // Every section is present and every rule id resolves — a templated graph is *well-formed*.
+  // It fails anyway, because a graph nobody can route with is worse than none: it looks answered.
+  const { failures } = verify(dir);
   assert.ok(
-    advisories.some((m) => m.includes("identical rule set")),
-    `expected the uniform-scope advisory, got: ${advisories.join(" | ")}`,
+    failures.some((m) => m.includes("identical rule set")),
+    `expected the uniform-scope failure, got: ${failures.join(" | ")}`,
   );
   assert.ok(
-    advisories.some((m) => m.includes("appear verbatim")),
-    `expected the boilerplate advisory, got: ${advisories.join(" | ")}`,
+    failures.some((m) => m.includes("appear verbatim")),
+    `expected the boilerplate failure, got: ${failures.join(" | ")}`,
   );
 
   // Vary one module's scope and prose: the repository stops looking generated.
@@ -1226,9 +1227,43 @@ test("verify flags a contract set that was generated rather than written", () =>
   );
   sync(dir);
   assert.ok(
-    !verify(dir).advisories.some((m) => m.includes("identical rule set")),
+    !verify(dir).failures.some((m) => m.includes("identical rule set")),
     "a scope that varies per module must not be flagged",
   );
+});
+
+/**
+ * A self-sufficient unit — one delivering a nameable functionality that reaches outside itself
+ * only rarely — owes its own contract. `cg-warmup` retrofits that for repositories that never
+ * did it, but the cheap moment is the Step that introduces the boundary, so the greenfield
+ * lifecycle has to carry the same obligation. Otherwise every repository needs an archaeology
+ * pass, which is the cost the graph exists to remove.
+ */
+test("the lifecycle skills own component identification, not just warmup", () => {
+  const skill = (name) =>
+    fs.readFileSync(path.join(SOURCE_ROOT, "skills", name, "SKILL.md"), "utf8");
+
+  // Planning names the units a phase introduces, so preparation can allocate their contracts.
+  assert.match(skill("cg-plan"), /components, libraries, sub-modules, or modules a phase introduces/);
+
+  // Preparation carries them in the ledger and forbids deferring the contract to a later Step.
+  assert.match(skill("cg-prepare"), /new component\/library\/sub-module/);
+  assert.match(skill("cg-prepare"), /cannot be deferred to a later Step/);
+
+  // Execution delivers the contract, the map entry, and the parent's edge together.
+  const produce = skill("cg-produce");
+  assert.match(produce, /A new self-sufficient unit owes a contract in the Step that creates it/);
+  assert.match(produce, /parent's Child Contracts/);
+  assert.match(produce, /inheritance\.json/);
+
+  // All four agree on the criterion, so a weaker model meets one definition rather than three.
+  for (const name of ["cg-plan", "cg-prepare", "cg-produce", "cg-warmup"]) {
+    const body = skill(name);
+    assert.ok(
+      /self-sufficient|context graph/.test(body),
+      `${name} must state why a unit earns a contract`,
+    );
+  }
 });
 
 /**
@@ -1286,7 +1321,7 @@ test("verify flags a module claiming to be a leaf while holding many packages", 
   ));
   sync(dir);
   assert.ok(
-    !verify(dir).advisories.some((m) => m.includes("declares no child")),
+    !verify(dir).failures.some((m) => m.includes("declares no child")),
     "a module with one package must not be nagged",
   );
 
@@ -1295,9 +1330,9 @@ test("verify flags a module claiming to be a leaf while holding many packages", 
     fs.mkdirSync(path.join(dir, "src", "lib", pkg), { recursive: true });
     fs.writeFileSync(path.join(dir, "src", "lib", pkg, "index.ts"), "export const x = 1;\n");
   }
-  const advisory = verify(dir).advisories.find((m) => m.includes("declares no child"));
-  assert.ok(advisory, `expected a leaf-claim advisory, got: ${verify(dir).advisories.join(" | ")}`);
-  assert.match(advisory, /5 separate packages/);
+  const failure = verify(dir).failures.find((m) => m.includes("declares no child"));
+  assert.ok(failure, `expected a leaf-claim failure, got: ${verify(dir).failures.join(" | ")}`);
+  assert.match(failure, /5 separate packages/);
 
   // Declaring the children silences it — the point is the edge, not the count.
   write(dir, contract, read(dir, contract).replace(
@@ -1306,8 +1341,8 @@ test("verify flags a module claiming to be a leaf while holding many packages", 
   ));
   sync(dir);
   assert.ok(
-    !verify(dir).advisories.some((m) => m.includes("declares no child")),
-    "a declared child set must clear the advisory",
+    !verify(dir).failures.some((m) => m.includes("declares no child")),
+    "a declared child set must clear the failure",
   );
 });
 

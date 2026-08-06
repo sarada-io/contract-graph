@@ -267,18 +267,32 @@ Then the boundary itself: **Allowed** and **Forbidden Responsibilities** (the se
 the work — one left empty governs nothing), **Invariants**, **Entry Points**, a **Verify Command**
 that runs today, and **Sibling Contracts** with their direction.
 
-### Descend where a module holds more than one boundary
+### Descend to every self-sufficient unit
 
-`cg modules` stops at build manifests, and most real modules are not the smallest unit anybody
-works in. A module whose source splits into packages that own separate responsibilities — each
-with its own callers, its own persistence, its own reason to change — is a parent, and stopping
-there leaves an agent reading the whole module to find one of them.
+`cg modules` stops at build manifests, and no manifest declares a package — so the level of the
+graph that matters most for routing is exactly the level detection is blind to. Stopping at the
+module leaves an agent reading the whole of it to find one component inside.
 
-Descend when **all three** hold, and stop otherwise:
+**The test is self-sufficiency.** A unit deserves its own contract when you can name a
+functionality it delivers *and* it reaches outside itself only rarely. Both halves matter: a
+coherent responsibility with tendrils into every sibling is not a component, it is a layer; and
+a well-isolated directory that delivers no nameable functionality is a utility bag.
 
-1. The candidate owns a responsibility you can state without mentioning its siblings.
-2. It has its own entry points — something outside it enters here specifically.
-3. A change confined to it would not touch the others.
+Measure it rather than eyeballing the folder tree. Read the imports at the candidate's edge:
+
+- **Inbound** — who enters, and through what. A unit entered at one or two named types has a
+  boundary. One entered at a dozen scattered points has no edge to write a contract about.
+- **Outbound** — what it reaches for. Depending on the shared kernel and a published sibling
+  port is self-sufficiency; reaching into three siblings' internals is not, and the right finding
+  there is that the boundary is wrong (§10), not that a contract should describe the tangle.
+- **Reason to change** — a unit that changes for its own reasons is a component. One that only
+  ever changes when a sibling changes is part of that sibling.
+
+`cg verify` **fails** a module that declares no children while its source branches into several
+packages, so this is not optional and not deferrable to a later pass. Where several packages
+genuinely form one boundary, say so in the parent's **Child Contracts** — "one boundary: these
+share a lifecycle and are never changed independently" clears the check and tells the next agent
+something true. Silence does not.
 
 Use [the sub-module template](assets/submodule-contract.template.md), map it in
 `inheritance.json` with `"kind": "folder"` and a `depth` matching its segment count, and add it to

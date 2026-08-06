@@ -611,7 +611,7 @@ function checkSelfSufficiency(entry, text, fail, planPath) {
 const LEAF_CLAIM = /^##[ \t]+Child Contracts[ \t]*$/m;
 const SUB_BOUNDARY_ADVISORY_FLOOR = 3;
 
-function checkLeafClaims(repoRoot, folders, advise) {
+function checkLeafClaims(repoRoot, folders, fail) {
   for (const [key, entry] of Object.entries(folders)) {
     let body;
     try {
@@ -629,10 +629,11 @@ function checkLeafClaims(repoRoot, folders, advise) {
 
     const count = subBoundaryCount(repoRoot, key);
     if (count >= SUB_BOUNDARY_ADVISORY_FLOOR) {
-      advise(
-        `[0] ${key}: declares no child contracts, but its source branches into ${count} separate ` +
-          "packages — either they decompose into sub-module contracts, or the contract should say " +
-          "why they are one boundary",
+      fail(
+        `[13] ${key}: declares no child contracts, but its source branches into ${count} separate ` +
+          "packages. A unit that delivers a nameable functionality and reaches outside itself " +
+          "only rarely owes its own contract; if these genuinely form one boundary, say so in " +
+          "Child Contracts instead of leaving it silent",
       );
     }
   }
@@ -685,14 +686,14 @@ function checkWarmupCompletion(repoRoot, folders, docsRoot, advise) {
  * have two similar contracts, and a rule that genuinely binds everything is legitimate. What is
  * not legitimate is *every* contract agreeing — that is a template, not a judgement.
  */
-function checkTemplatedContracts(repoRoot, folders, advise) {
+function checkTemplatedContracts(repoRoot, folders, fail) {
   const entries = Object.entries(folders);
   if (entries.length < 3) return;
 
   const signatures = new Set(entries.map(([, e]) => e.rules.join(",")));
   if (signatures.size === 1) {
-    advise(
-      `[0] all ${entries.length} mapped folders inherit an identical rule set — a scope chosen ` +
+    fail(
+      `[12] all ${entries.length} mapped folders inherit an identical rule set — a scope chosen ` +
         "per module is never uniform across a whole repository; check this was authored, not generated",
     );
   }
@@ -719,8 +720,8 @@ function checkTemplatedContracts(repoRoot, folders, advise) {
   const threshold = Math.max(3, Math.ceil(entries.length * 0.75));
   const boilerplate = [...seen].filter(([, n]) => n >= threshold).map(([line]) => line);
   if (boilerplate.length) {
-    advise(
-      `[0] ${boilerplate.length} line(s) appear verbatim in ${threshold}+ of ${entries.length} ` +
+    fail(
+      `[12] ${boilerplate.length} line(s) appear verbatim in ${threshold}+ of ${entries.length} ` +
         `contracts, e.g. ${JSON.stringify(boilerplate[0].slice(0, 60))} — a sentence true of ` +
         "every module describes none of them",
     );
@@ -763,9 +764,9 @@ export function verify(repoRoot) {
     );
   }
 
-  checkTemplatedContracts(repoRoot, folders, (m) => advisories.push(m));
+  checkTemplatedContracts(repoRoot, folders, fail);
   checkWarmupCompletion(repoRoot, folders, profile.docs, (m) => advisories.push(m));
-  checkLeafClaims(repoRoot, folders, (m) => advisories.push(m));
+  checkLeafClaims(repoRoot, folders, fail);
 
   checkAgentRule(fail, repoRoot);
   checkPhases(fail, repoRoot);
