@@ -958,13 +958,13 @@ test("cg-warmup harvests the rules the code enforces into principles", () => {
   );
   const heading = (text) => skill.indexOf(`\n## ${text}`);
 
-  const harvest = heading("8. Harvest the rules the code already enforces");
+  const harvest = heading("9. Harvest the rules the code already enforces");
   assert.ok(harvest > 0, "warmup must have a harvest step");
   assert.ok(
-    harvest > heading("7. Assess the repository against the principles"),
+    harvest > heading("8. Assess the repository against the principles"),
     "harvest reads the code after the assessment has established what the principles already cover",
   );
-  assert.ok(harvest < heading("10. Report coverage honestly"), "harvest precedes the report");
+  assert.ok(harvest < heading("11. Report coverage honestly"), "harvest precedes the report");
 
   // Family placement is the whole difficulty. A product rule filed as `AP-` binds repositories
   // that can never satisfy it; a testable rule filed as a `guide` buys silence for the price
@@ -1159,6 +1159,118 @@ test("cg-warmup states a resumable per-unit loop, not one linear pass", () => {
     skill.split("\n").length <= 1000,
     "cg-warmup exceeds its 1000-line budget",
   );
+});
+
+/**
+ * A graph that was generated rather than written.
+ *
+ * Measured on a real adoption run: the agent judged ten contracts to be mechanical work, wrote
+ * `generate_contracts.py`, and emitted all ten from one string template — `Purpose: core
+ * responsibilities for <module>`, every module bound to an identical list of every rule, every
+ * module declared a leaf. `cg modules` reported full coverage. The only thing that objected was
+ * a heading mismatch; had the template used the right heading it would have been green.
+ */
+test("verify flags a contract set that was generated rather than written", () => {
+  const dir = makeRepo();
+  const contract = read(dir, "src/.agents/cg/contract.md");
+  const map = JSON.parse(read(dir, INHERITANCE));
+  const template = map.folders.src;
+
+  // Three modules, identical rule sets, identical authored prose — the shape a template makes.
+  for (const name of ["alpha", "beta", "gamma"]) {
+    fs.mkdirSync(path.join(dir, name, ".agents", "cg"), { recursive: true });
+    fs.writeFileSync(
+      path.join(dir, name, ".agents", "cg", "contract.md"),
+      contract.replace(/^# .*$/m, `# ${name} CONTRACT`),
+    );
+    for (const pointer of ["CLAUDE.md", "AGENTS.md"]) {
+      fs.copyFileSync(path.join(dir, "src", pointer), path.join(dir, name, pointer));
+    }
+    map.folders[name] = { ...template, contract: `${name}/.agents/cg/contract.md` };
+  }
+  delete map.folders.src;
+  write(dir, INHERITANCE, JSON.stringify(map, null, 2));
+  sync(dir);
+
+  const { failures, advisories } = verify(dir);
+  assert.deepEqual(failures, [], "a templated graph is well-formed — that is the whole problem");
+  assert.ok(
+    advisories.some((m) => m.includes("identical rule set")),
+    `expected the uniform-scope advisory, got: ${advisories.join(" | ")}`,
+  );
+  assert.ok(
+    advisories.some((m) => m.includes("appear verbatim")),
+    `expected the boilerplate advisory, got: ${advisories.join(" | ")}`,
+  );
+
+  // Vary one module's scope and prose: the repository stops looking generated.
+  map.folders.gamma = { ...template, contract: "gamma/.agents/cg/contract.md", rules: template.rules.slice(0, 1) };
+  write(dir, INHERITANCE, JSON.stringify(map, null, 2));
+  write(
+    dir,
+    "gamma/.agents/cg/contract.md",
+    read(dir, "gamma/.agents/cg/contract.md").replace(/^- .*$/gm, "- gamma owns exactly one thing"),
+  );
+  sync(dir);
+  assert.ok(
+    !verify(dir).advisories.some((m) => m.includes("identical rule set")),
+    "a scope that varies per module must not be flagged",
+  );
+});
+
+/**
+ * The repository contract is the root of the graph, and nothing fills it automatically: it is
+ * not in `map/inheritance.json`, so `cg verify` never asks for its sections, and the brownfield
+ * `init` message routes the user to `cg-warmup` rather than telling them to write it. Warmup
+ * therefore owns it — a run that maps forty modules and leaves the root a placeholder has built
+ * a graph whose first node says nothing about the product.
+ */
+test("cg-warmup fills the repository contract that nothing else fills", () => {
+  const skill = fs.readFileSync(
+    path.join(SOURCE_ROOT, "skills", "cg-warmup", "SKILL.md"),
+    "utf8",
+  );
+  const step = skill.indexOf("\n## 7. Fill the repository contract");
+  assert.ok(step > 0, "warmup must own the root contract");
+  assert.ok(
+    step > skill.indexOf("\n# Phase C"),
+    "it belongs after the loop: the product's identity is what the module roles add up to",
+  );
+  assert.match(skill, /Project Identity/);
+  assert.match(skill, /What This Product Is Not/);
+
+  // The scaffolded root contract really does ship those placeholders.
+  const root = fs.readFileSync(
+    path.join(SOURCE_ROOT, "governance", "contract.md"),
+    "utf8",
+  );
+  for (const heading of ["## Project Identity", "### What This Product Is Not"]) {
+    assert.ok(root.includes(heading), `the root contract must ship \`${heading}\``);
+  }
+});
+
+/**
+ * `inheritance.json` is read by hand more than any other generated file, and its comment block
+ * is the only explanation most users get. It claimed only `DP-` was fork-loaded (there are four
+ * families), named `CONTRACT.md` against the lowercase convention, and pointed at "the example
+ * below" — which brownfield `init` strips, leaving the sentence dangling.
+ */
+test("the inheritance map explains itself accurately", () => {
+  const raw = fs.readFileSync(
+    path.join(SOURCE_ROOT, "governance", "map", "inheritance.json"),
+    "utf8",
+  );
+  const comment = JSON.parse(raw).$comment.join("\n");
+
+  for (const family of ["DP-", "OP-", "UP-", "SP-"]) {
+    assert.ok(comment.includes(family), `the comment must name \`${family}\` as fork-loaded`);
+  }
+  assert.ok(!/CONTRACT\.md/.test(comment), "contract files are lowercase `contract.md`");
+  assert.ok(
+    !/example below/.test(comment),
+    "brownfield init strips the example, so the comment must not point at it",
+  );
+  assert.match(comment, /cg-warmup/, "an empty map should say what fills it");
 });
 
 /**

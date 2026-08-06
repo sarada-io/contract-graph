@@ -25,6 +25,7 @@ import path from "node:path";
 import {
   ContractError,
   countLines,
+  END_MARKER,
   splitLines,
   MAX_CONTRACT_LINES,
   REQUIRED_SECTIONS,
@@ -594,6 +595,62 @@ function checkSelfSufficiency(entry, text, fail, planPath) {
   });
 }
 
+/**
+ * Catch a graph that was generated rather than written.
+ *
+ * Measured on a real adoption run: an agent decided ten contracts was mechanical work, wrote a
+ * script, and emitted all ten from one string template — `Purpose: core responsibilities for
+ * <module>`, `Used by: dependent modules`, every module bound to an identical list of every rule,
+ * every module declared a leaf. It passed `cg modules` with full coverage. Nothing in the verifier
+ * objected, because the verifier proves a rule ID exists and a heading is present; it cannot read
+ * a sentence and notice it says nothing.
+ *
+ * These two signals can be read mechanically. Both are advisory: a small repository may honestly
+ * have two similar contracts, and a rule that genuinely binds everything is legitimate. What is
+ * not legitimate is *every* contract agreeing — that is a template, not a judgement.
+ */
+function checkTemplatedContracts(repoRoot, folders, advise) {
+  const entries = Object.entries(folders);
+  if (entries.length < 3) return;
+
+  const signatures = new Set(entries.map(([, e]) => e.rules.join(",")));
+  if (signatures.size === 1) {
+    advise(
+      `[0] all ${entries.length} mapped folders inherit an identical rule set — a scope chosen ` +
+        "per module is never uniform across a whole repository; check this was authored, not generated",
+    );
+  }
+
+  // A sentence repeated verbatim across most contracts is boilerplate: true of every module,
+  // therefore informative about none. Generated regions are excluded — those are meant to match.
+  const seen = new Map();
+  for (const [, entry] of entries) {
+    let body;
+    try {
+      body = fs.readFileSync(path.join(repoRoot, entry.contract), "utf8");
+    } catch {
+      continue;
+    }
+    const authored = body.split(END_MARKER).pop();
+    const lines = new Set(
+      splitLines(authored)
+        .map((line) => line.trim())
+        .filter((line) => line.startsWith("- ") && line.length > 24),
+    );
+    for (const line of lines) seen.set(line, (seen.get(line) ?? 0) + 1);
+  }
+
+  const threshold = Math.max(3, Math.ceil(entries.length * 0.75));
+  const boilerplate = [...seen].filter(([, n]) => n >= threshold).map(([line]) => line);
+  if (boilerplate.length) {
+    advise(
+      `[0] ${boilerplate.length} line(s) appear verbatim in ${threshold}+ of ${entries.length} ` +
+        `contracts, e.g. ${JSON.stringify(boilerplate[0].slice(0, 60))} — a sentence true of ` +
+        "every module describes none of them",
+    );
+  }
+}
+
 /** Run every check. Returns {failures, advisories, counts}. */
 export function verify(repoRoot) {
   const failures = [];
@@ -629,6 +686,8 @@ export function verify(repoRoot) {
         "map/inheritance.json governs it — run the `cg-warmup` skill once, or record why it is excluded",
     );
   }
+
+  checkTemplatedContracts(repoRoot, folders, (m) => advisories.push(m));
 
   checkAgentRule(fail, repoRoot);
   checkPhases(fail, repoRoot);

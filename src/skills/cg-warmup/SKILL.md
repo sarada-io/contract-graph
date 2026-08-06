@@ -31,7 +31,7 @@ executable.
 Phase A — once      §1–§3    predecessor · module roots · routing skeleton
 Phase B — per unit  §4–§6    ←──┐  contract · descend · bind · sync · record
                                └──┘  repeat until `cg modules` exits 0
-Phase C — once      §7–§11   assess · harvest · decisions · report · hand off
+Phase C — once      §7–§12   root contract · assess · harvest · decisions · report
 ```
 
 **Phase B is one module at a time, and it carries nothing in context between iterations.** That
@@ -60,7 +60,7 @@ principles cannot happen inside the loop.
 
 ## Required outcome
 
-Finish with all eleven true:
+Finish with all twelve true:
 
 1. Any predecessor governance framework is found, read, and carried forward or logged — never
    silently replaced.
@@ -71,12 +71,14 @@ Finish with all eleven true:
 5. `map/routing.md` routes a task to the module contracts it touches.
 6. Every unit that went through the loop left a findings block behind, so no module's code had to
    be read twice and a context break never restarts the work.
-7. Every principle assessment lands as a detector, a proposed exception, or a corrective Step.
-8. The rules the code already enforces are consolidated across units, written as principles, bound,
+7. The repository contract states what this product is and is not — the root of the graph carries
+   no placeholder.
+8. Every principle assessment lands as a detector, a proposed exception, or a corrective Step.
+9. The rules the code already enforces are consolidated across units, written as principles, bound,
    and listed for the owner to confirm — so no later session has to re-read the code to learn them.
-9. Every open question is a decision-log entry or a recorded assumption — none was asked in chat.
-10. The report states coverage and the limits of its own evidence.
-11. The user-facing response names the next action, next skill, input artifact, and readiness
+10. Every open question is a decision-log entry or a recorded assumption — none was asked in chat.
+11. The report states coverage and the limits of its own evidence.
+12. The user-facing response names the next action, next skill, input artifact, and readiness
     condition.
 
 ## 1. Look for the framework that came before
@@ -102,6 +104,17 @@ Search for it. Names vary — the tell is a directory of governance prose, not c
 Rule IDs that no longer resolve are the strongest signal: a comment citing `PP-01-04` when no
 `PP-` rule exists means a predecessor defined it and was removed underneath the code.
 
+**Search the working tree only.** Do not recover a deleted principles file, contract, or decision
+log out of version control and copy it forward. Version control tells you what a rule *was*, never
+that the code still obeys it — the file was deleted, and a rule resurrected from history is an
+assertion about the past dressed as an assertion about the present. This is the same rule as §4:
+describe what is true.
+
+If history is the only place a rule survives, it is not a predecessor finding; it is a lead. Go
+and check whether the code still holds the line, and then write the rule from *that* evidence,
+citing the files that prove it. Say in the report that history suggested it and what confirmed it.
+A graph whose product principles were pasted out of a deleted file looks complete and is unfalsified.
+
 When you find one, do these three things:
 
 - **Read its rules before writing yours.** Every rule the predecessor asserted is either
@@ -119,7 +132,7 @@ When you find one, do these three things:
   is where you find them: a passing test bound to a rule ID that no longer exists is now
   deletable, and nothing in the new constitution argues back. List every one in the report even
   when the rule is carried forward, because the binding is what makes it safe, not the test.
-- **Record the comparison.** Report it under *Predecessor* (§10): rules carried forward, rules
+- **Record the comparison.** Report it under *Predecessor* (§11): rules carried forward, rules
   dropped and why, and anything the old framework enforced that the new one does not yet. If the
   new coverage is *weaker* anywhere, say so in that sentence — do not average it away against the
   places it is stronger.
@@ -174,7 +187,7 @@ Exclude, with a stated reason rather than silently: vendored or generated trees,
 fixtures, and anything the repository already ignores.
 
 Do **not** stop and ask the owner to confirm the list. Proceed on the roots a manifest identified,
-recording that as an assumption, and raise only the genuinely ambiguous ones — §9.
+recording that as an assumption, and raise only the genuinely ambiguous ones — §10.
 
 ## 3. Sketch the routing map
 
@@ -207,6 +220,18 @@ two `BEGIN/END INHERITED` markers in the right place — leave them empty and ad
 
 Read this unit's code now. Read it once, and write everything you learn from it before moving on —
 §5 and §6 exist so that nothing you noticed has to survive in context past this iteration.
+
+**Never generate contracts mechanically.** Not with a script, not by substituting a module name
+into one shared body, not by writing several at once from a list of directory names. Ten contracts
+is ten readings; that is the cost, and paying it is the entire product. A templated contract says
+`Purpose: core responsibilities for <module>` and `Used by: dependent modules` — sentences that are
+true of every module ever written, which is the same as saying nothing. It will pass `cg verify`,
+because the verifier proves a rule ID exists and a heading is present, never that a sentence
+carries information. A generated graph is indistinguishable from no graph at the moment an agent
+tries to route with it, and it costs more than none because it looks answered.
+
+The tell that you are doing this: you are about to write the same sentence into a second contract.
+If a sentence is true of the next module too, it belongs in the repository contract (§7) or nowhere.
 
 A contract earns its place by letting an agent route *without* reading the code underneath it.
 Four of its fields carry that weight, and they are the ones a description-shaped contract omits:
@@ -249,13 +274,13 @@ Two rules that decide whether this is worth doing at all:
 
 - **Describe what is true, not what you wish were true.** A contract that states the boundary
   you intend to have is a plan, and plans belong in `docs/plans/`. If the code violates the
-  boundary you want, write the boundary that exists and open a finding under §7.
+  boundary you want, write the boundary that exists and open a finding under §8.
 - **State it in full.** A contract may never cite a plan path or a ticket as the source of a
   rule — `cg verify` fails the build for it, because a contract that depends on a deletable
   file is a contract that expires.
 
 Leave `<!-- Replace this section -->` markers only where you genuinely could not determine the
-answer. Each one is a question for §9 — a marker with no entry behind it is a hole nobody will
+answer. Each one is a question for §10 — a marker with no entry behind it is a hole nobody will
 find again.
 
 ## 5. Bind this unit and sync
@@ -290,12 +315,12 @@ you must never pay for twice. Before selecting the next unit, append one block t
 
 ```markdown
 ### <unit path>
-- **Rule candidates:** <constraints the code obeys that no principle states — §8 decides the
+- **Rule candidates:** <constraints the code obeys that no principle states — §9 decides the
   family and whether they survive; here you only record what you saw and the files that show it>
 - **Principle observations:** <for any `AP-`/`PP-` rule this unit bears on: the rule ID, whether
-  a detector exists here, and what you read — §7 consolidates these>
+  a detector exists here, and what you read — §8 consolidates these>
 - **Detectors found:** <tests in this unit that guard a boundary, and the rule ID they cite if any>
-- **Open questions:** <boundaries you could not settle — §9 turns these into `DL-02` entries>
+- **Open questions:** <boundaries you could not settle — §10 turns these into `DL-02` entries>
 - **Routing correction:** <a `map/routing.md` row this unit showed to be wrong, already fixed>
 ```
 
@@ -312,13 +337,41 @@ source.
 
 # Phase C — once, after `cg modules` exits 0
 
-§7–§11 run one time over the whole repository. Their input is
+§7–§12 run one time over the whole repository. Their input is
 `docs/plans/warmup-findings.md` — every block Phase B appended — plus the contracts and maps now
 on disk. **Read that file first.** Do not re-open module source to reconstruct what the loop
 already recorded; if a block is too thin to work from, that is a defect in the block, and the fix
 is to go back to that one unit rather than to re-read them all.
 
-## 7. Assess the repository against the principles
+## 7. Fill the repository contract
+
+`.agents/cg/contract.md` is the root of the graph — the first thing every future session reads,
+and the node every route starts from. `cg init` ships it with `Project Identity` and *What This
+Product Is Not* as `<!-- Replace this section -->` placeholders, and **nothing else fills them.**
+They are not in `map/inheritance.json`, so `cg verify` never asks. A warmup that maps forty
+modules and leaves this empty has built a graph whose root says nothing about the product.
+
+It is written here rather than in Phase A because only now do you have the answer: every module
+has a stated *Project role*, and the repository's identity is what those roles add up to.
+
+Write:
+
+- **Project Identity** — what this repository builds, in the words its own team would use; its
+  stable technical identity (package root, module prefix, configuration prefix); its request or
+  pipeline shape; and each top-level module named with the one thing the product uses it for.
+  A newcomer should be able to route from this paragraph alone.
+- **What This Product Is Not** — the exclusions, which do more work than the inclusions. State
+  what this repository will not become, so an agent proposing one recognises it as out of bounds.
+  Take these from what the code refuses to do: a boundary every module respects, a dependency
+  nothing declares, a store nothing writes to.
+
+Both come from evidence, not aspiration — the same rule as §4. If the repository genuinely does
+not settle a question, say so plainly here rather than inventing a direction for it.
+
+Leave no `<!-- Replace this section -->` marker behind in this file. A placeholder at the root of
+the graph is the one hole every session pays for.
+
+## 8. Assess the repository against the principles
 
 This is the part that must not overclaim.
 
@@ -357,7 +410,7 @@ enforcement-map row. A guide makes no claim about your code, so there is nothing
 **Warmup never edits behaviour.** It writes governance, detectors, and findings. The moment a
 finding requires a code change, it becomes a Step for `cg-produce`.
 
-## 8. Harvest the rules the code already enforces
+## 9. Harvest the rules the code already enforces
 
 Phase B recorded *Rule candidates* for every unit. This section is what stops that reading from
 being thrown away: **whatever the loop learned that the next session would otherwise have to learn
@@ -423,7 +476,7 @@ rule bound to nothing governs nothing.
 Common, and it is *information*. The code was built to a rule the architecture principles disagree
 with, and one of the two is wrong. Never resolve it yourself and never quietly drop the harvested
 rule — raise a `DL-02` naming both rules, the code that follows the harvested one, and the cost of
-moving either way. Same `D-3` floor as §9: a binding principle is not yours to waive, and neither
+moving either way. Same `D-3` floor as §10: a binding principle is not yours to waive, and neither
 is a rule the whole codebase already follows.
 
 ### Keep it proportionate
@@ -431,9 +484,9 @@ is a rule the whole codebase already follows.
 Harvest what would change what an agent does. A repository yields a handful to a few dozen; a
 hundred means you are transcribing the code rather than governing it, and a graph nobody finishes
 reading has lost the argument it was making. Every harvested rule is listed for confirmation in
-§10 — you write them, the owner keeps them.
+§11 — you write them, the owner keeps them.
 
-## 9. Raise what needs the owner — in the log, not in chat
+## 10. Raise what needs the owner — in the log, not in chat
 
 Warmup does not interview you. It decides what it can from the code and the principles, records
 what it decided, logs what it genuinely cannot decide, and hands you **one consolidated set at the
@@ -472,7 +525,7 @@ Two rules that make this work rather than becoming a queue nobody drains:
 Stop and ask in chat only if nothing else can proceed — which, for warmup, essentially means the
 repository has no discoverable modules at all.
 
-## 10. Report coverage honestly
+## 11. Report coverage honestly
 
 ```markdown
 # Warmup report
@@ -502,7 +555,7 @@ repository has no discoverable modules at all.
 - unknown (needs running or instrumenting): <n>
 
 ## New principles — please confirm
-Harvested from the code (§8). Each is a rule this repository already follows that no principle
+Harvested from the code (§9). Each is a rule this repository already follows that no principle
 stated. They are written, bound, and green — this list is for you to keep, reword, or delete.
 
 | ID | Rule | Why it is that family | Evidence in the code | Detector |
@@ -538,7 +591,7 @@ on it binds every agent that reads the graph. Present the whole set at once, nev
 and never ask for approval before writing them: an unwritten rule leaves the code as the only
 record of itself, which is the cost this step exists to remove.
 
-## 11. Next-action response
+## 12. Next-action response
 
 Choose exactly one immediate route:
 
@@ -573,6 +626,8 @@ End the user-facing response with:
 - [ ] Harvested rules were merged across units before being written, not repeated per unit.
 - [ ] Every module root is mapped or excluded with a stated reason.
 - [ ] Every mapped folder has a contract describing code that exists.
+- [ ] `.agents/cg/contract.md` has Project Identity and *What This Product Is Not* written from
+      evidence — no `<!-- Replace this section -->` marker left at the root of the graph.
 - [ ] Every contract states Project role, Parent contract, and Used by — the edges that let an
       agent route without reading the code underneath.
 - [ ] Every contract declares its Child Contracts, or says `None — leaf`.
