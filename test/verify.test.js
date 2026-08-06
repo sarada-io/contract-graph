@@ -915,7 +915,7 @@ test("cg-warmup searches for a predecessor framework before authoring anything",
   const predecessor = heading("1. Look for the framework that came before");
   assert.ok(predecessor > 0, "warmup must have a predecessor step");
   assert.ok(
-    predecessor < heading("3. Write the contract hierarchy"),
+    predecessor < heading("4. Write this unit's contract"),
     "the search must come before contract authoring, or it is archaeology after the fact",
   );
 
@@ -958,13 +958,13 @@ test("cg-warmup harvests the rules the code enforces into principles", () => {
   );
   const heading = (text) => skill.indexOf(`\n## ${text}`);
 
-  const harvest = heading("7. Harvest the rules the code already enforces");
+  const harvest = heading("8. Harvest the rules the code already enforces");
   assert.ok(harvest > 0, "warmup must have a harvest step");
   assert.ok(
-    harvest > heading("6. Assess the repository against the principles"),
+    harvest > heading("7. Assess the repository against the principles"),
     "harvest reads the code after the assessment has established what the principles already cover",
   );
-  assert.ok(harvest < heading("9. Report coverage honestly"), "harvest precedes the report");
+  assert.ok(harvest < heading("10. Report coverage honestly"), "harvest precedes the report");
 
   // Family placement is the whole difficulty. A product rule filed as `AP-` binds repositories
   // that can never satisfy it; a testable rule filed as a `guide` buys silence for the price
@@ -1037,10 +1037,169 @@ test("the warmup templates carry the same sections as the scaffold", () => {
     }
   }
 
+  // `cg-produce` carries a third copy for new modules it creates mid-phase. It drifted too.
+  const produce = sections(path.join(SOURCE_ROOT, "skills", "cg-produce", "assets", "module-contract.template.md"));
+  assert.deepEqual(produce, scaffold, "cg-produce's module template must match the scaffold's contract");
+
   // A sub-module contract is `kind: "folder"`, and warmup cannot write one without a template.
   const sub = sections(path.join(SOURCE_ROOT, "skills", "cg-warmup", "assets", "submodule-contract.template.md"));
   for (const required of REQUIRED_SECTIONS.folder) {
     assert.ok(sub.includes(required), `the sub-module template is missing \`${required}\``);
+  }
+});
+
+/**
+ * A skill that names a file which is not installed sends the agent looking for something that
+ * cannot be found, and a weaker model will invent the contents rather than stop. `cg-unblock`
+ * pointed at `principles/{saas,ux,ops}.md` for nine months after those three files became
+ * `design.md`, `operations.md`, `ux.md`, and `security.md`.
+ */
+test("every governance path a skill names is a file init installs", () => {
+  const installed = new Set();
+  for (const file of fs.readdirSync(path.join(SOURCE_ROOT, "principles"))) {
+    installed.add(`.agents/cg/principles/${file}`);
+  }
+  for (const file of fs.readdirSync(path.join(SOURCE_ROOT, "governance", "map"))) {
+    installed.add(`.agents/cg/map/${file}`);
+  }
+  for (const file of fs.readdirSync(path.join(SOURCE_ROOT, "governance"))) {
+    if (file.endsWith(".md")) installed.add(`.agents/cg/${file}`);
+  }
+  // Written by init into the docs root, not shipped under src/governance.
+  installed.add("docs/plans/decision-log.md");
+
+  const skills = path.join(SOURCE_ROOT, "skills");
+  for (const skill of fs.readdirSync(skills)) {
+    const file = path.join(skills, skill, "SKILL.md");
+    if (!fs.existsSync(file)) continue;
+    const body = fs.readFileSync(file, "utf8");
+    for (const [index, line] of body.split("\n").entries()) {
+      for (const ref of line.match(/\.agents\/cg\/[A-Za-z0-9/{},._-]+\.(?:md|json)/g) ?? []) {
+        assert.ok(
+          installed.has(ref),
+          `${skill}/SKILL.md:${index + 1}: names \`${ref}\`, which init does not install`,
+        );
+      }
+    }
+  }
+});
+
+/**
+ * A ```-fenced block nested inside another ```-fenced block terminates the outer one. The
+ * cold-start Step brief in `cg-prepare` did exactly that: its `Done when` bash block ended the
+ * template early, so everything after it read as prose rather than as part of the template.
+ */
+test("no skill nests a same-length code fence inside another", () => {
+  const skills = path.join(SOURCE_ROOT, "skills");
+  for (const skill of fs.readdirSync(skills)) {
+    const file = path.join(skills, skill, "SKILL.md");
+    if (!fs.existsSync(file)) continue;
+
+    let open = null;
+    for (const [index, line] of fs.readFileSync(file, "utf8").split("\n").entries()) {
+      const fence = /^\s*(`{3,})(\w*)\s*$/.exec(line);
+      if (!fence) continue;
+      const [, ticks, language] = fence;
+      if (!open) {
+        open = { ticks, line: index + 1 };
+      } else if (ticks.length < open.ticks.length) {
+        // Shorter than the fence that opened the block, so it is literal content. This is the
+        // shape a nested template must use.
+      } else if (!language) {
+        open = null;
+      } else {
+        // Enough backticks to close, but carrying an info string — so it closes the outer block
+        // and immediately looks like it opened a new one. This is the defect.
+        assert.fail(
+          `${skill}/SKILL.md:${index + 1}: \`\`\`${language} ends the block opened at line ` +
+            `${open.line} instead of nesting — give the outer fence more backticks`,
+        );
+      }
+    }
+    assert.equal(open, null, `${skill}/SKILL.md: unclosed code fence opened at line ${open?.line}`);
+  }
+});
+
+/**
+ * Warmup is a loop, not a linear procedure, and the loop is what makes it survive a repository
+ * bigger than one context window. Measured: the ten-module run read 663 source files to write
+ * ~1,800 lines of governance. Four times that does not fit, so nothing may be carried between
+ * iterations — each unit's findings go to disk, and `cg modules` is the resume point.
+ */
+test("cg-warmup states a resumable per-unit loop, not one linear pass", () => {
+  const file = path.join(SOURCE_ROOT, "skills", "cg-warmup", "SKILL.md");
+  const skill = fs.readFileSync(file, "utf8");
+
+  for (const phase of ["# Phase B — repeat", "# Phase C — once"]) {
+    assert.ok(skill.includes(`\n${phase}`), `warmup must mark \`${phase}…\``);
+  }
+  assert.ok(
+    skill.indexOf("\n# Phase B") < skill.indexOf("\n# Phase C"),
+    "the loop must precede the consolidation that reads its output",
+  );
+
+  // The resume path: a context break mid-warmup must not restart the whole thing.
+  assert.match(skill, /resuming after a context break/i);
+  assert.match(skill, /cg modules/, "the resume point is the tool that reports unmapped roots");
+
+  // Per-unit findings are the state. Without the write-down, the loop is just batching.
+  const record = skill.indexOf("\n## 6. Record what this unit taught you");
+  assert.ok(record > 0, "the loop needs a step that writes each unit's findings to disk");
+  assert.ok(
+    record < skill.indexOf("\n# Phase C"),
+    "the write-down belongs inside the loop, not after it",
+  );
+  assert.match(skill, /warmup-findings\.md/, "the findings file is the durable working state");
+
+  // Consolidation exists precisely because one rule surfaces in many units.
+  assert.match(skill, /Consolidate before you write/);
+
+  // A one-time skill is charged a different budget than one read every session.
+  assert.ok(
+    skill.split("\n").length <= 1000,
+    "cg-warmup exceeds its 1000-line budget",
+  );
+});
+
+/**
+ * HTML comments do not nest: the first `-->` closes the outermost `<!--`, so the remainder of
+ * the intended comment renders as visible text in the contract an agent then copies. Same shape
+ * as the nested-code-fence defect, and made in the same session while fixing it.
+ */
+test("no shipped markdown nests an HTML comment", () => {
+  const roots = [
+    path.join(SOURCE_ROOT, "skills"),
+    path.join(SOURCE_ROOT, "scaffold"),
+    path.join(SOURCE_ROOT, "principles"),
+    path.join(SOURCE_ROOT, "governance"),
+  ];
+
+  const walk = (dir) =>
+    fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) return walk(full);
+      return entry.name.endsWith(".md") ? [full] : [];
+    });
+
+  for (const file of roots.filter((dir) => fs.existsSync(dir)).flatMap(walk)) {
+    const relative = path.relative(SOURCE_ROOT, file);
+    let open = null;
+    for (const [index, line] of fs.readFileSync(file, "utf8").split("\n").entries()) {
+      for (const token of line.match(/<!--|-->/g) ?? []) {
+        if (token === "<!--") {
+          assert.equal(
+            open,
+            null,
+            `${relative}:${index + 1}: \`<!--\` inside the comment opened at line ${open} — ` +
+              "the first `-->` closes both, and the rest renders as visible text",
+          );
+          open = index + 1;
+        } else {
+          open = null;
+        }
+      }
+    }
+    assert.equal(open, null, `${relative}: unterminated HTML comment opened at line ${open}`);
   }
 });
 

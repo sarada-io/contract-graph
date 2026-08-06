@@ -49,11 +49,12 @@ Use the first source that answers the fork:
    surface permits it.
 8. `DP-01-02` — the narrower product scope and the simpler solo-maintainer operating model.
 
-Before using items 5–8, explicitly load only the applicable set or sets from
-`.agents/cg/principles/{saas,ux,ops}.md`. A design guide answers only after sources 1–4 do not, and the
-recorded assumption or decision must cite the guide ID and acknowledge its stated cost. Other
-applicable DP rules may answer the fork before these four general defaults; set order does not
-override a binding source.
+Before using items 5–8, explicitly load only the applicable file or files from
+`.agents/cg/principles/design.md` (`DP-`), `.agents/cg/principles/operations.md` (`OP-`),
+`.agents/cg/principles/ux.md` (`UP-`), or `.agents/cg/principles/security.md` (`SP-`). A guide
+answers only after sources 1–4 do not, and the recorded assumption or decision must cite the rule
+ID and acknowledge its stated cost. Other applicable rules in those files may answer the fork
+before these four general defaults; file order does not override a binding source.
 
 Never use a passing build to overrule a contract. If code and contract disagree, the contract wins.
 
@@ -125,7 +126,7 @@ Classify each candidate once. Do not promote a one-off merely because it was dif
 
 | Destination | Use when | Delivery obligation |
 |---|---|---|
-| Module or folder `CONTRACT.md` | The rule binds one owned implementation boundary, behavior, interface, or operating assumption. | State it in full and deliver its detector in the same execution change. |
+| Module or folder `contract.md` | The rule binds one owned implementation boundary, behavior, interface, or operating assumption. | State it in full and deliver its detector in the same execution change. |
 | Architecture Principle (`AP-`) | The structural invariant must hold for any product built in the repository. | Add the binding rule, enforcement-map row, detector, inheritance scope, and regenerated contracts together. |
 | Product Principle (`PP-`) | The binding rule exists because of this product's market, pricing, or shape. | Add the binding rule, enforcement-map row, detector, inheritance scope, and regenerated contracts together. |
 | A fork-loaded family — design (`DP-`), operations (`OP-`), user experience (`UP-`), security (`SP-`) | The recurring decision aid belongs to one domain and is consulted at a fork, but must not become ambient contract inheritance. | Declare modality: an `invariant` gets a detector and enforcement-map row in the same change; a `guide` states its cost and gets no map row. |

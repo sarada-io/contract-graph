@@ -142,17 +142,20 @@ Sequential execution removes ownership races; it does not authorize silent scope
 
 ## 7. Durable non-contract documentation
 
-If the Step changes product behavior, operator procedures, architecture rationale, or diagrams, use
-`cg-sign-off` on its standalone path for the documentation paths assigned to this Step.
+If the Step changes product behavior, operator procedures, architecture rationale, or diagrams,
+those documents are written by `cg-sign-off` — it owns the durable record, and it has a standalone
+entry path that writes documentation without closing a phase. Hand it the documentation paths the
+Step brief assigned, and continue.
 
 This never delays contract co-delivery. Product documentation is additional durable evidence, not
-the source of the rule.
+the source of the rule — and a contract update is never satisfied by writing a document about it.
 
 ## 8. Verify and hand off accumulated state
 
 1. Run the Step's `Done when` verbatim.
-2. Run the repository's full build-and-contract gate. In this repository:
-   the repository's full verification command.
+2. Run the repository's full build-and-contract gate — its own build/test command plus `cg verify`.
+   The exact command is named in the preparation record; if it is not, ask for it rather than
+   inventing one, because a gate you guessed proves nothing.
 3. Compare the diff with the Step's expected starting state.
 4. Confirm only declared paths and preserved unrelated changes appear.
 5. Record the commit or exact worktree state that dependent Steps consume.

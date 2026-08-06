@@ -10,6 +10,13 @@
   fails if anyone hand-edits it. Never write rules between the markers by hand.
 -->
 
+<!--
+  Replace every <angle-bracket> placeholder. Where you genuinely could not determine
+  the answer, leave an HTML comment reading "Replace this section" in its place and
+  raise a decision-log entry for it — a marker with nothing behind it is a hole nobody
+  finds again.
+-->
+
 ## Module Identity
 - Purpose: <one-sentence module purpose>.
 - Project role: <why the parent system contains this module and how it uses the capability>.

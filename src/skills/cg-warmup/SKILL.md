@@ -1,6 +1,6 @@
 ---
 name: cg-warmup
-description: Adopt Contract Graph into a repository that already has code. Run once, after cg init, before the lifecycle skills are useful. Finds any predecessor governance framework and carries its rules forward rather than writing over them, discovers the real module roots, writes one folder contract per module from the code that is actually there, fills the inheritance and routing maps, assesses the repository against the binding principles, and harvests the rules the code already enforces into product and architecture principles so no later session has to re-read the code to learn them — listing every new rule for the owner to confirm. Never reports a compliance score, never edits behaviour, never deletes or runs the predecessor, and never marks a rule enforced that no detector proves.
+description: Adopt Contract Graph into a repository that already has code. Run once, after cg init, before the lifecycle skills are useful. Runs as three phases — a whole-repository survey, then a resumable per-module loop that writes each unit's contract, children, bindings and findings to disk before moving on, then one consolidation. Finds any predecessor governance framework and carries its rules forward rather than writing over them, discovers the real module roots and descends below build manifests, fills the inheritance and routing maps, assesses the repository against the binding principles, and harvests the rules the code already enforces into product and architecture principles so no later session has to re-read the code to learn them — listing every new rule for the owner to confirm. Resumes from cg modules after a context break rather than restarting. Never reports a compliance score, never edits behaviour, never deletes or runs the predecessor, and never marks a rule enforced that no detector proves.
 ---
 
 # Contract Graph Warmup
@@ -23,9 +23,44 @@ Warmup closes that gap, and the honest measure of it finishing is coverage: ever
 mapped, every mapped module carrying a contract, and every finding resolved to something
 executable.
 
+## How this skill runs — read this before §1
+
+**This is not a linear procedure. It is a survey, a loop, and a consolidation.**
+
+```text
+Phase A — once      §1–§3    predecessor · module roots · routing skeleton
+Phase B — per unit  §4–§6    ←──┐  contract · descend · bind · sync · record
+                               └──┘  repeat until `cg modules` exits 0
+Phase C — once      §7–§11   assess · harvest · decisions · report · hand off
+```
+
+**Phase B is one module at a time, and it carries nothing in context between iterations.** That
+is the whole reason it is a loop. A forty-module repository will not fit in one window, and an
+agent that tries to read every module before writing anything either drops what it learned about
+the first ones or reads them twice — which is the exact cost this project exists to remove.
+
+Everything Phase B learns is written to disk as it goes: the contract, the entry in
+`map/inheritance.json`, and one appended block in `docs/plans/warmup-findings.md`. Those files
+*are* the working state. Nothing is held in your head between modules.
+
+**If you are resuming after a context break, you are not starting over.** Run:
+
+```bash
+cg modules
+```
+
+Every row it still reports `UNMAPPED` is a unit that has not been through Phase B. Every row it
+reports `governed` is done — do not revisit it. Read the tail of `docs/plans/warmup-findings.md`
+to see what earlier iterations recorded, then re-enter Phase B at the first unmapped row. Phase A
+does not run again; its outputs are already on disk.
+
+Phase C runs exactly once, when `cg modules` exits 0. It needs the *whole* set — the same rule
+surfaces in five modules and must be written once, not five times — which is why harvesting into
+principles cannot happen inside the loop.
+
 ## Required outcome
 
-Finish with all ten true:
+Finish with all eleven true:
 
 1. Any predecessor governance framework is found, read, and carried forward or logged — never
    silently replaced.
@@ -34,12 +69,14 @@ Finish with all ten true:
    and every module that holds more than one boundary declares its children.
 4. `map/inheritance.json` names, for each module, the rules that actually bind it.
 5. `map/routing.md` routes a task to the module contracts it touches.
-6. Every principle assessment lands as a detector, a proposed exception, or a corrective Step.
-7. The rules the code already enforces are written as principles, bound, and listed for the owner
-   to confirm — so no later session has to re-read the code to learn them.
-8. Every open question is a decision-log entry or a recorded assumption — none was asked in chat.
-9. The report states coverage and the limits of its own evidence.
-10. The user-facing response names the next action, next skill, input artifact, and readiness
+6. Every unit that went through the loop left a findings block behind, so no module's code had to
+   be read twice and a context break never restarts the work.
+7. Every principle assessment lands as a detector, a proposed exception, or a corrective Step.
+8. The rules the code already enforces are consolidated across units, written as principles, bound,
+   and listed for the owner to confirm — so no later session has to re-read the code to learn them.
+9. Every open question is a decision-log entry or a recorded assumption — none was asked in chat.
+10. The report states coverage and the limits of its own evidence.
+11. The user-facing response names the next action, next skill, input artifact, and readiness
     condition.
 
 ## 1. Look for the framework that came before
@@ -82,7 +119,7 @@ When you find one, do these three things:
   is where you find them: a passing test bound to a rule ID that no longer exists is now
   deletable, and nothing in the new constitution argues back. List every one in the report even
   when the rule is carried forward, because the binding is what makes it safe, not the test.
-- **Record the comparison.** Report it under *Predecessor* (§9): rules carried forward, rules
+- **Record the comparison.** Report it under *Predecessor* (§10): rules carried forward, rules
   dropped and why, and anything the old framework enforced that the new one does not yet. If the
   new coverage is *weaker* anywhere, say so in that sentence — do not average it away against the
   places it is stronger.
@@ -137,13 +174,39 @@ Exclude, with a stated reason rather than silently: vendored or generated trees,
 fixtures, and anything the repository already ignores.
 
 Do **not** stop and ask the owner to confirm the list. Proceed on the roots a manifest identified,
-recording that as an assumption, and raise only the genuinely ambiguous ones — §8.
+recording that as an assumption, and raise only the genuinely ambiguous ones — §9.
 
-## 3. Write the contract hierarchy
+## 3. Sketch the routing map
 
-Copy [the module contract template](assets/module-contract.template.md) for each module. It
-already carries the two `BEGIN/END INHERITED` markers in the right place — leave them empty and
-adjacent, because `cg sync` fills that block and `cg verify` rejects a hand-edited one.
+`map/routing.md` ships as a stub because only the repository knows its own capabilities. Add one
+row per capability, surface, or subsystem, naming the module contracts a task touching it must
+load.
+
+Write the rows in the words a request arrives in — "checkout fails at payment", not
+"PaymentServiceImpl" — because the routing table is read by whoever received the request, before
+they know which class is involved.
+
+Sketch it now from the module list, and correct a row in Phase B whenever reading a module shows
+the routing was wrong. Doing it here rather than at the end means the loop has somewhere to write
+a correction to, instead of carrying one in context for thirty modules.
+
+---
+
+# Phase B — repeat §4–§6 for one unit at a time
+
+Pick the first row `cg modules` still reports `UNMAPPED`. Run §4, §5, and §6 for **that unit
+only**, then run `cg modules` again and pick the next. Do not batch: do not read three modules
+before writing a contract, and do not defer a binding or a finding to "later in the loop". When
+`cg modules` exits 0, go to Phase C.
+
+## 4. Write this unit's contract
+
+Copy [the module contract template](assets/module-contract.template.md). It already carries the
+two `BEGIN/END INHERITED` markers in the right place — leave them empty and adjacent, because
+`cg sync` fills that block and `cg verify` rejects a hand-edited one.
+
+Read this unit's code now. Read it once, and write everything you learn from it before moving on —
+§5 and §6 exist so that nothing you noticed has to survive in context past this iteration.
 
 A contract earns its place by letting an agent route *without* reading the code underneath it.
 Four of its fields carry that weight, and they are the ones a description-shaped contract omits:
@@ -186,54 +249,82 @@ Two rules that decide whether this is worth doing at all:
 
 - **Describe what is true, not what you wish were true.** A contract that states the boundary
   you intend to have is a plan, and plans belong in `docs/plans/`. If the code violates the
-  boundary you want, write the boundary that exists and open a finding under §6.
+  boundary you want, write the boundary that exists and open a finding under §7.
 - **State it in full.** A contract may never cite a plan path or a ticket as the source of a
   rule — `cg verify` fails the build for it, because a contract that depends on a deletable
   file is a contract that expires.
 
 Leave `<!-- Replace this section -->` markers only where you genuinely could not determine the
-answer. Each one is a question for §8 — a marker with no entry behind it is a hole nobody will
+answer. Each one is a question for §9 — a marker with no entry behind it is a hole nobody will
 find again.
 
-## 4. Fill the inheritance map
+## 5. Bind this unit and sync
 
 `map/inheritance.json` decides which rules are stamped into which contract. Nothing infers it
 and nothing checks a scope is *correct* — the verifier proves only that a rule ID exists.
 
-For each module add an entry with its path key, `depth` matching the segment count, `kind`
-(`module` for a workspace root that needs its own `CLAUDE.md`/`AGENTS.md` pointers, `folder`
-otherwise), the `contract` path, and its `rules`.
+Add an entry for this unit and each child you wrote in §4: its path key, `depth` matching the
+segment count, `kind` (`module` for a workspace root that needs its own `CLAUDE.md`/`AGENTS.md`
+pointers, `folder` otherwise), the `contract` path, and its `rules`.
 
 **When unsure whether a rule binds a module, include it.** A wrongly narrow scope means a
 folder silently stops being told about a rule it must obey, and silence is the failure mode
 this whole framework exists to remove. A wrongly broad scope is visible and annoying, which is
 the better error.
 
-`DP-` rules are never inherited. They are loaded at a fork, and an unavoidable guide is just a
-rule.
+Only `AP-` and `PP-` rules are ever inherited. `DP-`, `OP-`, `UP-`, and `SP-` are fork-loaded —
+`cg verify` rejects an inheritance entry naming one, because an unavoidable guide is just a rule.
 
-Run `cg sync` after editing, then `cg verify`. Re-run `cg modules` — a mapped module stops being
-reported, so the count going down is your progress.
+Run `cg sync`, then `cg verify`, **before moving to the next unit**. A broken map found now costs
+one unit's rework; found thirty units later it costs thirty. Then re-run `cg modules` — this unit
+stops being reported, and the count going down is your progress.
 
 An entry may govern a parent: a contract on `services/` covers `services/billing/` beneath it.
 Prefer that where the modules genuinely share a boundary, and separate contracts where they do not.
 
-## 5. Fill the routing map
+## 6. Record what this unit taught you, then forget it
 
-`map/routing.md` ships as a stub because only the repository knows its own capabilities. Add one
-row per capability, surface, or subsystem, naming the module contracts a task touching it must
-load.
+You have just read this unit's code — the most expensive thing this skill does, and the one thing
+you must never pay for twice. Before selecting the next unit, append one block to
+`docs/plans/warmup-findings.md`:
 
-Write the rows in the words a request arrives in — "checkout fails at payment", not
-"PaymentServiceImpl" — because the routing table is read by whoever received the request, before
-they know which class is involved.
+```markdown
+### <unit path>
+- **Rule candidates:** <constraints the code obeys that no principle states — §8 decides the
+  family and whether they survive; here you only record what you saw and the files that show it>
+- **Principle observations:** <for any `AP-`/`PP-` rule this unit bears on: the rule ID, whether
+  a detector exists here, and what you read — §7 consolidates these>
+- **Detectors found:** <tests in this unit that guard a boundary, and the rule ID they cite if any>
+- **Open questions:** <boundaries you could not settle — §9 turns these into `DL-02` entries>
+- **Routing correction:** <a `map/routing.md` row this unit showed to be wrong, already fixed>
+```
 
-## 6. Assess the repository against the principles
+Every field may be `none`. An empty block is still written, because "this unit yielded nothing" is
+information the consolidation needs and an absent block is indistinguishable from a unit that was
+skipped.
+
+**Then drop the unit's code from your working set and select the next one.** Phase C reads this
+file, not your memory. If you find yourself scrolling back to what a module three iterations ago
+contained, the block you wrote for it was too thin — go and thicken it rather than re-reading the
+source.
+
+---
+
+# Phase C — once, after `cg modules` exits 0
+
+§7–§11 run one time over the whole repository. Their input is
+`docs/plans/warmup-findings.md` — every block Phase B appended — plus the contracts and maps now
+on disk. **Read that file first.** Do not re-open module source to reconstruct what the loop
+already recorded; if a block is too thin to work from, that is a defect in the block, and the fix
+is to go back to that one unit rather than to re-read them all.
+
+## 7. Assess the repository against the principles
 
 This is the part that must not overclaim.
 
-Work through `principles/architecture.md`, `product.md`, and any installed fork-loaded principle files. For
-each rule, establish which of three states it is in **for this repository**:
+Work through `principles/architecture.md` and `product.md` — the binding families — against the
+*Principle observations* collected in the findings file. For each rule, establish which of three
+states it is in **for this repository**:
 
 | State | What it means | Where it goes |
 |---|---|---|
@@ -259,14 +350,24 @@ implies a measurement that was not taken. State counts instead — how many rule
 how many were read, how many are unknown — because a count carries its own denominator and a
 score hides it.
 
+**Do not run this table over the fork-loaded files.** Every rule in `design.md`, `operations.md`,
+`ux.md`, and `security.md` is a `guide`, and `cg verify` fails the build when a guide has an
+enforcement-map row. A guide makes no claim about your code, so there is nothing to assess.
+
 **Warmup never edits behaviour.** It writes governance, detectors, and findings. The moment a
 finding requires a code change, it becomes a Step for `cg-produce`.
 
-## 7. Harvest the rules the code already enforces
+## 8. Harvest the rules the code already enforces
 
-You have been reading code since §3. This section is what stops that reading from being thrown
-away: **whatever you learned that the next session would otherwise have to learn again belongs in
-the graph before this skill ends.**
+Phase B recorded *Rule candidates* for every unit. This section is what stops that reading from
+being thrown away: **whatever the loop learned that the next session would otherwise have to learn
+again belongs in the graph before this skill ends.**
+
+**Consolidate before you write.** The same rule surfaces in several units — "nothing outside the
+adapter package imports the vendor SDK" appears in every module that does not. Merge those into
+one rule, stated once at the scope that is actually true, and bind it to every unit it governs. A
+rule written five times is five rules to keep in step, and this merge is the reason harvesting
+could not happen inside the loop.
 
 Most of it already landed — a boundary is a contract section, a decomposition is a child contract.
 What is left over is the constraints. A single seam constructs every storage path. One class is
@@ -322,7 +423,7 @@ rule bound to nothing governs nothing.
 Common, and it is *information*. The code was built to a rule the architecture principles disagree
 with, and one of the two is wrong. Never resolve it yourself and never quietly drop the harvested
 rule — raise a `DL-02` naming both rules, the code that follows the harvested one, and the cost of
-moving either way. Same `D-3` floor as §8: a binding principle is not yours to waive, and neither
+moving either way. Same `D-3` floor as §9: a binding principle is not yours to waive, and neither
 is a rule the whole codebase already follows.
 
 ### Keep it proportionate
@@ -330,9 +431,9 @@ is a rule the whole codebase already follows.
 Harvest what would change what an agent does. A repository yields a handful to a few dozen; a
 hundred means you are transcribing the code rather than governing it, and a graph nobody finishes
 reading has lost the argument it was making. Every harvested rule is listed for confirmation in
-§9 — you write them, the owner keeps them.
+§10 — you write them, the owner keeps them.
 
-## 8. Raise what needs the owner — in the log, not in chat
+## 9. Raise what needs the owner — in the log, not in chat
 
 Warmup does not interview you. It decides what it can from the code and the principles, records
 what it decided, logs what it genuinely cannot decide, and hands you **one consolidated set at the
@@ -345,7 +446,7 @@ Route every open question by what it would cost to be wrong:
 |---|---|---|
 | a module root a build manifest identified | proceed; record an assumption | reversible by one edit to `inheritance.json` |
 | a boundary with no manifest behind it — a package tree, a shared directory | **`DL-02`** | wrong here makes several contracts wrong, and no default is safe |
-| which rules bind a module | proceed, including the rule when unsure | §4 — the broad scope is the visible error |
+| which rules bind a module | proceed, including the rule when unsure | §5 — the broad scope is the visible error |
 | an exception to a binding principle | **`DL-02`, always** | a binding principle is protected; it is never yours to waive quietly |
 | a contract section you could not determine | marker, plus **`DL-02`** when the boundary is material | otherwise the marker is the record |
 
@@ -371,7 +472,7 @@ Two rules that make this work rather than becoming a queue nobody drains:
 Stop and ask in chat only if nothing else can proceed — which, for warmup, essentially means the
 repository has no discoverable modules at all.
 
-## 9. Report coverage honestly
+## 10. Report coverage honestly
 
 ```markdown
 # Warmup report
@@ -390,8 +491,10 @@ repository has no discoverable modules at all.
 - excluded: <n> — <each with its reason>
 
 ## Contracts
-- written: <n>
-- carrying unresolved `<!-- Replace -->` markers: <n> — <which>
+- written: <n> — <n> module, <n> sub-module
+- deepest path from the repository contract to a leaf: <n> levels
+- declaring `None — leaf`: <n>
+- carrying unresolved `<!-- Replace this section -->` markers: <n> — <which>
 
 ## Principles
 - enforced (detector exists and passes): <n>
@@ -399,7 +502,7 @@ repository has no discoverable modules at all.
 - unknown (needs running or instrumenting): <n>
 
 ## New principles — please confirm
-Harvested from the code (§7). Each is a rule this repository already follows that no principle
+Harvested from the code (§8). Each is a rule this repository already follows that no principle
 stated. They are written, bound, and green — this list is for you to keep, reword, or delete.
 
 | ID | Rule | Why it is that family | Evidence in the code | Detector |
@@ -423,10 +526,10 @@ stated. They are written, bound, and green — this list is for you to keep, rew
 <the exact `cg verify` output, and `cg modules`>
 ```
 
-**Waiting on you** is the section to read first — it is the whole ask, in one place, and nothing
-in it stopped the rest of the work. The principles section is the honest one. If most rules are `assessed` rather than `enforced`, say
-so plainly — that is the true state of a repository at adoption, and pretending otherwise makes
-the first real violation a surprise instead of a caught defect.
+**Waiting on you** is the section to read first — the whole ask, in one place, and nothing in it
+stopped the rest of the work. The principles section is the honest one: if most rules are
+`assessed` rather than `enforced`, say so plainly. That is the true state of a repository at
+adoption, and pretending otherwise makes the first real violation a surprise, not a caught defect.
 
 **New principles is the section to read second**, and it is a different kind of ask. Those rules
 are already written and already green; nothing waits on the reply. What the owner is confirming is
@@ -435,7 +538,7 @@ on it binds every agent that reads the graph. Present the whole set at once, nev
 and never ask for approval before writing them: an unwritten rule leaves the code as the only
 record of itself, which is the cost this step exists to remove.
 
-## 10. Next-action response
+## 11. Next-action response
 
 Choose exactly one immediate route:
 
@@ -465,6 +568,9 @@ End the user-facing response with:
 - [ ] Every predecessor detector whose rule ID no longer resolves is named in the report.
 - [ ] Nothing belonging to the predecessor was deleted or executed.
 - [ ] `cg modules` exits 0, or every remaining row is excluded with a stated reason.
+- [ ] Every unit that went through Phase B has a findings block, including the empty ones.
+- [ ] No unit's source was read in Phase C — consolidation used the findings file.
+- [ ] Harvested rules were merged across units before being written, not repeated per unit.
 - [ ] Every module root is mapped or excluded with a stated reason.
 - [ ] Every mapped folder has a contract describing code that exists.
 - [ ] Every contract states Project role, Parent contract, and Used by — the edges that let an
@@ -484,7 +590,7 @@ End the user-facing response with:
 - [ ] Every harvested rule contradicting a binding principle is a `DL-02`, not a silent choice.
 - [ ] The harvested set is listed in the report for the owner to confirm, in one place.
 - [ ] Every open question is a `DL-02` entry or a recorded assumption — none was asked in chat.
-- [ ] Every `<!-- Replace -->` marker has a decision-log entry behind it.
+- [ ] Every `<!-- Replace this section -->` marker has a decision-log entry behind it.
 - [ ] Pending questions were presented once, as a consolidated set.
 - [ ] No logged question stopped work that was not actually blocked by it.
 - [ ] No score, percentage, or grade appears anywhere in the report.

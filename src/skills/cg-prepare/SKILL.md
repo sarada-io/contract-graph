@@ -216,7 +216,7 @@ Emergent checks prove composition; they do not repair an incomplete Step.
 
 Every Step gets:
 
-```markdown
+````markdown
 # Phase <phase> Step <number>: <name>
 Weight: Design | Build | Mechanical
 Priority: <stable number>
@@ -252,7 +252,7 @@ Status: <Waiting | Ready | Blocked>
 
 ## Handoff
 <evidence, repository state, queue-state update, and dependent Steps this unblocks>
-```
+````
 
 ## Preparation-completeness gate
 

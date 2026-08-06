@@ -57,7 +57,19 @@ const POINTERS = ["CLAUDE.md", "AGENTS.md"];
 const SKILL_NAME = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const SKILL_FRONTMATTER_KEYS = ["name", "description"];
 const SKILL_INTERFACE_KEYS = ["display_name", "short_description", "default_prompt"];
-const SKILL_LINE_BUDGET = 500;
+/**
+ * The budget is about *recurring* reading cost, not tidiness.
+ *
+ * A lifecycle skill is loaded on every session that touches it, so its length is a tax paid
+ * again and again — 500 lines is the point past which an agent starts skimming the thing that
+ * governs it. `cg-warmup` is categorically different: it runs once in a repository's life, it
+ * never runs again, and it is doing the hardest reading the framework asks for. Charging it the
+ * recurring-cost budget would buy nothing and would push it toward the abbreviation that makes a
+ * weaker model guess. It still has a ceiling, because a procedure nobody finishes reading is
+ * unbounded in a different way.
+ */
+const SKILL_LINE_BUDGETS = { default: 500, "cg-warmup": 1000 };
+const skillLineBudget = (name) => SKILL_LINE_BUDGETS[name] ?? SKILL_LINE_BUDGETS.default;
 const WRAPPER_LINE_BUDGET = 12;
 
 /**
@@ -214,10 +226,9 @@ export function checkSkills(
     if (!SKILL_NAME.test(folderName)) {
       fail(`[9] ${relative}: invalid skill folder name \`${folderName}\``);
     }
-    if (countLines(text) > SKILL_LINE_BUDGET) {
-      fail(
-        `[9] ${relative}: skill exceeds the ${SKILL_LINE_BUDGET}-line progressive-disclosure budget`,
-      );
+    const budget = skillLineBudget(folderName);
+    if (countLines(text) > budget) {
+      fail(`[9] ${relative}: skill exceeds the ${budget}-line progressive-disclosure budget`);
     }
 
     const metadata = parseSkillFrontmatter(relative, text, fail);

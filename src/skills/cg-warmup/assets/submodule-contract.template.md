@@ -9,6 +9,13 @@
   segment count, and the rule IDs that bind it, then run `cg sync`.
 -->
 
+<!--
+  Replace every <angle-bracket> placeholder. Where you genuinely could not determine
+  the answer, leave an HTML comment reading "Replace this section" in its place and
+  raise a decision-log entry for it — a marker with nothing behind it is a hole nobody
+  finds again.
+-->
+
 ## Scope
 - Purpose: <the one responsibility this sub-module owns, in a sentence>.
 - Project role: <why the parent module contains this unit, and what the parent does with it>.
