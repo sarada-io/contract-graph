@@ -1334,15 +1334,103 @@ test("verify flags a module claiming to be a leaf while holding many packages", 
   assert.ok(failure, `expected a leaf-claim failure, got: ${verify(dir).failures.join(" | ")}`);
   assert.match(failure, /5 separate packages/);
 
-  // Declaring the children silences it — the point is the edge, not the count.
+  // A generic justification is not evidence. Measured: one run pasted a single sentence into
+  // six contracts — including over twelve and fifteen packages, where it was plainly false —
+  // and the earlier check missed it because it keyed on the word "none".
   write(dir, contract, read(dir, contract).replace(
     "None — leaf module",
+    "one boundary: these share a lifecycle and are never changed independently",
+  ));
+  sync(dir);
+  assert.ok(
+    verify(dir).failures.some((m) => m.includes("declares no child")),
+    "a leaf claim phrased without the word `none` must still be checked",
+  );
+
+  // Naming the packages is what makes it a claim about *these* packages.
+  write(dir, contract, read(dir, contract).replace(
+    "one boundary: these share a lifecycle and are never changed independently",
+    "One boundary: `billing` and `identity` share a release lifecycle and a single owner.",
+  ));
+  sync(dir);
+  assert.ok(
+    !verify(dir).failures.some((m) => m.includes("declares no child")),
+    "a justification naming the packages must clear the failure",
+  );
+
+  // Declaring the children clears it too — the point is the edge, not the wording.
+  write(dir, contract, read(dir, contract).replace(
+    /^One boundary:.*$/m,
     "- `lib/billing/.agents/cg/contract.md` — money movement",
   ));
   sync(dir);
   assert.ok(
     !verify(dir).failures.some((m) => m.includes("declares no child")),
     "a declared child set must clear the failure",
+  );
+});
+
+/**
+ * The boilerplate threshold is calibrated from a real run: one sentence pasted into six of ten
+ * contracts. At 75% that needed eight and slipped through; a clear majority sharing a line is
+ * already a template, so it sits at 60%.
+ */
+test("boilerplate is caught at a majority, not only at near-unanimity", () => {
+  const dir = makeRepo();
+  const base = read(dir, "src/.agents/cg/contract.md");
+  const map = JSON.parse(read(dir, INHERITANCE));
+  const template = map.folders.src;
+  const shared = "One boundary: these share a lifecycle and are never changed independently.";
+
+  for (let i = 0; i < 10; i += 1) {
+    const name = `m${i}`;
+    fs.mkdirSync(path.join(dir, name, ".agents", "cg"), { recursive: true });
+    // Six of ten carry the identical sentence; the rest say something specific to themselves.
+    const line = i < 6 ? shared : `Owns the ${name} ledger and nothing else.`;
+    fs.writeFileSync(
+      path.join(dir, name, ".agents", "cg", "contract.md"),
+      base.replace(/^# .*$/m, `# ${name} CONTRACT`).replace(/^## Scope$/m, `${line}\n\n## Scope`),
+    );
+    for (const pointer of ["CLAUDE.md", "AGENTS.md"]) {
+      fs.copyFileSync(path.join(dir, "src", pointer), path.join(dir, name, pointer));
+    }
+    map.folders[name] = {
+      ...template,
+      contract: `${name}/.agents/cg/contract.md`,
+      rules: template.rules.slice(0, (i % 3) + 1),
+    };
+  }
+  delete map.folders.src;
+  write(dir, INHERITANCE, JSON.stringify(map, null, 2));
+  sync(dir);
+
+  const failures = verify(dir).failures;
+  assert.ok(
+    failures.some((m) => m.includes("appear verbatim") && m.includes("6+ of 10")),
+    `expected boilerplate caught at six of ten, got: ${failures.join(" | ")}`,
+  );
+});
+
+/**
+ * `product.md` untouched after warmup means §9 harvested nothing — the single clearest sign the
+ * step was skipped. Measured on a run that reported success: eleven modules mapped, `cg verify`
+ * green, and the shipped principles file byte-for-byte unchanged. Advisory rather than a failure,
+ * because a repository may honestly owe no product rule; silence is what must not happen.
+ */
+test("verify notices that warmup harvested no product rules", () => {
+  const dir = makeRepo();
+  const advisories = verify(dir).advisories;
+  assert.ok(
+    advisories.some((m) => m.includes("product.md")),
+    `expected a harvest advisory once folders are mapped, got: ${advisories.join(" | ")}`,
+  );
+
+  const product = ".agents/cg/principles/product.md";
+  write(dir, product, `${read(dir, product)}\n## PP-01. Tenancy\n\n- **PP-01-01** — A tenant is a path prefix.\n`);
+  write(dir, ENFORCEMENT, `${read(dir, ENFORCEMENT)}| PP-01-01 | \`TenantPathTest\` |\n`);
+  assert.ok(
+    !verify(dir).advisories.some((m) => m.includes("product.md")),
+    "one real product rule clears it",
   );
 });
 

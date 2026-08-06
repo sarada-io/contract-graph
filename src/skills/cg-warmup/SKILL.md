@@ -289,10 +289,14 @@ Measure it rather than eyeballing the folder tree. Read the imports at the candi
   ever changes when a sibling changes is part of that sibling.
 
 `cg verify` **fails** a module that declares no children while its source branches into several
-packages, so this is not optional and not deferrable to a later pass. Where several packages
-genuinely form one boundary, say so in the parent's **Child Contracts** — "one boundary: these
-share a lifecycle and are never changed independently" clears the check and tells the next agent
-something true. Silence does not.
+packages, so this is not optional and not deferrable to a later pass.
+
+Several packages can genuinely form one boundary, and saying so is a legitimate answer — but it
+is a claim about *these* packages, so it has to name them and say what makes them inseparable.
+`cg verify` rejects a justification that names none of them: a sentence that would be equally true
+of any module is not evidence, it is a way of not answering. Two or three packages sharing one
+lifecycle is plausible; a dozen almost never is, and asserting it over twelve is how a graph ends
+up describing nothing.
 
 Use [the sub-module template](assets/submodule-contract.template.md), map it in
 `inheritance.json` with `"kind": "folder"` and a `depth` matching its segment count, and add it to

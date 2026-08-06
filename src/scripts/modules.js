@@ -142,7 +142,7 @@ const SOURCE_FILE =
  * first branches. A flat module branches nowhere and returns 0, which is what a real leaf looks
  * like. Test trees are excluded — they mirror the production shape and would double every count.
  */
-export function subBoundaryCount(repoRoot, modulePath) {
+export function subBoundaryNames(repoRoot, modulePath) {
   const root = path.join(repoRoot, modulePath);
   const codeDirs = [];
 
@@ -164,7 +164,7 @@ export function subBoundaryCount(repoRoot, modulePath) {
     }
   };
   walk(root, []);
-  if (codeDirs.length < 2) return 0;
+  if (codeDirs.length < 2) return [];
 
   // The branch point is where the shared prefix of every code directory ends.
   let shared = 0;
@@ -173,5 +173,10 @@ export function subBoundaryCount(repoRoot, modulePath) {
     if (head === undefined || !codeDirs.every((s) => s[shared] === head)) break;
     shared += 1;
   }
-  return new Set(codeDirs.filter((s) => s.length > shared).map((s) => s[shared])).size;
+  return [...new Set(codeDirs.filter((s) => s.length > shared).map((s) => s[shared]))];
+}
+
+/** How many separate boundaries a module's source branches into. */
+export function subBoundaryCount(repoRoot, modulePath) {
+  return subBoundaryNames(repoRoot, modulePath).length;
 }

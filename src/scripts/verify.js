@@ -51,7 +51,7 @@ import {
   governanceContractPath,
   RULE_FAMILIES,
 } from "./model.js";
-import { moduleCoverage, subBoundaryCount } from "./modules.js";
+import { moduleCoverage, subBoundaryCount, subBoundaryNames } from "./modules.js";
 import { ProfileError, resolveProfileSelection } from "./profiles.js";
 
 const POINTERS = ["CLAUDE.md", "AGENTS.md"];
@@ -624,16 +624,26 @@ function checkLeafClaims(repoRoot, folders, fail) {
 
     const after = body.slice(match.index + match[0].length);
     const section = after.split(/^## /m)[0];
-    const claimsLeaf = /\bnone\b/i.test(section) && !section.includes("contract.md");
-    if (!claimsLeaf) continue;
+    // A leaf claim is the *absence* of a declared child, not a particular word for it. Keying
+    // on "none" let six contracts escape by saying "one boundary: ..." instead.
+    if (/contract\.md/.test(section)) continue;
 
-    const count = subBoundaryCount(repoRoot, key);
-    if (count >= SUB_BOUNDARY_ADVISORY_FLOOR) {
+    const names = subBoundaryNames(repoRoot, key);
+    const count = names.length;
+    if (count < SUB_BOUNDARY_ADVISORY_FLOOR) continue;
+
+    // "One boundary" is a legitimate answer, but it is a claim about *these* packages, so it
+    // has to name them. A run defeated the earlier version by pasting one generic sentence into
+    // ten contracts — including over twelve and fifteen packages, where it was plainly false.
+    const named = names.filter((n) => new RegExp(`\\b${n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i").test(section));
+    if (named.length >= 2) continue;
+    {
       fail(
-        `[13] ${key}: declares no child contracts, but its source branches into ${count} separate ` +
-          "packages. A unit that delivers a nameable functionality and reaches outside itself " +
-          "only rarely owes its own contract; if these genuinely form one boundary, say so in " +
-          "Child Contracts instead of leaving it silent",
+        `[13] ${key}: declares no child contracts over ${count} separate packages ` +
+          `(${names.slice(0, 4).join(", ")}${count > 4 ? ", …" : ""}). A unit that delivers a ` +
+          "nameable functionality and reaches outside itself only rarely owes its own contract. " +
+          "To claim they are one boundary instead, name them and say what makes them inseparable " +
+          "— a sentence that would be equally true of any module is not evidence",
       );
     }
   }
@@ -662,6 +672,20 @@ function checkWarmupCompletion(repoRoot, folders, docsRoot, advise) {
   }
 
   if (!Object.keys(folders).length) return;
+
+  // `product.md` untouched after warmup means the harvest step was skipped — the clearest sign
+  // available, and invisible until now: a run reported success with eleven modules mapped and
+  // the shipped principles file byte-for-byte unchanged.
+  const product = path.join(principlesRoot(repoRoot), "product.md");
+  if (exists(product) && !PRINCIPLE_ID.test(read(product).split("```").filter((_, i) => i % 2 === 0).join(""))) {
+    advise(
+      "[0] principles/product.md defines no rules although folders are mapped — `cg-warmup` " +
+        "harvests this repository's product rules from its code, so an untouched file means that " +
+        "step was skipped, not that the repository owes none",
+    );
+  }
+  PRINCIPLE_ID.lastIndex = 0;
+
   const findings = path.join(repoRoot, docsRoot, "plans", "warmup-findings.md");
   if (!exists(findings)) {
     advise(
@@ -709,15 +733,17 @@ function checkTemplatedContracts(repoRoot, folders, fail) {
       continue;
     }
     const authored = body.split(END_MARKER).pop();
+    // Every prose line, not just bullets. Restricting this to `- ` items let ten contracts
+    // carry one identical justification sentence — the exact shape the check exists to catch.
     const lines = new Set(
       splitLines(authored)
         .map((line) => line.trim())
-        .filter((line) => line.startsWith("- ") && line.length > 24),
+        .filter((line) => line.length > 24 && !line.startsWith("#") && !line.startsWith("<!--")),
     );
     for (const line of lines) seen.set(line, (seen.get(line) ?? 0) + 1);
   }
 
-  const threshold = Math.max(3, Math.ceil(entries.length * 0.75));
+  const threshold = Math.max(3, Math.ceil(entries.length * 0.6));
   const boilerplate = [...seen].filter(([, n]) => n >= threshold).map(([line]) => line);
   if (boilerplate.length) {
     fail(
