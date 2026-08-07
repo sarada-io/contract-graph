@@ -21,7 +21,7 @@ jobs:
       - name: Self-check — a scaffolded repository must verify green
         run: |
           TARGET="$(mktemp -d)"
-          node bin/cg.js init "$TARGET" --design saas,ux,ops
+          node bin/cg.js init "$TARGET"
           node bin/cg.js sync "$TARGET"
           node bin/cg.js verify "$TARGET"
           node bin/cg.js sync "$TARGET" --check

@@ -1,7 +1,9 @@
 # Contract Map
 
-Task-to-contract routing. An agent reads this to learn which module contracts a request touches,
-then loads only those.
+Task-to-contract routing. This map is the entry point into the context graph, not a complete list of
+files to edit. It gives a request its first module contracts; the agent reads those contracts to
+understand how the modules are used by the project, then follows their child-contract links toward
+the responsible sub-module before opening source code.
 
 **This file is a stub until you fill it in.** Add one row per module as the repository grows.
 
@@ -11,8 +13,10 @@ then loads only those.
 
 ## Loading rules
 
-1. Start with modules the task names explicitly.
-2. Add a neighbour's contract only after cross-module impact is confirmed.
-3. Stop loading once the implementation constraints are clear.
+1. Start with the rows matching the request.
+2. Within each selected module, follow its child contracts from broad responsibility to the
+   smallest relevant sub-module.
+3. Add a neighbour's contract only after cross-module impact is confirmed.
+4. Stop loading contracts once the implementation boundary and constraints are clear.
 
 Loading every contract "to be safe" is the failure this file exists to prevent.

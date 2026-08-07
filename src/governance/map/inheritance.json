@@ -5,18 +5,21 @@
     "A wrongly narrow scope means a folder silently stops being told about a rule it must obey.",
     "When unsure, include the rule.",
     "",
-    "Design principles (DP-*) are NOT inherited. They are topic-scoped and loaded at a fork,",
-    "not stamped into every contract. An unavoidable guide is just a rule.",
+    "Only AP-* and PP-* are ever inherited. The fork-loaded families — DP-*, OP-*, UP-*, SP-* —",
+    "are topic-scoped and loaded at a fork, never stamped into a contract, and `cg verify`",
+    "rejects an entry naming one: an unavoidable guide is just a rule.",
     "",
     "Key   — folder path relative to the repository root.",
     "depth — number of path segments in the key. Verified against the key.",
     "kind  — 'module' (a workspace root: needs CLAUDE.md and AGENTS.md pointers) or 'folder'.",
-    "contract — path to the CONTRACT.md that receives the generated inherited-rules block.",
+    "contract — path to the contract.md that receives the generated inherited-rules block.",
     "rules — the rule IDs that bind this folder.",
     "",
     "Run `cg sync` after editing, then `cg verify`.",
     "",
-    "The example below is commented out by shape, not by syntax — replace 'folders' with your own."
+    "'folders' is empty in a repository that already has code — run the `cg-warmup` skill once",
+    "and it fills this map from the modules it finds. A greenfield scaffold ships one worked",
+    "example entry instead; replace it with your own."
   ],
   "folders": {
     "src": {

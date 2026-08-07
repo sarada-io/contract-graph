@@ -8,8 +8,8 @@ This is the contributor guide to changing what `cg init` writes. The executable 
 
 | Package source | Repository target | Mode |
 |---|---|---|
-| `src/principles/*.md` | `.agents/cg/principles/` | always |
-| `src/principles/domains/` | `.agents/cg/principles/domains/` | selected by `--packs` |
+| `src/principles/*.md` | `.agents/cg/principles/` | always — all six families |
+
 | `src/governance/` | `.agents/cg/` | always |
 | `src/skills/` | `.agents/skills/` | always |
 | `src/scaffold/rules/` | `.agents/rules/` | always |
@@ -23,9 +23,9 @@ The rules are directory-level deliberately. Adding a skill reference or asset sh
 second per-file manifest edit. The mapping selects a subtree, preserves its relative paths, and
 retains the installer’s never-overwrite behavior.
 
-`init` also writes `.agents/cg/map/profile.json` with the selected editor profiles and design
-packs. `sync` and `verify` resolve that record, so an absent editor artifact is distinguishable
-from an editor that was never selected.
+`init` also writes `.agents/cg/map/profile.json` with the selected editor profiles and the docs
+root. `sync` and `verify` resolve that record, so an absent editor artifact is distinguishable from
+an editor that was never selected.
 
 ## The two mapping detectors
 
@@ -146,25 +146,25 @@ The recorded result is evidence for v2.1.1, not a permanent promise about anothe
 
 ## The phase map
 
-`map/phases.json` records which rule families and domain sets each lifecycle phase loads. It is
-keyed on the rule token — `AP`, `PP`, `DP-<SET>` — never on a filename. That is the whole point:
+`map/phases.json` records which rule families each lifecycle phase loads. It is
+keyed on the rule token — `AP`, `PP`, `DP` — never on a filename. That is the whole point:
 principle files can be split, merged, or renamed without touching loading, and loading can change
 without touching the files. `workflow.md` already applied this idea to module contracts under its
 Lazy-Loading Rule; the phase map is the same rule on the principles axis.
 
 `always` means *load it if this repository selected it*, never *it must exist*. `DP` is excluded
 from contract inheritance on purpose — an inherited guide would be unavoidable, and an unavoidable
-guide is just a rule — so a repository with no domain packs is perfectly valid.
+guide is just a rule — so a repository with no fork-loaded principle files is perfectly valid.
 
-`cg init` narrows the bundled map to the packs actually installed, because the map may only name
-sets that exist. Two detectors, `[11]`, keep it honest in both directions:
+All six families ship, so the phase map is the only thing deciding where each is read. Two
+detectors, `[11]`, keep it honest in both directions:
 
-1. **Resolvable** — every token names a real family or an installed set. A typo would otherwise
-   load nothing, silently.
-2. **Reachable** — every installed set is named by at least one phase. A pack nothing loads is
+1. **Resolvable** — every token names a real rule family. A typo would otherwise load nothing,
+   silently.
+2. **Reachable** — every family present is named by at least one phase. A family nothing loads is
    governance nobody reads, which is the same failure an unchecked enforcement map produces.
 
-Installing a pack later therefore fails verification until you say which phases use it. That is
+Adding a seventh family therefore fails verification until you say which phases read it. That is
 deliberate: it turns "where does this belong?" into a build question with one obvious answer.
 
 ## The install manifest

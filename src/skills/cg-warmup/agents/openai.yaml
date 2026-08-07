@@ -1,0 +1,4 @@
+interface:
+  display_name: "Contract Graph Warmup"
+  short_description: "One-time adoption for a repo with code"
+  default_prompt: "Use $cg-warmup once on this repository to discover its real module roots, write a folder contract for each from the code that is there, fill the inheritance and routing maps, and assess the repository against the binding principles — routing every finding to a detector, a recorded exception, or a corrective Step, with no compliance score — then name the user's exact next action and skill."

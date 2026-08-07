@@ -1,13 +1,14 @@
 # Contracts
 
-Contracts are the core of Contract Graph. Everything else — the rule families, the lifecycle skills, the
-verifier — exists to keep them true.
+Contracts are the core of Contract Graph because they turn a repository into context an agent can
+traverse. Everything else — routing, rule families, lifecycle skills, and the verifier — either
+helps an agent find the right contracts or keeps those contracts true.
 
 There are **two tiers**, and they answer different questions:
 
 | Tier | Artifact | Answers | Status |
 |---|---|---|---|
-| **Folder contract** | `<folder>/.agents/cg/contract.md` | what must remain true about this folder | built and verified |
+| **Folder contract** | `<folder>/.agents/cg/contract.md` | how this folder is used in its parent, what it owns, and where context continues | built and verified |
 | **Code contract** | one `XxxContract` type per directory | what this unit promises its callers | pattern documented; verification not built |
 
 The folder tier is what `cg verify` enforces today. The code tier is the structural pattern that
@@ -16,7 +17,42 @@ item.
 
 ---
 
-## 1. The binding invariant
+## 1. The context graph
+
+The primary traversal is top to bottom:
+
+```text
+repository contract
+  → module contract
+      → sub-module contract
+          → unit contract
+```
+
+The repository contract explains the product and points to task routing. Routing selects the first
+module contracts for a request. Each selected contract then explains that module **in the context
+of its parent** and names the child contracts that decompose it. The agent stops descending when
+the change surface and its constraints are clear, and only then reads source.
+
+A folder contract should therefore answer:
+
+- What role does this unit play in its parent?
+- Who calls it, and through which public entry points?
+- What responsibilities and data does it own?
+- Which responsibilities are explicitly outside it?
+- Which child contracts explain its internal decomposition?
+- Which sibling contracts may be affected across a public boundary?
+- What invariants and dependency directions must remain true?
+- Which command verifies a change contained here?
+
+This is more than documentation colocated with code. The links between contracts are the navigation
+mechanism for the next session. A contract that describes its directory but not its place in the
+parent or the next context below it is not yet a complete graph node.
+
+The hierarchy is the main path, not a restriction to a pure tree. A module may consume sibling
+contracts, and one task may enter multiple branches. Those lateral relationships are explicit
+edges rather than a reason to fall back to repository-wide search.
+
+## 2. The binding invariant
 
 > **Change is free on either side of a contract.**
 
@@ -31,7 +67,7 @@ implementation. What both sides rely on is the contract, which is therefore:
 A contract that is cheap to change is not a contract. A contract that can never change is a
 liability. The discipline is that changing one is a visible, tested, reviewed act.
 
-## 2. The decomposition
+## 3. The decomposition
 
 The top tier is **domain-shaped**. Functional decomposition begins only below it:
 
@@ -60,7 +96,7 @@ chat/
         impl/
 ```
 
-## 3. Five structural rules
+## 4. Five structural rules
 
 1. Every directory holds **exactly one** `*Contract` type naming its responsibility.
 2. Child directories **decompose** the parent's responsibility — nothing else lives there.
@@ -87,7 +123,7 @@ mechanism:
 If a language cannot hide `impl/`, rule 5 becomes a convention rather than a boundary — and a
 convention is what Contract Graph exists to replace. Compensate with a detector.
 
-## 4. What was measured
+## 5. What was measured
 
 The question: if each contract carries a doc comment referencing the contracts below it, can a
 reader — human or agent — reconstruct the whole system graph by traversal alone?
@@ -140,7 +176,7 @@ Recommended: **both.** The machine-readable edge for the machine — one root, a
 build that fails on drift. Prose for the human — what the responsibility *is*, which no annotation
 conveys.
 
-## 5. What no annotation fixes
+## 6. What no annotation fixes
 
 Three things are not structural and must stay in prose, in the contract's doc comment or the owning
 `contract.md`:
@@ -153,7 +189,7 @@ Three things are not structural and must stay in prose, in the contract's doc co
 Do not try to encode these. A notation rich enough to express them is a second programming language
 living in your annotations, and it will drift from the first one.
 
-## 6. Context cost, honestly
+## 7. Context cost, honestly
 
 Reading a root contract costs ~15 lines and yields the next hop. Reaching a leaf is roughly five
 small file reads with no backtracking.
@@ -162,12 +198,13 @@ That is cheaper than loading a 200-line module contract when the goal is to **pi
 the stated goal — and **more expensive** when the goal is to summarise everything. The tree
 optimises for the first, deliberately. Claiming otherwise invites a benchmark it would lose.
 
-## 7. Status, and the open question
+## 8. Status, and the open question
 
-The folder tier is built. The code tier is a documented pattern with **no verification**, which
-means:
+Mapped folder contracts, their inherited context, and their generated entry points are built and
+verified. Task routing exists. The code tier and the completeness of recursive child edges have
+**no structural verification**, which means:
 
-- closure per folder can be asserted but not proven;
+- a useful top-down context graph can be authored, but closure per folder can only be asserted;
 - a subtree cannot be handed to an agent with confidence that it is the whole subtree;
 - parallel work across a contract is work across a boundary that might not hold.
 

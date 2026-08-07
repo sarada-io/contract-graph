@@ -66,6 +66,9 @@ Rules:
 - Put published boundaries before their consumers.
 - Put migrations before removal of the compatibility path.
 - Put production measurement after the environment it measures exists.
+- Name the components, libraries, sub-modules, or modules a phase introduces. Each is a node in
+  the context graph and owes its own contract when it is delivered — say so here so preparation
+  allocates it, rather than leaving the graph to be reconstructed later.
 - Keep a phase small enough to prepare and complete without carrying half-applied invariants.
 - Do not create phases merely to distribute equal amounts of work.
 - Never assign files, execution Steps, or branches in this skill.

@@ -1,7 +1,7 @@
 /**
  * Scaffold Contract Graph governance into a target repository.
  *
- * Applies the explicit source-to-repository mapping plus the selected domain packs. Never
+ * Applies the explicit source-to-repository mapping plus the selected fork-loaded principle files. Never
  * overwrites an existing file — an install that silently replaces your constitution is an
  * install nobody can trust. Existing files are reported as skipped.
  */
@@ -11,7 +11,13 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { DEFAULT_DOCS_ROOT, DOCS_TREES, manifestPath, phasesPath } from "./model.js";
+import {
+  DEFAULT_DOCS_ROOT,
+  DOCS_TREES,
+  inheritancePath,
+  manifestPath,
+  phasesPath,
+} from "./model.js";
 import {
   loadProfileSelection,
   normalizeProfiles,
@@ -35,16 +41,13 @@ export const SCAFFOLD_MAPPING = Object.freeze([
     mode: "always",
     select: "top-level-markdown",
   },
-  {
-    source: "principles/domains",
-    target: ".agents/cg/principles/domains",
-    mode: "selected",
-    select: "domain-packs",
-  },
   { source: "governance", target: ".agents/cg", mode: "always", select: "tree" },
   { source: "skills", target: ".agents/skills", mode: "always", select: "tree" },
   { source: "scaffold/rules", target: ".agents/rules", mode: "always", select: "tree" },
-  { source: "scaffold/module", target: "src", mode: "always", select: "tree" },
+  // `starter` rather than `always`: the module tree is an example contract for a repository
+  // that has no modules yet. Writing it into a brownfield repo invents a module that does not
+  // exist — see `shouldScaffoldModule`.
+  { source: "scaffold/module", target: "src", mode: "starter", select: "tree" },
   // The three document trees the skills already write to. `docsRoot` marks a target whose
   // first segment is replaced by the repository's chosen docs root, so a repo that already
   // owns `docs/` can put them somewhere else without the mapping growing a special case.
@@ -53,16 +56,6 @@ export const SCAFFOLD_MAPPING = Object.freeze([
   { source: "scaffold/docs/guides", target: "docs/guides", mode: "always", select: "tree", docsRoot: true },
   { source: "scaffold/profiles", target: null, mode: "never", select: "tree" },
 ]);
-
-export function availableDomainPacks() {
-  const dir = path.join(SOURCE_ROOT, "principles", "domains");
-  if (!fs.existsSync(dir)) return [];
-  return fs
-    .readdirSync(dir)
-    .filter((n) => n.endsWith(".md"))
-    .map((n) => n.replace(/\.md$/, ""))
-    .sort();
-}
 
 function copyFile(source, target, written, skipped) {
   if (fs.existsSync(target)) {
@@ -96,7 +89,7 @@ export function resolveTarget(rule, docsRoot = DEFAULT_DOCS_ROOT) {
   return [docsRoot, ...rest].join("/");
 }
 
-function applyMappingRule(rule, repoRoot, packs, written, skipped, docsRoot) {
+function applyMappingRule(rule, repoRoot, written, skipped, docsRoot) {
   if (rule.mode === "never") return;
   const source = path.join(SOURCE_ROOT, rule.source);
   const target = path.join(repoRoot, resolveTarget(rule, docsRoot));
@@ -111,21 +104,8 @@ function applyMappingRule(rule, repoRoot, packs, written, skipped, docsRoot) {
     }
     return;
   }
-  if (rule.select === "domain-packs") {
-    for (const pack of packs) {
-      copyFile(
-        path.join(source, `${pack}.md`),
-        path.join(target, `${pack}.md`),
-        written,
-        skipped,
-      );
-    }
-    return;
-  }
   throw new Error(`unknown scaffold mapping selector: ${rule.select}`);
 }
-
-const setToken = (pack) => `DP-${pack.toUpperCase().replace(/-/g, "")}`;
 
 const sha256 = (file) =>
   crypto.createHash("sha256").update(fs.readFileSync(file)).digest("hex");
@@ -174,32 +154,49 @@ function writeManifest(repoRoot, version, written, skipped, docsRoot) {
   written.push(file);
 }
 
-/** Drop tokens for sets this repository did not install, in place, preserving order. */
-function narrowPhaseMap(repoRoot, selectedPacks, written) {
-  const file = phasesPath(repoRoot);
-  if (!fs.existsSync(file)) return;
-  const installed = new Set(selectedPacks.map(setToken));
-  const parsed = JSON.parse(fs.readFileSync(file, "utf8"));
-  const keep = (token) => !token.startsWith("DP-") || installed.has(token);
+/** Repository entries that do not make a repository "existing" for the purposes below. */
+const IGNORED_AT_ROOT = new Set([".git", ".gitignore", ".github", "LICENSE", "README.md"]);
 
-  for (const entry of Object.values(parsed.phases ?? {})) {
-    entry.always = entry.always.filter(keep);
-    entry.conditional = entry.conditional.filter(keep);
-  }
-  const desired = `${JSON.stringify(parsed, null, 2)}\n`;
-  if (fs.readFileSync(file, "utf8") === desired) return;
-  fs.writeFileSync(file, desired, "utf8");
-  if (!written.includes(file)) written.push(file);
+/**
+ * The starter module tree is scaffolded only where it means something.
+ *
+ * It is a worked example: one module with a contract, pointers, and an inherited block, for
+ * a repository that has no modules yet. A brownfield repository already has its modules
+ * somewhere else — a Go tree with `api/` and `core/` gains nothing from an invented `src/`
+ * describing a module that does not exist, and `cg verify` would then pass while governing
+ * none of the real ones.
+ */
+export function shouldScaffoldModule(repoRoot, target) {
+  if (fs.existsSync(path.join(repoRoot, target))) return true;
+  if (!fs.existsSync(repoRoot)) return true;
+  return !fs.readdirSync(repoRoot).some((name) => !IGNORED_AT_ROOT.has(name));
 }
 
-export function init(repoRoot, { packs = [], profiles, docs } = {}) {
+/**
+ * A brownfield scaffold has no starter module, so it must not ship a map entry for one.
+ *
+ * The bundled `inheritance.json` maps `src` as a worked example. Left in place after the
+ * starter tree is skipped, it points at a contract that does not exist and `cg sync` fails
+ * on the very first run — the map is emptied instead, for `cg-warmup` to fill with the
+ * repository's real modules.
+ */
+function clearStarterInheritance(repoRoot, brownfield, written) {
+  const file = inheritancePath(repoRoot);
+  if (!brownfield || !written.includes(file)) return;
+  const parsed = JSON.parse(fs.readFileSync(file, "utf8"));
+  parsed.folders = {};
+  fs.writeFileSync(file, `${JSON.stringify(parsed, null, 2)}\n`, "utf8");
+}
+
+
+
+export function init(repoRoot, { profiles, docs } = {}) {
   const written = [];
   const skipped = [];
 
   const previous = loadProfileSelection(repoRoot, { allowMissing: true });
   const selectedProfiles = normalizeProfiles(profiles ?? previous?.profiles ?? ["all"]);
   resolveProfiles(selectedProfiles);
-  const selectedPacks = [...new Set([...(previous?.packs ?? []), ...packs])].sort();
   // A repository never silently changes its docs root: once recorded, the record wins
   // unless this run passes an explicit one.
   const docsRoot = docs ?? previous?.docs ?? DEFAULT_DOCS_ROOT;
@@ -207,35 +204,29 @@ export function init(repoRoot, { packs = [], profiles, docs } = {}) {
     throw new Error(`invalid docs root \`${docsRoot}\`: expected a single directory name`);
   }
 
+  const brownfield = !shouldScaffoldModule(
+    repoRoot,
+    SCAFFOLD_MAPPING.find((entry) => entry.mode === "starter").target,
+  );
+
   fs.mkdirSync(repoRoot, { recursive: true });
-  for (const rule of SCAFFOLD_MAPPING.filter((entry) => entry.mode === "always")) {
-    applyMappingRule(rule, repoRoot, packs, written, skipped, docsRoot);
+  for (const rule of SCAFFOLD_MAPPING.filter(
+    (entry) => entry.mode === "always" || (entry.mode === "starter" && !brownfield),
+  )) {
+    applyMappingRule(rule, repoRoot, written, skipped, docsRoot);
   }
 
-  // Validate pack names before copying any optional files. The core scaffold may already have
-  // been installed safely, but a misspelled pack must never become an arbitrary filesystem path.
-  const available = availableDomainPacks();
-  const unknown = selectedPacks.filter((p) => !available.includes(p));
-  if (unknown.length) {
-    throw new Error(
-      `unknown domain pack(s): ${unknown.join(", ")}. Available: ${available.join(", ")}`,
-    );
-  }
-
-  for (const rule of SCAFFOLD_MAPPING.filter((entry) => entry.mode === "selected")) {
-    applyMappingRule(rule, repoRoot, selectedPacks, written, skipped, docsRoot);
-  }
 
   // The bundled phase map names every set Contract Graph ships. A repository only installs
   // some, and the phase map may only name what exists — so narrow it to the selection on the
   // way in. Installing a pack later fails verification until a phase claims it, which is the
   // prompt to decide where it belongs rather than a chore.
-  narrowPhaseMap(repoRoot, selectedPacks, written);
+  clearStarterInheritance(repoRoot, brownfield, written);
 
   writeManifest(repoRoot, PACKAGE_VERSION, written, skipped, docsRoot);
 
   const record = profilePath(repoRoot);
-  const desired = `${JSON.stringify({ profiles: selectedProfiles, packs: selectedPacks, docs: docsRoot }, null, 2)}\n`;
+  const desired = `${JSON.stringify({ profiles: selectedProfiles, docs: docsRoot }, null, 2)}\n`;
   const current = fs.existsSync(record) ? fs.readFileSync(record, "utf8") : null;
   if (current === desired) {
     skipped.push(record);
@@ -245,5 +236,5 @@ export function init(repoRoot, { packs = [], profiles, docs } = {}) {
     written.push(record);
   }
 
-  return { written, skipped, packs: selectedPacks, profiles: selectedProfiles, docs: docsRoot };
+  return { written, skipped, profiles: selectedProfiles, docs: docsRoot, brownfield };
 }

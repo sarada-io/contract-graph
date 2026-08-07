@@ -24,7 +24,7 @@ This file defines the mandatory machine workflow for code tasks.
 
 After binding principles, contracts, accepted decisions, durable requirements, and existing green
 patterns have been applied, load only the domain-principle set or sets relevant to the remaining
-fork from `.agents/cg/principles/domains/<set>.md`. Cite any guide used and carry its stated cost into
+fork from `.agents/cg/principles/<family>.md`. Cite any guide used and carry its stated cost into
 the assumption or decision. DP rules are explicit decision inputs, never inherited ambient rules.
 During harvest, use `cg-unblock` D-5a: promote only a recurring decision that can be stated without
 its originating case, and route it once to a module contract, `AP`, `PP`, `DP`, or drop.
@@ -33,8 +33,9 @@ its originating case, and route it once to a module contract, `AP`, `PP`, `DP`, 
 
 1. Read `.agents/cg/contract.md`.
 2. Read `.agents/cg/principles/` for global architecture and product rules.
-3. Identify impacted modules.
-4. Lazy-load only required module contracts from `<module>/.agents/cg/contract.md`.
+3. Identify impacted modules through `.agents/cg/map/routing.md`.
+4. Load those module contracts, then traverse their child-contract links until the smallest
+   responsible boundary is clear. Read implementation only after this context path is known.
 5. Use `cg-plan` to create or update the phase-wise roadmap for non-trivial work.
 6. Use `cg-prepare` to turn one selected phase into one prioritized, dependency-ordered Step queue
    in a single execution branch or worktree.
@@ -130,9 +131,13 @@ consolidated blocker or decision set. When no lifecycle work remains, say `None`
 
 Do not read all contracts by default.
 
-- Start with modules explicitly touched by the task.
+- Start with module contracts selected by the task-to-contract routing map.
+- Descend through explicitly named child contracts to locate the responsible sub-module.
 - Add neighbor module contracts only after cross-module impact is confirmed.
-- Stop loading more contracts once constraints are clear.
+- Stop loading contracts once constraints are clear, then inspect source inside that boundary.
+
+The contracts are the reusable context map. Source code proves and implements their claims; it is
+not the first mechanism for rediscovering the map on every session.
 
 ## Contract Update Triggers
 
@@ -165,7 +170,7 @@ deleted), follow `.agents/skills/cg-sign-off/SKILL.md`. In short:
    harvest must not default to every resolved decision. Require that classification IDs exactly
    equal the eligible decision IDs. Other resolved decisions and every pending decision remain in
    the log for their own cohort or answer. Validate the transient manifest before any later gate:
-   `python3 scripts/contracts/verify_decision_harvest.py --manifest <decision-harvest.json>
+   `cg harvest <decision-harvest.json>
    --decision-log docs/plans/decision-log.md`.
 2. For a non-empty cohort, obtain one batch acceptance and route it through `cg-prepare`. The
    first prepared harvest Step carries the accepted classification digest, and its drain IDs

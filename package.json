@@ -1,7 +1,7 @@
 {
   "name": "contract-graph",
   "version": "0.1.0",
-  "description": "Bounded, verified context for coding agents. Your contracts form a graph; every rule ships with the test that fails when it breaks.",
+  "description": "A traversable software context graph for coding agents: route from repository to module to sub-module before reading code.",
   "type": "module",
   "bin": {
     "cg": "bin/cg.js"
@@ -20,11 +20,13 @@
   "scripts": {
     "test": "node --test \"test/**/*.test.js\"",
     "try": "node src/scripts/dev.js",
-    "pack": "npm pack --pack-destination ./build"
+    "pack": "mkdir -p build && npm pack --pack-destination ./build"
   },
   "keywords": [
     "contract-graph",
     "coding-agents",
+    "context-graph",
+    "llm-context",
     "governance",
     "architecture",
     "contracts",

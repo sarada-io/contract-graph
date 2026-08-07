@@ -195,16 +195,18 @@ that cohort. It must not default to every resolved decision in the shared decisi
    eligible. Other resolved decisions and every pending decision remain in the log for their own
    cohort or answer.
 5. Classify each eligible decision once through `cg-unblock` D-5a: module contract, Architecture
-   Principle, Product Principle, Design Principle, or drop.
+   Principle, Product Principle, Design Principle, or drop. A `drop` carries one line saying why:
+   the entry was binding authority under D-2 until this moment, and the manifest is the archived
+   record that it existed and stopped.
 6. State each proposed permanent rule and delivery obligation without citing its source decision,
    a plan ticket, or a `docs/plans/` path. Binding and invariant destinations name their detector
    and enforcement-map treatment; a design guide names its cost and no detector/map row.
-7. Run the same executable detector used by tests and preparation:
+7. Run the shipped detector. It checks cohort membership in both directions, that every
+   promotion owes what its destination owes, that no promoted rule cites its own decision or a
+   transient path, and that every dropped decision carries its reason:
 
 ```bash
-python3 scripts/contracts/verify_decision_harvest.py \
-  --manifest <decision-harvest.json> \
-  --decision-log docs/plans/decision-log.md
+cg harvest <decision-harvest.json> --decision-log docs/plans/decision-log.md
 ```
 
 The manifest is transient execution state, not authority. Sign-off proposes classifications; it
@@ -228,11 +230,8 @@ reopen the underlying decisions.
 4. Validate acceptance and the prepared route before closing the source phase:
 
 ```bash
-python3 scripts/contracts/verify_decision_harvest.py \
-  --manifest <decision-harvest.json> \
-  --decision-log docs/plans/decision-log.md \
-  --stage close \
-  --preparation <destination-preparation.md>
+cg harvest <decision-harvest.json> --decision-log docs/plans/decision-log.md \
+  --stage close --preparation <destination-preparation.md>
 ```
 
 The route's stored classification digest makes the accepted classification set immutable across

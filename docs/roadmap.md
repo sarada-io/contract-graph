@@ -3,8 +3,22 @@
 What is built, what is designed and unbuilt, and what is undecided. Kept honest on purpose — a
 framework about not overstating enforcement should not overstate itself.
 
+The north star is a complete, top-down software context graph: a fresh agent routes from the
+repository contract to the relevant module and sub-module contracts, understands how each unit is
+used by its parent, and reaches the correct implementation boundary without scanning unrelated
+source. Verification and governance exist to keep that graph trustworthy.
+
 ## Built
 
+- Repository and mapped-folder contracts that carry bounded context, public entry points,
+  invariants, verification commands, and links to related contracts.
+- Task-to-contract routing and editor entry points that give a fresh agent a deterministic first
+  path into the graph.
+- A required `## Child Contracts` section on every contract, so a unit either names the children
+  that decompose it or states it is a leaf. This is the declarable half of composition; the
+  declaration is not yet checked against the implementation.
+- Brownfield warmup that descends below build-manifest modules, writing sub-module contracts where
+  a module holds more than one boundary and declaring each child in its parent.
 - Three rule families with the per-rule modality marker, and a verifier that enforces both
   directions (an `invariant` owes exactly one enforcement-map row; a `guide` must have none).
 - Enforcement-map coverage for architecture and product rules: every `AP-`/`PP-` rule owes exactly
@@ -14,7 +28,7 @@ framework about not overstating enforcement should not overstate itself.
 - Five lifecycle skills with a standardized next-action route, named so alphabetical order is
   workflow order.
 - Decision harvest: triage into five destinations, batch acceptance at phase close, drain.
-- `cg init` / `sync` / `verify` / `packs` / `profiles`, with a fail-on-demand test suite.
+- `cg init` / `sync` / `verify` / `modules` / `harvest` / `profiles`, with a fail-on-demand test suite.
 - Selectable editor discovery profiles for Claude Code, Codex, GitHub Copilot, Antigravity, and
   their `all` union, persisted and verified independently of universal governance.
 
@@ -29,6 +43,10 @@ is only as good as the discipline that wrote it, which is the property Contract 
 A one-field annotation makes the edge structural, and cross-checking declared edges against injected
 types catches both directions of drift. Until this lands:
 
+- the authored contract hierarchy is useful for navigation, but its completeness cannot be trusted
+  without occasionally returning to source;
+- a declared child set is proven *present* — the section cannot be silently omitted — but not
+  proven *complete*: an undeclared child still passes;
 - closure per folder can be asserted but not verified;
 - a subtree cannot be handed to an agent with confidence that it is the whole subtree.
 
@@ -64,7 +82,7 @@ off the safety argument.
 
 | Question | Why it is open |
 |---|---|
-| Precedence between two domain sets that reach opposite recommendations on a fork touching both domains. | Undefined today. |
+| Precedence between two fork-loaded families that reach opposite recommendations on a fork touching both. | Undefined today. |
 | Whether an imported rule needs a marker distinguishing it from one earned here. | An import arrives with the rule but not the case or the cost. |
 | Whether authority is a repository, per-phase, or per-invocation setting. | Per-invocation is most flexible and least auditable. |
 

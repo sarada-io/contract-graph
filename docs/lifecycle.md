@@ -1,12 +1,13 @@
 # Lifecycle
 
-Five skills, one `cg-` namespace. They specify responsibilities and evidence, not a particular
+Six skills, one `cg-` namespace: five lifecycle stages and one you run once. They specify responsibilities and evidence, not a particular
 coding agent — a repository supplies its own contract hierarchy, decision log, verification
 command, and document locations.
 
 **Their names sort into their sequence.** `cg-plan` → `cg-prepare` → `cg-produce` → `cg-sign-off`
-is alphabetical order, so an editor listing the namespace shows the workflow. `cg-unblock` sorts
-last because it is not a stage: it is entered from any of the other four.
+is alphabetical order, so an editor listing the namespace shows the workflow. The two that follow
+are not stages, and sort after it for that reason: `cg-unblock` is entered from any of the four,
+and `cg-warmup` is run once at adoption and never again.
 
 | Skill | Responsibility |
 |---|---|
@@ -15,6 +16,7 @@ last because it is not a stage: it is entered from any of the other four.
 | `cg-produce` | Run the earliest ready Step; deliver implementation, tests, contract updates, and detectors as one independently valid change; recalculate the queue; continue serially. |
 | `cg-sign-off` | Verify every prepared Step completed through a dependency-safe history; drive current-phase defects through corrective Steps; harvest decisions; close only on a green gate. Owns the durable record too — design records, product and operator guidance, and diagrams — and is entered standalone when only documentation is needed. Never owns contract correctness. |
 | `cg-unblock` | Govern forks across the lifecycle: apply contract-backed or reversible defaults, record assumptions, log blocked Steps, keep independent work moving. |
+| `cg-warmup` | **Once, at adoption.** Discover a existing repository's real module roots, write a contract per module from the code that is there, fill the inheritance and routing maps, and resolve every principle finding to a detector, a proposed exception, or a corrective Step. Raises what it cannot settle as `DL-02` entries in the decision log rather than asking in chat. Never scores, never edits behaviour. |
 
 ```mermaid
 flowchart TD

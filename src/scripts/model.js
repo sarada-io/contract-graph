@@ -21,24 +21,47 @@ export const ROOT_BEGIN_LINE =
 /**
  * Rule families that may be inherited into a folder contract, in document order.
  *
- * `DP` is deliberately absent. Domain principles are topic-scoped and loaded at a fork;
+ * The fork-loaded families are deliberately absent. They are topic-scoped and read at a fork;
  * inheriting a guide would make it unavoidable, and an unavoidable guide is just a rule.
  */
 export const RULE_FAMILIES = ["AP", "PP"];
+
+/**
+ * Families loaded at a fork rather than inherited into every contract.
+ *
+ * They carry a per-rule modality and a cost clause; inheriting a guide would make it
+ * unavoidable, and an unavoidable guide is just a rule. Which of them a phase loads is
+ * `map/phases.json`, not a per-repository install choice.
+ */
+export const FORK_FAMILIES = ["DP", "OP", "UP", "SP"];
+export const ALL_FAMILIES = [...RULE_FAMILIES, ...FORK_FAMILIES];
+
 const FAMILY_ALT = RULE_FAMILIES.join("|");
+const ANY_FAMILY = ALL_FAMILIES.join("|");
 
 export const RULE_START = new RegExp(
   String.raw`^- \*\*((?:${FAMILY_ALT})-\d{2}-\d{2})\*\*\s+—\s+(.*)$`,
 );
 export const RULE_ID = new RegExp(String.raw`^(?:${FAMILY_ALT})-\d{2}-\d{2}$`);
+/** Headings are parsed for every family; only the inherited ones reach a contract. */
 export const PRINCIPLE_HEADING = new RegExp(
-  String.raw`^## ((?:${FAMILY_ALT})-\d{2})\. (.+?)\s*$`,
+  String.raw`^## ((?:${ANY_FAMILY})-\d{2})\. (.+?)\s*$`,
 );
 
 export const FAMILY_BLURB = {
   AP: "Architecture Principles — structural; hold for any product built in this repository.",
   PP: "Product Principles — exist because of *this* product's market, pricing, and shape.",
 };
+
+/** Every principle file, its family, and whether its rules are inherited into contracts. */
+export const PRINCIPLE_FILES = Object.freeze({
+  "architecture.md": { family: "AP", inherited: true },
+  "design.md": { family: "DP", inherited: false },
+  "operations.md": { family: "OP", inherited: false },
+  "product.md": { family: "PP", inherited: true, allowEmpty: true },
+  "security.md": { family: "SP", inherited: false },
+  "ux.md": { family: "UP", inherited: false },
+});
 
 export const MAX_CONTRACT_LINES = 200;
 
@@ -49,11 +72,21 @@ export const ROOT_POINTERS = {
   ".github/copilot-instructions.md": "../",
 };
 
+/**
+ * `## Child Contracts` is required rather than optional, and the requirement is the cheap half
+ * of a capability the roadmap lists as unbuilt. Nothing here can yet prove a *declared* child
+ * is the whole set — that needs composition edges. What it can prove is that the question was
+ * answered: a contract either names its children or says `None — leaf module`. Left optional,
+ * the section is simply absent on every contract nobody thought about, and an agent cannot tell
+ * a leaf from an omission. The graph's downward path is the product; a missing edge is not a
+ * formatting defect.
+ */
 export const REQUIRED_SECTIONS = {
   module: [
     "## Module Identity",
     "## Allowed Responsibilities",
     "## Forbidden Responsibilities",
+    "## Child Contracts",
     "## Verify Command",
     "## Sibling Contracts",
     "## Agent Workflow Hook",
@@ -61,6 +94,7 @@ export const REQUIRED_SECTIONS = {
   folder: [
     "## Scope",
     "## Forbidden Responsibilities",
+    "## Child Contracts",
     "## Verify Command",
     "## Sibling Contracts",
   ],
@@ -128,7 +162,6 @@ export const skillsRoot = (repoRoot) => path.join(repoRoot, ".agents", "skills")
  * one edit rather than a search across three modules and twenty deliverables.
  */
 export const principlesRoot = (repoRoot) => path.join(cgRoot(repoRoot), "principles");
-export const domainsRoot = (repoRoot) => path.join(principlesRoot(repoRoot), "domains");
 export const mapRoot = (repoRoot) => path.join(cgRoot(repoRoot), "map");
 export const inheritancePath = (repoRoot) => path.join(mapRoot(repoRoot), "inheritance.json");
 export const enforcementPath = (repoRoot) => path.join(mapRoot(repoRoot), "enforcement.md");
@@ -140,12 +173,12 @@ export const manifestPath = (repoRoot) => path.join(mapRoot(repoRoot), "manifest
 export const PHASE_NAMES = Object.freeze(["plan", "prepare", "produce", "sign-off", "unblock"]);
 
 /**
- * Read `map/phases.json`: which rule families and domain sets each phase loads.
+ * Read `map/phases.json`: which rule families each phase loads.
  *
- * Tokens, not filenames. `AP`, `PP`, and `DP-<SET>` survive any reorganisation of the
+ * Tokens, not filenames. `AP`, `PP`, and `DP` survive any reorganisation of the
  * principle files, which is the point — loading and layout should not be able to break
  * each other. `always` means *load if the repository selected it*, never *must exist*:
- * `DP` is excluded from inheritance on purpose, so a repo with no domain packs is valid.
+ * `DP` is excluded from inheritance on purpose, so a repo with no fork-loaded principle files is valid.
  */
 export function loadPhases(repoRoot) {
   const file = phasesPath(repoRoot);
@@ -191,21 +224,15 @@ export const phaseTokens = (phases) =>
   [...new Set(Object.values(phases).flatMap((p) => [...p.always, ...p.conditional]))].sort();
 export const governanceContractPath = (repoRoot) => path.join(cgRoot(repoRoot), "contract.md");
 
-/** One file per rule family. Filename order is family order, and `architecture` sorts first. */
-export const PRINCIPLE_FILES = Object.freeze({
-  "architecture.md": "AP",
-  "product.md": "PP",
-});
-
 /**
- * The principle files holding inheritable rules, in filename order.
+ * The principle files, in filename order.
  *
- * One file per family, each holding that family's `## XX-nn.` sections. `product.md` ships
- * with no rules and no headings by design — you inherit nobody else's product opinions — so
- * it alone may be empty. An unrelated Markdown filename is an error rather than governance
- * that disappears silently.
+ * `principles/` is flat: one file per family, each holding that family's `## XX-nn.`
+ * sections. `product.md` ships with no rules and no headings by design — you inherit
+ * nobody else's product opinions — so it alone may be empty. An unrelated Markdown
+ * filename is an error rather than governance that disappears silently.
  */
-export function principleFiles(repoRoot) {
+export function principleFiles(repoRoot, { inheritedOnly = false } = {}) {
   const root = principlesRoot(repoRoot);
   if (!exists(root)) throw new ContractError(`missing principles directory: ${root}`);
 
@@ -213,8 +240,8 @@ export function principleFiles(repoRoot) {
     .readdirSync(root, { withFileTypes: true })
     .filter((entry) => entry.isFile() && entry.name.endsWith(".md"))
     .map((entry) => {
-      const family = PRINCIPLE_FILES[entry.name];
-      if (!family) {
+      const spec = PRINCIPLE_FILES[entry.name];
+      if (!spec) {
         throw new ContractError(
           `invalid principles filename ${entry.name}; expected one of ` +
             `${Object.keys(PRINCIPLE_FILES).join(", ")}`,
@@ -223,10 +250,12 @@ export function principleFiles(repoRoot) {
       return {
         file: path.join(root, entry.name),
         filename: entry.name,
-        family,
-        allowEmpty: family === "PP",
+        family: spec.family,
+        inherited: spec.inherited,
+        allowEmpty: Boolean(spec.allowEmpty),
       };
     })
+    .filter((info) => !inheritedOnly || info.inherited)
     .sort((a, b) => a.filename.localeCompare(b.filename));
 }
 
@@ -377,7 +406,7 @@ export function loadPrinciples(repoRoot) {
   const merged = new Map();
   const owners = new Map();
   const principleOwners = new Map();
-  for (const info of principleFiles(repoRoot)) {
+  for (const info of principleFiles(repoRoot, { inheritedOnly: true })) {
     const { file, filename, allowEmpty } = info;
     const rules = parsePrinciples(file, { allowEmpty });
     assertPrincipleCorrespondence(info, rules);
@@ -442,7 +471,7 @@ export function parsePrincipleIndex(file, { allowEmpty = false } = {}) {
 
 /** The merged principle index across every principles file, in family order. */
 export function loadPrincipleIndex(repoRoot) {
-  return principleFiles(repoRoot).flatMap(({ file, filename, allowEmpty }) =>
+  return principleFiles(repoRoot, { inheritedOnly: true }).flatMap(({ file, filename, allowEmpty }) =>
     parsePrincipleIndex(file, { allowEmpty }).map((entry) => ({ ...entry, filename })),
   );
 }
@@ -483,8 +512,9 @@ export function renderRootPointer(repoRoot, prefix, projectName) {
   return [
     `# ${projectName} — agent entry point`,
     "",
-    `**Start here: [\`${contract}\`](${contract})** — the repository constitution. It sets the ` +
-      "required reading order, the module contract map, and the harness notes.",
+    `**Start here: [\`${contract}\`](${contract})** — the root of the project's context graph. ` +
+      "It explains the system, sets the reading order, and routes work into module and sub-module " +
+      "contracts before implementation code is read.",
     "",
     "`.agents/cg/` is a dot-directory. If your tool's indexer skips hidden paths, open " +
       "these files by exact path rather than relying on search.",
@@ -499,9 +529,10 @@ export function renderRootPointer(repoRoot, prefix, projectName) {
     `3. [\`${prefix}.agents/cg/workflow.md\`](${prefix}.agents/cg/workflow.md) — the mandatory ` +
       "agent workflow.",
     `4. [\`${prefix}.agents/cg/map/routing.md\`](${prefix}.agents/cg/map/routing.md) — ` +
-      "task-to-module contract mapping.",
-    "5. `<module>/.agents/cg/contract.md` — lazy-loaded per impacted module; each one " +
-      "repeats the rules that bind that module.",
+      "the first task-to-module edge in the context graph.",
+    "5. `<module>/.agents/cg/contract.md`, then its relevant child contracts — traverse until " +
+      "the responsible boundary is clear; only then read implementation. Each contract repeats " +
+      "the rules that bind its folder.",
     "",
     "Do not put instructions in this file — the index above is generated, and everything " +
       "else belongs under `.agents/cg/`. Regenerate with `cg sync`.",
@@ -510,13 +541,51 @@ export function renderRootPointer(repoRoot, prefix, projectName) {
 }
 
 /** Return {path, current, desired} for one root entry file. */
+/**
+ * The generated part of a root entry file, and nothing else.
+ *
+ * Three cases, and the middle one is the reason this is not a one-liner:
+ *
+ *   - the file already carries the markers → replace what is between them;
+ *   - the file exists with content of its own → **keep it** and add the generated block
+ *     under its H1. A repository adopting Contract Graph usually already has a `CLAUDE.md`,
+ *     and replacing it wholesale destroys hand-written instructions with no way back but
+ *     git. `sync` owns the region between the markers, never the whole file;
+ *   - the file is absent or empty → write the full pointer.
+ */
 export function generateRoot(repoRoot, relPath, prefix, projectName) {
   const file = path.join(repoRoot, relPath);
   const current = readIfPresent(file);
-  const desired = current.includes(ROOT_BEGIN_MARKER)
-    ? applyBlock(current, renderRootIndex(repoRoot, prefix), file, ROOT_BEGIN_MARKER, ROOT_END_MARKER)
-    : renderRootPointer(repoRoot, prefix, projectName);
-  return { path: file, current, desired };
+
+  if (current.includes(ROOT_BEGIN_MARKER)) {
+    const desired = applyBlock(
+      current,
+      renderRootIndex(repoRoot, prefix),
+      file,
+      ROOT_BEGIN_MARKER,
+      ROOT_END_MARKER,
+    );
+    return { path: file, current, desired };
+  }
+
+  if (current.trim()) {
+    if (!splitLines(current).some((line) => line.startsWith("# "))) {
+      throw new ContractError(
+        `${relPath}: existing file has no H1 to anchor the generated principle index. ` +
+          "Add a top-level heading, or move this file aside and re-run `cg sync`.",
+      );
+    }
+    const desired = applyBlock(
+      current,
+      renderRootIndex(repoRoot, prefix),
+      file,
+      ROOT_BEGIN_MARKER,
+      ROOT_END_MARKER,
+    );
+    return { path: file, current, desired };
+  }
+
+  return { path: file, current, desired: renderRootPointer(repoRoot, prefix, projectName) };
 }
 
 /** Return the exact name/description frontmatter used by generated wrappers. */
@@ -601,7 +670,8 @@ export function renderAgentRule() {
     "# Contract Graph",
     "",
     "Before planning or changing code, read",
-    "[`../cg/contract.md`](../cg/contract.md) and follow its reading order.",
+    "[`../cg/contract.md`](../cg/contract.md) and traverse its context graph from repository to",
+    "module to relevant sub-module before reading implementation code.",
     "Use the matching [`../skills/cg-*/SKILL.md`](../skills/) for non-trivial lifecycle work.",
     "Binding guidance lives under `.agents/cg/`; canonical skills live under `.agents/skills/`.",
     "",
@@ -634,8 +704,11 @@ export function loadInheritance(file) {
   if (!exists(file)) throw new ContractError(`missing inheritance map: ${file}`);
   const data = JSON.parse(read(file));
   const folders = data.folders;
-  if (!folders || typeof folders !== "object" || !Object.keys(folders).length) {
-    throw new ContractError(`${file} has no non-empty 'folders' object`);
+  // An empty map is the legitimate state of a repository that has installed governance but
+  // not yet mapped its modules — `cg-warmup` has to be able to run `cg verify` while it
+  // works. The gap is reported as an advisory and by `cg modules`, not by refusing to load.
+  if (!folders || typeof folders !== "object" || Array.isArray(folders)) {
+    throw new ContractError(`${file} has no 'folders' object`);
   }
 
   for (const [key, entry] of Object.entries(folders)) {
@@ -650,11 +723,11 @@ export function loadInheritance(file) {
     }
     for (const ruleId of entry.rules) {
       // Called out separately because this is the mistake people actually make, and
-      // "malformed rule id" would not explain why a well-formed DP id is refused.
-      if (String(ruleId).startsWith("DP-")) {
+      // "malformed rule id" would not explain why a well-formed fork-family id is refused.
+      if (FORK_FAMILIES.includes(String(ruleId).slice(0, 2))) {
         throw new ContractError(
-          `[10] ${key}: domain principle '${ruleId}' must be loaded explicitly at a fork, ` +
-            "never inherited — an unavoidable guide is just a rule",
+          `[10] ${key}: '${ruleId}' is loaded at a fork and must never be inherited — ` +
+            "an unavoidable guide is just a rule",
         );
       }
       if (!RULE_ID.test(String(ruleId))) {

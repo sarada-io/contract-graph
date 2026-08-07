@@ -32,7 +32,10 @@ Do not start if the brief lacks priority, dependencies, blockers, queue state, e
 state, editable paths, required contract changes, work, handoff, or `Done when`.
 
 1. Read the constitution, principles, workflow, mapped contracts, selected phase, preparation
-   record, decisions, and every `cg-*` skill named by the brief.
+   record, and every `cg-*` skill named by the brief. Read `docs/plans/decision-log.md` alongside
+   them: its *Resolved* entries are authority for any fork this Step meets — ranked above the
+   walking skeleton and neighbouring green code by `cg-unblock` D-2 — while *Pending your review*
+   entries are not authority at all, and a Step blocked on one stays blocked.
 2. Recalculate queue states and confirm this is the lowest-numbered `Ready` Step.
 3. Confirm the branch or worktree and baseline match the preparation.
 4. Verify every declared prerequisite handoff and the latest accumulated phase state.
@@ -81,6 +84,24 @@ the finished contract as evidence; none owns this Step's correctness.
 
 When creating a new module contract, use
 [the module contract template](assets/module-contract.template.md).
+
+### A new self-sufficient unit owes a contract in the Step that creates it
+
+A component, library, sub-module, or module is self-sufficient when it delivers a nameable
+functionality and reaches outside itself only rarely. The moment a Step creates one, it owes four
+things together — the same co-delivery rule as a rule and its detector:
+
+1. its own `contract.md`, from the template;
+2. an entry in `map/inheritance.json` with the rules that bind it, then `cg sync`;
+3. a line in the **parent's Child Contracts** naming it and what it decomposes — an undeclared
+   child is unreachable by traversal, which is the same as not existing;
+4. `cg verify` green, which **fails** a parent that declares no children while its source branches.
+
+Greenfield is where this is cheap and where it is skipped. A boundary is obvious in the Step that
+introduces it and archaeology six phases later; retrofitting the graph is what `cg-warmup` exists
+to do for repositories that never did this, and it costs far more than doing it here. If the unit
+is genuinely not self-sufficient — it changes only when a sibling changes — do not give it a
+contract; say in the parent why those packages are one boundary.
 
 ## 4. Complete moves and restructures atomically
 
@@ -139,17 +160,20 @@ Sequential execution removes ownership races; it does not authorize silent scope
 
 ## 7. Durable non-contract documentation
 
-If the Step changes product behavior, operator procedures, architecture rationale, or diagrams, use
-`cg-sign-off` on its standalone path for the documentation paths assigned to this Step.
+If the Step changes product behavior, operator procedures, architecture rationale, or diagrams,
+those documents are written by `cg-sign-off` — it owns the durable record, and it has a standalone
+entry path that writes documentation without closing a phase. Hand it the documentation paths the
+Step brief assigned, and continue.
 
 This never delays contract co-delivery. Product documentation is additional durable evidence, not
-the source of the rule.
+the source of the rule — and a contract update is never satisfied by writing a document about it.
 
 ## 8. Verify and hand off accumulated state
 
 1. Run the Step's `Done when` verbatim.
-2. Run the repository's full build-and-contract gate. In this repository:
-   the repository's full verification command.
+2. Run the repository's full build-and-contract gate — its own build/test command plus `cg verify`.
+   The exact command is named in the preparation record; if it is not, ask for it rather than
+   inventing one, because a gate you guessed proves nothing.
 3. Compare the diff with the Step's expected starting state.
 4. Confirm only declared paths and preserved unrelated changes appear.
 5. Record the commit or exact worktree state that dependent Steps consume.
@@ -193,6 +217,8 @@ or the exact evidence bundle that allows `cg-sign-off` to start.
 - [ ] Every expected starting state and prerequisite handoff matched.
 - [ ] Every attempted Step is either `Complete` or explicitly `Blocked` from a verified state.
 - [ ] Every behavior change has its contract update.
+- [ ] Every new self-sufficient unit has its own contract, its inheritance entry, and a line in
+      its parent's Child Contracts.
 - [ ] Every rule and detector landed together and fails on demand.
 - [ ] Only declared paths changed.
 - [ ] Positive and negative tests pass.

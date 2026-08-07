@@ -171,16 +171,13 @@ export function loadProfileSelection(repoRoot, { allowMissing = false } = {}) {
     throw new ProfileError(`${file}: expected a JSON object`);
   }
   const profiles = normalizeProfiles(parsed.profiles);
-  if (!Array.isArray(parsed.packs) || parsed.packs.some((pack) => typeof pack !== "string")) {
-    throw new ProfileError(`${file}: packs must be an array of names`);
-  }
   // `docs` is optional on read so a repository scaffolded before it existed still loads;
   // `cg init` and `cg upgrade` write it, so it becomes present on the next run.
   const docs = parsed.docs ?? DEFAULT_DOCS_ROOT;
   if (!safeRelativePath(docs) || docs.split(/[\\/]/).length !== 1) {
     throw new ProfileError(`${file}: docs must be a single safe directory name`);
   }
-  return { profiles, packs: [...new Set(parsed.packs)], docs };
+  return { profiles, docs };
 }
 
 export function resolveProfileSelection(repoRoot) {
