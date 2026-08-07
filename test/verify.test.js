@@ -1308,15 +1308,11 @@ test("sub-boundary counting ignores build scripts and test trees", () => {
  * sub-module contracts from one, zero from the other, with the identical instruction to descend.
  * Prose did not carry it, so this is mechanical.
  */
-test("verify flags a module claiming to be a leaf while holding many packages", () => {
+test("verify asks about undeclared sub-boundaries without failing the build", () => {
   const dir = makeRepo();
   const contract = "src/.agents/cg/contract.md";
 
-  // A build script beside the source made the module root itself look code-bearing, which
-  // collapsed the shared prefix and reported every module as having exactly one sub-boundary.
   fs.writeFileSync(path.join(dir, "src", "build.gradle.kts"), "plugins { java }\n");
-
-  // A flat module: one package, genuinely a leaf.
   fs.mkdirSync(path.join(dir, "src", "lib", "core"), { recursive: true });
   fs.writeFileSync(path.join(dir, "src", "lib", "core", "a.ts"), "export const a = 1;\n");
   write(dir, contract, read(dir, contract).replace(
@@ -1325,61 +1321,50 @@ test("verify flags a module claiming to be a leaf while holding many packages", 
   ));
   sync(dir);
   assert.ok(
-    !verify(dir).failures.some((m) => m.includes("declares no child")),
+    !verify(dir).advisories.some((m) => m.includes("declares no child")),
     "a module with one package must not be nagged",
   );
 
-  // Now branch it into four independent packages; the leaf claim stops being plausible.
   for (const pkg of ["billing", "identity", "search", "reporting"]) {
     fs.mkdirSync(path.join(dir, "src", "lib", pkg), { recursive: true });
     fs.writeFileSync(path.join(dir, "src", "lib", pkg, "index.ts"), "export const x = 1;\n");
   }
-  const failure = verify(dir).failures.find((m) => m.includes("declares no child"));
-  assert.ok(failure, `expected a leaf-claim failure, got: ${verify(dir).failures.join(" | ")}`);
-  assert.match(failure, /5 separate packages/);
 
-  // A generic justification is not evidence. Measured: one run pasted a single sentence into
-  // six contracts — including over twelve and fifteen packages, where it was plainly false —
-  // and the earlier check missed it because it keyed on the word "none".
+  // Nothing mechanical can tell "many packages, one purpose" from "many packages, many
+  // boundaries", so this asks and never blocks. Measured: a 4-package module decomposed while a
+  // 15-package one did not, and coupling ranked them the same way round.
+  const { failures, advisories } = verify(dir);
+  assert.ok(
+    !failures.some((m) => m.includes("declares no child")),
+    "an undeclared boundary must not fail the build — the verifier cannot decide it",
+  );
+  const asked = advisories.find((m) => m.includes("declares no child"));
+  assert.ok(asked, `expected the advisory, got: ${advisories.join(" | ")}`);
+  assert.match(asked, /5 separate packages/);
+
+  // Any stated reason clears it. Judging the wording only produced longer sentences.
   write(dir, contract, read(dir, contract).replace(
     "None — leaf module",
-    "one boundary: these share a lifecycle and are never changed independently",
+    "One boundary: these five packages are the storefront pipeline and ship as a single unit.",
   ));
   sync(dir);
   assert.ok(
-    verify(dir).failures.some((m) => m.includes("declares no child")),
-    "a leaf claim phrased without the word `none` must still be checked",
+    !verify(dir).advisories.some((m) => m.includes("declares no child")),
+    "a stated reason must clear the advisory",
   );
 
-  // Naming the packages is what makes it a claim about *these* packages.
-  write(dir, contract, read(dir, contract).replace(
-    "one boundary: these share a lifecycle and are never changed independently",
-    "One boundary: `core`, `billing`, `identity`, `search` and `reporting` ship as one unit, "
-      + "share a release lifecycle, and have never been changed independently.",
-  ));
-  sync(dir);
-  assert.ok(
-    !verify(dir).failures.some((m) => m.includes("declares no child")),
-    "a justification accounting for the packages must clear the failure",
-  );
-
-  // Declaring the children clears it too — the point is the edge, not the wording.
+  // So does declaring the children.
   write(dir, contract, read(dir, contract).replace(
     /^One boundary:.*$/m,
     "- `lib/billing/.agents/cg/contract.md` — money movement",
   ));
   sync(dir);
   assert.ok(
-    !verify(dir).failures.some((m) => m.includes("declares no child")),
-    "a declared child set must clear the failure",
+    !verify(dir).advisories.some((m) => m.includes("declares no child")),
+    "a declared child set must clear the advisory",
   );
 });
 
-/**
- * The boilerplate threshold is calibrated from a real run: one sentence pasted into six of ten
- * contracts. At 75% that needed eight and slipped through; a clear majority sharing a line is
- * already a template, so it sits at 60%.
- */
 test("boilerplate is caught at a majority, not only at near-unanimity", () => {
   const dir = makeRepo();
   const base = read(dir, "src/.agents/cg/contract.md");

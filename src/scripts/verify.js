@@ -596,22 +596,33 @@ function checkSelfSufficiency(entry, text, fail, planPath) {
 }
 
 /**
- * Catch a module claiming to be a leaf while holding many separate boundaries.
+ * Ask whether a module's packages are one boundary. Do not try to answer it.
  *
- * The downward edge is the product, and it is the one level `cg modules` is structurally blind
- * to: no build manifest declares a package. Measured across two adoption runs of the same
- * repository — one wrote nineteen sub-module contracts, the other declared all ten modules leaves
- * and wrote none. The instruction to descend was identical in both; prose did not carry it.
+ * The downward edge is the product, and it is the level `cg modules` is blind to — no build
+ * manifest declares a package. But nothing mechanical separates "many packages, one purpose" from
+ * "many packages, many boundaries". Measured on a repository whose author had already decided,
+ * by hand, module by module:
  *
- * So this is mechanical. A contract may say `None — leaf` for any reason it likes, but not while
- * its source branches into a dozen independent packages without comment. Advisory, because the
- * count is a heuristic over directory shape and a module may genuinely own several packages as
- * one boundary — the threshold is set where that stops being plausible.
+ *     module            packages  cross-package edges  author's answer
+ *     mandala-data            12                    9  decompose
+ *     mandala-chat             4                    1  decompose
+ *     mandala-contracts       15                    4  one boundary
+ *     mandala-orchestrator    10                   13  one boundary
+ *
+ * Count does not separate them (4 decomposes, 15 does not). Coupling does not separate them
+ * (0.25 decomposes, 0.27 does not; 0.75 decomposes, 1.30 does not). Even within one module the
+ * author gave contracts to 7 of 12 packages — the bounded-context slices, not the shared
+ * plumbing. That distinction is semantic and no import graph carries it.
+ *
+ * So this advises rather than fails, for the same reason `cg modules` does: a heuristic that
+ * fails the build is one everyone learns to bypass. And it is silenced by *any* stated reason,
+ * because the author is the one who can answer — judging the wording only taught a previous run
+ * to write a longer sentence.
  */
 const LEAF_CLAIM = /^##[ \t]+Child Contracts[ \t]*$/m;
 const SUB_BOUNDARY_ADVISORY_FLOOR = 3;
 
-function checkLeafClaims(repoRoot, folders, fail) {
+function checkLeafClaims(repoRoot, folders, advise) {
   for (const [key, entry] of Object.entries(folders)) {
     let body;
     try {
@@ -632,16 +643,15 @@ function checkLeafClaims(repoRoot, folders, fail) {
     const count = names.length;
     if (count < SUB_BOUNDARY_ADVISORY_FLOOR) continue;
 
-    // "One boundary" is a legitimate answer, but it is a claim about *these* packages, so it
-    // has to name them. A run defeated the earlier version by pasting one generic sentence into
-    // ten contracts — including over twelve and fifteen packages, where it was plainly false.
-    const named = names.filter((n) => new RegExp(`\\b${n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i").test(section));
-    if (named.length >= Math.ceil(count * 0.75)) continue;
+    // Any stated reason clears this. The author knows which packages are one boundary; the
+    // verifier does not, and policing the wording only produced longer sentences.
+    const stated = section.replace(/<!--[\s\S]*?-->/g, "").replace(/\bnone\b/gi, "").trim();
+    if (stated.length >= 40) continue;
     {
-      fail(
-        `[13] ${key}: declares no child contracts over ${count} separate packages. A unit that ` +
+      advise(
+        `[0] ${key}: declares no child contracts over ${count} separate packages. A unit that ` +
           "delivers a nameable functionality and reaches outside itself only rarely owes its " +
-          "own contract. To claim they are one boundary instead, account for all ${count} of " +
+          `own contract. To claim they are one boundary instead, account for all ${count} of ` +
           "them and say what makes them inseparable — naming a few, or a sentence that would " +
           "be equally true of any module, is not evidence",
       );
@@ -792,7 +802,7 @@ export function verify(repoRoot) {
 
   checkTemplatedContracts(repoRoot, folders, fail);
   checkWarmupCompletion(repoRoot, folders, profile.docs, (m) => advisories.push(m));
-  checkLeafClaims(repoRoot, folders, fail);
+  checkLeafClaims(repoRoot, folders, (m) => advisories.push(m));
 
   checkAgentRule(fail, repoRoot);
   checkPhases(fail, repoRoot);
