@@ -948,6 +948,10 @@ test("cg-warmup searches for a predecessor framework before authoring anything",
   // framework. It is a work-item id from a deleted plan — 14 refs, 11 files, all dead ends.
   // The grammar separates them: a rule is obeyed, a work item is scheduled.
   assert.match(skill, /work items, not rules/i, "warmup must separate rule ids from ticket ids");
+
+  // A run deleted the skill on finishing and reported `cg verify` clean; it was failing on the
+  // missing core skill and an orphaned Claude wrapper.
+  assert.match(skill, /Never delete it/, "finishing is not a reason to remove the skill");
   for (const cue of ["scheduled in", "deferred to", "forbids"]) {
     assert.ok(skill.includes(cue), `the discriminator needs the \`${cue}\` cue`);
   }
@@ -1350,12 +1354,13 @@ test("verify flags a module claiming to be a leaf while holding many packages", 
   // Naming the packages is what makes it a claim about *these* packages.
   write(dir, contract, read(dir, contract).replace(
     "one boundary: these share a lifecycle and are never changed independently",
-    "One boundary: `billing` and `identity` share a release lifecycle and a single owner.",
+    "One boundary: `core`, `billing`, `identity`, `search` and `reporting` ship as one unit, "
+      + "share a release lifecycle, and have never been changed independently.",
   ));
   sync(dir);
   assert.ok(
     !verify(dir).failures.some((m) => m.includes("declares no child")),
-    "a justification naming the packages must clear the failure",
+    "a justification accounting for the packages must clear the failure",
   );
 
   // Declaring the children clears it too — the point is the edge, not the wording.

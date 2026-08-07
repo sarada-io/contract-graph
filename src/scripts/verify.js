@@ -636,14 +636,14 @@ function checkLeafClaims(repoRoot, folders, fail) {
     // has to name them. A run defeated the earlier version by pasting one generic sentence into
     // ten contracts — including over twelve and fifteen packages, where it was plainly false.
     const named = names.filter((n) => new RegExp(`\\b${n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i").test(section));
-    if (named.length >= 2) continue;
+    if (named.length >= Math.ceil(count * 0.75)) continue;
     {
       fail(
-        `[13] ${key}: declares no child contracts over ${count} separate packages ` +
-          `(${names.slice(0, 4).join(", ")}${count > 4 ? ", …" : ""}). A unit that delivers a ` +
-          "nameable functionality and reaches outside itself only rarely owes its own contract. " +
-          "To claim they are one boundary instead, name them and say what makes them inseparable " +
-          "— a sentence that would be equally true of any module is not evidence",
+        `[13] ${key}: declares no child contracts over ${count} separate packages. A unit that ` +
+          "delivers a nameable functionality and reaches outside itself only rarely owes its " +
+          "own contract. To claim they are one boundary instead, account for all ${count} of " +
+          "them and say what makes them inseparable — naming a few, or a sentence that would " +
+          "be equally true of any module, is not evidence",
       );
     }
   }
