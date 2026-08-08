@@ -226,13 +226,13 @@ design records, guides, and diagrams — and can be entered for documentation al
 
 | Command | Does |
 |---|---|
-| `cg init [dir] --profile x,y --docs dir` | **the one command** — scaffold, generate, verify, and name the next action |
+| `cg init [dir] --profile x,y --docs dir` | **the one command** — scaffold, generate, verify, and name the next action. Also the upgrade path: re-run it to take a new release |
+| `cg init --check` / `--yes` | report what would be replaced and change nothing / accept the replacement without being asked |
 | `cg sync [dir]` | regenerate inherited blocks, principle indexes, and discovery wrappers after you edit a source |
 | `cg sync --check` | report what sync would rewrite; change nothing (use in CI) |
 | `cg verify [dir]` | verify contracts, skills, and every principle family |
 | `cg modules [dir]` | list detected module roots and whether the map governs them; exits 1 while any is unmapped |
 | `cg harvest <manifest>` | check a decision-harvest cohort; `--stage close` also checks acceptance and the drain route |
-| `cg profiles` | list bundled editor profiles |
 | `cg profiles` | list bundled editor profiles |
 
 ### Where the document trees go

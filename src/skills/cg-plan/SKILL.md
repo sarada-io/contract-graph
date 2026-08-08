@@ -3,7 +3,7 @@ name: cg-plan
 description: Create or revise a phase-wise Contract Graph roadmap from binding contracts, measured repository truth, and cg-sign-off successor handovers. Use when a broad product, architecture, migration, restructuring, or completion finding must be divided into ordered phases before one phase is prepared as sequential executable Steps. Defines phase outcomes, dependencies, acceptance gates, risks, assumptions, and status without allocating files, Steps, branches, or execution contexts; hands one selected phase to cg-prepare.
 ---
 
-# Contract Graph Plan
+# CG Plan
 
 Turn a broad outcome into an ordered phase roadmap. Do not prepare implementation Steps here.
 Read `.agents/skills/cg-unblock/SKILL.md` alongside this skill.

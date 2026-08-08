@@ -105,7 +105,8 @@ a pack later, `cg verify` fails until a phase claims it — that is the prompt t
 belongs.
 
 **`.agents/cg/map/manifest.json`.** What this version installed and the hash each file had on
-arrival. Nothing consumes it yet; `cg upgrade` in a later version will, and its baseline cannot be
+arrival. Nothing consumes it yet, and no `cg upgrade` verb is planned — `cg init` is idempotent
+and replaces framework core itself. The record ships because a baseline cannot be
 captured retroactively — which is why it ships now. Files that predate the install are recorded
 `adopted: true`, so a manifest written over your ported tree does not claim your edits are
 pristine.

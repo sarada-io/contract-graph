@@ -1,4 +1,4 @@
 interface:
-  display_name: "Contract Graph Plan"
+  display_name: "CG Plan"
   short_description: "Create a phase-wise contract graph roadmap"
   default_prompt: "Use $cg-plan to turn the intended outcome, repository contracts, and any cg-sign-off successor handovers into an ordered phase roadmap, then name the user's exact next action and skill."

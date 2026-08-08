@@ -3,7 +3,7 @@ name: cg-prepare
 description: Prepare one selected Contract Graph phase as a prioritized queue of dependency-safe executable Steps. Use after cg-plan fixes the phase outcome and acceptance gate, or when cg-sign-off returns corrective work that changes the remaining queue. Measures affected source, tests, resources, dependencies, contracts and detectors; gives every Step explicit dependencies, blockers and state; defines one shared execution branch or worktree; and emits cold-start briefs that let cg-produce run ready Steps serially until completion or a genuine queue-wide block. Does not allocate parallel tracks, per-Step branches, merge order, or concurrent handoffs.
 ---
 
-# Contract Graph Prepare
+# CG Prepare
 
 Turn one accepted phase into one ordered execution queue. Do not implement the phase or edit
 permanent contracts here. Read `cg-unblock` while preparing.

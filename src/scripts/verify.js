@@ -74,12 +74,18 @@ const skillLineBudget = (name) => SKILL_LINE_BUDGETS[name] ?? SKILL_LINE_BUDGETS
 const WRAPPER_LINE_BUDGET = 12;
 
 /**
- * The canonical skills, in the order their names sort. Alphabetical order is meaningful on
- * purpose — an editor listing them gives the sequence for free. The first four are the
- * lifecycle loop; `cg-unblock` follows because it is entered from any of them rather than
- * being a stage; `cg-warmup` is last because it is run once, at adoption, and never again.
+ * The canonical skills, in the order their names sort.
+ *
+ * The sort order is for readers of this file only. It buys nothing in an editor: Claude Code and
+ * Codex both rank their skill pickers by usage, not by name, so no naming scheme puts these in
+ * lifecycle order on screen. Sequence is carried by each skill's `Next action` route instead.
+ *
+ * `cg-auto-run` leads because it is an adapter over the lifecycle rather than a part of it. Then
+ * the four lifecycle stages; `cg-unblock` follows because it is entered from any of them rather
+ * than being a stage; `cg-warmup` is last because it is run once, at adoption, and never again.
  */
 export const CORE_CG_SKILLS = [
+  "cg-auto-run",
   "cg-plan",
   "cg-prepare",
   "cg-produce",

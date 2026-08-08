@@ -3,7 +3,7 @@ name: cg-warmup
 description: Adopt Contract Graph into a repository that already has code. Run once, after cg init, before the lifecycle skills are useful. Runs as three phases — a whole-repository survey, then a resumable per-module loop that writes each unit's contract, children, bindings and findings to disk before moving on, then one consolidation. Finds any predecessor governance framework and carries its rules forward rather than writing over them, discovers the real module roots and descends below build manifests, fills the inheritance and routing maps, assesses the repository against the binding principles, and harvests the rules the code already enforces into product and architecture principles so no later session has to re-read the code to learn them — listing every new rule for the owner to confirm. Resumes from cg modules after a context break rather than restarting. Never reports a compliance score, never edits behaviour, never deletes or runs the predecessor, and never marks a rule enforced that no detector proves.
 ---
 
-# Contract Graph Warmup
+# CG Warmup
 
 A fresh `cg init` describes a repository that does not exist yet. Warmup replaces that
 description with the one you actually have.

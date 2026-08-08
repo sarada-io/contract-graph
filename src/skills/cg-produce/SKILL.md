@@ -3,7 +3,7 @@ name: cg-produce
 description: Execute a prepared Contract Graph queue continuously and sequentially in one phase branch or worktree. Use with cg-prepare Step briefs that define priority, dependencies, blockers, expected state, editable paths, contract changes, handoff evidence and runnable gates. Selects the earliest Ready Step, delivers implementation, tests, resources, dependencies, contracts and detectors as one independently valid change, recalculates the queue after each verified handoff, and continues until every Step is complete or no ready work remains.
 ---
 
-# Contract Graph Produce
+# CG Produce
 
 Run the prepared queue with one Step `In progress` at a time. Do not redesign the phase, create
 another execution branch, run Steps concurrently, or defer contract truth. Read `cg-unblock`, the

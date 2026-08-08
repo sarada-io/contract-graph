@@ -170,16 +170,21 @@ deliberate: it turns "where does this belong?" into a build question with one ob
 ## The install manifest
 
 `map/manifest.json` records what version installed each file and the hash it had on arrival.
-`cg upgrade` is not built yet — but its baseline cannot be captured retroactively, so the record
-ships first and the verb follows.
+
+No command reads it. There is deliberately no `cg upgrade`: `cg init` is idempotent and already
+replaces framework core on every run, so a second verb doing the same work would only be a second
+way to get it wrong. The record still ships, because a baseline cannot be captured retroactively —
+if a future release needs to tell a file you edited from one still exactly as shipped, the evidence
+has to have been written when the file arrived.
 
 Two properties are load-bearing and each has a test:
 
-- **An existing entry is never refreshed.** Re-running `init` after you edit a governance file must
-  not re-hash it. Refreshing would adopt your edits as pristine and destroy the only evidence an
-  upgrade has that you changed anything.
+- **A preserved file's entry is never refreshed.** Re-running `init` after you edit `.agents/cg/`
+  content must not re-hash it. Refreshing would adopt your edits as pristine and destroy the only
+  evidence that you changed anything. A *replaced* file is the opposite case: `init` just wrote it,
+  so its entry is updated to match, or the manifest describes a file that is no longer on disk.
 - **Only files `init` copies are recorded.** Anything `cg sync` regenerates is excluded: its hash
-  would go stale on the next sync, and an upgrade must never treat a generated artifact as content
+  would go stale on the next sync, and a baseline must never treat a generated artifact as content
   you own.
 
 A file that already existed when Contract Graph arrived is recorded with `adopted: true` — its

@@ -18,8 +18,10 @@ import test from "node:test";
 import { init, SCAFFOLD_MAPPING, SOURCE_ROOT } from "../src/scripts/init.js";
 import { checkHarvest } from "../src/scripts/harvest.js";
 import { detectModuleRoots, moduleCoverage, subBoundaryCount } from "../src/scripts/modules.js";
+import { renderAgentRule } from "../src/scripts/model.js";
+import { next, permits } from "../src/scripts/next.js";
 import { sync } from "../src/scripts/sync.js";
-import { verify } from "../src/scripts/verify.js";
+import { CORE_CG_SKILLS, verify } from "../src/scripts/verify.js";
 import {
   parsePrinciples,
   loadPrinciples,
@@ -45,6 +47,7 @@ function makeRepo() {
 const read = (dir, rel) => fs.readFileSync(path.join(dir, rel), "utf8");
 const write = (dir, rel, text) => fs.writeFileSync(path.join(dir, rel), text, "utf8");
 const edit = (dir, rel, fn) => write(dir, rel, fn(read(dir, rel)));
+const sha = (text) => crypto.createHash("sha256").update(Buffer.from(text, "utf8")).digest("hex");
 
 /** Assert at least one failure carries the given check code, and show all of them if not. */
 function assertFails(dir, code, note) {
@@ -73,7 +76,7 @@ test("a freshly initialised repository verifies green", () => {
   assert.deepEqual(failures, []);
   assert.equal(counts.folders, 1);
   assert.equal(counts.roots, 3);
-  assert.equal(counts.skills, 6);
+  assert.equal(counts.skills, CORE_CG_SKILLS.length);
   assert.ok(counts.design > 0);
 });
 
@@ -165,16 +168,12 @@ const PROFILE_ARTIFACTS = {
     ".github/copilot-instructions.md",
     "AGENTS.md",
     "CLAUDE.md",
-    ...["cg-plan", "cg-prepare", "cg-produce", "cg-sign-off", "cg-unblock", "cg-warmup"].map(
-      (name) => `.claude/skills/${name}/SKILL.md`,
-    ),
+    ...CORE_CG_SKILLS.map((name) => `.claude/skills/${name}/SKILL.md`),
   ],
   antigravity: [],
   claude: [
     "CLAUDE.md",
-    ...["cg-plan", "cg-prepare", "cg-produce", "cg-sign-off", "cg-unblock", "cg-warmup"].map(
-      (name) => `.claude/skills/${name}/SKILL.md`,
-    ),
+    ...CORE_CG_SKILLS.map((name) => `.claude/skills/${name}/SKILL.md`),
   ],
   codex: ["AGENTS.md"],
   copilot: [".github/copilot-instructions.md"],
@@ -1905,6 +1904,7 @@ test("init round trip writes exactly the canonical mapped file set", () => {
     { source: "governance", target: ".agents/cg", mode: "always", select: "tree" },
     { source: "skills", target: ".agents/skills", mode: "always", select: "tree" },
     { source: "scaffold/rules", target: ".agents/rules", mode: "always", select: "tree" },
+    { source: "scaffold/hooks", target: ".agents/hooks", mode: "always", select: "tree" },
     { source: "scaffold/module", target: "src", mode: "always", select: "tree" },
     { source: "scaffold/docs/plans", target: "docs/plans", mode: "always", select: "tree" },
     { source: "scaffold/docs/design", target: "docs/design", mode: "always", select: "tree" },
@@ -2104,4 +2104,191 @@ test("the published tarball ships the scaffold sources and no dev tooling", () =
   ]) {
     assert.ok(shipped.includes(required), `${required} must ship`);
   }
+});
+
+
+// ---------------------------------------------------------------------------
+// init ownership — framework core is replaced, repository context never is
+// ---------------------------------------------------------------------------
+
+const SKILL = ".agents/skills/cg-plan/SKILL.md";
+
+test("re-running init replaces a framework file the repository edited", () => {
+  const dir = makeRepo();
+  write(dir, SKILL, "edited\n");
+  const { replaced } = init(dir, {});
+  assert.ok(replaced.some((f) => f.endsWith(path.join("cg-plan", "SKILL.md"))));
+  assert.notEqual(read(dir, SKILL), "edited\n");
+});
+
+test("re-running init never touches the repository's own context", () => {
+  const dir = makeRepo();
+  const owned = {
+    ".agents/cg/contract.md": "# our graph\n",
+    ".agents/cg/map/routing.md": "our routes\n",
+    ".agents/cg/principles/product.md": "our product rules\n",
+    ".agents/cg/workflow.md": "our workflow\n",
+    "docs/plans/decision-log.md": "our decisions\n",
+  };
+  for (const [file, text] of Object.entries(owned)) write(dir, file, text);
+
+  const { replaced } = init(dir, {});
+  for (const [file, text] of Object.entries(owned)) {
+    assert.equal(read(dir, file), text, `${file} must survive a re-init`);
+    assert.ok(!replaced.some((f) => f.endsWith(file.split("/").join(path.sep))));
+  }
+});
+
+test("a re-init that changes nothing reports nothing to replace", () => {
+  const dir = makeRepo();
+  assert.deepEqual(init(dir, { dryRun: true }).replaced, []);
+});
+
+test("init --check writes nothing but reports what it would replace", () => {
+  const dir = makeRepo();
+  write(dir, SKILL, "edited\n");
+  const plan = init(dir, { dryRun: true });
+  assert.ok(plan.replaced.length > 0);
+  assert.equal(read(dir, SKILL), "edited\n", "a dry run must not write");
+});
+
+test("init picks up a skill added by a later release", () => {
+  const dir = makeRepo();
+  fs.rmSync(path.join(dir, ".agents/skills/cg-plan"), { recursive: true });
+  init(dir, {});
+  sync(dir);
+  assert.ok(fs.existsSync(path.join(dir, SKILL)));
+  assert.deepEqual(verify(dir).failures, []);
+});
+
+test("the manifest records the new hash of a replaced file, not the original", () => {
+  const dir = makeRepo();
+  write(dir, SKILL, "edited\n");
+  init(dir, {});
+  assert.equal(
+    JSON.parse(read(dir, MANIFEST)).files[SKILL].sha256,
+    sha(read(dir, SKILL)),
+    "a replaced file's baseline must describe what is on disk",
+  );
+});
+
+test("the manifest keeps the original baseline for preserved context", () => {
+  const dir = makeRepo();
+  const seed = ".agents/cg/contract.md";
+  const before = JSON.parse(read(dir, MANIFEST)).files[seed].sha256;
+  write(dir, seed, "# our graph\n");
+  init(dir, {});
+  assert.equal(
+    JSON.parse(read(dir, MANIFEST)).files[seed].sha256,
+    before,
+    "a preserved file's baseline is evidence of what shipped, and must not drift",
+  );
+});
+
+test("the shipped rule pointer matches what cg sync generates", () => {
+  // They drifted once. Nothing caught it, because sync overwrites the file on the first run
+  // and the stale template was only ever read by someone opening the package.
+  assert.equal(
+    fs.readFileSync(path.join(SOURCE_ROOT, "scaffold/rules/cg.md"), "utf8"),
+    renderAgentRule(),
+  );
+});
+
+// ---------------------------------------------------------------------------
+// cg next — the independent answer that makes cg-auto-run enforceable
+// ---------------------------------------------------------------------------
+
+const brief = (n, { status, priority = n, depends = "None", blocked = "None" }) =>
+  `# Phase 1 Step ${n}: step ${n}\n\nWeight: Build\nPriority: ${priority}\n` +
+  `Depends on: ${depends}\nBlocked by: ${blocked}\nStatus: ${status}\n\n## Goal\nx\n`;
+
+function queue(dir, steps) {
+  const root = path.join(dir, "docs/plans/phase-1");
+  fs.mkdirSync(root, { recursive: true });
+  for (const [n, opts] of Object.entries(steps)) {
+    fs.writeFileSync(path.join(root, `step-0${n}.md`), brief(n, opts), "utf8");
+  }
+}
+
+test("next reports cg-prepare when no queue exists", () => {
+  const dir = makeRepo();
+  const result = next(dir);
+  assert.equal(result.state, "no-queue");
+  assert.equal(result.stage, "cg-prepare");
+});
+
+test("next selects the earliest Ready Step by priority", () => {
+  const dir = makeRepo();
+  queue(dir, { 1: { status: "Complete" }, 2: { status: "Ready", depends: "Step 1" }, 3: { status: "Ready" } });
+  const result = next(dir);
+  assert.equal(result.stage, "cg-produce");
+  assert.match(result.step.file, /step-02/);
+});
+
+test("next does not select a Ready Step whose dependency is unfinished", () => {
+  const dir = makeRepo();
+  queue(dir, { 1: { status: "Waiting" }, 2: { status: "Ready", depends: "Step 1" } });
+  assert.equal(next(dir).state, "blocked");
+});
+
+test("next routes to sign-off only when every Step is Complete", () => {
+  const dir = makeRepo();
+  queue(dir, { 1: { status: "Complete" }, 2: { status: "Complete" } });
+  assert.equal(next(dir).stage, "cg-sign-off");
+});
+
+test("next routes to unblock when a Step names a blocker", () => {
+  const dir = makeRepo();
+  queue(dir, { 1: { status: "Blocked", blocked: "DL-02-004" } });
+  const result = next(dir);
+  assert.equal(result.stage, "cg-unblock");
+  assert.match(result.reason, /DL-02-004/);
+});
+
+test("next ignores archived phases", () => {
+  const dir = makeRepo();
+  const root = path.join(dir, "docs/plans/archive/phase-0");
+  fs.mkdirSync(root, { recursive: true });
+  fs.writeFileSync(path.join(root, "step-01.md"), brief(1, { status: "Ready" }), "utf8");
+  assert.equal(next(dir).state, "no-queue");
+});
+
+test("next refuses to answer from a brief it cannot parse", () => {
+  const dir = makeRepo();
+  queue(dir, { 1: { status: "Ready" } });
+  write(dir, "docs/plans/phase-1/step-01.md", "# Phase 1 Step 1: x\n\nStatus: Sortof\nPriority: 1\n");
+  const result = next(dir);
+  assert.equal(result.state, "unreadable");
+  assert.match(result.problems[0], /unknown Status/);
+});
+
+test("an In progress Step wins over any Ready one", () => {
+  const dir = makeRepo();
+  queue(dir, { 1: { status: "In progress" }, 2: { status: "Ready" } });
+  assert.match(next(dir).step.file, /step-01/);
+});
+
+test("permits denies a stage the queue does not support, and allows the one it does", () => {
+  const dir = makeRepo();
+  queue(dir, { 1: { status: "Complete" } });
+  const result = next(dir);
+  assert.equal(permits(result, "cg-produce").allowed, false);
+  assert.equal(permits(result, "cg-sign-off").allowed, true);
+});
+
+test("unblock, plan, warmup and the adapter itself are never gated", () => {
+  const dir = makeRepo();
+  queue(dir, { 1: { status: "Blocked", blocked: "DL-02-001" } });
+  const result = next(dir);
+  for (const skill of ["cg-unblock", "cg-plan", "cg-warmup", "cg-auto-run"]) {
+    assert.equal(permits(result, skill).allowed, true, skill);
+  }
+});
+
+test("an unreadable queue denies every gated stage", () => {
+  const dir = makeRepo();
+  queue(dir, { 1: { status: "Ready" } });
+  write(dir, "docs/plans/phase-1/step-01.md", "no header at all\n");
+  const result = next(dir);
+  assert.equal(permits(result, "cg-produce").allowed, false);
 });

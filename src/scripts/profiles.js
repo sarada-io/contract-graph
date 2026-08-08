@@ -172,7 +172,7 @@ export function loadProfileSelection(repoRoot, { allowMissing = false } = {}) {
   }
   const profiles = normalizeProfiles(parsed.profiles);
   // `docs` is optional on read so a repository scaffolded before it existed still loads;
-  // `cg init` and `cg upgrade` write it, so it becomes present on the next run.
+  // `cg init` writes it, so it becomes present on the next run.
   const docs = parsed.docs ?? DEFAULT_DOCS_ROOT;
   if (!safeRelativePath(docs) || docs.split(/[\\/]/).length !== 1) {
     throw new ProfileError(`${file}: docs must be a single safe directory name`);

@@ -34,7 +34,7 @@ const TARGETS = {
   claude: {
     label: "Claude Code",
     reads: [".claude/skills/cg-*/SKILL.md", "CLAUDE.md", ".agents/"],
-    open: "claude, then run /cg-plan — the six cg-* skills should be offered",
+    open: "claude, then run /cg-plan — every cg-* skill should be offered",
   },
   antigravity: {
     label: "Antigravity IDE",

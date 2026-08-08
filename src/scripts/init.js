@@ -1,9 +1,10 @@
 /**
  * Scaffold Contract Graph governance into a target repository.
  *
- * Applies the explicit source-to-repository mapping plus the selected fork-loaded principle files. Never
- * overwrites an existing file — an install that silently replaces your constitution is an
- * install nobody can trust. Existing files are reported as skipped.
+ * Applies the explicit source-to-repository mapping plus the selected fork-loaded principle
+ * files. Framework core is replaced on every run; the repository's own context under
+ * `.agents/cg/` is copied only when absent — see `SCAFFOLD_MAPPING`. Install and re-install
+ * are the same verb, which is how a repository picks up a new release.
  */
 
 import crypto from "node:crypto";
@@ -33,53 +34,70 @@ export const PACKAGE_VERSION = JSON.parse(
   fs.readFileSync(path.join(SOURCE_ROOT, "..", "package.json"), "utf8"),
 ).version;
 
-/** Directory-level source mapping. `profiles` is configuration and is never scaffolded. */
+/**
+ * Directory-level source mapping. `profiles` is configuration and is never scaffolded.
+ *
+ * `install` says who owns a file, and it is the whole difference between reinstalling and
+ * destroying someone's work:
+ *
+ * - `replace` — framework core. The package is the only author, so `cg init` overwrites it on
+ *   every run. That is what makes install and re-install the same command: a repository picks
+ *   up new skills by running the one verb it already knows.
+ * - `preserve` — the repository's own context, copied only when absent. `.agents/cg/` is the
+ *   contract graph this repository built: its root contract, routing and inheritance maps,
+ *   harvested principle families. `cg-warmup` writes that, over hours, from real code. No
+ *   release has a version of it to offer, so no run of `cg init` may overwrite it. The document
+ *   trees and the starter module are preserved for the same reason.
+ */
 export const SCAFFOLD_MAPPING = Object.freeze([
   {
     source: "principles",
     target: ".agents/cg/principles",
     mode: "always",
     select: "top-level-markdown",
+    install: "preserve",
   },
-  { source: "governance", target: ".agents/cg", mode: "always", select: "tree" },
-  { source: "skills", target: ".agents/skills", mode: "always", select: "tree" },
-  { source: "scaffold/rules", target: ".agents/rules", mode: "always", select: "tree" },
+  { source: "governance", target: ".agents/cg", mode: "always", select: "tree", install: "preserve" },
+  { source: "skills", target: ".agents/skills", mode: "always", select: "tree", install: "replace" },
+  { source: "scaffold/hooks", target: ".agents/hooks", mode: "always", select: "tree", install: "replace" },
+  // Shipped so the file exists on a first install; its *content* belongs to `cg sync`, which
+  // regenerates it unconditionally. Marking it `replace` would make every clean re-run report a
+  // pending change to a file the next command rewrites anyway.
+  { source: "scaffold/rules", target: ".agents/rules", mode: "always", select: "tree", install: "preserve" },
   // `starter` rather than `always`: the module tree is an example contract for a repository
   // that has no modules yet. Writing it into a brownfield repo invents a module that does not
   // exist — see `shouldScaffoldModule`.
-  { source: "scaffold/module", target: "src", mode: "starter", select: "tree" },
+  { source: "scaffold/module", target: "src", mode: "starter", select: "tree", install: "preserve" },
   // The three document trees the skills already write to. `docsRoot` marks a target whose
   // first segment is replaced by the repository's chosen docs root, so a repo that already
   // owns `docs/` can put them somewhere else without the mapping growing a special case.
-  { source: "scaffold/docs/plans", target: "docs/plans", mode: "always", select: "tree", docsRoot: true },
-  { source: "scaffold/docs/design", target: "docs/design", mode: "always", select: "tree", docsRoot: true },
-  { source: "scaffold/docs/guides", target: "docs/guides", mode: "always", select: "tree", docsRoot: true },
-  { source: "scaffold/profiles", target: null, mode: "never", select: "tree" },
+  { source: "scaffold/docs/plans", target: "docs/plans", mode: "always", select: "tree", docsRoot: true, install: "preserve" },
+  { source: "scaffold/docs/design", target: "docs/design", mode: "always", select: "tree", docsRoot: true, install: "preserve" },
+  { source: "scaffold/docs/guides", target: "docs/guides", mode: "always", select: "tree", docsRoot: true, install: "preserve" },
+  { source: "scaffold/profiles", target: null, mode: "never", select: "tree", install: "preserve" },
 ]);
 
-function copyFile(source, target, written, skipped) {
-  if (fs.existsSync(target)) {
-    skipped.push(target);
+/**
+ * Apply one file according to its rule's `install` policy.
+ *
+ * A `replace` file that is already byte-identical is reported as `skipped`, not `replaced`.
+ * The distinction is what lets `cg init` tell you it is about to change something before it
+ * does — a re-run that would rewrite nothing has nothing to warn about.
+ */
+function copyFile(source, target, rule, out, dryRun) {
+  const exists = fs.existsSync(target);
+  if (exists && rule.install !== "replace") {
+    out.skipped.push(target);
     return;
   }
+  if (exists && fs.readFileSync(source).equals(fs.readFileSync(target))) {
+    out.skipped.push(target);
+    return;
+  }
+  (exists ? out.replaced : out.written).push(target);
+  if (dryRun) return;
   fs.mkdirSync(path.dirname(target), { recursive: true });
   fs.copyFileSync(source, target);
-  written.push(target);
-}
-
-function copyTree(from, to, written, skipped) {
-  // Record every outcome so the CLI can distinguish newly installed files from files that
-  // already belonged to the target repository.
-  for (const entry of fs.readdirSync(from, { withFileTypes: true })) {
-    const source = path.join(from, entry.name);
-    const target = path.join(to, entry.name);
-    if (entry.isDirectory()) {
-      fs.mkdirSync(target, { recursive: true });
-      copyTree(source, target, written, skipped);
-      continue;
-    }
-    copyFile(source, target, written, skipped);
-  }
 }
 
 /** Rewrite a `docsRoot` rule's leading segment with the repository's chosen root. */
@@ -89,22 +107,62 @@ export function resolveTarget(rule, docsRoot = DEFAULT_DOCS_ROOT) {
   return [docsRoot, ...rest].join("/");
 }
 
-function applyMappingRule(rule, repoRoot, written, skipped, docsRoot) {
+function applyMappingRule(rule, repoRoot, out, docsRoot, dryRun) {
   if (rule.mode === "never") return;
+  for (const { source, target } of enumerateRule(rule, repoRoot, docsRoot)) {
+    copyFile(source, target, rule, out, dryRun);
+  }
+}
+
+/** Walk one source tree, yielding every {source, target, rule} file pair it would install. */
+function* walkTree(from, to, rule) {
+  for (const entry of fs.readdirSync(from, { withFileTypes: true }).sort((a, b) =>
+    a.name.localeCompare(b.name),
+  )) {
+    const source = path.join(from, entry.name);
+    const target = path.join(to, entry.name);
+    if (entry.isDirectory()) {
+      yield* walkTree(source, target, rule);
+      continue;
+    }
+    yield { source, target, rule };
+  }
+}
+
+
+
+/** Every {source, target} pair one mapping rule installs, in a stable order. */
+function* enumerateRule(rule, repoRoot, docsRoot) {
   const source = path.join(SOURCE_ROOT, rule.source);
   const target = path.join(repoRoot, resolveTarget(rule, docsRoot));
 
   if (rule.select === "tree") {
-    copyTree(source, target, written, skipped);
+    yield* walkTree(source, target, rule);
     return;
   }
   if (rule.select === "top-level-markdown") {
     for (const filename of fs.readdirSync(source).filter((name) => name.endsWith(".md")).sort()) {
-      copyFile(path.join(source, filename), path.join(target, filename), written, skipped);
+      yield { source: path.join(source, filename), target: path.join(target, filename), rule };
     }
     return;
   }
   throw new Error(`unknown scaffold mapping selector: ${rule.select}`);
+}
+
+/**
+ * The complete set of files this version ships into a repository.
+ *
+ * One enumeration, so anything that needs to know what a release contains — the installer, the
+ * manifest, a future migration — cannot disagree with the others about it.
+ */
+export function scaffoldFiles(repoRoot, { docsRoot = DEFAULT_DOCS_ROOT, brownfield = false } = {}) {
+  const pairs = [];
+  for (const rule of SCAFFOLD_MAPPING.filter(
+    (entry) => entry.mode === "always" || (entry.mode === "starter" && !brownfield),
+  )) {
+    pairs.push(...enumerateRule(rule, repoRoot, docsRoot));
+  }
+  return pairs;
 }
 
 const sha256 = (file) =>
@@ -113,15 +171,15 @@ const sha256 = (file) =>
 /**
  * Record what this version scaffolded, and the hash each file had on the way in.
  *
- * `cg upgrade` is not built yet, but it cannot be built retroactively: distinguishing a
- * file you edited from one still exactly as shipped needs a baseline captured at scaffold
- * time. A release that omits the record forces its users through a manual migration a
- * second time, so the record ships now and the verb follows.
+ * No command reads this yet. It cannot be captured retroactively: telling a file you edited
+ * from one still exactly as shipped needs a baseline recorded when the file arrived. A release
+ * that omits it forces its users through a manual migration later, so the record ships whether
+ * or not a verb consumes it.
  *
  * Files already present are recorded with `adopted: true` — their contents predate this
  * install, so their hash is evidence of what is there, not of what was shipped.
  */
-function writeManifest(repoRoot, version, written, skipped, docsRoot) {
+function writeManifest(repoRoot, version, out, docsRoot) {
   const file = manifestPath(repoRoot);
   const files = {};
   const record = (target, adopted) => {
@@ -132,13 +190,21 @@ function writeManifest(repoRoot, version, written, skipped, docsRoot) {
   };
 
   const previous = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, "utf8")).files ?? {} : {};
-  for (const target of skipped) record(target, true);
-  for (const target of written) record(target, false);
+  for (const target of out.skipped) record(target, true);
+  for (const target of out.written) record(target, false);
 
-  // An existing entry always wins. The baseline must stay the hash captured when the file
-  // first arrived — refreshing it on a later run would silently adopt the user's edits as
-  // "pristine" and destroy the only evidence `cg upgrade` has that they changed anything.
+  // An existing entry wins for everything except a file this run replaced. The baseline must
+  // stay the hash captured when a preserved file first arrived — refreshing it would adopt the
+  // repository's edits as "pristine" and destroy the evidence that it changed anything. A
+  // replaced file has no such history to protect: this run wrote it, so this run's hash is the
+  // truthful record, and keeping the old one would leave the manifest describing a file that
+  // is no longer on disk.
   const merged = { ...files, ...previous };
+  for (const target of out.replaced) {
+    record(target, false);
+    const key = path.relative(repoRoot, target).split(path.sep).join("/");
+    if (files[key]) merged[key] = files[key];
+  }
   const desired = `${JSON.stringify(
     { version, docs: docsRoot, files: Object.fromEntries(Object.keys(merged).sort().map((k) => [k, merged[k]])) },
     null,
@@ -146,12 +212,12 @@ function writeManifest(repoRoot, version, written, skipped, docsRoot) {
   )}\n`;
   const current = fs.existsSync(file) ? fs.readFileSync(file, "utf8") : null;
   if (current === desired) {
-    skipped.push(file);
+    out.skipped.push(file);
     return;
   }
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, desired, "utf8");
-  written.push(file);
+  out.written.push(file);
 }
 
 /** Repository entries that do not make a repository "existing" for the purposes below. */
@@ -190,9 +256,9 @@ function clearStarterInheritance(repoRoot, brownfield, written) {
 
 
 
-export function init(repoRoot, { profiles, docs } = {}) {
-  const written = [];
-  const skipped = [];
+export function init(repoRoot, { profiles, docs, dryRun = false } = {}) {
+  const out = { written: [], replaced: [], skipped: [] };
+  const { written, skipped } = out;
 
   const previous = loadProfileSelection(repoRoot, { allowMissing: true });
   const selectedProfiles = normalizeProfiles(profiles ?? previous?.profiles ?? ["all"]);
@@ -213,7 +279,7 @@ export function init(repoRoot, { profiles, docs } = {}) {
   for (const rule of SCAFFOLD_MAPPING.filter(
     (entry) => entry.mode === "always" || (entry.mode === "starter" && !brownfield),
   )) {
-    applyMappingRule(rule, repoRoot, written, skipped, docsRoot);
+    applyMappingRule(rule, repoRoot, out, docsRoot, dryRun);
   }
 
 
@@ -221,9 +287,13 @@ export function init(repoRoot, { profiles, docs } = {}) {
   // some, and the phase map may only name what exists — so narrow it to the selection on the
   // way in. Installing a pack later fails verification until a phase claims it, which is the
   // prompt to decide where it belongs rather than a chore.
+  if (dryRun) {
+    return { ...out, profiles: selectedProfiles, docs: docsRoot, brownfield };
+  }
+
   clearStarterInheritance(repoRoot, brownfield, written);
 
-  writeManifest(repoRoot, PACKAGE_VERSION, written, skipped, docsRoot);
+  writeManifest(repoRoot, PACKAGE_VERSION, out, docsRoot);
 
   const record = profilePath(repoRoot);
   const desired = `${JSON.stringify({ profiles: selectedProfiles, docs: docsRoot }, null, 2)}\n`;
@@ -236,5 +306,5 @@ export function init(repoRoot, { profiles, docs } = {}) {
     written.push(record);
   }
 
-  return { written, skipped, profiles: selectedProfiles, docs: docsRoot, brownfield };
+  return { ...out, profiles: selectedProfiles, docs: docsRoot, brownfield };
 }

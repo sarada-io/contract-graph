@@ -3,7 +3,7 @@ name: cg-sign-off
 description: Close one selected Contract Graph phase and own the durable record it leaves behind. Use after every prepared cg-produce Step reports complete, when final composition exposes a defect, or standalone whenever implemented behavior or durable rationale must be explained outside .agents/cg files. Verifies dependency-safe queue history, blocked-Step deferrals and resumptions, every Step handoff, and combined phase behavior; fixes closure-owned composition issues directly; drives behavior or contract defects through corrective cg-produce Steps; harvests decisions and durable knowledge; maintains architecture and design records, product and operator guides, and Mermaid diagrams; and emits planning handovers for out-of-phase work or roadmap corrections. Never closes or archives a phase with an incomplete Step or failing acceptance gate, and never displaces a required contract update from cg-produce.
 ---
 
-# Contract Graph Sign Off
+# CG Sign Off
 
 Own closure and the record it leaves behind. Verify the accumulated repository, repair failures,
 keep the phase active until it is green or honestly blocked, and write the durable knowledge that

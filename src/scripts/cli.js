@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/** Contract Graph command line. `cg init | sync | verify | modules | harvest | profiles`. */
+/** Contract Graph command line. `cg init | next | sync | verify | modules | harvest | profiles`. */
 
 import fs from "node:fs";
 import path from "node:path";
@@ -10,6 +10,7 @@ import { DEFAULT_DOCS_ROOT } from "./model.js";
 import { init } from "./init.js";
 import { HarvestError, checkHarvest } from "./harvest.js";
 import { moduleCoverage } from "./modules.js";
+import { next, permits } from "./next.js";
 import { inheritancePath, loadInheritance } from "./model.js";
 import { availableProfiles, loadProfileSelection } from "./profiles.js";
 import { sync } from "./sync.js";
@@ -19,6 +20,7 @@ const USAGE = `cg — Contract Graph
 
 Usage:
   cg init [dir] [--profile a,b] [--docs dir]       scaffold governance
+  cg next [dir] [--json] [--for skill]            what runs next, computed from the Step queue
   cg sync [dir] [--check]                         regenerate derived artifacts
   cg verify [dir] [--warn]                        verify governance
   cg modules [dir]                                list detected module roots and their coverage
@@ -31,7 +33,10 @@ Options:
   --stage <name>    harvest stage: classify (default) or close
   --decision-log <path>  decision log to check cohort eligibility against (harvest only)
   --preparation <path>   prepared drain route to validate at --stage close (harvest only)
-  --check           report what sync would rewrite; change nothing
+  --json            machine-readable output (next only)
+  --for <skill>     exit 0 only if dispatching that skill agrees with the queue (next only)
+  --check           report what init or sync would write; change nothing
+  --yes             accept replacing framework core without being asked (init only)
   --warn            report findings and exit 0 (verify only)
   -h, --help        show this message
 `;
@@ -49,6 +54,9 @@ const KNOWN_FLAGS = new Set([
   "decision-log",
   "preparation",
   "check",
+  "json",
+  "for",
+  "yes",
   "warn",
   "help",
 ]);
@@ -76,6 +84,10 @@ function parseArgs(argv) {
       flags.preparation = argv[++i] ?? "";
     } else if (arg.startsWith("--preparation=")) {
       flags.preparation = arg.slice("--preparation=".length);
+    } else if (arg === "--for") {
+      flags.for = argv[++i] ?? "";
+    } else if (arg.startsWith("--for=")) {
+      flags.for = arg.slice("--for=".length);
     } else if (arg === "--docs") {
       flags.docs = argv[++i] ?? "";
     } else if (arg.startsWith("--docs=")) {
@@ -303,12 +315,50 @@ async function main(argv) {
     // that fails its own verifier — no root pointers, no wrappers, a stale inherited block —
     // and every later `init` (a changed profile, a restored file) has the same gap. Sync is
     // not a second concern; it produces half the scaffold.
+    // Framework core is replaced, so a re-run can discard local edits to a skill. Nothing is
+    // written until the plan has been shown and accepted: `cg init` is the one verb a user is
+    // likely to type from memory, and typing it must never be how they find out.
+    const plan = init(repoRoot, { profiles, docs, dryRun: true });
+    if (plan.replaced.length) {
+      process.stdout.write(
+        `cg init: ${plan.replaced.length} framework file(s) will be replaced with this version\n`,
+      );
+      for (const file of plan.replaced) {
+        process.stdout.write(`  ${path.relative(repoRoot, file)}\n`);
+      }
+      process.stdout.write(
+        `  Your own context under \`.agents/cg/\`, \`${plan.docs}/\`, and any module contracts is not touched.\n`,
+      );
+      if (flags.check) return 1;
+      if (!flags.yes) {
+        if (!process.stdin.isTTY) {
+          throw new Error("refusing to replace framework files without confirmation — re-run with --yes");
+        }
+        const rl = prompter();
+        try {
+          const answer = await rl.ask("  Replace them? [y/N] ");
+          if (!/^y(es)?$/i.test(answer)) {
+            process.stdout.write("cg init: cancelled, nothing was written\n");
+            return 1;
+          }
+        } finally {
+          rl.close();
+        }
+      }
+    } else if (flags.check) {
+      process.stdout.write(
+        `cg init: ${plan.written.length} file(s) would be written, 0 replaced\n`,
+      );
+      return plan.written.length ? 1 : 0;
+    }
+
     const result = init(repoRoot, { profiles, docs });
     const { changed } = sync(repoRoot);
     const { failures, advisories, counts } = verify(repoRoot);
 
     process.stdout.write(
       `cg init: ${result.written.length} file(s) written` +
+        (result.replaced.length ? `, ${result.replaced.length} replaced` : "") +
         (result.skipped.length ? `, ${result.skipped.length} already present` : "") +
         `, ${changed.length} generated` +
         `\n  profiles: ${result.profiles.join(", ")} · docs: ${result.docs}/\n`,
@@ -352,6 +402,37 @@ async function main(argv) {
       );
     }
     return 0;
+  }
+
+  if (command === "next") {
+    const result = next(repoRoot);
+    if (flags.json) {
+      process.stdout.write(`${JSON.stringify(
+        {
+          state: result.state,
+          stage: result.stage,
+          reason: result.reason ?? null,
+          step: result.step ? { file: result.step.file, title: result.step.title } : null,
+          problems: result.problems,
+          ...(flags.for ? { for: flags.for, ...permits(result, flags.for) } : {}),
+        },
+        null,
+        2,
+      )}\n`);
+    } else {
+      process.stdout.write(`cg next: ${result.state} — ${result.stage ?? "nothing dispatchable"}\n`);
+      if (result.reason) process.stdout.write(`  ${result.reason}\n`);
+      for (const problem of result.problems) process.stderr.write(`  ${problem}\n`);
+    }
+
+    if (flags.for) {
+      const verdict = permits(result, flags.for);
+      if (!flags.json) {
+        process.stdout.write(`  ${verdict.allowed ? "allow" : "deny"} ${flags.for}: ${verdict.reason}\n`);
+      }
+      return verdict.allowed ? 0 : 1;
+    }
+    return result.state === "unreadable" ? 1 : 0;
   }
 
   if (command === "sync") {

@@ -3,7 +3,7 @@ name: cg-unblock
 description: Resolve forks across Contract Graph without serial chat interruptions. Use throughout cg-plan, cg-prepare, cg-produce, and cg-sign-off whenever requirements leave a choice, a contract may change, or work may need owner approval. Classifies blockers, applies recorded decisions and reversible defaults, writes assumption ledgers, routes genuinely material decisions through the repository decision log, and keeps the earliest dependency-safe ready Step moving while blocked Steps wait.
 ---
 
-# Contract Graph Unblock
+# CG Unblock
 
 Decide from contracts first. Escalate only when the owner must accept the blast radius.
 
