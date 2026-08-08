@@ -220,6 +220,31 @@ function writeManifest(repoRoot, version, out, docsRoot) {
   out.written.push(file);
 }
 
+/**
+ * Make sure the root `.gitignore` ignores the auto-run ledger.
+ *
+ * Appended rather than scaffolded: `.gitignore` belongs to the repository, and a file that
+ * already carries its own rules must not be replaced by ours. The pattern has no slash, so one
+ * root-level line covers the ledger wherever a run writes it.
+ *
+ * Idempotent by inspection — the line is added only when no existing rule already names it.
+ */
+export function ensureLedgerIgnored(repoRoot, out, dryRun) {
+  const file = path.join(repoRoot, ".gitignore");
+  const current = fs.existsSync(file) ? fs.readFileSync(file, "utf8") : "";
+  if (current.split("\n").some((line) => line.trim() === LEDGER_IGNORE)) return;
+
+  const block =
+    `${current && !current.endsWith("\n") ? "\n" : ""}` +
+    "\n# Contract Graph: cg-auto-run's resume ledger is live state for one run, never history.\n" +
+    `${LEDGER_IGNORE}\n`;
+  (current ? out.replaced : out.written).push(file);
+  if (dryRun) return;
+  fs.writeFileSync(file, current + block, "utf8");
+}
+
+const LEDGER_IGNORE = ".auto-run.md";
+
 /** Repository entries that do not make a repository "existing" for the purposes below. */
 const IGNORED_AT_ROOT = new Set([".git", ".gitignore", ".github", "LICENSE", "README.md"]);
 
@@ -287,6 +312,8 @@ export function init(repoRoot, { profiles, docs, dryRun = false } = {}) {
   // some, and the phase map may only name what exists — so narrow it to the selection on the
   // way in. Installing a pack later fails verification until a phase claims it, which is the
   // prompt to decide where it belongs rather than a chore.
+  ensureLedgerIgnored(repoRoot, out, dryRun);
+
   if (dryRun) {
     return { ...out, profiles: selectedProfiles, docs: docsRoot, brownfield };
   }

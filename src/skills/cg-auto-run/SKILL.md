@@ -59,7 +59,7 @@ Do not ask the user where they are. Establish it:
 2. Read `docs/plans/` for the active roadmap and the selected phase.
 3. Read the phase's preparation record: does a Step queue exist, and what is each Step's state?
 4. Read `docs/plans/decision-log.md` for `DL-02` entries that block the selected phase.
-5. Read `docs/plans/auto-run.md` if present — a prior run may have checkpointed mid-queue.
+5. Read `docs/plans/.auto-run.md` if present — a prior run may have checkpointed mid-queue.
 
 Name the first stage from that measurement:
 
@@ -72,7 +72,9 @@ Name the first stage from that measurement:
 
 ## 3. Write the ledger, then dispatch one stage
 
-Write `docs/plans/auto-run.md` **before** each dispatch, never after. A run that dies mid-stage must
+Write `docs/plans/.auto-run.md` **before** each dispatch, never after. The leading dot is not
+cosmetic: `cg init` adds `.auto-run.md` to the repository's root `.gitignore`, so the ledger stays
+out of history at whatever depth it is written. A run that dies mid-stage must
 leave behind what it was about to do, not what it last finished.
 
 ```markdown
@@ -136,7 +138,7 @@ phase with large Steps; never raise it silently.
 
 Before each dispatch, check the budget. When it is exhausted, stop and yield a resumable
 checkpoint — do not attempt one more stage because it "looks small". The ledger written in §3 is the
-resume point: a fresh session reads `docs/plans/auto-run.md`, re-measures per §2, and continues with
+resume point: a fresh session reads `docs/plans/.auto-run.md`, re-measures per §2, and continues with
 its own budget. Resuming is cheap because the state is on disk. Continuing past the cap is expensive
 because the state is in a context window that is about to be summarised.
 
@@ -170,7 +172,7 @@ its route.
 - <blocked Step, failing gate, unlogged decision, or "Nothing — the phase is closed">
 
 - **Stopping block:** <the verbatim Next action block that ended the run>
-- **Ledger:** docs/plans/auto-run.md
+- **Ledger:** docs/plans/.auto-run.md
 ```
 
 Every row is copied from what a stage already reported. Summarising means selecting and compressing,

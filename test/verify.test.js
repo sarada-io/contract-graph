@@ -1918,7 +1918,7 @@ test("init round trip writes exactly the canonical mapped file set", () => {
       expected.push(path.posix.join(rule.target, within));
     }
   }
-  expected.push(PROFILE, MANIFEST);
+  expected.push(PROFILE, MANIFEST, ".gitignore");
 
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-round-trip-"));
   init(dir, {});
@@ -2291,4 +2291,20 @@ test("an unreadable queue denies every gated stage", () => {
   write(dir, "docs/plans/phase-1/step-01.md", "no header at all\n");
   const result = next(dir);
   assert.equal(permits(result, "cg-produce").allowed, false);
+});
+
+test("init ignores the auto-run ledger without disturbing an existing .gitignore", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-ignore-"));
+  fs.writeFileSync(path.join(dir, ".gitignore"), "node_modules/\ndist/\n", "utf8");
+  init(dir, {});
+  const text = read(dir, ".gitignore");
+  assert.match(text, /^\.auto-run\.md$/m);
+  assert.match(text, /^node_modules\/$/m, "existing rules must survive");
+
+  init(dir, {});
+  assert.equal(
+    text.split("\n").filter((l) => l.trim() === ".auto-run.md").length,
+    1,
+    "re-running init must not append the rule twice",
+  );
 });
