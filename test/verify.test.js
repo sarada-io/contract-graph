@@ -2487,3 +2487,94 @@ test("a phase document with no Step sections is reported, not silently empty", (
   assert.equal(result.state, "unreadable");
   assert.match(result.problems[0], /no `## Step <n>` section/);
 });
+
+// ---------------------------------------------------------------------------
+// cg-gate — the stage boundary, enforced rather than asked for
+// ---------------------------------------------------------------------------
+
+const GATE = path.join(SOURCE_ROOT, "scaffold", "hooks", "cg-gate.mjs");
+const CG = path.join(SOURCE_ROOT, "..", "bin", "cg.js");
+
+/** Run the hook the way Claude Code does: JSON on stdin, a permission decision on stdout. */
+function gate(dir, skill, session) {
+  const out = execFileSync(process.execPath, [GATE], {
+    input: JSON.stringify({ cwd: dir, session_id: session, tool_input: { skill } }),
+    encoding: "utf8",
+    env: { ...process.env, CG_BIN: CG, CG_GATE_CHAIN: "" },
+  });
+  return JSON.parse(out).hookSpecificOutput;
+}
+
+test("the gate allows the stage the queue names and denies the others", () => {
+  const dir = makeRepo();
+  queue(dir, { 1: { status: "Complete" } });
+  assert.equal(gate(dir, "cg-sign-off", `s${Date.now()}a`).permissionDecision, "allow");
+  assert.equal(gate(dir, "cg-produce", `s${Date.now()}b`).permissionDecision, "deny");
+});
+
+test("the gate denies a second, different stage in the same session", () => {
+  const dir = makeRepo();
+  queue(dir, { 1: { status: "Complete" } });
+  const session = `s${Date.now()}c`;
+  assert.equal(gate(dir, "cg-sign-off", session).permissionDecision, "allow");
+
+  const second = gate(dir, "cg-prepare", session);
+  assert.equal(second.permissionDecision, "deny");
+  assert.match(second.permissionDecisionReason, /crosses a stage boundary/);
+});
+
+test("re-dispatching the same stage is not a boundary crossing", () => {
+  const dir = makeRepo();
+  queue(dir, { 1: { status: "Ready" } });
+  const session = `s${Date.now()}d`;
+  assert.equal(gate(dir, "cg-produce", session).permissionDecision, "allow");
+  assert.equal(gate(dir, "cg-produce", session).permissionDecision, "allow", "same stage, still fine");
+});
+
+test("cg-auto-run in the session lifts the boundary, and is never itself gated", () => {
+  const dir = makeRepo();
+  queue(dir, { 1: { status: "Complete" } });
+  const session = `s${Date.now()}e`;
+  assert.equal(gate(dir, "cg-auto-run", session).permissionDecision, "allow");
+  assert.equal(gate(dir, "cg-sign-off", session).permissionDecision, "allow");
+
+  // Still gated on queue state — lifting the boundary is not lifting the queue check.
+  const wrong = gate(dir, "cg-produce", session);
+  assert.equal(wrong.permissionDecision, "deny");
+  assert.match(wrong.permissionDecisionReason, /does not support dispatching/);
+});
+
+test("every stage skill states the yield rule", () => {
+  for (const name of ["cg-plan", "cg-prepare", "cg-produce", "cg-sign-off"]) {
+    const text = fs.readFileSync(path.join(SOURCE_ROOT, "skills", name, "SKILL.md"), "utf8");
+    assert.match(text, /## Stage boundary — yield here/, `${name} must tell the model to stop`);
+    assert.match(text, /Do not invoke the next skill yourself/, name);
+  }
+});
+
+/** The UserPromptSubmit half: a new instruction clears what the last one dispatched. */
+function userTurn(dir, session) {
+  execFileSync(process.execPath, [GATE], {
+    input: JSON.stringify({ cwd: dir, session_id: session, hook_event_name: "UserPromptSubmit" }),
+    encoding: "utf8",
+    env: { ...process.env, CG_BIN: CG },
+  });
+}
+
+test("a new user turn clears the boundary without abandoning the session", () => {
+  const dir = makeRepo();
+  queue(dir, { 1: { status: "Complete" } });
+  const session = `s${Date.now()}f`;
+
+  assert.equal(gate(dir, "cg-sign-off", session).permissionDecision, "allow");
+  assert.equal(
+    gate(dir, "cg-prepare", session).permissionDecision,
+    "deny",
+    "chaining inside one instruction is the thing being stopped",
+  );
+
+  userTurn(dir, session);
+  const afterAsking = gate(dir, "cg-sign-off", session);
+  assert.equal(afterAsking.permissionDecision, "allow", "the user asking again must not be blocked");
+  assert.match(afterAsking.permissionDecisionReason, /queue agrees/);
+});
