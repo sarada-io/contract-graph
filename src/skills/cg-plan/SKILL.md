@@ -111,7 +111,26 @@ Use `cg-unblock` to:
 
 Do not hide a product decision inside phase ordering.
 
-## 7. Roadmap format
+## 7. Roadmap format and where it lives
+
+Write the roadmap to `docs/plans/<programme>/roadmap.md`, and give the programme a slug that names
+the outcome rather than a date or a ticket. Every artifact the programme produces lives beside it:
+
+```
+docs/plans/<programme>/roadmap.md
+docs/plans/<programme>/<phase>_detailed_preparation.md
+```
+
+One document per phase, holding every Step. `cg-prepare` writes it; the roadmap links it.
+
+One folder per programme, because closing one must be a single move. A roadmap at the top of
+`docs/plans/` with its phases as siblings leaves nothing saying which phase belongs to which
+programme, and archiving means chasing a roadmap plus every phase separately — which is how a
+half-finished move leaves an empty folder behind that `git status` cannot see.
+
+`cg residue` treats `<programme>/roadmap.md` as a root: nothing links to a roadmap, it is where a
+reader starts. Everything else under the programme folder must be reachable by a link from it, so
+link each phase document from the roadmap as you write it.
 
 The roadmap contains:
 

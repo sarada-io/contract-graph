@@ -24,24 +24,25 @@ export const STEP_STATES = Object.freeze([
 
 const HEADER = /^(Priority|Depends on|Blocked by|Status|Weight):[ \t]*(.*)$/;
 const STEP_ID = /\bStep\s+(\d+)\b/g;
+/** A Step section opens the queue document: `## Step 3: name`. */
+const STEP_HEADING = /^##[ \t]+Step[ \t]+(\d+)[ \t]*:?[ \t]*(.*)$/;
 
 /**
- * Parse one Step brief's header block.
+ * Parse one Step section's header block.
  *
  * Only the header is read — everything below it is prose for a human and an executing agent.
- * Parsing stops at the first blank-line-separated section so a `Status:` mentioned in the body
- * can never be mistaken for the Step's own state.
+ * Parsing stops at the first `###` subsection so a `Status:` written inside the body can never be
+ * mistaken for the Step's own state.
  */
-export function parseBrief(text, file) {
+export function parseBrief(text, file, number = null, title = null) {
   const problems = [];
   const fields = {};
   const lines = text.split("\n");
 
-  const title = lines[0]?.startsWith("# ") ? lines[0].slice(2).trim() : null;
-  if (!title) problems.push(`${file}: no \`# Phase <n> Step <n>: <name>\` title`);
+  if (!title) problems.push(`${file}: Step section has no name`);
 
-  for (const line of lines.slice(1)) {
-    if (line.startsWith("## ")) break;
+  for (const line of lines) {
+    if (line.startsWith("### ") || line.startsWith("## ")) break;
     const match = HEADER.exec(line);
     if (match) fields[match[1]] = match[2].trim();
   }
@@ -65,14 +66,31 @@ export function parseBrief(text, file) {
     priority: Number.isInteger(priority) ? priority : null,
     dependsOn: ids(fields["Depends on"]),
     blockedBy: none(fields["Blocked by"]) ? null : fields["Blocked by"].trim(),
-    number: Number(/\bStep\s+(\d+)\b/.exec(title ?? "")?.[1] ?? priority),
+    number,
     problems,
   };
 }
 
-const isBrief = (name) => /^step-.*\.md$/i.test(name);
+/** One document per phase: `<phase>_detailed_preparation.md`. */
+const isQueueDocument = (name) => /_detailed_preparation\.md$/i.test(name);
 
-/** Every active Step brief. `archive/` holds closed phases and is deliberately excluded. */
+/** Split a phase document into its Step sections, keeping each one's source line for reporting. */
+export function parseQueueDocument(text, file) {
+  const lines = text.split("\n");
+  const starts = [];
+  lines.forEach((line, index) => {
+    const match = STEP_HEADING.exec(line);
+    if (match) starts.push({ index, number: Number(match[1]), title: match[2].trim() || null });
+  });
+
+  return starts.map((start, i) => {
+    const end = i + 1 < starts.length ? starts[i + 1].index : lines.length;
+    const body = lines.slice(start.index + 1, end).join("\n");
+    return parseBrief(body, `${file}:${start.index + 1}`, start.number, start.title);
+  });
+}
+
+/** Every active Step. `archive/` holds closed phases and is deliberately excluded. */
 export function readQueue(repoRoot, docsRoot = "docs") {
   const root = path.join(repoRoot, docsRoot, "plans");
   const briefs = [];
@@ -87,10 +105,14 @@ export function readQueue(repoRoot, docsRoot = "docs") {
         if (entry.name !== "archive") walk(full);
         continue;
       }
-      if (!isBrief(entry.name)) continue;
-      briefs.push(
-        parseBrief(fs.readFileSync(full, "utf8"), path.relative(repoRoot, full).split(path.sep).join("/")),
-      );
+      if (!isQueueDocument(entry.name)) continue;
+      const rel = path.relative(repoRoot, full).split(path.sep).join("/");
+      const steps = parseQueueDocument(fs.readFileSync(full, "utf8"), rel);
+      if (!steps.length) {
+        briefs.push({ file: rel, problems: [`${rel}: no \`## Step <n>\` section`], dependsOn: [] });
+        continue;
+      }
+      briefs.push(...steps);
     }
   };
   walk(root);
@@ -116,7 +138,7 @@ export function next(repoRoot, { docs } = {}) {
     return {
       state: "no-queue",
       stage: "cg-prepare",
-      reason: `no Step briefs under ${docsRoot}/plans/ — a phase must be prepared before it can run`,
+      reason: `no \`<phase>_detailed_preparation.md\` under ${docsRoot}/plans/ — a phase must be prepared before it can run`,
       briefs,
       problems,
     };

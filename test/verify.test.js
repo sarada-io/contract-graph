@@ -2200,15 +2200,15 @@ test("the shipped rule pointer matches what cg sync generates", () => {
 // ---------------------------------------------------------------------------
 
 const brief = (n, { status, priority = n, depends = "None", blocked = "None" }) =>
-  `# Phase 1 Step ${n}: step ${n}\n\nWeight: Build\nPriority: ${priority}\n` +
-  `Depends on: ${depends}\nBlocked by: ${blocked}\nStatus: ${status}\n\n## Goal\nx\n`;
+  `## Step ${n}: step ${n}\nWeight: Build\nPriority: ${priority}\n` +
+  `Depends on: ${depends}\nBlocked by: ${blocked}\nStatus: ${status}\n\n### Goal\nx\n`;
 
-function queue(dir, steps) {
-  const root = path.join(dir, "docs/plans/phase-1");
+/** One document per phase, every Step a section inside it. */
+function queue(dir, steps, name = "phase-1") {
+  const root = path.join(dir, "docs/plans/prog");
   fs.mkdirSync(root, { recursive: true });
-  for (const [n, opts] of Object.entries(steps)) {
-    fs.writeFileSync(path.join(root, `step-0${n}.md`), brief(n, opts), "utf8");
-  }
+  const body = Object.entries(steps).map(([n, opts]) => brief(n, opts)).join("\n");
+  fs.writeFileSync(path.join(root, `${name}_detailed_preparation.md`), `# ${name}\n\n${body}`, "utf8");
 }
 
 test("next reports cg-prepare when no queue exists", () => {
@@ -2223,7 +2223,7 @@ test("next selects the earliest Ready Step by priority", () => {
   queue(dir, { 1: { status: "Complete" }, 2: { status: "Ready", depends: "Step 1" }, 3: { status: "Ready" } });
   const result = next(dir);
   assert.equal(result.stage, "cg-produce");
-  assert.match(result.step.file, /step-02/);
+  assert.equal(result.step.number, 2);
 });
 
 test("next does not select a Ready Step whose dependency is unfinished", () => {
@@ -2250,14 +2250,14 @@ test("next ignores archived phases", () => {
   const dir = makeRepo();
   const root = path.join(dir, "docs/plans/archive/phase-0");
   fs.mkdirSync(root, { recursive: true });
-  fs.writeFileSync(path.join(root, "step-01.md"), brief(1, { status: "Ready" }), "utf8");
+  fs.writeFileSync(path.join(root, "phase-0_detailed_preparation.md"), brief(1, { status: "Ready" }), "utf8");
   assert.equal(next(dir).state, "no-queue");
 });
 
 test("next refuses to answer from a brief it cannot parse", () => {
   const dir = makeRepo();
   queue(dir, { 1: { status: "Ready" } });
-  write(dir, "docs/plans/phase-1/step-01.md", "# Phase 1 Step 1: x\n\nStatus: Sortof\nPriority: 1\n");
+  write(dir, "docs/plans/prog/phase-1_detailed_preparation.md", "## Step 1: x\nStatus: Sortof\nPriority: 1\n");
   const result = next(dir);
   assert.equal(result.state, "unreadable");
   assert.match(result.problems[0], /unknown Status/);
@@ -2266,7 +2266,7 @@ test("next refuses to answer from a brief it cannot parse", () => {
 test("an In progress Step wins over any Ready one", () => {
   const dir = makeRepo();
   queue(dir, { 1: { status: "In progress" }, 2: { status: "Ready" } });
-  assert.match(next(dir).step.file, /step-01/);
+  assert.equal(next(dir).step.number, 1);
 });
 
 test("permits denies a stage the queue does not support, and allows the one it does", () => {
@@ -2289,7 +2289,7 @@ test("unblock, plan, warmup and the adapter itself are never gated", () => {
 test("an unreadable queue denies every gated stage", () => {
   const dir = makeRepo();
   queue(dir, { 1: { status: "Ready" } });
-  write(dir, "docs/plans/phase-1/step-01.md", "no header at all\n");
+  write(dir, "docs/plans/prog/phase-1_detailed_preparation.md", "no step sections at all\n");
   const result = next(dir);
   assert.equal(permits(result, "cg-produce").allowed, false);
 });
@@ -2431,4 +2431,59 @@ test("residue follows a chosen docs root", () => {
   const result = residue(dir);
   assert.equal(result.docs, "handbook");
   assert.deepEqual(result.residue.map((r) => r.path), ["handbook/plans/orphan.md"]);
+});
+
+test("a roadmap inside its own programme folder is a root", () => {
+  const dir = makeRepo();
+  plan(dir, "billing/roadmap.md", "# Billing\n\n- [Phase 1](phase-1/)\n");
+  plan(dir, "billing/phase-1/preparation.md", "# Prep\n");
+  assert.deepEqual(residue(dir).residue.map((r) => r.path), []);
+  assert.ok(residue(dir).roots.includes("docs/plans/billing/roadmap.md"));
+});
+
+test("a roadmap buried two levels down is not a root", () => {
+  const dir = makeRepo();
+  plan(dir, "a-roadmap.md", "# Roadmap\n");
+  plan(dir, "billing/old/roadmap.md", "# stale\n");
+  assert.deepEqual(
+    residue(dir).residue.map((r) => r.path),
+    ["docs/plans/billing/old/roadmap.md"],
+  );
+});
+
+test("next reads every Step from one phase document", () => {
+  const dir = makeRepo();
+  queue(dir, { 1: { status: "Complete" }, 2: { status: "Ready" }, 3: { status: "Waiting" } });
+  const result = next(dir);
+  assert.equal(result.briefs.length, 3, "all three sections parse from one file");
+  assert.equal(result.step.number, 2);
+  assert.match(result.step.file, /phase-1_detailed_preparation\.md:\d+/, "reports the source line");
+});
+
+test("a Status written inside a Step's body is not the Step's state", () => {
+  const dir = makeRepo();
+  plan(
+    dir,
+    "prog/phase-1_detailed_preparation.md",
+    "# phase\n\n## Step 1: x\nPriority: 1\nDepends on: None\nBlocked by: None\nStatus: Ready\n\n" +
+      "### Expected starting state\nStatus: Complete — this line is prose, not the header\n",
+  );
+  assert.equal(next(dir).step.status, "Ready");
+});
+
+test("two phase documents form one queue", () => {
+  const dir = makeRepo();
+  queue(dir, { 1: { status: "Complete" } }, "phase-1");
+  queue(dir, { 2: { status: "Ready", priority: 2 } }, "phase-2");
+  const result = next(dir);
+  assert.equal(result.briefs.length, 2);
+  assert.equal(result.step.number, 2);
+});
+
+test("a phase document with no Step sections is reported, not silently empty", () => {
+  const dir = makeRepo();
+  plan(dir, "prog/phase-9_detailed_preparation.md", "# phase 9\n\nprose only\n");
+  const result = next(dir);
+  assert.equal(result.state, "unreadable");
+  assert.match(result.problems[0], /no `## Step <n>` section/);
 });

@@ -118,10 +118,16 @@ export function residue(repoRoot, { docs } = {}) {
   const finished = warmupComplete(repoRoot);
   const roots = files.filter((file) => {
     const name = path.basename(file);
-    if (path.dirname(file) !== plansRoot) return false;
+    const depth = path.relative(plansRoot, file).split(path.sep).length - 1;
+
+    // A roadmap is a root because nothing links *to* it — it is where a reader starts. It is a
+    // root one level down as well, because that is the shape the framework asks for: one folder
+    // per programme, holding its roadmap and its phases, so closing a programme is one move
+    // rather than a roadmap plus N phase directories chased separately.
+    if (/roadmap/i.test(name) && depth <= 1) return true;
+
+    if (depth !== 0) return false;
     if (NAMED_ROOTS.has(name)) return true;
-    // A roadmap is a root because nothing links *to* it — it is where a reader starts.
-    if (/roadmap/i.test(name)) return true;
     return WARMUP_FILES.has(name) && !finished;
   });
 
