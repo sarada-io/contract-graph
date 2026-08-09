@@ -47,7 +47,11 @@ export function parseBrief(text, file, number = null, title = null) {
     if (match) fields[match[1]] = match[2].trim();
   }
 
-  const status = fields.Status ?? null;
+  // `Status: Complete — 2026-08-09` is a natural thing for a closing stage to write, and reading
+  // it as an unknown state would make the whole queue unparseable — which makes the gate deny
+  // every stage. The state is the token; anything after a dash is a note, and notes are welcome.
+  const declared = fields.Status ?? null;
+  const status = declared ? declared.replace(/\s+[—–-]\s+.*$/, "").trim() : null;
   if (!status) problems.push(`${file}: no \`Status:\` header`);
   else if (!STEP_STATES.includes(status)) {
     problems.push(`${file}: unknown Status \`${status}\` — expected one of ${STEP_STATES.join(", ")}`);

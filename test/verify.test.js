@@ -2578,3 +2578,45 @@ test("a new user turn clears the boundary without abandoning the session", () =>
   assert.equal(afterAsking.permissionDecision, "allow", "the user asking again must not be blocked");
   assert.match(afterAsking.permissionDecisionReason, /queue agrees/);
 });
+
+test("a Step status may carry a date without breaking the queue", () => {
+  const dir = makeRepo();
+  plan(
+    dir,
+    "prog/phase-1_detailed_preparation.md",
+    "# p\n\n## Step 1: x\nPriority: 1\nDepends on: None\nBlocked by: None\nStatus: Complete — 2026-08-09\n",
+  );
+  const result = next(dir);
+  assert.equal(result.state, "queue-complete", JSON.stringify(result.problems));
+  assert.equal(result.briefs[0].status, "Complete");
+});
+
+test("an unknown status is still refused", () => {
+  const dir = makeRepo();
+  plan(dir, "prog/phase-1_detailed_preparation.md", "# p\n\n## Step 1: x\nPriority: 1\nStatus: Sortof\n");
+  assert.equal(next(dir).state, "unreadable");
+});
+
+test("verify advises a signed-off phase left in the active tree", () => {
+  const dir = makeRepo();
+  plan(dir, "prog/phase-1_detailed_preparation.md", "# p\n\n## Step 1: x\nPriority: 1\nStatus: Complete\n");
+  assert.ok(!verify(dir).advisories.some((m) => m.includes("never archived")));
+
+  plan(dir, "prog/phase-1_sign-off.md", "# closed\n");
+  const advised = verify(dir).advisories.filter((m) => m.includes("never archived"));
+  assert.equal(advised.length, 1, JSON.stringify(verify(dir).advisories));
+  assert.match(advised[0], /phase `phase-1`/);
+});
+
+test("verify advises a programme sign-off left unarchived", () => {
+  const dir = makeRepo();
+  plan(dir, "prog/programme-sign-off.md", "# done\n");
+  assert.ok(verify(dir).advisories.some((m) => m.includes("the programme is")));
+});
+
+test("an archived closure is not advised", () => {
+  const dir = makeRepo();
+  plan(dir, "archive/prog/phase-1_sign-off.md", "# closed\n");
+  plan(dir, "archive/prog/phase-1_detailed_preparation.md", "# p\n\n## Step 1: x\nPriority: 1\nStatus: Complete\n");
+  assert.ok(!verify(dir).advisories.some((m) => m.includes("never archived")));
+});

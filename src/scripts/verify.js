@@ -730,6 +730,53 @@ function checkWarmupCompletion(repoRoot, folders, docsRoot, advise) {
         "the file has nothing left to resume. Delete it; `cg-warmup` §12 owns this disposal",
     );
   }
+
+  adviseUnarchivedClosures(advise, repoRoot, docsRoot);
+}
+
+/**
+ * A phase whose sign-off record exists but whose preparation is still in the active tree.
+ *
+ * `cg next` reads Step states and nothing else, so it cannot tell "every Step is Complete, ready
+ * to close" from "closed days ago, never archived" — both look identical. Left in place, a closed
+ * phase keeps `cg next` naming `cg-sign-off`, and `cg-auto-run` will dutifully dispatch it again
+ * on a programme that is already signed off. Archiving is the signal, which makes forgetting it a
+ * correctness problem rather than untidiness.
+ */
+function adviseUnarchivedClosures(advise, repoRoot, docsRoot) {
+  const plans = path.join(repoRoot, docsRoot, "plans");
+  if (!exists(plans)) return;
+
+  const found = [];
+  const walk = (dir) => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true }).sort((a, b) =>
+      a.name.localeCompare(b.name),
+    )) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        if (entry.name !== "archive") walk(full);
+        continue;
+      }
+      if (entry.name === "programme-sign-off.md") {
+        found.push({ file: rel(repoRoot, full), what: "the programme" });
+        continue;
+      }
+      const phase = /^(.*)_sign-off\.md$/.exec(entry.name)?.[1];
+      if (phase && exists(path.join(dir, `${phase}_detailed_preparation.md`))) {
+        found.push({ file: rel(repoRoot, full), what: `phase \`${phase}\`` });
+      }
+    }
+  };
+  walk(plans);
+
+  for (const { file, what } of found) {
+    advise(
+      `[0] ${file} records a closed phase that is still in the active plans tree — ${what} is ` +
+        "signed off but never archived. `cg next` reads Step states only, so it cannot tell this " +
+        "from work that is ready to close: it will keep naming `cg-sign-off`, and `cg-auto-run` " +
+        `will dispatch it again. Move the records to ${docsRoot}/plans/archive/`,
+    );
+  }
 }
 
 /**
