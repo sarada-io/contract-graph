@@ -232,18 +232,25 @@ function writeManifest(repoRoot, version, out, docsRoot) {
 export function ensureLedgerIgnored(repoRoot, out, dryRun) {
   const file = path.join(repoRoot, ".gitignore");
   const current = fs.existsSync(file) ? fs.readFileSync(file, "utf8") : "";
-  if (current.split("\n").some((line) => line.trim() === LEDGER_IGNORE)) return;
+  const lines = new Set(current.split("\n").map((line) => line.trim()));
+  const missing = LEDGER_IGNORE.filter((rule) => !lines.has(rule));
+  if (!missing.length) return;
 
   const block =
     `${current && !current.endsWith("\n") ? "\n" : ""}` +
-    "\n# Contract Graph: cg-auto-run's resume ledger is live state for one run, never history.\n" +
-    `${LEDGER_IGNORE}\n`;
+    "\n# Contract Graph: cg-auto-run ledgers are live state for one run, never history.\n" +
+    `${missing.join("\n")}\n`;
   (current ? out.replaced : out.written).push(file);
   if (dryRun) return;
   fs.writeFileSync(file, current + block, "utf8");
 }
 
-const LEDGER_IGNORE = ".auto-run.md";
+/**
+ * Both rules, because either alone leaves a gap. The directory rule covers ledgers written where
+ * they belong; the suffix rule covers one written anywhere else, so a stray ledger is still
+ * self-ignoring rather than quietly committed.
+ */
+const LEDGER_IGNORE = ["auto-run/", "*.auto-run.md"];
 
 /** Repository entries that do not make a repository "existing" for the purposes below. */
 const IGNORED_AT_ROOT = new Set([".git", ".gitignore", ".github", "LICENSE", "README.md"]);

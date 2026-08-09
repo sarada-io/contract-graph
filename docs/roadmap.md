@@ -30,7 +30,14 @@ source. Verification and governance exist to keep that graph trustworthy.
   workflow order for readers of the source; no editor orders its skill picker that way, so
   sequence is carried by the `Next action` route rather than by naming.
 - Decision harvest: triage into five destinations, batch acceptance at phase close, drain.
-- `cg init` / `sync` / `verify` / `modules` / `harvest` / `profiles`, with a fail-on-demand test suite.
+- `cg init` / `next` / `residue` / `sync` / `verify` / `modules` / `harvest` / `profiles`, with a
+  fail-on-demand test suite. `cg init` is idempotent and is the upgrade path: framework core is
+  replaced on every run, the repository's own context under `.agents/cg/` never is.
+- `cg next` computes the owning stage from the Step queue on disk rather than from the last thing
+  a model said, and a `PreToolUse` gate refuses a dispatch the two do not agree on — the
+  enforcement half of `cg-auto-run`.
+- `cg residue` names plan documents nothing links to any more, by reachability from the roadmap,
+  the decision log, and the README. The disposable stack is checked rather than trusted.
 - Selectable editor discovery profiles for Claude Code, Codex, GitHub Copilot, Antigravity, and
   their `all` union, persisted and verified independently of universal governance.
 

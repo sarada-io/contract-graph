@@ -693,21 +693,41 @@ function checkWarmupCompletion(repoRoot, folders, docsRoot, advise) {
   // available, and invisible until now: a run reported success with eleven modules mapped and
   // the shipped principles file byte-for-byte unchanged.
   const product = path.join(principlesRoot(repoRoot), "product.md");
-  if (exists(product) && !PRINCIPLE_ID.test(read(product).split("```").filter((_, i) => i % 2 === 0).join(""))) {
+  // Computed once and reused below. `PRINCIPLE_ID` is a global regex, so a second `.test` on the
+  // same source answers from wherever the first one stopped — the bug that made a fresh scaffold
+  // look harvested. Prose only: an example rule ID inside a fence is documentation, not a rule.
+  const harvested =
+    exists(product) &&
+    PRINCIPLE_ID.test(read(product).split("```").filter((_, i) => i % 2 === 0).join(""));
+  PRINCIPLE_ID.lastIndex = 0;
+
+  if (exists(product) && !harvested) {
     advise(
       "[0] principles/product.md defines no rules although folders are mapped — `cg-warmup` " +
         "harvests this repository's product rules from its code, so an untouched file means that " +
         "step was skipped, not that the repository owes none",
     );
   }
-  PRINCIPLE_ID.lastIndex = 0;
 
+  // The same file is required and then unwanted, and which one depends on whether warmup has
+  // finished. Asking only "is it present?" entrenched it: a completed adoption kept a resume log
+  // forever because removing it made the verifier complain, which is the opposite of a stack of
+  // documents that is meant to be consumed and discarded.
   const findings = path.join(repoRoot, docsRoot, "plans", "warmup-findings.md");
-  if (!exists(findings)) {
+  const complete =
+    harvested && Object.values(folders).every((entry) => exists(path.join(repoRoot, entry.contract)));
+
+  if (!exists(findings) && !complete) {
     advise(
       `[0] ${docsRoot}/plans/warmup-findings.md is absent although ${Object.keys(folders).length} ` +
         "folder(s) are mapped — `cg-warmup` records each unit's findings there as it goes, so an " +
         "absent file means the loop kept its state in context and a break would restart it",
+    );
+  } else if (exists(findings) && complete) {
+    advise(
+      `[0] ${docsRoot}/plans/warmup-findings.md survives a finished warmup — it is a resume log, ` +
+        "not a record: every mapped folder has a contract and the principles are harvested, so " +
+        "the file has nothing left to resume. Delete it; `cg-warmup` §12 owns this disposal",
     );
   }
 }

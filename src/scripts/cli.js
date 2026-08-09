@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/** Contract Graph command line. `cg init | next | sync | verify | modules | harvest | profiles`. */
+/** Contract Graph command line. `cg init | next | residue | sync | verify | modules | harvest | profiles`. */
 
 import fs from "node:fs";
 import path from "node:path";
@@ -11,6 +11,7 @@ import { init } from "./init.js";
 import { HarvestError, checkHarvest } from "./harvest.js";
 import { moduleCoverage } from "./modules.js";
 import { next, permits } from "./next.js";
+import { residue } from "./residue.js";
 import { inheritancePath, loadInheritance } from "./model.js";
 import { availableProfiles, loadProfileSelection } from "./profiles.js";
 import { sync } from "./sync.js";
@@ -21,6 +22,7 @@ const USAGE = `cg — Contract Graph
 Usage:
   cg init [dir] [--profile a,b] [--docs dir]       scaffold governance
   cg next [dir] [--json] [--for skill]            what runs next, computed from the Step queue
+  cg residue [dir] [--json]                       plan documents nothing points at any more
   cg sync [dir] [--check]                         regenerate derived artifacts
   cg verify [dir] [--warn]                        verify governance
   cg modules [dir]                                list detected module roots and their coverage
@@ -33,7 +35,7 @@ Options:
   --stage <name>    harvest stage: classify (default) or close
   --decision-log <path>  decision log to check cohort eligibility against (harvest only)
   --preparation <path>   prepared drain route to validate at --stage close (harvest only)
-  --json            machine-readable output (next only)
+  --json            machine-readable output (next, residue)
   --for <skill>     exit 0 only if dispatching that skill agrees with the queue (next only)
   --check           report what init or sync would write; change nothing
   --yes             accept replacing framework core without being asked (init only)
@@ -433,6 +435,26 @@ async function main(argv) {
       return verdict.allowed ? 0 : 1;
     }
     return result.state === "unreadable" ? 1 : 0;
+  }
+
+  if (command === "residue") {
+    const result = residue(repoRoot);
+    if (flags.json) {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+    } else if (!result.residue.length) {
+      process.stdout.write(
+        `cg residue: none — ${result.claimed} document(s) under ${result.docs}/plans/ are all reachable\n`,
+      );
+    } else {
+      process.stdout.write(`cg residue: ${result.residue.length} unclaimed under ${result.docs}/plans/\n`);
+      for (const item of result.residue) process.stdout.write(`  ${item.path}\n    ${item.why}\n`);
+      process.stdout.write(
+        `  roots: ${result.roots.join(", ") || "none"}\n` +
+          "  Each of these is consumed work, superseded, or was never claimed. Archive what a reader\n" +
+          "  may audit, delete the rest — `archive/` is not a place to move things to avoid deciding.\n",
+      );
+    }
+    return result.residue.length ? 1 : 0;
   }
 
   if (command === "sync") {

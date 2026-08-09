@@ -20,6 +20,7 @@ import { checkHarvest } from "../src/scripts/harvest.js";
 import { detectModuleRoots, moduleCoverage, subBoundaryCount } from "../src/scripts/modules.js";
 import { renderAgentRule } from "../src/scripts/model.js";
 import { next, permits } from "../src/scripts/next.js";
+import { residue } from "../src/scripts/residue.js";
 import { sync } from "../src/scripts/sync.js";
 import { CORE_CG_SKILLS, verify } from "../src/scripts/verify.js";
 import {
@@ -2298,13 +2299,136 @@ test("init ignores the auto-run ledger without disturbing an existing .gitignore
   fs.writeFileSync(path.join(dir, ".gitignore"), "node_modules/\ndist/\n", "utf8");
   init(dir, {});
   const text = read(dir, ".gitignore");
-  assert.match(text, /^\.auto-run\.md$/m);
+  assert.match(text, /^auto-run\/$/m);
+  assert.match(text, /^\*\.auto-run\.md$/m);
   assert.match(text, /^node_modules\/$/m, "existing rules must survive");
 
   init(dir, {});
   assert.equal(
-    text.split("\n").filter((l) => l.trim() === ".auto-run.md").length,
+    read(dir, ".gitignore").split("\n").filter((l) => l.trim() === "*.auto-run.md").length,
     1,
     "re-running init must not append the rule twice",
   );
+});
+
+test("a finished warmup is advised to remove its resume log", () => {
+  const dir = makeRepo();
+  const findings = path.join(dir, "docs", "plans", "warmup-findings.md");
+  fs.mkdirSync(path.dirname(findings), { recursive: true });
+  fs.writeFileSync(findings, "# findings\n");
+
+  // Not yet finished: product rules are unharvested, so the log still has a job.
+  assert.ok(!verify(dir).advisories.some((m) => m.includes("survives a finished warmup")));
+
+  // Harvested the way `cg-warmup` writes one: a real family heading outside any fence — the
+  // shipped file's only PP rule is an example inside a ```markdown block and does not count.
+  edit(dir, PRODUCT, (t) => `${t}\n## PP-09. Harvested\n\n- **PP-09-01** — a harvested rule.\n`);
+  edit(dir, ENFORCEMENT, (t) =>
+    t.replace("| AP-01-01, AP-01-02 |", "| PP-09-01 | Manual review *(not yet built)* |\n| AP-01-01, AP-01-02 |"),
+  );
+  assert.ok(
+    verify(dir).advisories.some((m) => m.includes("survives a finished warmup")),
+    "a harvested repo with every contract written should be told the log is residue",
+  );
+
+  fs.rmSync(findings);
+  const after = verify(dir).advisories;
+  assert.ok(!after.some((m) => m.includes("warmup-findings.md")), "deleting it clears both sides");
+});
+
+// ---------------------------------------------------------------------------
+// cg residue — the disposable stack, checked instead of trusted
+// ---------------------------------------------------------------------------
+
+const plan = (dir, rel, text) => {
+  const file = path.join(dir, "docs", "plans", rel);
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, text, "utf8");
+};
+
+/** Drive the repo to "warmup finished", which is what makes warmup's own files residue. */
+function finishWarmup(dir) {
+  edit(dir, PRODUCT, (t) => `${t}\n## PP-09. Harvested\n\n- **PP-09-01** — a harvested rule.\n`);
+  edit(dir, ENFORCEMENT, (t) =>
+    t.replace("| AP-01-01, AP-01-02 |", "| PP-09-01 | Manual review *(not yet built)* |\n| AP-01-01, AP-01-02 |"),
+  );
+}
+
+test("a document reachable from the roadmap is not residue", () => {
+  const dir = makeRepo();
+  plan(dir, "a-roadmap.md", "# Roadmap\n\n- [Phase 1](phase-1/preparation.md)\n");
+  plan(dir, "phase-1/preparation.md", "# Prep\n\n- [Step 1](step-01.md)\n");
+  plan(dir, "phase-1/step-01.md", "# Phase 1 Step 1: x\n");
+
+  const result = residue(dir);
+  assert.deepEqual(result.residue.map((r) => r.path), []);
+  assert.ok(result.roots.includes("docs/plans/a-roadmap.md"));
+});
+
+test("a document no root links to is residue", () => {
+  const dir = makeRepo();
+  plan(dir, "a-roadmap.md", "# Roadmap\n");
+  plan(dir, "legacy/old-plan.md", "# Predates adoption\n");
+  assert.deepEqual(
+    residue(dir).residue.map((r) => r.path),
+    ["docs/plans/legacy/old-plan.md"],
+  );
+});
+
+test("an empty directory is residue even though git cannot see it", () => {
+  const dir = makeRepo();
+  plan(dir, "a-roadmap.md", "# Roadmap\n");
+  fs.mkdirSync(path.join(dir, "docs", "plans", "moved-away"), { recursive: true });
+  const found = residue(dir).residue;
+  assert.deepEqual(found.map((r) => r.path), ["docs/plans/moved-away"]);
+  assert.match(found[0].why, /empty directory/);
+});
+
+test("archived and ignored subtrees are never residue", () => {
+  const dir = makeRepo();
+  plan(dir, "a-roadmap.md", "# Roadmap\n");
+  plan(dir, "archive/phase-0/step-01.md", "# closed\n");
+  plan(dir, "auto-run/phase-1.auto-run.md", "# ledger\n");
+  assert.deepEqual(residue(dir).residue.map((r) => r.path), []);
+});
+
+test("warmup's files are live during warmup and residue after it", () => {
+  const dir = makeRepo();
+  plan(dir, "a-roadmap.md", "# Roadmap\n");
+  for (const name of ["warmup-findings.md", "warmup-report.md", "warmup-corrective-set.md"]) {
+    plan(dir, name, `# ${name}\n`);
+  }
+  assert.deepEqual(residue(dir).residue.map((r) => r.path), [], "unfinished warmup: still working state");
+
+  finishWarmup(dir);
+  const found = residue(dir).residue;
+  assert.equal(found.length, 3);
+  assert.match(found[0].why, /warmup finished/);
+});
+
+test("the decision log and README are always claimed", () => {
+  const dir = makeRepo();
+  plan(dir, "a-roadmap.md", "# Roadmap\n");
+  const paths = residue(dir).residue.map((r) => r.path);
+  assert.ok(!paths.includes("docs/plans/decision-log.md"));
+  assert.ok(!paths.includes("docs/plans/README.md"));
+});
+
+test("linking a directory claims everything under it", () => {
+  const dir = makeRepo();
+  plan(dir, "a-roadmap.md", "# Roadmap\n\n- [Phase 2](phase-2/)\n");
+  plan(dir, "phase-2/step-01.md", "# Phase 2 Step 1: x\n");
+  plan(dir, "phase-2/step-02.md", "# Phase 2 Step 2: y\n");
+  assert.deepEqual(residue(dir).residue.map((r) => r.path), []);
+});
+
+test("residue follows a chosen docs root", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-residue-docs-"));
+  init(dir, { docs: "handbook" });
+  sync(dir);
+  const file = path.join(dir, "handbook", "plans", "orphan.md");
+  fs.writeFileSync(file, "# orphan\n", "utf8");
+  const result = residue(dir);
+  assert.equal(result.docs, "handbook");
+  assert.deepEqual(result.residue.map((r) => r.path), ["handbook/plans/orphan.md"]);
 });
