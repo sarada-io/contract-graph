@@ -191,5 +191,7 @@ parallel execution safe until that proof and write confinement exist.
 Node.js 18.17 or newer. No runtime dependencies.
 
 ## Licence 
-Apache-2.0
-And created by [Sarada.io](https://sarada.io).
+
+Licensed under Apache-2.0.
+
+Created by [Sarada.io](https://sarada.io).
