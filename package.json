@@ -33,7 +33,10 @@
     "contracts",
     "ai-agents"
   ],
-  "author": "sarada-io",
+  "author": {
+    "name": "Sarada.io",
+    "url": "https://sarada.io"
+  },
   "license": "Apache-2.0",
   "publishConfig": {
     "access": "public"

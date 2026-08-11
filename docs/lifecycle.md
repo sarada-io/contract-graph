@@ -84,8 +84,28 @@ next stage merely because the route is obvious. `cg-auto-run` is the one excepti
 invocation carries an authority level, a dispatch budget, and an on-disk ledger.
 
 For Claude Code, the optional gate compares a requested skill with `cg next --for <skill>`.
-`cg init` ships the command but does not edit user-owned hook settings; activation and command
-resolution are documented in the [root README](../README.md#enabling-the-claude-code-gate).
+
+### Enabling the Claude Code gate
+
+`cg init` ships `.agents/hooks/cg-gate.mjs` but does not edit user-owned hook settings. Merge this
+registration into `.claude/settings.json`:
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [{
+      "matcher": "Skill",
+      "hooks": [{ "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.agents/hooks/cg-gate.mjs\"" }]
+    }],
+    "UserPromptSubmit": [{
+      "hooks": [{ "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.agents/hooks/cg-gate.mjs\"" }]
+    }]
+  }
+}
+```
+
+The hook resolves `node_modules/.bin/cg`, then `cg` on `PATH`, or `CG_BIN`. Resolution failures
+allow the dispatch, so confirm `cg --version` in the hook environment before relying on it.
 
 ## Unattended traversal is bounded
 

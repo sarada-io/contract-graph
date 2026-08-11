@@ -205,7 +205,7 @@ for (const [profile, expected] of Object.entries(PROFILE_ARTIFACTS)) {
  *
  * Without this, a profile that started writing its own governance would pass every other
  * test — each profile's own artifacts would still be exactly what it declares — while the
- * neutrality promise in README and docs/scaffolding.md quietly stopped being true.
+ * profile boundary quietly stopped being true.
  */
 test("every profile scaffolds byte-identical universal governance", () => {
   const universal = (profile) => {
@@ -2067,12 +2067,6 @@ test("no shipped file references a pre-rename governance path", () => {
     "CONTRIBUTING.md",
     "package.json",
   ];
-  /**
-   * The migration guide's job is to name what was renamed, so it is the one shipped file
-   * allowed to carry obsolete names. Exempt it by path rather than by pattern, so adding a
-   * stale name anywhere else still fails.
-   */
-  const EXEMPT = new Set(["docs/migration-0.1.0.md"]);
   const hits = [];
 
   const walk = (target) => {
@@ -2082,7 +2076,6 @@ test("no shipped file references a pre-rename governance path", () => {
       return;
     }
     if (!/\.(js|md|json|ya?ml)$/.test(target)) return;
-    if (EXEMPT.has(path.relative(repo, target).split(path.sep).join("/"))) return;
     const text = fs.readFileSync(target, "utf8");
     splitLines(text).forEach((line, index) => {
       for (const pattern of STALE) {

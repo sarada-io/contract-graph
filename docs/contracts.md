@@ -212,4 +212,4 @@ The honest position: **either the machine-readable edge gets built, or the code 
 informal convention.** The middle position — documentation describing a graph the repository does
 not maintain — is the worst of the three, because it reads as a guarantee and is not one.
 
-This is the framework's largest open decision. See `docs/roadmap.md`.
+This is the framework's largest open decision. See [the vision](vision.md#what-remains).

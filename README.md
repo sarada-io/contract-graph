@@ -1,787 +1,195 @@
 # Contract Graph
 
-**A top-down software context graph for coding agents.**
+**Scale model-driven development with contracts, not shared context.**
 
-Your repository is explained as contracts from repository → module → sub-module. An agent traverses
-those contracts to locate a change before it reads implementation code, so a new session loads the
-smallest relevant context instead of rediscovering the whole system.
+Coding models have inflated the speed at which software can be produced. The harder problem is now
+keeping that software understandable, bounded, and maintainable as changes accumulate faster than
+people can rebuild the architecture in their heads.
 
-Once that context graph exists, its boundaries can be protected: contract violations become
-detectable, machine-expressible rules gain tests, and governance follows. Enforcement is a
-consequence of keeping the project context truthful, not the reason the project exists.
+Contract Graph turns a repository into a traversable hierarchy of contracts: project → module →
+sub-module → component or library. Each contract explains how its unit is used by its parent, what
+it owns, where its boundary is, and which contract to read next. An agent gets the overview first,
+then descends to the smallest relevant implementation instead of searching the whole repository.
 
-Read the [project vision](docs/vision.md) for the complete model and its current limits.
+Contract Graph grew from six months of ground-up use across several products. It is an extraction
+from repeated delivery and maintenance work, not a framework designed only on paper.
+
+## The problem contracts solve
+
+Faster code generation increases four pressures at once:
+
+| Pressure | Contract-based response |
+|---|---|
+| More changes land in less time | Stable boundaries keep callers and implementations from changing together by accident. |
+| New code spreads responsibility | Modules, sub-modules, and components confine change and structural pollution to an explicit boundary. |
+| More agents need to work at once | Contracts provide the decoupling seam needed to reason about independent work. |
+| Maintenance grows with every shortcut | The contract graph preserves an overview of the software that later sessions can traverse. |
+
+Abstraction is what lets a codebase scale beyond the amount of implementation any one person or
+model can hold in context. Contracts make that abstraction explicit, navigable, and reviewable.
+
+## Software as a contract graph
+
+```mermaid
+flowchart TB
+    subgraph PROJECT["Project"]
+        ROOT["Repository contract"]
+
+        subgraph MODULE_A["Module"]
+            MC["Module contract"]
+
+            subgraph SUBMODULE["Sub-module"]
+                SMC["Sub-module contract"]
+
+                subgraph COMPONENT["Component / Library"]
+                    CC["Component contract"]
+                    CODE["Relevant implementation"]
+                end
+            end
+        end
+
+        subgraph MODULE_B["Module"]
+            MC2["Module contract"]
+            CODE2["Implementation"]
+        end
+    end
+
+    ROOT --> MC
+    ROOT --> MC2
+    MC --> SMC
+    SMC --> CC
+    CC --> CODE
+    MC2 --> CODE2
+```
+
+The boxes are abstraction boundaries; the arrows are context routes. The repository contract gives
+the system overview. A module contract explains that module in the project. Its child contracts
+progressively narrow the responsibility until the relevant code is small enough to inspect
+directly.
+
+Real software also has lateral edges: one module consumes another module's public contract, or a
+task enters two branches. The hierarchy is the graph's spine, not a claim that software is a pure
+tree.
+
+## How an agent uses it
+
+```text
+request
+  → routing map
+  → module contract
+  → sub-module contract
+  → relevant implementation
+  → boundary-specific verification
+```
+
+The agent reads code, but only after the contracts have located the change. That replaces broad
+architectural rediscovery with bounded code reading.
+
+A useful contract answers:
+
+- why this unit exists and how its parent uses it;
+- what it owns and what is outside its boundary;
+- which public entry points cross the boundary;
+- which child or sibling contracts carry the next context;
+- which invariants and dependency directions must remain true; and
+- how to verify a change confined to the unit.
+
+The result is both a better overview of the whole system and a smaller working surface for one
+change.
+
+## What works today
+
+| Capability | Shipped behavior |
+|---|---|
+| Contract hierarchy | Repository and mapped-folder `contract.md` nodes with required boundaries, entry points, invariants, verification, and child-contract routes. |
+| Task routing | `map/routing.md` directs a request to its first module contracts. |
+| Brownfield adoption | `cg-warmup` discovers real module roots and writes their first contracts from the code that exists. |
+| Rule binding | Architecture and product rules are inherited into mapped contracts; generated blocks are synchronized and checked for drift. |
+| Honest enforcement | Machine-expressible rules owe detector rows, and contract shape, transient-plan references, mappings, and generated artifacts are verified. |
+| Agent discovery | Selectable profiles generate entry points for Claude Code, Codex, GitHub Copilot, and Antigravity. |
+| Delivery lifecycle | Seven skills cover planning, preparation, serial production, sign-off, unblocking, brownfield warmup, and opt-in unattended traversal. |
+| State-derived routing | `cg next` reads the Step queue from disk; `cg residue` finds planning artifacts no roadmap claims. |
+
+Everything is plain Markdown, JSON, and JavaScript. The package has no runtime dependencies.
+
+## Quick start
+
+### New repository
 
 ```bash
 npx contract-graph init .
 ```
 
-One command, whatever the repository. It scaffolds, generates, verifies, and tells you the single
-next thing to do.
+This scaffolds the contract system, generates its discovery files, verifies it, and names the next
+action. Re-running `init` updates framework-owned assets while preserving repository-owned context.
+The starter module shows the contract shape; fill the repository identity and routing map, then
+follow the printed route.
 
-Upgrading a repository scaffolded by 0.0.1? Version 0.1.0 moves the governance paths, renames the
-lifecycle skills, and retires `--design`/`--packs` in favour of the phase map. Follow
-[the 0.1.0 migration procedure](docs/migration-0.1.0.md) rather than overlaying the new scaffold
-in place.
+### Existing repository
 
-Upgrading from 0.1.0? Version 0.2.0 supports an in-place re-run that replaces framework-owned
-skills and hooks while preserving your contracts, principles, maps, and plans. Review the
-[0.2.0 migration procedure](docs/migration-0.2.0.md), especially if a programme is active.
-
----
-
-## What it actually does
-
-Four things, in causal order.
-
-**1. It makes project structure readable as contracts.** The repository contract explains the
-whole system. Each module contract explains why that module exists, how the project uses it, its
-entry points and boundaries, and the child contracts that decompose it. Sub-module contracts repeat
-the pattern at a narrower scope. The result is project context an agent can traverse top to bottom
-without first reverse-engineering it from source.
-
-**2. It routes each task into the smallest relevant context.** `map/routing.md` maps an incoming
-capability or surface to its first module contracts. The agent follows contract links downward only
-until the change surface is clear, then reads code inside that boundary. A later session can take
-the same path without paying the discovery cost again.
-
-**3. It scaffolds and synchronizes the context system.** `cg init` writes the `.agents/` contract,
-map, principle, and skill trees as plain Markdown and JSON. Several files are *outputs*,
-not sources: the rule block inherited into each module `contract.md`, the principle index in your
-selected editor entry files, and—when Claude is selected—the discovery wrapper for each skill.
-`cg sync` regenerates them; `cg verify` fails if a selected artifact was hand-edited or left stale.
-You edit the source, never the copy.
-
-**4. It protects the graph once it exists.** `cg verify` exits non-zero when a
-contract is missing a required section, cites a transient plan, or has a stale inherited block —
-and when a rule has no row in the enforcement map. That last one is what keeps the rules honest:
-you cannot add a rule and postpone its detector, because the postponement is itself a build
-failure.
-
-`## Child Contracts` is one of the required sections, and it is required for the traversal rather
-than the governance: a contract either names the children that decompose it or states `None —
-leaf`. Left optional it would simply be absent wherever nobody thought about it, and an agent
-cannot tell a leaf from an omission. What is *not* yet checked is whether a declared child set is
-the whole set — see [the roadmap](docs/roadmap.md).
-
-What it does **not** do: it does not run your tests, read your source, or check that a detector is
-correct. It checks that every rule *has* one and that the governance files are internally
-consistent. The detectors themselves live in your build, written by you.
-
-### What lands in your repo
-
-```
-.agents/
-  cg/
-    principles/
-      architecture.md     every AP-nn principle, one `## AP-nn.` section each (source)
-      product.md          ships empty; PP-nn accrue here, or arrive via cg-warmup (source)
-      design.md           DP-* — product shape, tenancy, caching (source, fork-loaded)
-      operations.md       OP-* — delivery, migration, rollback (source, fork-loaded)
-      ux.md               UP-* — interaction and perceived responsiveness (source, fork-loaded)
-      security.md         SP-* — trust boundaries and exposure (source, fork-loaded)
-    map/
-      routing.md          task → which module contracts to load (source, a stub to fill)
-      phases.json         which rule families each lifecycle phase loads (source)
-      enforcement.md      rule ID → the detector that proves it (source)
-      inheritance.json    which rules bind which folders (source)
-      profile.json        selected editor profiles and docs root (generated by init)
-      manifest.json       what this version installed, and each file's hash (generated by init)
-    contract.md           governance's own contract + the skill catalog (source)
-    workflow.md           the development loop (source)
-  skills/                 seven skills (source)
-    cg-auto-run/          opt-in adapter that runs the loop unattended
-    cg-plan/              SKILL.md + agents/openai.yaml in each
-    cg-prepare/
-    cg-produce/
-    cg-sign-off/
-    cg-unblock/           entered from any stage, not a stage itself
-    cg-warmup/            run once at adoption, then never again
-  hooks/cg-gate.mjs       Claude hook command; register it to gate lifecycle dispatch (source)
-  rules/cg.md             shared agent pointer (generated)
-.claude/skills/cg-*/      one wrapper per skill, when the claude/all profile is selected (generated)
-AGENTS.md                 Codex root entry point (codex/all)
-CLAUDE.md                 Claude root entry point (claude/all)
-.github/copilot-instructions.md  Copilot root entry point (copilot/all)
-docs/                     the default root; `--docs <dir>` puts these elsewhere
-  plans/
-    decision-log.md       the working ledger; transient, and contracts may not cite it (source)
-    README.md             what belongs here and what graduates out (source)
-  design/README.md        durable design records; permanent, so contracts may cite them (source)
-  guides/README.md        operator and product guidance for the system as supported today (source)
-<module>/
-  .agents/cg/contract.md  the module's boundary + an inherited rule block (partly generated)
-  CLAUDE.md, AGENTS.md    pointers making the folder openable on its own (generated)
+```bash
+npx contract-graph init .
+npx contract-graph modules
 ```
 
-Two groupings carry the weight. **`principles/`** is flat: one file per rule family, all six
-shipped. Inside a file each principle is a `## AP-nn.` section, and every rule must sit
-under the section matching its own ID — `cg verify` rejects a rule filed under the wrong heading, a
-heading defined twice, and a rule from the wrong family.
+Brownfield initialization deliberately does not invent a `src/` module. It reports detected module
+roots as unmapped; run the scaffolded `cg-warmup` skill once to write contracts and routing for the
+software that is actually there.
 
-**`map/`** holds everything that maps one address space onto another: task → contract, rule →
-detector, rule → folder, phase → rule family — plus two records `init` writes about the install
-itself. Everything else at the top of `cg/` is a document you read start to finish.
+## Main commands
 
-Filenames are lowercase throughout. Rule IDs stay canonical uppercase in prose and in the maps —
-`AP-01-02` — but a file is named for what it holds: `architecture.md`, `contract.md`.
-
-The split that matters: **source files you write, generated files `cg sync` owns.** Every generated
-region sits between `BEGIN`/`END` markers, so a file can be partly yours and partly the tool's.
-
-## Why this exists
-
-Every new agent session begins with a context problem. The implementation contains the answer, but
-recovering it requires broad search: which module owns the behaviour, how that module participates
-in the system, which sub-module implements the relevant part, and what neighbouring code must not
-change. Most of the source read during that search is discarded once the real change surface is
-found.
-
-Contract Graph moves that explanation into durable, recursively linked contracts. The repository
-contract points to modules; each module contract explains its role in the project and points to
-sub-module contracts; those contracts continue until the responsible unit is clear. Source reading
-then starts inside a known boundary rather than being the mechanism for discovering the boundary.
-
-The intended sequence is:
-
-```text
-request → routing map → module contract → sub-module contract → relevant source → verification
-```
-
-Keeping this graph trustworthy creates the enforcement layer. An agent will violate a contract
-that cannot reject violations, so Contract Graph's first architecture principle is:
-
-> **AP-01-02** — A rule and its enforcing test land in **the same commit**. A documentation change
-> introducing a constraint without its detector is incomplete and must not merge.
-
-Rules and governance follow from protecting the context graph. They are not substitutes for it: a
-repository with extensive enforcement but contracts that cannot locate a change has missed the
-project's purpose.
-
-## What you get
-
-**Three rule families, loaded at different costs.** The ladder mirrors ordinary SDLC order:
-
-| Tier | Loaded | Analogue | Shipped |
-|---|---|---|---|
-| `AP-*` Architecture | always | architecture | yes — the portable core |
-| `DP-` `OP-` `UP-` `SP-` | at a fork, only the families it touches | design | yes — all four ship |
-| `PP-*` Product | when the work touches your product's specifics | specification | **no — starts empty, grows as you build** |
-
-`PP` starting empty is the point. You inherit architecture and domain guidance on day one and none
-of anyone else's product opinions.
-
-**Loading is scoped per phase.** `map/phases.json` says which families each lifecycle phase
-loads, keyed on the family (`AP`, `SP`) rather than on a filename — so
-reorganising the principle files never breaks loading, and vice versa. **This is the only selection mechanism.** All six
-families ship; the phase map decides where each is read, and `cg verify` fails if a family that is
-present is loaded by no phase.
-
-**Modality is per-rule, not per-family.** Each rule declares itself:
-
-```markdown
-- **DP-TRACING-01-01** `invariant` — Every request entering the system carries a trace id.
-- **DP-01-01** `guide` — Prefer configuration over structural change only when the
-  configuration surface permits it.
-  **Cost:** a configuration surface you must own, validate, audit, and version.
-```
-
-An `invariant` owes a detector and appears in the enforcement map. A `guide` owes a **cost clause**
-and must never be given a detector. `cg verify` enforces both directions, so the enforcement map
-never fills with rows nobody will build.
-
-**The four fork-loaded families ship containing only guides**, and that is a statement about what
-belongs there rather than shyness. A testable property belongs in `AP-*`, which is inherited into
-every contract — authorization decided outside UI and prompt layers, no literal secrets in
-configuration. What `DP-`, `OP-`, `UP-`, and `SP-` add is the judgement that remains once those
-hold. Rules you add to them may be invariants; each then owes its detector row like any other.
-
-Architecture and product rules carry no marker and owe a row **unconditionally** — `cg verify`
-fails the build when an `AP-` or `PP-` rule has none, and when a row cites a rule ID no principles
-file defines. The map cannot quietly fall behind the rules it claims to cover.
-
-**A recursive context graph.** A `contract.md` per mapped folder states how that folder is used by
-its parent, its responsibility, boundaries, entry points, and the contracts below it. The routing
-map selects the first module; child-contract links narrow the path from module to sub-module. See
-[the vision](docs/vision.md).
-
-**Two tiers of contract.** The folder `contract.md` is the context node an agent reads; a
-`XxxContract` type per directory states what that unit promises its callers, with
-implementations confined to a sibling `impl/`. Callers see only the contract — that single rule is
-what makes change free on either side of it. See [docs/contracts.md](docs/contracts.md).
-
-**Contracts that survive plan deletion.** Every module carries a `contract.md` stating its
-boundary, invariants, and entry points in full. It inherits binding rules through a generated block
-that `cg verify` rejects if hand-edited. Contracts may not cite a transient plan as the source of
-a rule — that check is machine-enforced, not a convention.
-
-**A folder is a workspace.** Any mapped module folder opens on its own with bounded project context:
-how the project uses it, the contracts below and beside it, the rules that bind it, and the
-verification command for its boundary. Hand someone a folder and say *change anything inside; keep
-the contract.*
-
-**Seven skills, harness-neutral.** `cg-plan` → `cg-prepare` → `cg-produce` → `cg-sign-off` is the
-loop. Three sit outside it: `cg-unblock` is entered from any of the four, `cg-warmup` runs once at
-adoption, and `cg-auto-run` drives the loop instead of returning each hop to you. Sequence is
-carried by each skill's `Next action` route, not by the order an editor happens to list them in —
-Claude Code and Codex both rank their pickers by usage, so no naming scheme puts these on screen in
-lifecycle order. `cg-sign-off` also owns the durable record —
-design records, guides, and diagrams — and can be entered for documentation alone. They live in
-`.agents/skills/` and specify responsibilities and evidence, not a particular coding agent. See
-[Skills](#skills).
-
-## Commands
-
-| Command | Does |
+| Command | Purpose |
 |---|---|
-| `cg --version` | print the installed package version |
-| `cg init [dir] --profile x,y --docs dir` | **the one command** — scaffold, generate, verify, and name the next action. Also the upgrade path: re-run it to take a new release |
-| `cg init --check` / `--yes` | report what would be replaced and change nothing / accept the replacement without being asked |
-| `cg next [dir]` | what runs next, computed from the Step queue on disk; `--for <skill>` exits 0 only if that dispatch agrees |
-| `cg residue [dir]` | plan documents nothing links to any more; exits 1 while any remain |
-| `cg sync [dir]` | regenerate inherited blocks, principle indexes, and discovery wrappers after you edit a source |
-| `cg sync --check` | report what sync would rewrite; change nothing (use in CI) |
-| `cg verify [dir]` | verify contracts, skills, and every principle family |
-| `cg modules [dir]` | list detected module roots and whether the map governs them; exits 1 while any is unmapped |
-| `cg harvest <manifest>` | check a decision-harvest cohort; `--stage close` also checks acceptance and the drain route |
-| `cg profiles` | list bundled editor profiles |
+| `cg init [dir]` | Install or upgrade the scaffold, generate derived artifacts, verify, and print the next action. |
+| `cg verify [dir]` | Verify contracts, skills, mappings, principles, and generated state. |
+| `cg sync [dir]` | Regenerate inherited blocks and editor discovery artifacts. |
+| `cg modules [dir]` | Show detected module roots and whether the graph governs them. |
+| `cg next [dir]` | Compute the next lifecycle stage from the Step queue on disk. |
+| `cg residue [dir]` | Report unclaimed planning artifacts. |
+| `cg harvest <manifest>` | Verify decision promotion and phase-close drainage. |
+| `cg profiles` | List bundled editor profiles. |
+| `cg --version` | Print the installed version. |
 
-### Where the document trees go
+Run `cg --help` for flags and exit behavior.
 
-`cg init` also creates `docs/plans/`, `docs/design/`, and `docs/guides/` — the three trees the
-skills write into. `docs/plans/` is transient and no contract may cite it; `docs/design/` is
-permanent and contracts may. A decision that outlives its phase graduates from the first to the
-second, or becomes a rule with a detector.
+## Contracts first; governance second
 
-Inside `docs/plans/`, one folder per programme holds everything that programme produces, so closing
-one is a single move rather than a roadmap plus every phase chased separately:
+The product is the context graph. Governance exists because a graph that drifts from the code makes
+every later session worse.
 
-```
-docs/plans/<programme>/roadmap.md                            written by cg-plan
-docs/plans/<programme>/<phase>_detailed_preparation.md       written by cg-prepare; every Step is
-                                                             a `## Step <n>` section inside it
-docs/plans/decision-log.md                                   written by cg-unblock; permanent
-docs/plans/archive/                                          closed phases
-```
+Contract Graph therefore enforces one foundational rule:
 
-One document per phase rather than a directory of Step briefs: the queue is read far more often
-than any single Step, and a split shape lets a Step be `Complete` in one file and `Ready` in
-another with nothing able to say which is true. `cg residue` reads this tree by reachability — a
-roadmap is a root, everything else must be linked from one — so anything left behind gets named
-instead of accumulating.
+> A rule and its enforcing test land in the same commit.
 
-If `docs/` already exists, `cg init` **asks** before using it rather than merging into a tree you
-curate. Your own content is never overwritten: `.agents/cg/`, the document trees, and module
-contracts are copied only when absent. Framework core — the skills and hooks — *is* replaced on
-every run, which is what makes re-running `cg init` the upgrade path; it lists what it will
-replace and asks first. Pass `--docs <dir>` to answer up front, or to put them somewhere else
-entirely:
+Rules, detectors, inheritance, and lifecycle controls protect the contracts; they are not a
+substitute for useful project context. If enforcement grows while the graph becomes less useful for
+locating code, the project has missed its purpose.
 
-```bash
-cg init . --docs handbook     # handbook/plans, handbook/design, handbook/guides
-```
+## The current boundary
 
-The choice is recorded in `.agents/cg/map/profile.json` and reused on every later run, and the
-self-sufficiency check follows it — a contract citing `handbook/plans/` fails exactly as one
-citing `docs/plans/` would. Non-interactive runs against an existing `docs/` exit **1** naming the
-flag rather than assuming.
+The folder-level context graph, task routing, brownfield mapping, inheritance, synchronization, and
+verification are built and tested.
 
-Commands exit **0** on success. Verification and drift failures exit **1**; invalid command usage
-exits **2**.
+The complete recursive vision is not yet machine-proven. Contract Graph requires every contract to
+name its children or declare itself a leaf, but it cannot yet prove that the declared child set is
+complete against the implementation. Code-level contract composition, verified closure, and safe
+parallel-worker coordination remain upcoming.
 
-| Command | Exit 1 when | Use it |
-|---|---|---|
-| `cg verify` | any contract, skill, or rule check fails | the gate — this one is sufficient |
-| `cg verify --warn` | never — prints findings, exits 0 | adopting on an existing repo |
-| `cg sync --check` | a generated file is stale or hand-edited | a narrower, faster subset of `verify` |
+Contracts already create the decoupling boundary parallel work needs. What is not yet shipped is
+the structural proof that two proposed work areas are fully independent. The project will not call
+parallel execution safe until that proof and write confinement exist.
 
-### Wire it into your build
+## Read next
 
-A governance check that has to be remembered is a governance check that will not run. Put it where
-the build already fails.
-
-**npm** — `cg` is on the path inside `npm scripts`, so no `npx` needed:
-
-```json
-{
-  "scripts": {
-    "governance": "cg verify && cg sync --check",
-    "pretest": "npm run governance"
-  }
-}
-```
-
-**GitHub Actions** — as its own step, so a red governance check is legible in the log:
-
-```yaml
-- run: npx contract-graph verify
-- run: npx contract-graph sync --check
-```
-
-**Make / Gradle / anything else** — it is a process with an exit code:
-
-```makefile
-governance:
-	npx contract-graph verify
-	npx contract-graph sync --check
-
-check: governance test
-```
-
-**`cg verify` is the only gate you need.** `sync` writes inherited rule blocks, selected root
-principle indexes, the shared agent rule, and any selected skill wrappers; `verify` checks each one
-for drift. There is no staleness `sync --check` catches that `verify` misses.
-
-Run it anyway where a *narrow, fast* signal is worth more than a complete one: a pre-commit hook,
-or a build step whose failure should say "run `cg sync`" and nothing else. In CI it is belt and
-braces, not extra coverage.
-
-### Adopting on a repository that already has code
-
-`cg init` detects that the repository is not empty and skips the starter module rather than
-inventing one your build does not have. Governance still lands; what is missing is the map from
-your real modules to it.
-
-See what is not governed yet:
-
-```bash
-cg modules
-```
-
-```
-UNMAPPED  .                 (go.mod)
-UNMAPPED  services/billing  (go.mod)
-governed  web               (package.json)
-
-3 detected, 2 unmapped
-```
-
-It reads build manifests rather than guessing from directory shape, and exits **1** while anything
-is unmapped, so it works as a CI gate during adoption. `cg verify` reports the same gap as an
-advisory — advisory rather than a failure because detection is a heuristic, and a heuristic that
-fails the build is one everyone learns to bypass.
-
-**Then run the `cg-warmup` skill once.** It discovers your module roots, writes a contract per
-module from the code that is actually there, fills `inheritance.json` and `routing.md`, and works
-through the principles — resolving every finding to a detector, an exception proposed with its
-cost, or a corrective Step.
-
-Two things it does that only matter on a repository with history:
-
-- **It looks for the framework that came before, first.** An older contract format, a principles
-  file with its own IDs, its own verifier scripts. Every rule that framework asserted is carried
-  forward or listed as a deliberate drop, and any of its detectors whose rule ID no longer
-  resolves is named — a passing test bound to nothing is deletable by the next agent. It never
-  deletes or runs what it finds; retiring a toolchain is a decision, not a cleanup.
-- **It harvests the rules your code already enforces.** One seam that builds every storage path,
-  one class that decides authorization, one package that may import the vendor SDK — constraints
-  somebody chose, which exist only as a pattern each new session has to re-derive. Warmup writes
-  them as `PP-` or `AP-` rules with their enforcement rows and bindings, and lists every one in
-  its report for you to keep, reword, or delete. Until a rule is in the graph, the code is its
-  only record, and reading the code is what you pay for it.
-
-It does not interview you. Anything it cannot settle from the code — an ambiguous boundary, an
-exception to a binding principle, a harvested rule that contradicts one — becomes a `DL-02` entry
-in `docs/plans/decision-log.md`, and you get **one consolidated list at the end** rather than a
-question per module. Nothing logged stops the rest of the work. It never produces a compliance
-score and never changes behaviour.
-`cg modules` exiting 0 is how you know it is done, and after that you never run it again.
-
-Until then, take `cg verify: OK` for what it is: the scaffold is well-formed, not that your
-repository is governed.
-
-`cg verify --warn` is useful *after* warmup, while you work findings down: it prints everything and
-exits 0, so the pipeline stays green. Drop the flag the day it prints nothing, and treat that day
-as the real adoption date — until then the check is advisory, and advisory checks decay.
-
-## The six principle families
-
-All six ship. `AP-` and `PP-` are inherited into every contract; the other four are read only at a
-fork that touches them, which `map/phases.json` decides.
-
-| File | Rules | Loaded | Holds |
-|---|---|---|---|
-| `architecture.md` | `AP-*` | always, inherited | structural invariants for any product built here |
-| `product.md` | `PP-*` | always, inherited | rules owed to *this* product; ships empty, filled by `cg-warmup` or by decision harvest |
-| `design.md` | `DP-*` | at a fork | product shape, configuration, tenancy, caching |
-| `operations.md` | `OP-*` | at a fork | delivery, migration, rollback, recovery |
-| `ux.md` | `UP-*` | at a fork | interaction, disclosure, perceived responsiveness |
-| `security.md` | `SP-*` | at a fork | trust boundaries, authorization, exposure |
-
-The four fork-loaded families are never inherited: an unavoidable guide is just a rule. Every rule
-in them declares a modality, and a `guide` owes a cost clause.
-
-## Choosing your editor
-
-With no `--profile` flag, `cg init` selects `all`. Select one or combine several with a
-comma-separated list:
-
-```bash
-cg init . --profile claude,codex
-```
-
-| Profile | Additional discovery artifacts |
-|---|---|
-| `all` | union of every profile below |
-| `claude` | `CLAUDE.md` and `.claude/skills/cg-*/SKILL.md` wrappers |
-| `codex` | `AGENTS.md` |
-| `copilot` | `.github/copilot-instructions.md` |
-| `antigravity` | none; Antigravity already discovers the universal `.agents/rules/cg.md` |
-
-The governance under `.agents/` is identical for every profile — asserted by a test that compares
-every profile's scaffold byte for byte outside the discovery surface, not merely intended. A
-profile changes only the files an editor uses to discover that governance. The selection is
-recorded in
-`.agents/cg/map/profile.json`, so `verify` requires a selected artifact and ignores one that was
-never selected. Run `cg profiles` to list the names bundled by your installed version.
-
-Contributor details, including the profile schema and the verified Antigravity v2.1.1 finding, are
-in [docs/scaffolding.md](docs/scaffolding.md).
-
-## Skills
-
-A skill is a folder of Markdown telling an agent how to carry out one stage of the loop — what it
-must load, what it must produce, and what evidence closes it. They are **harness-neutral**: the
-skill states the responsibility, not the tool.
-
-```
-.agents/skills/cg-plan/
-  SKILL.md               the instructions (source, ≤500 lines)
-  agents/openai.yaml     display name, short description, default prompt (source)
-  assets/                templates the skill writes from (optional)
-  references/            detail loaded only when needed (optional)
-
-.claude/skills/cg-plan/
-  SKILL.md               generated discovery wrapper, ≤12 lines — never edit
-```
-
-Two canonical source files, plus a generated wrapper when the `claude` or `all` profile is
-selected. Claude discovers skills under `.claude/skills/`, but the skill itself must not live
-there—one canonical copy under `.agents/` stays readable by any agent.
-
-**Why the line budget.** `SKILL.md` caps at 500 lines and the wrapper at 12 because a skill is
-loaded into a context window, not read by a person. Detail that only *some* runs need belongs in
-`references/`, loaded on demand. That is progressive disclosure, and the cap is what enforces it.
-
-**How the loop runs.** `cg-plan` scopes the work and names the contracts it touches. `cg-prepare`
-loads exactly those. `cg-produce` changes code inside the boundary. `cg-sign-off` harvests the
-decisions, drains the log, and writes the durable record. `cg-unblock` is called from any of them
-when something is unspecified. The routing lives in `.agents/cg/map/routing.md` — task in, module
-contracts out — which starts as a stub because only you know your modules.
-
-**Running the loop unattended.** Every stage ends with one `Next action` block naming exactly one
-successor, which is enough for a person to follow by hand and enough for an adapter to follow
-without one. `cg-auto-run` is that adapter: it dispatches one stage, reads the block, and advances
-only while the status advances and the granted authority allows it. It defaults to `roadmap`
-authority — preparation, execution, and closure for every planned phase — and stops at planning, at
-any `cg-unblock` route, at any block carrying `Blocked by`, and at a twenty-four dispatch budget. It
-does no lifecycle work itself.
-
-### Enabling the Claude Code gate
-
-The stage boundary would be advisory on its own, so 0.2.0 ships a checkable Claude Code hook.
-`cg next` computes the owning stage from the Step queue on disk, and
-`.agents/hooks/cg-gate.mjs` refuses a lifecycle dispatch the two disagree on. The script is
-scaffolded but deliberately not registered for you:
-`.claude/settings.json` is user-owned configuration that may already contain hooks. Merge this into
-that file to activate the gate:
-
-```json
-{
-  "hooks": {
-    "PreToolUse": [{
-      "matcher": "Skill",
-      "hooks": [{ "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.agents/hooks/cg-gate.mjs\"" }]
-    }],
-    "UserPromptSubmit": [{
-      "hooks": [{ "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.agents/hooks/cg-gate.mjs\"" }]
-    }]
-  }
-}
-```
-
-The hook resolves `node_modules/.bin/cg`, then `cg` on `PATH`, or `CG_BIN`. A one-off `npx init`
-is not persistent installation, and resolution failures allow the dispatch, so confirm
-`cg --version` in the hook environment. `UserPromptSubmit` resets the boundary for the next user
-instruction. Other harnesses need their own pre-dispatch integration for mechanical enforcement.
-
-### Adding or changing a skill
-
-Your new skill is checked exactly as the seven built-in ones are — the verifier does not privilege
-its own.
-
-1. Create `.agents/skills/cg-<name>/SKILL.md`, with frontmatter naming the folder:
-
-   ```markdown
-   ---
-   name: cg-audit
-   description: Audit a module contract against the code inside its boundary. Use when a
-     contract is suspected of describing something the module no longer does.
-   ---
-   ```
-
-2. Add `agents/openai.yaml` — note the top-level `interface:` mapping:
-
-   ```yaml
-   interface:
-     display_name: "Contract Audit"
-     short_description: "Audit a contract against its folder"
-     default_prompt: "Use $cg-audit on the module I name, and report what disagrees."
-   ```
-
-3. Add the catalog link in `.agents/cg/contract.md` — `[cg-audit](../skills/cg-audit/SKILL.md)`.
-4. Run `cg sync` — it writes the `.claude/` wrapper when the recorded profile selects Claude.
-5. Run `cg verify`.
-
-`cg verify` then holds you to all of this:
-
-| Check | Rule |
-|---|---|
-| folder name | starts `cg-`, lowercase-kebab |
-| `SKILL.md` size | ≤ 500 lines |
-| frontmatter | exactly `name` + `description`, one-line plain scalars |
-| `name` | identical to the folder name |
-| `description` | present, ≤ 1024 characters |
-| catalog | linked from `.agents/cg/contract.md` |
-| `agents/openai.yaml` | present, with all three interface keys |
-| `short_description` | 25–64 characters |
-| `default_prompt` | names `$cg-<name>` |
-| `.claude/` wrapper | when Claude is selected: present, ≤ 12 lines, byte-identical to generated |
-| orphan wrappers | when Claude is selected: a wrapper with no `.agents/` source fails |
-
-So the answer to *"how do I test a skill I just wrote?"* is `cg verify`, and it runs in the build
-you wired above. What it proves is that the skill is **well-formed and discoverable** — that an
-agent can find it, load it, and that its wrapper matches its source. It cannot prove the
-instructions are *good*; that shows up in whether the loop produces the evidence the skill claims.
-
-## Testing your changes
-
-**If you changed governance in your own repo** — rules, contracts, skills, the map:
-
-```bash
-cg verify && cg sync --check
-```
-
-That is the whole test. `verify` catches wrong; `sync --check` catches stale.
-
-`cg verify` proves the repository is internally well-formed. It cannot prove an external editor
-actually discovers the files it claims to support. When developing Contract Graph itself, create
-a disposable editor-specific scaffold and inspect it in the real editor:
-
-```bash
-./cg try claude
-# Portable equivalent, including Windows:
-npm run try -- claude
-```
-
-This recreates `tmp/claude`, runs `init → sync → verify`, and prints the artifacts Claude reads.
-Use `./cg try codex`, `copilot`, `antigravity`, or `all` for the other profiles.
-
-**If you changed Contract Graph itself** — a runtime script or any scaffolded deliverable under
-`src/`:
-
-```bash
-npm test
-```
-
-The package source layout is explicit about what runs and what lands in a repository:
-
-```
-src/
-  scripts/       CLI implementation, loader, sync, verifier, module discovery, dev helper
-  principles/    flat: architecture, product, design, operations, ux, security
-  governance/    contract.md, workflow.md, and map/
-  skills/        canonical cg-* skill trees
-  scaffold/      rules/, editor profile configs, docs/ seeds, and the starter module tree
-bin/cg.js        executable shim importing src/scripts/cli.js
-```
-
-94 tests include fail-on-demand cases for every verifier check. The suite's rule, stated at the top of
-[test/verify.test.js](test/verify.test.js): every negative case is load-bearing. A suite that only
-proves the green path passes is indistinguishable from a verifier that checks nothing — so each
-test mutates one thing in an otherwise-green repository and asserts that one specific check fires.
-
-Adding a check to the verifier means adding a test that fails without it. Prove that, don't assume
-it — break the check on purpose and confirm your new test goes red:
-
-```bash
-npm test    # comment out the new check first; the new test must fail
-```
-
-If it still passes, the test is decorative and you have learned that before shipping it rather than
-after. This is the same falsifiability discipline the framework asks of your detectors, applied to
-its own.
-
-CI runs both layers on Node 18/20/22 — the unit suite, then a scaffold-and-verify self-check that
-proves a freshly initialised repository is green. See
-[.github/workflows/ci.yml](.github/workflows/ci.yml).
-
-## Running your own build
-
-Contract Graph is Apache-2.0 and the interesting parts — the principles, the skills, the phase map
-— are Markdown and JSON you are meant to edit. This is how you run an edited copy against a real
-repository before anything is published, so you can adjust the workflow and then actually use it.
-
-Nothing here needs the package to exist on npm.
-
-### 1. Clone, and confirm the baseline is green
-
-```bash
-git clone https://github.com/sarada-io/contract-graph.git
-cd contract-graph
-npm test
-```
-
-No dependencies to install — the suite runs on Node 18.17+ and nothing else. If it is not green
-before you change anything, fix that first; every later signal depends on it.
-
-### 2. Make your changes
-
-Everything a repository receives lives under `src/`:
-
-| You want to change | Edit |
-|---|---|
-| a binding rule | `src/principles/architecture.md` or `product.md` |
-| a fork-loaded rule | `src/principles/{design,operations,ux,security}.md` |
-| which phase reads which family | `src/governance/map/phases.json` |
-| what a skill instructs | `src/skills/cg-*/SKILL.md` |
-| the constitution or workflow | `src/governance/{contract,workflow}.md` |
-| what `cg init` writes, and where | `SCAFFOLD_MAPPING` in `src/scripts/init.js` |
-
-Re-run `npm test` as you go. The suite is fail-on-demand: if you add a rule without its
-enforcement-map row, or a file the mapping does not cover, it fails by name rather than in review.
-
-### 3. Build a tarball
-
-```bash
-npm run pack
-```
-
-Writes `build/contract-graph-<version>.tgz` — the exact artifact a published install would deliver.
-`build/` is gitignored.
-
-Check what it contains before installing it, especially if you added files:
-
-```bash
-npm pack --dry-run
-```
-
-### 4. Install it
-
-**Globally** — closest to a published install, and the option that also tests your packaging:
-
-```bash
-npm i -g ./build/contract-graph-*.tgz
-cg --help
-```
-
-Undo with `npm rm -g contract-graph`.
-
-**Without installing** — no global state, good while iterating:
-
-```bash
-npx /absolute/path/to/contract-graph <command>      # resolves the bin entry like npm would
-node /absolute/path/to/contract-graph/bin/cg.js <command>   # no npx resolution at all
-```
-
-**Avoid `npm link` for this.** It symlinks your working tree, so an edit mid-test silently changes
-behaviour and you lose the signal you came for — whether the *artifact* is right.
-
-### 5. Run it against a repository
-
-From the root of the repository you are governing:
-
-```bash
-cg init .        # add --docs <dir> if docs/ exists and you want them elsewhere
-```
-
-That is the whole sequence. `init` copies the sources, runs `sync` to generate the derived
-artifacts, runs `verify`, and prints the one next action — because copying without generating
-leaves a scaffold that fails its own verifier, and that is not a state worth handing anybody.
-
-It exits **1** if the result does not verify, so a broken scaffold cannot be mistaken for a good one.
-
-On a repository that already has code it skips the starter module rather than inventing one, lists
-the module roots nothing governs yet, and points you at the `cg-warmup` skill.
-
-**The `cg-*` skills only exist in the repository after `init` has run** — it generates the
-`.claude/skills/` wrappers — so open the repo in your editor afterwards, not before.
-
-### 6. Verify
-
-```bash
-npm test                    # in the contract-graph clone: 94 fail-on-demand cases
-cg verify                   # in the target repo: contracts, skills, principles, phase map
-cg sync --check             # nothing generated is stale or hand-edited
-cg modules                  # exits 1 while any module root is unmapped
-```
-
-To confirm your edited skill actually reached the target repository rather than a cached copy:
-
-```bash
-diff src/skills/cg-plan/SKILL.md <target>/.agents/skills/cg-plan/SKILL.md
-```
-
-They must be identical. `.claude/skills/cg-plan/SKILL.md` is a generated wrapper and will not
-match — `cg verify` checks that separately, and fails if it was hand-edited.
-
-Finally, prove an editor really discovers what you changed. `cg verify` cannot do this — it
-verifies the repository, not the tool reading it:
-
-```bash
-./cg try claude          # or codex, copilot, antigravity, all
-```
-
-This recreates `tmp/<target>`, runs `init → sync → verify`, and prints exactly which artifacts that
-editor reads. Open `tmp/claude` in the real editor and check your skill is offered.
-
-### Publishing your own fork
-
-Change `name` in `package.json` before you publish anywhere — `contract-graph` is taken. Nothing
-else in the package assumes the name.
-
-## Decisions become rules
-
-Unspecified detail gets decided from the principles and logged as an assumption in
-`docs/plans/decision-log.md` — scaffolded for you, with the entry shape already in it — not
-escalated to a human mid-task. At a phase close, resolved decisions are triaged into five
-destinations:
-
-| Destination | For |
-|---|---|
-| module `contract.md` | scoped to one module's boundary — **most decisions land here** |
-| `AP` | universal structural invariants |
-| `PP` | invariants owed to your product's market or shape |
-| `DP` | topic-scoped truths, marked `invariant` or `guide` |
-| drop | one-offs — a bucket name, a version pin, a retirement |
-
-Then the decision log drains. Its steady state is *open questions*, not everything ever settled, so
-its size tracks how much is undecided rather than how long you've been building. Nothing leaves
-silently: a promoted decision becomes a rule, and a dropped one is recorded with its reason in the
-phase-close manifest that is archived with the phase.
-
-`cg harvest` enforces that hand-off — the one place the framework could otherwise lose governance
-without noticing. It checks cohort membership in both directions, that every promotion owes what
-its destination owes (a detector for `AP`/`PP`, modality and cost or detector for `DP`), that no
-promoted rule cites the decision or plan it came from, and that **every dropped decision carries a
-reason**. A resolved decision is binding authority until it is promoted or dropped, so one that
-vanishes takes a rule the repository was following with it.
-
-A promoted rule states itself in full and **never cites the decision that produced it** — permanent
-governance cannot take its authority from a transient file. The reasoning goes in the amendment
-ledger, which requires you to write down what the rule **costs**.
+- [Vision](docs/vision.md) — the complete concept, origin, causal model, and next structural work.
+- [Contracts](docs/contracts.md) — folder contracts, code contracts, abstraction, and current limits.
+- [Lifecycle](docs/lifecycle.md) — how the seven skills move work through the graph.
+- [Contributing](CONTRIBUTING.md) — tests and contribution expectations.
 
 ## Requirements
 
-Node 18.17+. No runtime dependencies.
+Node.js 18.17 or newer. No runtime dependencies.
 
-## Status
-
-Early. The core — contracts, inheritance, skills, the six principle families, verification — is built and
-tested. The code-level contract tree is documented but its drift check is not built, so verified
-composition graphs and parallel execution across a contract remain designed-not-built — see
-[docs/contracts.md](docs/contracts.md) and [docs/roadmap.md](docs/roadmap.md).
-
-## Licence
-
-Apache-2.0.
+## Licence 
+Apache-2.0
+And created by [Sarada.io](https://sarada.io).
