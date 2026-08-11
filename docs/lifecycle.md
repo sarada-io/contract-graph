@@ -1,13 +1,14 @@
 # Lifecycle
 
-Six skills, one `cg-` namespace: five lifecycle stages and one you run once. They specify responsibilities and evidence, not a particular
-coding agent — a repository supplies its own contract hierarchy, decision log, verification
-command, and document locations.
+Seven skills, one `cg-` namespace: four lifecycle stages and three supporting skills. They specify
+responsibilities and evidence, not a particular coding agent — a repository supplies its own
+contract hierarchy, decision log, verification command, and document locations.
 
-**Their names sort into their sequence.** `cg-plan` → `cg-prepare` → `cg-produce` → `cg-sign-off`
-is alphabetical order, so an editor listing the namespace shows the workflow. The two that follow
-are not stages, and sort after it for that reason: `cg-unblock` is entered from any of the four,
-and `cg-warmup` is run once at adoption and never again.
+The stage sequence is `cg-plan` → `cg-prepare` → `cg-produce` → `cg-sign-off`. Do not infer that
+sequence from a skill picker: editors commonly rank skills by usage rather than filename. Every
+stage ends with a machine-readable `Next action` route instead. The three supporting skills are
+outside the sequence: `cg-unblock` is entered from any stage, `cg-auto-run` follows stage routes
+under explicit authority, and `cg-warmup` is run once at brownfield adoption.
 
 | Skill | Responsibility |
 |---|---|
@@ -16,7 +17,8 @@ and `cg-warmup` is run once at adoption and never again.
 | `cg-produce` | Run the earliest ready Step; deliver implementation, tests, contract updates, and detectors as one independently valid change; recalculate the queue; continue serially. |
 | `cg-sign-off` | Verify every prepared Step completed through a dependency-safe history; drive current-phase defects through corrective Steps; harvest decisions; close only on a green gate. Owns the durable record too — design records, product and operator guidance, and diagrams — and is entered standalone when only documentation is needed. Never owns contract correctness. |
 | `cg-unblock` | Govern forks across the lifecycle: apply contract-backed or reversible defaults, record assumptions, log blocked Steps, keep independent work moving. |
-| `cg-warmup` | **Once, at adoption.** Discover a existing repository's real module roots, write a contract per module from the code that is there, fill the inheritance and routing maps, and resolve every principle finding to a detector, a proposed exception, or a corrective Step. Raises what it cannot settle as `DL-02` entries in the decision log rather than asking in chat. Never scores, never edits behaviour. |
+| `cg-auto-run` | **Opt-in.** Dispatch one stage at a time, follow its `Next action` only while measured state advances within the granted authority, and stop on blockers, `cg-unblock`, failed gates, or the dispatch budget. It performs no lifecycle stage itself. |
+| `cg-warmup` | **Once, at adoption.** Discover an existing repository's real module roots, write a contract per module from the code that is there, fill the inheritance and routing maps, and resolve every principle finding to a detector, a proposed exception, or a corrective Step. Raises what it cannot settle as `DL-02` entries in the decision log rather than asking in chat. Never scores, never edits behaviour. |
 
 ```mermaid
 flowchart TD
@@ -67,6 +69,30 @@ history is `1 → 3 → 2 → 4`. No dependency was reordered: `3` never consume
 This is continuous serial execution, not parallel execution. It avoids converting coordination
 ambiguity into integration ambiguity while preventing one localized decision from idling unrelated
 work.
+
+## Queue state is on disk
+
+Each programme keeps `roadmap.md` and one `<phase>_detailed_preparation.md` queue under
+`docs/plans/<programme>/`. `cg next` selects the owning stage from the queue's `## Step <n>`
+sections; `cg residue` reports planning artifacts no roadmap claims. See the root README for the
+complete layout.
+
+## Stage boundaries are explicit
+
+A stage completes its own responsibility and returns its `Next action`; it does not invoke the
+next stage merely because the route is obvious. `cg-auto-run` is the one exception, because its
+invocation carries an authority level, a dispatch budget, and an on-disk ledger.
+
+For Claude Code, the optional gate compares a requested skill with `cg next --for <skill>`.
+`cg init` ships the command but does not edit user-owned hook settings; activation and command
+resolution are documented in the [root README](../README.md#enabling-the-claude-code-gate).
+
+## Unattended traversal is bounded
+
+`cg-auto-run` is opt-in. It defaults to fully planned roadmap authority, checkpoints before every
+dispatch, and stops on blockers, `cg-unblock`, failed gates, or its twenty-four-dispatch budget.
+The skill itself defines the narrower `queue` and `phase` authorities and the wider `programme`
+authority; the README gives the user-facing summary.
 
 ## Contract updates belong to execution
 

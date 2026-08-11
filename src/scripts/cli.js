@@ -17,6 +17,10 @@ import { availableProfiles, loadProfileSelection } from "./profiles.js";
 import { sync } from "./sync.js";
 import { verify } from "./verify.js";
 
+const VERSION = JSON.parse(
+  fs.readFileSync(new URL("../../package.json", import.meta.url), "utf8"),
+).version;
+
 const USAGE = `cg — Contract Graph
 
 Usage:
@@ -40,6 +44,7 @@ Options:
   --check           report what init or sync would write; change nothing
   --yes             accept replacing framework core without being asked (init only)
   --warn            report findings and exit 0 (verify only)
+  --version         print the installed package version
   -h, --help        show this message
 `;
 
@@ -233,6 +238,10 @@ async function main(argv) {
   const [command, ...rest] = argv;
   if (!command || command === "-h" || command === "--help" || command === "help") {
     process.stdout.write(USAGE);
+    return 0;
+  }
+  if (command === "--version") {
+    process.stdout.write(`${VERSION}\n`);
     return 0;
   }
 

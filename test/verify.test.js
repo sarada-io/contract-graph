@@ -389,6 +389,18 @@ test("[9] a missing core skill fails", () => {
   assertFails(dir, 9, "core skill removed");
 });
 
+test("the public lifecycle guide catalogs every core skill", () => {
+  const lifecycle = fs.readFileSync(
+    path.join(SOURCE_ROOT, "..", "docs", "lifecycle.md"),
+    "utf8",
+  );
+  const rows = lifecycle.match(/^\| `cg-[^`]+` \|/gm) ?? [];
+  assert.equal(rows.length, CORE_CG_SKILLS.length, "the public catalog must have one row per core skill");
+  for (const name of CORE_CG_SKILLS) {
+    assert.ok(lifecycle.includes(`| \`${name}\` |`), `${name} must have a catalog row`);
+  }
+});
+
 // ----------------------------------------------------- fork principles
 
 test("[10] a guide carrying an enforcement-map row fails", () => {
@@ -825,6 +837,18 @@ test("a hand-written root file with no generated block is not an orphan", () => 
 });
 
 // ----------------------------------------------------------------- cli
+
+test("the CLI reports the installed package version", () => {
+  const packageJson = JSON.parse(
+    fs.readFileSync(path.join(SOURCE_ROOT, "..", "package.json"), "utf8"),
+  );
+  const output = execFileSync(
+    process.execPath,
+    [path.join(SOURCE_ROOT, "..", "bin", "cg.js"), "--version"],
+    { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] },
+  );
+  assert.equal(output, `${packageJson.version}\n`);
+});
 
 /**
  * A retired flag must fail, not be ignored.
@@ -2079,11 +2103,12 @@ test("no shipped file references a pre-rename governance path", () => {
 /**
  * `files` includes `src`, so anything added under it reaches users by default. `dev.js` is
  * repository tooling — it drives `./cg try`, reads `tmp/`, and has no meaning inside an
- * installed package — so it is excluded by name. This asserts the exclusion holds and that
- * excluding it did not take the scaffold sources with it, which is the way a `files`
- * negation usually goes wrong.
+ * installed package — so it is excluded by name. The maintainer release runbook is private
+ * repository process rather than consumer documentation and is excluded too. This asserts both
+ * exclusions hold and that they did not take the scaffold sources with them, which is the way a
+ * `files` negation usually goes wrong.
  */
-test("the published tarball ships the scaffold sources and no dev tooling", () => {
+test("the published tarball ships consumer sources and no maintainer tooling", () => {
   const npm = process.platform === "win32" ? "npm.cmd" : "npm";
   const output = execFileSync(npm, ["pack", "--dry-run", "--json"], {
     cwd: path.resolve(import.meta.dirname, ".."),
@@ -2093,6 +2118,7 @@ test("the published tarball ships the scaffold sources and no dev tooling", () =
   const shipped = JSON.parse(output)[0].files.map((entry) => entry.path);
 
   assert.ok(!shipped.includes("src/scripts/dev.js"), "dev tooling must not ship");
+  assert.ok(!shipped.includes("docs/RELEASING.md"), "the maintainer runbook must not ship");
   for (const required of [
     "bin/cg.js",
     "src/scripts/cli.js",

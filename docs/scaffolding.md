@@ -6,25 +6,33 @@ This is the contributor guide to changing what `cg init` writes. The executable 
 
 ## Source mapping
 
-| Package source | Repository target | Mode |
-|---|---|---|
-| `src/principles/*.md` | `.agents/cg/principles/` | always — all six families |
+| Package source | Repository target | Mode | Install policy |
+|---|---|---|---|
+| `src/principles/*.md` | `.agents/cg/principles/` | always — all six families | preserve |
+| `src/governance/` | `.agents/cg/` | always | preserve |
+| `src/skills/` | `.agents/skills/` | always | replace |
+| `src/scaffold/hooks/` | `.agents/hooks/` | always | replace |
+| `src/scaffold/rules/` | `.agents/rules/` | always | preserve; `sync` owns the generated content |
+| `src/scaffold/module/` | `src/` | greenfield starter only | preserve |
+| `src/scaffold/docs/plans/` | `docs/plans/` | always | preserve |
+| `src/scaffold/docs/design/` | `docs/design/` | always | preserve |
+| `src/scaffold/docs/guides/` | `docs/guides/` | always | preserve |
+| `src/scaffold/profiles/` | nowhere | read by `init`, never copied | n/a |
 
-| `src/governance/` | `.agents/cg/` | always |
-| `src/skills/` | `.agents/skills/` | always |
-| `src/scaffold/rules/` | `.agents/rules/` | always |
-| `src/scaffold/module/` | `src/` | always |
-| `src/scaffold/docs/plans/` | `docs/plans/` | always |
-| `src/scaffold/docs/design/` | `docs/design/` | always |
-| `src/scaffold/docs/guides/` | `docs/guides/` | always |
-| `src/scaffold/profiles/` | nowhere | read by `init`, never copied |
+The rules are directory-level so a new asset needs no per-file manifest edit. `replace` updates
+framework core after showing the plan; `preserve` never overwrites repository context. That
+distinction makes `cg init` both the install and upgrade command.
 
-The rules are directory-level deliberately. Adding a skill reference or asset should not require a
-second per-file manifest edit. The mapping selects a subtree, preserves its relative paths, and
-retains the installer’s never-overwrite behavior.
+The starter module is written only when the repository has no detected project content. A
+brownfield install leaves the example `src/` tree out and clears its example inheritance entry so
+`cg-warmup` can map the real modules instead.
+
+Scaffolding `cg-gate.mjs` does not activate it: hook settings remain user-owned. Registration is
+documented once, in the root README.
 
 `init` also writes `.agents/cg/map/profile.json` with the selected editor profiles and the docs
-root. `sync` and `verify` resolve that record, so an absent editor artifact is distinguishable from
+root, records installed-file baselines in `manifest.json`, and appends ignore rules for auto-run
+ledgers. `sync` and `verify` use the profile record to distinguish a missing selected artifact from
 an editor that was never selected.
 
 ## The two mapping detectors
@@ -119,12 +127,12 @@ non-interactive, which is what keeps it usable from tests and scripts.
 ## What ships in the package
 
 `files` lists `bin`, `src`, `docs`, `README.md`, and `LICENSE`, so a new file under `src/` reaches
-users by default. The one exclusion is `!src/scripts/dev.js`, the `./cg try` helper: it is
-repository tooling reached only through `./cg` and `npm run try`, neither of which ships.
+users by default. Two exclusions keep maintainer-only material out: `!src/scripts/dev.js`, the
+`./cg try` helper, and `!docs/RELEASING.md`, the private publishing runbook.
 
-`the published tarball ships the scaffold sources and no dev tooling` runs `npm pack --dry-run` and
-asserts both halves — the exclusion holds, and it did not take the scaffold sources with it, which
-is how a `files` negation usually fails.
+`the published tarball ships consumer sources and no maintainer tooling` runs
+`npm pack --dry-run` and asserts both halves — the exclusions hold, and they did not take the
+scaffold sources with them, which is how a `files` negation usually fails.
 
 ## Worked example: Antigravity
 

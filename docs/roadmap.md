@@ -19,49 +19,29 @@ source. Verification and governance exist to keep that graph trustworthy.
   declaration is not yet checked against the implementation.
 - Brownfield warmup that descends below build-manifest modules, writing sub-module contracts where
   a module holds more than one boundary and declaring each child in its parent.
-- Three rule families with the per-rule modality marker, and a verifier that enforces both
+- Four fork-loaded rule families with the per-rule modality marker, and a verifier that enforces both
   directions (an `invariant` owes exactly one enforcement-map row; a `guide` must have none).
 - Enforcement-map coverage for architecture and product rules: every `AP-`/`PP-` rule owes exactly
   one row, and no row may cite a rule ID that no principles file defines.
 - Folder-scoped contracts with generated rule inheritance and drift rejection.
 - Contract self-sufficiency, machine-checked: no permanent contract may cite a transient plan.
-- Six lifecycle skills with a standardized next-action route, plus `cg-auto-run`, an opt-in
-  adapter that follows those routes without returning each hop to the user. Names sort in
-  workflow order for readers of the source; no editor orders its skill picker that way, so
-  sequence is carried by the `Next action` route rather than by naming.
+- Seven skills: four lifecycle stages with a standardized next-action route, plus `cg-unblock`,
+  brownfield-only `cg-warmup`, and `cg-auto-run`, an opt-in adapter that follows stage routes
+  without returning each hop to the user. Sequence is carried by the `Next action` route rather
+  than by filename or editor ordering.
 - Decision harvest: triage into five destinations, batch acceptance at phase close, drain.
 - `cg init` / `next` / `residue` / `sync` / `verify` / `modules` / `harvest` / `profiles`, with a
   fail-on-demand test suite. `cg init` is idempotent and is the upgrade path: framework core is
   replaced on every run, the repository's own context under `.agents/cg/` never is.
 - `cg next` computes the owning stage from the Step queue on disk rather than from the last thing
-  a model said, and a `PreToolUse` gate refuses a dispatch the two do not agree on — the
-  enforcement half of `cg-auto-run`.
+  a model said. The shipped Claude Code `PreToolUse` command refuses a dispatch the two do not
+  agree on once the repository registers it; `cg init` does not edit user-owned hook settings.
 - `cg residue` names plan documents nothing links to any more, by reachability from the roadmap,
   the decision log, and the README. The disposable stack is checked rather than trusted.
 - Selectable editor discovery profiles for Claude Code, Codex, GitHub Copilot, Antigravity, and
   their `all` union, persisted and verified independently of universal governance.
 
 ## Designed, not built
-
-**Mechanical enforcement of `cg-auto-run` — 0.2.0.** The adapter's stop conditions are instructions,
-and instructions are advisory: a model that ignores "never follow a block carrying `Blocked by`"
-produces exactly the unattended run the stop condition exists to prevent. Nothing currently proves
-the rule was obeyed, and an auto-advance loop is the one place in the framework where being wrong
-compounds rather than surfaces.
-
-Two pieces, in order:
-
-- `cg next` — a state query that reads the roadmap, the prepared queue, and the decision log from
-  disk and prints the stage that owns the next move. Today the successor comes from the model's
-  reading of the previous response; from disk it is checkable, and it is the input every enforcement
-  mechanism needs.
-- A stop-hook adapter for Claude Code that parses the emitted `Next action` block and refuses to
-  advance when the status does not. Harness-specific by nature, so it is an addition to the
-  markdown contract rather than a replacement for it — Codex, Copilot, and Antigravity keep the
-  advisory version until each grows an equivalent.
-
-Until both land, `cg-auto-run` is honest about what it is: a well-specified convention that a
-cooperating model follows, and the run ledger on disk is the only durable evidence of what it did.
 
 **Machine-readable composition edges.** A contract naming its children, checkable against what the
 implementation actually injects. Interfaces alone recover none of the composition graph — every

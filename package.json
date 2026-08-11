@@ -1,6 +1,6 @@
 {
   "name": "contract-graph",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A traversable software context graph for coding agents: route from repository to module to sub-module before reading code.",
   "type": "module",
   "bin": {
@@ -11,6 +11,7 @@
     "src",
     "!src/scripts/dev.js",
     "docs",
+    "!docs/RELEASING.md",
     "README.md",
     "LICENSE"
   ],

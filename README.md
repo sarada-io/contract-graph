@@ -24,6 +24,10 @@ lifecycle skills, and retires `--design`/`--packs` in favour of the phase map. F
 [the 0.1.0 migration procedure](docs/migration-0.1.0.md) rather than overlaying the new scaffold
 in place.
 
+Upgrading from 0.1.0? Version 0.2.0 supports an in-place re-run that replaces framework-owned
+skills and hooks while preserving your contracts, principles, maps, and plans. Review the
+[0.2.0 migration procedure](docs/migration-0.2.0.md), especially if a programme is active.
+
 ---
 
 ## What it actually does
@@ -93,7 +97,7 @@ consistent. The detectors themselves live in your build, written by you.
     cg-sign-off/
     cg-unblock/           entered from any stage, not a stage itself
     cg-warmup/            run once at adoption, then never again
-  hooks/cg-gate.mjs       refuses a dispatch the Step queue disagrees with (source)
+  hooks/cg-gate.mjs       Claude hook command; register it to gate lifecycle dispatch (source)
   rules/cg.md             shared agent pointer (generated)
 .claude/skills/cg-*/      one wrapper per skill, when the claude/all profile is selected (generated)
 AGENTS.md                 Codex root entry point (codex/all)
@@ -230,6 +234,7 @@ design records, guides, and diagrams — and can be entered for documentation al
 
 | Command | Does |
 |---|---|
+| `cg --version` | print the installed package version |
 | `cg init [dir] --profile x,y --docs dir` | **the one command** — scaffold, generate, verify, and name the next action. Also the upgrade path: re-run it to take a new release |
 | `cg init --check` / `--yes` | report what would be replaced and change nothing / accept the replacement without being asked |
 | `cg next [dir]` | what runs next, computed from the Step queue on disk; `--for <skill>` exits 0 only if that dispatch agrees |
@@ -472,10 +477,33 @@ authority — preparation, execution, and closure for every planned phase — an
 any `cg-unblock` route, at any block carrying `Blocked by`, and at a twenty-four dispatch budget. It
 does no lifecycle work itself.
 
-That would be advisory on its own, so it is checked rather than trusted. `cg next` computes the
-owning stage from the Step queue on disk, and `.agents/hooks/cg-gate.mjs` — a `PreToolUse` hook —
-refuses a dispatch the two disagree on. The model's account of where the lifecycle is and the
-repository's account must agree before anything advances.
+### Enabling the Claude Code gate
+
+The stage boundary would be advisory on its own, so 0.2.0 ships a checkable Claude Code hook.
+`cg next` computes the owning stage from the Step queue on disk, and
+`.agents/hooks/cg-gate.mjs` refuses a lifecycle dispatch the two disagree on. The script is
+scaffolded but deliberately not registered for you:
+`.claude/settings.json` is user-owned configuration that may already contain hooks. Merge this into
+that file to activate the gate:
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [{
+      "matcher": "Skill",
+      "hooks": [{ "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.agents/hooks/cg-gate.mjs\"" }]
+    }],
+    "UserPromptSubmit": [{
+      "hooks": [{ "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.agents/hooks/cg-gate.mjs\"" }]
+    }]
+  }
+}
+```
+
+The hook resolves `node_modules/.bin/cg`, then `cg` on `PATH`, or `CG_BIN`. A one-off `npx init`
+is not persistent installation, and resolution failures allow the dispatch, so confirm
+`cg --version` in the hook environment. `UserPromptSubmit` resets the boundary for the next user
+instruction. Other harnesses need their own pre-dispatch integration for mechanical enforcement.
 
 ### Adding or changing a skill
 

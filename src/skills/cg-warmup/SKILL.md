@@ -11,7 +11,7 @@ description with the one you actually have.
 **Run this once.** After it, the lifecycle skills — `cg-plan`, `cg-prepare`, `cg-produce`,
 `cg-sign-off` — have real contracts to work against, and you never need this skill again.
 
-**Never delete it.** `cg verify` requires all six skills to be present and fails without
+**Never delete it.** `cg verify` requires all seven skills to be present and fails without
 them, and a repository that adopts a second module tree later needs this one again. Finishing
 is not the same as removing the instructions for finishing.
 
