@@ -693,21 +693,88 @@ function checkWarmupCompletion(repoRoot, folders, docsRoot, advise) {
   // available, and invisible until now: a run reported success with eleven modules mapped and
   // the shipped principles file byte-for-byte unchanged.
   const product = path.join(principlesRoot(repoRoot), "product.md");
-  if (exists(product) && !PRINCIPLE_ID.test(read(product).split("```").filter((_, i) => i % 2 === 0).join(""))) {
+  // Computed once and reused below. `PRINCIPLE_ID` is a global regex, so a second `.test` on the
+  // same source answers from wherever the first one stopped — the bug that made a fresh scaffold
+  // look harvested. Prose only: an example rule ID inside a fence is documentation, not a rule.
+  const harvested =
+    exists(product) &&
+    PRINCIPLE_ID.test(read(product).split("```").filter((_, i) => i % 2 === 0).join(""));
+  PRINCIPLE_ID.lastIndex = 0;
+
+  if (exists(product) && !harvested) {
     advise(
       "[0] principles/product.md defines no rules although folders are mapped — `cg-warmup` " +
         "harvests this repository's product rules from its code, so an untouched file means that " +
         "step was skipped, not that the repository owes none",
     );
   }
-  PRINCIPLE_ID.lastIndex = 0;
 
+  // The same file is required and then unwanted, and which one depends on whether warmup has
+  // finished. Asking only "is it present?" entrenched it: a completed adoption kept a resume log
+  // forever because removing it made the verifier complain, which is the opposite of a stack of
+  // documents that is meant to be consumed and discarded.
   const findings = path.join(repoRoot, docsRoot, "plans", "warmup-findings.md");
-  if (!exists(findings)) {
+  const complete =
+    harvested && Object.values(folders).every((entry) => exists(path.join(repoRoot, entry.contract)));
+
+  if (!exists(findings) && !complete) {
     advise(
       `[0] ${docsRoot}/plans/warmup-findings.md is absent although ${Object.keys(folders).length} ` +
         "folder(s) are mapped — `cg-warmup` records each unit's findings there as it goes, so an " +
         "absent file means the loop kept its state in context and a break would restart it",
+    );
+  } else if (exists(findings) && complete) {
+    advise(
+      `[0] ${docsRoot}/plans/warmup-findings.md survives a finished warmup — it is a resume log, ` +
+        "not a record: every mapped folder has a contract and the principles are harvested, so " +
+        "the file has nothing left to resume. Delete it; `cg-warmup` §12 owns this disposal",
+    );
+  }
+
+  adviseUnarchivedClosures(advise, repoRoot, docsRoot);
+}
+
+/**
+ * A phase whose sign-off record exists but whose preparation is still in the active tree.
+ *
+ * `cg next` reads Step states and nothing else, so it cannot tell "every Step is Complete, ready
+ * to close" from "closed days ago, never archived" — both look identical. Left in place, a closed
+ * phase keeps `cg next` naming `cg-sign-off`, and `cg-auto-run` will dutifully dispatch it again
+ * on a programme that is already signed off. Archiving is the signal, which makes forgetting it a
+ * correctness problem rather than untidiness.
+ */
+function adviseUnarchivedClosures(advise, repoRoot, docsRoot) {
+  const plans = path.join(repoRoot, docsRoot, "plans");
+  if (!exists(plans)) return;
+
+  const found = [];
+  const walk = (dir) => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true }).sort((a, b) =>
+      a.name.localeCompare(b.name),
+    )) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        if (entry.name !== "archive") walk(full);
+        continue;
+      }
+      if (entry.name === "programme-sign-off.md") {
+        found.push({ file: rel(repoRoot, full), what: "the programme" });
+        continue;
+      }
+      const phase = /^(.*)_sign-off\.md$/.exec(entry.name)?.[1];
+      if (phase && exists(path.join(dir, `${phase}_detailed_preparation.md`))) {
+        found.push({ file: rel(repoRoot, full), what: `phase \`${phase}\`` });
+      }
+    }
+  };
+  walk(plans);
+
+  for (const { file, what } of found) {
+    advise(
+      `[0] ${file} records a closed phase that is still in the active plans tree — ${what} is ` +
+        "signed off but never archived. `cg next` reads Step states only, so it cannot tell this " +
+        "from work that is ready to close: it will keep naming `cg-sign-off`, and `cg-auto-run` " +
+        `will dispatch it again. Move the records to ${docsRoot}/plans/archive/`,
     );
   }
 }

@@ -20,6 +20,7 @@ import { checkHarvest } from "../src/scripts/harvest.js";
 import { detectModuleRoots, moduleCoverage, subBoundaryCount } from "../src/scripts/modules.js";
 import { renderAgentRule } from "../src/scripts/model.js";
 import { next, permits } from "../src/scripts/next.js";
+import { residue } from "../src/scripts/residue.js";
 import { sync } from "../src/scripts/sync.js";
 import { CORE_CG_SKILLS, verify } from "../src/scripts/verify.js";
 import {
@@ -204,7 +205,7 @@ for (const [profile, expected] of Object.entries(PROFILE_ARTIFACTS)) {
  *
  * Without this, a profile that started writing its own governance would pass every other
  * test — each profile's own artifacts would still be exactly what it declares — while the
- * neutrality promise in README and docs/scaffolding.md quietly stopped being true.
+ * profile boundary quietly stopped being true.
  */
 test("every profile scaffolds byte-identical universal governance", () => {
   const universal = (profile) => {
@@ -386,6 +387,18 @@ test("[9] a missing core skill fails", () => {
   fs.rmSync(path.join(dir, ".agents", "skills", "cg-sign-off"), { recursive: true });
   fs.rmSync(path.join(dir, ".claude", "skills", "cg-sign-off"), { recursive: true });
   assertFails(dir, 9, "core skill removed");
+});
+
+test("the public lifecycle guide catalogs every core skill", () => {
+  const lifecycle = fs.readFileSync(
+    path.join(SOURCE_ROOT, "..", "docs", "lifecycle.md"),
+    "utf8",
+  );
+  const rows = lifecycle.match(/^\| `cg-[^`]+` \|/gm) ?? [];
+  assert.equal(rows.length, CORE_CG_SKILLS.length, "the public catalog must have one row per core skill");
+  for (const name of CORE_CG_SKILLS) {
+    assert.ok(lifecycle.includes(`| \`${name}\` |`), `${name} must have a catalog row`);
+  }
 });
 
 // ----------------------------------------------------- fork principles
@@ -824,6 +837,18 @@ test("a hand-written root file with no generated block is not an orphan", () => 
 });
 
 // ----------------------------------------------------------------- cli
+
+test("the CLI reports the installed package version", () => {
+  const packageJson = JSON.parse(
+    fs.readFileSync(path.join(SOURCE_ROOT, "..", "package.json"), "utf8"),
+  );
+  const output = execFileSync(
+    process.execPath,
+    [path.join(SOURCE_ROOT, "..", "bin", "cg.js"), "--version"],
+    { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] },
+  );
+  assert.equal(output, `${packageJson.version}\n`);
+});
 
 /**
  * A retired flag must fail, not be ignored.
@@ -1918,7 +1943,7 @@ test("init round trip writes exactly the canonical mapped file set", () => {
       expected.push(path.posix.join(rule.target, within));
     }
   }
-  expected.push(PROFILE, MANIFEST);
+  expected.push(PROFILE, MANIFEST, ".gitignore");
 
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-round-trip-"));
   init(dir, {});
@@ -2042,12 +2067,6 @@ test("no shipped file references a pre-rename governance path", () => {
     "CONTRIBUTING.md",
     "package.json",
   ];
-  /**
-   * The migration guide's job is to name what was renamed, so it is the one shipped file
-   * allowed to carry obsolete names. Exempt it by path rather than by pattern, so adding a
-   * stale name anywhere else still fails.
-   */
-  const EXEMPT = new Set(["docs/migration-0.1.0.md"]);
   const hits = [];
 
   const walk = (target) => {
@@ -2057,7 +2076,6 @@ test("no shipped file references a pre-rename governance path", () => {
       return;
     }
     if (!/\.(js|md|json|ya?ml)$/.test(target)) return;
-    if (EXEMPT.has(path.relative(repo, target).split(path.sep).join("/"))) return;
     const text = fs.readFileSync(target, "utf8");
     splitLines(text).forEach((line, index) => {
       for (const pattern of STALE) {
@@ -2078,11 +2096,10 @@ test("no shipped file references a pre-rename governance path", () => {
 /**
  * `files` includes `src`, so anything added under it reaches users by default. `dev.js` is
  * repository tooling — it drives `./cg try`, reads `tmp/`, and has no meaning inside an
- * installed package — so it is excluded by name. This asserts the exclusion holds and that
- * excluding it did not take the scaffold sources with it, which is the way a `files`
- * negation usually goes wrong.
+ * installed package — so it is excluded by name. This asserts the exclusion holds and that it did
+ * not take the scaffold sources with it, which is the way a `files` negation usually goes wrong.
  */
-test("the published tarball ships the scaffold sources and no dev tooling", () => {
+test("the published tarball ships consumer sources and no maintainer tooling", () => {
   const npm = process.platform === "win32" ? "npm.cmd" : "npm";
   const output = execFileSync(npm, ["pack", "--dry-run", "--json"], {
     cwd: path.resolve(import.meta.dirname, ".."),
@@ -2199,15 +2216,15 @@ test("the shipped rule pointer matches what cg sync generates", () => {
 // ---------------------------------------------------------------------------
 
 const brief = (n, { status, priority = n, depends = "None", blocked = "None" }) =>
-  `# Phase 1 Step ${n}: step ${n}\n\nWeight: Build\nPriority: ${priority}\n` +
-  `Depends on: ${depends}\nBlocked by: ${blocked}\nStatus: ${status}\n\n## Goal\nx\n`;
+  `## Step ${n}: step ${n}\nWeight: Build\nPriority: ${priority}\n` +
+  `Depends on: ${depends}\nBlocked by: ${blocked}\nStatus: ${status}\n\n### Goal\nx\n`;
 
-function queue(dir, steps) {
-  const root = path.join(dir, "docs/plans/phase-1");
+/** One document per phase, every Step a section inside it. */
+function queue(dir, steps, name = "phase-1") {
+  const root = path.join(dir, "docs/plans/prog");
   fs.mkdirSync(root, { recursive: true });
-  for (const [n, opts] of Object.entries(steps)) {
-    fs.writeFileSync(path.join(root, `step-0${n}.md`), brief(n, opts), "utf8");
-  }
+  const body = Object.entries(steps).map(([n, opts]) => brief(n, opts)).join("\n");
+  fs.writeFileSync(path.join(root, `${name}_detailed_preparation.md`), `# ${name}\n\n${body}`, "utf8");
 }
 
 test("next reports cg-prepare when no queue exists", () => {
@@ -2222,7 +2239,7 @@ test("next selects the earliest Ready Step by priority", () => {
   queue(dir, { 1: { status: "Complete" }, 2: { status: "Ready", depends: "Step 1" }, 3: { status: "Ready" } });
   const result = next(dir);
   assert.equal(result.stage, "cg-produce");
-  assert.match(result.step.file, /step-02/);
+  assert.equal(result.step.number, 2);
 });
 
 test("next does not select a Ready Step whose dependency is unfinished", () => {
@@ -2249,14 +2266,14 @@ test("next ignores archived phases", () => {
   const dir = makeRepo();
   const root = path.join(dir, "docs/plans/archive/phase-0");
   fs.mkdirSync(root, { recursive: true });
-  fs.writeFileSync(path.join(root, "step-01.md"), brief(1, { status: "Ready" }), "utf8");
+  fs.writeFileSync(path.join(root, "phase-0_detailed_preparation.md"), brief(1, { status: "Ready" }), "utf8");
   assert.equal(next(dir).state, "no-queue");
 });
 
 test("next refuses to answer from a brief it cannot parse", () => {
   const dir = makeRepo();
   queue(dir, { 1: { status: "Ready" } });
-  write(dir, "docs/plans/phase-1/step-01.md", "# Phase 1 Step 1: x\n\nStatus: Sortof\nPriority: 1\n");
+  write(dir, "docs/plans/prog/phase-1_detailed_preparation.md", "## Step 1: x\nStatus: Sortof\nPriority: 1\n");
   const result = next(dir);
   assert.equal(result.state, "unreadable");
   assert.match(result.problems[0], /unknown Status/);
@@ -2265,7 +2282,7 @@ test("next refuses to answer from a brief it cannot parse", () => {
 test("an In progress Step wins over any Ready one", () => {
   const dir = makeRepo();
   queue(dir, { 1: { status: "In progress" }, 2: { status: "Ready" } });
-  assert.match(next(dir).step.file, /step-01/);
+  assert.equal(next(dir).step.number, 1);
 });
 
 test("permits denies a stage the queue does not support, and allows the one it does", () => {
@@ -2288,7 +2305,334 @@ test("unblock, plan, warmup and the adapter itself are never gated", () => {
 test("an unreadable queue denies every gated stage", () => {
   const dir = makeRepo();
   queue(dir, { 1: { status: "Ready" } });
-  write(dir, "docs/plans/phase-1/step-01.md", "no header at all\n");
+  write(dir, "docs/plans/prog/phase-1_detailed_preparation.md", "no step sections at all\n");
   const result = next(dir);
   assert.equal(permits(result, "cg-produce").allowed, false);
+});
+
+test("init ignores the auto-run ledger without disturbing an existing .gitignore", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-ignore-"));
+  fs.writeFileSync(path.join(dir, ".gitignore"), "node_modules/\ndist/\n", "utf8");
+  init(dir, {});
+  const text = read(dir, ".gitignore");
+  assert.match(text, /^auto-run\/$/m);
+  assert.match(text, /^\*\.auto-run\.md$/m);
+  assert.match(text, /^node_modules\/$/m, "existing rules must survive");
+
+  init(dir, {});
+  assert.equal(
+    read(dir, ".gitignore").split("\n").filter((l) => l.trim() === "*.auto-run.md").length,
+    1,
+    "re-running init must not append the rule twice",
+  );
+});
+
+test("a finished warmup is advised to remove its resume log", () => {
+  const dir = makeRepo();
+  const findings = path.join(dir, "docs", "plans", "warmup-findings.md");
+  fs.mkdirSync(path.dirname(findings), { recursive: true });
+  fs.writeFileSync(findings, "# findings\n");
+
+  // Not yet finished: product rules are unharvested, so the log still has a job.
+  assert.ok(!verify(dir).advisories.some((m) => m.includes("survives a finished warmup")));
+
+  // Harvested the way `cg-warmup` writes one: a real family heading outside any fence — the
+  // shipped file's only PP rule is an example inside a ```markdown block and does not count.
+  edit(dir, PRODUCT, (t) => `${t}\n## PP-09. Harvested\n\n- **PP-09-01** — a harvested rule.\n`);
+  edit(dir, ENFORCEMENT, (t) =>
+    t.replace("| AP-01-01, AP-01-02 |", "| PP-09-01 | Manual review *(not yet built)* |\n| AP-01-01, AP-01-02 |"),
+  );
+  assert.ok(
+    verify(dir).advisories.some((m) => m.includes("survives a finished warmup")),
+    "a harvested repo with every contract written should be told the log is residue",
+  );
+
+  fs.rmSync(findings);
+  const after = verify(dir).advisories;
+  assert.ok(!after.some((m) => m.includes("warmup-findings.md")), "deleting it clears both sides");
+});
+
+// ---------------------------------------------------------------------------
+// cg residue — the disposable stack, checked instead of trusted
+// ---------------------------------------------------------------------------
+
+const plan = (dir, rel, text) => {
+  const file = path.join(dir, "docs", "plans", rel);
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, text, "utf8");
+};
+
+/** Drive the repo to "warmup finished", which is what makes warmup's own files residue. */
+function finishWarmup(dir) {
+  edit(dir, PRODUCT, (t) => `${t}\n## PP-09. Harvested\n\n- **PP-09-01** — a harvested rule.\n`);
+  edit(dir, ENFORCEMENT, (t) =>
+    t.replace("| AP-01-01, AP-01-02 |", "| PP-09-01 | Manual review *(not yet built)* |\n| AP-01-01, AP-01-02 |"),
+  );
+}
+
+test("a document reachable from the roadmap is not residue", () => {
+  const dir = makeRepo();
+  plan(dir, "a-roadmap.md", "# Roadmap\n\n- [Phase 1](phase-1/preparation.md)\n");
+  plan(dir, "phase-1/preparation.md", "# Prep\n\n- [Step 1](step-01.md)\n");
+  plan(dir, "phase-1/step-01.md", "# Phase 1 Step 1: x\n");
+
+  const result = residue(dir);
+  assert.deepEqual(result.residue.map((r) => r.path), []);
+  assert.ok(result.roots.includes("docs/plans/a-roadmap.md"));
+});
+
+test("a document no root links to is residue", () => {
+  const dir = makeRepo();
+  plan(dir, "a-roadmap.md", "# Roadmap\n");
+  plan(dir, "legacy/old-plan.md", "# Predates adoption\n");
+  assert.deepEqual(
+    residue(dir).residue.map((r) => r.path),
+    ["docs/plans/legacy/old-plan.md"],
+  );
+});
+
+test("an empty directory is residue even though git cannot see it", () => {
+  const dir = makeRepo();
+  plan(dir, "a-roadmap.md", "# Roadmap\n");
+  fs.mkdirSync(path.join(dir, "docs", "plans", "moved-away"), { recursive: true });
+  const found = residue(dir).residue;
+  assert.deepEqual(found.map((r) => r.path), ["docs/plans/moved-away"]);
+  assert.match(found[0].why, /empty directory/);
+});
+
+test("archived and ignored subtrees are never residue", () => {
+  const dir = makeRepo();
+  plan(dir, "a-roadmap.md", "# Roadmap\n");
+  plan(dir, "archive/phase-0/step-01.md", "# closed\n");
+  plan(dir, "auto-run/phase-1.auto-run.md", "# ledger\n");
+  assert.deepEqual(residue(dir).residue.map((r) => r.path), []);
+});
+
+test("warmup's files are live during warmup and residue after it", () => {
+  const dir = makeRepo();
+  plan(dir, "a-roadmap.md", "# Roadmap\n");
+  for (const name of ["warmup-findings.md", "warmup-report.md", "warmup-corrective-set.md"]) {
+    plan(dir, name, `# ${name}\n`);
+  }
+  assert.deepEqual(residue(dir).residue.map((r) => r.path), [], "unfinished warmup: still working state");
+
+  finishWarmup(dir);
+  const found = residue(dir).residue;
+  assert.equal(found.length, 3);
+  assert.match(found[0].why, /warmup finished/);
+});
+
+test("the decision log and README are always claimed", () => {
+  const dir = makeRepo();
+  plan(dir, "a-roadmap.md", "# Roadmap\n");
+  const paths = residue(dir).residue.map((r) => r.path);
+  assert.ok(!paths.includes("docs/plans/decision-log.md"));
+  assert.ok(!paths.includes("docs/plans/README.md"));
+});
+
+test("linking a directory claims everything under it", () => {
+  const dir = makeRepo();
+  plan(dir, "a-roadmap.md", "# Roadmap\n\n- [Phase 2](phase-2/)\n");
+  plan(dir, "phase-2/step-01.md", "# Phase 2 Step 1: x\n");
+  plan(dir, "phase-2/step-02.md", "# Phase 2 Step 2: y\n");
+  assert.deepEqual(residue(dir).residue.map((r) => r.path), []);
+});
+
+test("residue follows a chosen docs root", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-residue-docs-"));
+  init(dir, { docs: "handbook" });
+  sync(dir);
+  const file = path.join(dir, "handbook", "plans", "orphan.md");
+  fs.writeFileSync(file, "# orphan\n", "utf8");
+  const result = residue(dir);
+  assert.equal(result.docs, "handbook");
+  assert.deepEqual(result.residue.map((r) => r.path), ["handbook/plans/orphan.md"]);
+});
+
+test("a roadmap inside its own programme folder is a root", () => {
+  const dir = makeRepo();
+  plan(dir, "billing/roadmap.md", "# Billing\n\n- [Phase 1](phase-1/)\n");
+  plan(dir, "billing/phase-1/preparation.md", "# Prep\n");
+  assert.deepEqual(residue(dir).residue.map((r) => r.path), []);
+  assert.ok(residue(dir).roots.includes("docs/plans/billing/roadmap.md"));
+});
+
+test("a roadmap buried two levels down is not a root", () => {
+  const dir = makeRepo();
+  plan(dir, "a-roadmap.md", "# Roadmap\n");
+  plan(dir, "billing/old/roadmap.md", "# stale\n");
+  assert.deepEqual(
+    residue(dir).residue.map((r) => r.path),
+    ["docs/plans/billing/old/roadmap.md"],
+  );
+});
+
+test("next reads every Step from one phase document", () => {
+  const dir = makeRepo();
+  queue(dir, { 1: { status: "Complete" }, 2: { status: "Ready" }, 3: { status: "Waiting" } });
+  const result = next(dir);
+  assert.equal(result.briefs.length, 3, "all three sections parse from one file");
+  assert.equal(result.step.number, 2);
+  assert.match(result.step.file, /phase-1_detailed_preparation\.md:\d+/, "reports the source line");
+});
+
+test("a Status written inside a Step's body is not the Step's state", () => {
+  const dir = makeRepo();
+  plan(
+    dir,
+    "prog/phase-1_detailed_preparation.md",
+    "# phase\n\n## Step 1: x\nPriority: 1\nDepends on: None\nBlocked by: None\nStatus: Ready\n\n" +
+      "### Expected starting state\nStatus: Complete — this line is prose, not the header\n",
+  );
+  assert.equal(next(dir).step.status, "Ready");
+});
+
+test("two phase documents form one queue", () => {
+  const dir = makeRepo();
+  queue(dir, { 1: { status: "Complete" } }, "phase-1");
+  queue(dir, { 2: { status: "Ready", priority: 2 } }, "phase-2");
+  const result = next(dir);
+  assert.equal(result.briefs.length, 2);
+  assert.equal(result.step.number, 2);
+});
+
+test("a phase document with no Step sections is reported, not silently empty", () => {
+  const dir = makeRepo();
+  plan(dir, "prog/phase-9_detailed_preparation.md", "# phase 9\n\nprose only\n");
+  const result = next(dir);
+  assert.equal(result.state, "unreadable");
+  assert.match(result.problems[0], /no `## Step <n>` section/);
+});
+
+// ---------------------------------------------------------------------------
+// cg-gate — the stage boundary, enforced rather than asked for
+// ---------------------------------------------------------------------------
+
+const GATE = path.join(SOURCE_ROOT, "scaffold", "hooks", "cg-gate.mjs");
+const CG = path.join(SOURCE_ROOT, "..", "bin", "cg.js");
+
+/** Run the hook the way Claude Code does: JSON on stdin, a permission decision on stdout. */
+function gate(dir, skill, session) {
+  const out = execFileSync(process.execPath, [GATE], {
+    input: JSON.stringify({ cwd: dir, session_id: session, tool_input: { skill } }),
+    encoding: "utf8",
+    env: { ...process.env, CG_BIN: CG, CG_GATE_CHAIN: "" },
+  });
+  return JSON.parse(out).hookSpecificOutput;
+}
+
+test("the gate allows the stage the queue names and denies the others", () => {
+  const dir = makeRepo();
+  queue(dir, { 1: { status: "Complete" } });
+  assert.equal(gate(dir, "cg-sign-off", `s${Date.now()}a`).permissionDecision, "allow");
+  assert.equal(gate(dir, "cg-produce", `s${Date.now()}b`).permissionDecision, "deny");
+});
+
+test("the gate denies a second, different stage in the same session", () => {
+  const dir = makeRepo();
+  queue(dir, { 1: { status: "Complete" } });
+  const session = `s${Date.now()}c`;
+  assert.equal(gate(dir, "cg-sign-off", session).permissionDecision, "allow");
+
+  const second = gate(dir, "cg-prepare", session);
+  assert.equal(second.permissionDecision, "deny");
+  assert.match(second.permissionDecisionReason, /crosses a stage boundary/);
+});
+
+test("re-dispatching the same stage is not a boundary crossing", () => {
+  const dir = makeRepo();
+  queue(dir, { 1: { status: "Ready" } });
+  const session = `s${Date.now()}d`;
+  assert.equal(gate(dir, "cg-produce", session).permissionDecision, "allow");
+  assert.equal(gate(dir, "cg-produce", session).permissionDecision, "allow", "same stage, still fine");
+});
+
+test("cg-auto-run in the session lifts the boundary, and is never itself gated", () => {
+  const dir = makeRepo();
+  queue(dir, { 1: { status: "Complete" } });
+  const session = `s${Date.now()}e`;
+  assert.equal(gate(dir, "cg-auto-run", session).permissionDecision, "allow");
+  assert.equal(gate(dir, "cg-sign-off", session).permissionDecision, "allow");
+
+  // Still gated on queue state — lifting the boundary is not lifting the queue check.
+  const wrong = gate(dir, "cg-produce", session);
+  assert.equal(wrong.permissionDecision, "deny");
+  assert.match(wrong.permissionDecisionReason, /does not support dispatching/);
+});
+
+test("every stage skill states the yield rule", () => {
+  for (const name of ["cg-plan", "cg-prepare", "cg-produce", "cg-sign-off"]) {
+    const text = fs.readFileSync(path.join(SOURCE_ROOT, "skills", name, "SKILL.md"), "utf8");
+    assert.match(text, /## Stage boundary — yield here/, `${name} must tell the model to stop`);
+    assert.match(text, /Do not invoke the next skill yourself/, name);
+  }
+});
+
+/** The UserPromptSubmit half: a new instruction clears what the last one dispatched. */
+function userTurn(dir, session) {
+  execFileSync(process.execPath, [GATE], {
+    input: JSON.stringify({ cwd: dir, session_id: session, hook_event_name: "UserPromptSubmit" }),
+    encoding: "utf8",
+    env: { ...process.env, CG_BIN: CG },
+  });
+}
+
+test("a new user turn clears the boundary without abandoning the session", () => {
+  const dir = makeRepo();
+  queue(dir, { 1: { status: "Complete" } });
+  const session = `s${Date.now()}f`;
+
+  assert.equal(gate(dir, "cg-sign-off", session).permissionDecision, "allow");
+  assert.equal(
+    gate(dir, "cg-prepare", session).permissionDecision,
+    "deny",
+    "chaining inside one instruction is the thing being stopped",
+  );
+
+  userTurn(dir, session);
+  const afterAsking = gate(dir, "cg-sign-off", session);
+  assert.equal(afterAsking.permissionDecision, "allow", "the user asking again must not be blocked");
+  assert.match(afterAsking.permissionDecisionReason, /queue agrees/);
+});
+
+test("a Step status may carry a date without breaking the queue", () => {
+  const dir = makeRepo();
+  plan(
+    dir,
+    "prog/phase-1_detailed_preparation.md",
+    "# p\n\n## Step 1: x\nPriority: 1\nDepends on: None\nBlocked by: None\nStatus: Complete — 2026-08-09\n",
+  );
+  const result = next(dir);
+  assert.equal(result.state, "queue-complete", JSON.stringify(result.problems));
+  assert.equal(result.briefs[0].status, "Complete");
+});
+
+test("an unknown status is still refused", () => {
+  const dir = makeRepo();
+  plan(dir, "prog/phase-1_detailed_preparation.md", "# p\n\n## Step 1: x\nPriority: 1\nStatus: Sortof\n");
+  assert.equal(next(dir).state, "unreadable");
+});
+
+test("verify advises a signed-off phase left in the active tree", () => {
+  const dir = makeRepo();
+  plan(dir, "prog/phase-1_detailed_preparation.md", "# p\n\n## Step 1: x\nPriority: 1\nStatus: Complete\n");
+  assert.ok(!verify(dir).advisories.some((m) => m.includes("never archived")));
+
+  plan(dir, "prog/phase-1_sign-off.md", "# closed\n");
+  const advised = verify(dir).advisories.filter((m) => m.includes("never archived"));
+  assert.equal(advised.length, 1, JSON.stringify(verify(dir).advisories));
+  assert.match(advised[0], /phase `phase-1`/);
+});
+
+test("verify advises a programme sign-off left unarchived", () => {
+  const dir = makeRepo();
+  plan(dir, "prog/programme-sign-off.md", "# done\n");
+  assert.ok(verify(dir).advisories.some((m) => m.includes("the programme is")));
+});
+
+test("an archived closure is not advised", () => {
+  const dir = makeRepo();
+  plan(dir, "archive/prog/phase-1_sign-off.md", "# closed\n");
+  plan(dir, "archive/prog/phase-1_detailed_preparation.md", "# p\n\n## Step 1: x\nPriority: 1\nStatus: Complete\n");
+  assert.ok(!verify(dir).advisories.some((m) => m.includes("never archived")));
 });

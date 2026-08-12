@@ -1,6 +1,6 @@
 {
   "name": "contract-graph",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A traversable software context graph for coding agents: route from repository to module to sub-module before reading code.",
   "type": "module",
   "bin": {
@@ -32,7 +32,10 @@
     "contracts",
     "ai-agents"
   ],
-  "author": "sarada-io",
+  "author": {
+    "name": "Sarada.io",
+    "url": "https://sarada.io"
+  },
   "license": "Apache-2.0",
   "publishConfig": {
     "access": "public"

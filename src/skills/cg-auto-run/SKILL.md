@@ -1,6 +1,6 @@
 ---
 name: cg-auto-run
-description: Chain Contract Graph lifecycle stages automatically instead of returning each hop to the user. Use when the next stage is already determined by measured state and the owner wants the queue driven to a stop condition rather than resumed by hand. Dispatches one stage at a time, reads the mandatory Next action block it returns, and advances only on an advancing status within the granted authority level. Defaults to running preparation, execution, and closure unattended, stopping at planning and at any fork that reaches cg-unblock, and reports the whole run as one summary. Never follows a block carrying Blocked by, never auto-invokes cg-unblock or cg-warmup, never widens its own authority, and writes a resumable run ledger to disk before every dispatch so a context break resumes mid-run rather than restarting. Does not plan, prepare, implement, or close anything itself — every unit of work stays owned by the stage skill that owns it.
+description: Chain Contract Graph lifecycle stages automatically instead of returning each hop to the user. Use when the next stage is already determined by measured state and the owner wants the queue driven to a stop condition rather than resumed by hand. Dispatches one stage at a time, reads the mandatory Next action block it returns, and advances only on an advancing status within the granted authority level. Defaults to running preparation, execution, and closure unattended across every planned phase of a roadmap, stopping at planning and at any fork that reaches cg-unblock, and reports the whole run as one summary. Never follows a block carrying Blocked by, never auto-invokes cg-unblock or cg-warmup, never widens its own authority, and writes a resumable run ledger to disk before every dispatch so a context break resumes mid-run rather than restarting. Does not plan, prepare, implement, or close anything itself — every unit of work stays owned by the stage skill that owns it.
 ---
 
 # CG Auto Run
@@ -32,18 +32,28 @@ Finish with all six true:
 ## 1. Establish authority before dispatching anything
 
 Authority is granted per run, never inferred, never widened mid-run. If the invocation does not
-name one, use `phase` and say so.
+name one, use `roadmap` and say so.
 
-| Level | May auto-dispatch | Never auto-dispatches |
+| Level | May auto-dispatch | Stops after |
 |---|---|---|
-| `queue` | `cg-produce` repeatedly, then `cg-sign-off` | `cg-plan`, `cg-prepare` |
-| `phase` (default) | `cg-prepare`, `cg-produce`, `cg-sign-off` | `cg-plan` |
-| `programme` | `cg-prepare`, `cg-produce`, `cg-sign-off`, `cg-plan` | — |
+| `queue` | `cg-produce` repeatedly, then `cg-sign-off` | the current queue drains |
+| `phase` | `cg-prepare`, `cg-produce`, `cg-sign-off` | one phase closes |
+| `roadmap` (default) | `cg-prepare`, `cg-produce`, `cg-sign-off` — once per remaining phase | the roadmap has no unstarted phase left |
+| `programme` | all of the above plus `cg-plan` | the programme gate passes |
+
+`roadmap` is the default because a planned roadmap has already had its expensive review. Every
+phase in it was ordered, given an outcome and an acceptance gate, and agreed before any of this
+runs. Stopping between phase 2 and phase 3 to be told "yes, the thing you already approved" buys
+nothing; the gates still stop a phase that fails, and every blocker still stops the run.
+
+**`roadmap` authority requires a roadmap whose phases are all planned.** Check before the first
+dispatch: if any phase is a placeholder, or the roadmap ends mid-sequence, drop to `phase` and say
+so. Continuing across an unplanned boundary means preparing a phase whose outcome nobody wrote.
 
 `cg-plan` sits outside the default deliberately. A roadmap is the one artifact whose cost of being
 silently wrong is paid by every stage after it, and it is the cheapest one for an owner to read.
-Once the plan is agreed, preparation, execution, and closure are mechanical consequences of it:
-they are exactly the stretch worth running unattended, and the default runs all three.
+Once the plan is agreed, preparation, execution, and closure are mechanical consequences of it —
+for every phase in it, not just the first.
 
 `cg-unblock` is the other stop, for the same reason from the other end — see §5. A fork that
 reaches it is one the contracts could not settle, so it is the owner's to settle.
@@ -59,7 +69,7 @@ Do not ask the user where they are. Establish it:
 2. Read `docs/plans/` for the active roadmap and the selected phase.
 3. Read the phase's preparation record: does a Step queue exist, and what is each Step's state?
 4. Read `docs/plans/decision-log.md` for `DL-02` entries that block the selected phase.
-5. Read `docs/plans/auto-run.md` if present — a prior run may have checkpointed mid-queue.
+5. Read `docs/plans/auto-run/` if present — a prior run may have checkpointed this phase mid-queue.
 
 Name the first stage from that measurement:
 
@@ -68,17 +78,26 @@ Name the first stage from that measurement:
 - phase selected, no prepared queue → `cg-prepare`;
 - queue prepared, a Step is `Ready` → `cg-produce`;
 - every Step `Complete` → `cg-sign-off`;
+- phase closed and the roadmap names an unstarted phase → `cg-prepare` with that phase, at
+  `roadmap` or `programme` authority only; at `queue` or `phase`, stop and say the run finished
+  what it was authorised for;
 - queue prepared, no Step `Ready`, blockers present → stop; this is `cg-unblock`'s work, not yours.
 
 ## 3. Write the ledger, then dispatch one stage
 
-Write `docs/plans/auto-run.md` **before** each dispatch, never after. A run that dies mid-stage must
+Write `docs/plans/auto-run/<phase>.auto-run.md` **before** each dispatch, never after.
+
+One file per phase in one directory, so running Phase 3 does not overwrite the record of Phase 2
+and the clutter stays in a single place. `cg init` ignores both `auto-run/` and `*.auto-run.md` in
+the root `.gitignore`, so these are local working state at whatever depth they land — keep them as
+long as they are useful, they never reach history. The durable account of what a run produced is
+`cg-sign-off`'s output, not this. A run that dies mid-stage must
 leave behind what it was about to do, not what it last finished.
 
 ```markdown
 # Auto-run ledger
 
-- **Authority:** <queue | phase | programme>
+- **Authority:** <queue | phase | roadmap | programme>
 - **Started:** <timestamp>
 - **Stage budget:** <n dispatched> of <cap>
 - **About to dispatch:** <$cg-skill> — <exact input artifact>
@@ -130,13 +149,21 @@ Running a whole phase unattended is the point. Running past one is not: context 
 buys continuity and loses precision, and by the time a second queue drains, the reasoning that
 produced Step 1 is either compacted away or crowding out Step 9.
 
-Default cap: **twelve dispatches per run** — enough for `cg-prepare`, a queue of roughly ten Steps,
-and `cg-sign-off`, which is the whole phase the default authority exists to run. Lower it for a
-phase with large Steps; never raise it silently.
+Default cap: **twenty-four dispatches per run.** That is roughly two phases of ten Steps with their
+preparation and closure — enough that a `roadmap` run makes real progress before it yields, without
+pretending a single context window can carry a whole programme.
+
+The cap does not rise with authority. A run stops at it, writes its checkpoint, and a fresh session
+continues the next phase with a fresh budget and a context window that has not been summarised
+twice.
+
+This is deliberate. Authority says how far the run is *allowed* to go; the budget says how far it
+can go *while still being any good*. A roadmap-authority run that never yields would drift further
+with every phase, and the phase most likely to be wrong would be the one nobody watched.
 
 Before each dispatch, check the budget. When it is exhausted, stop and yield a resumable
 checkpoint — do not attempt one more stage because it "looks small". The ledger written in §3 is the
-resume point: a fresh session reads `docs/plans/auto-run.md`, re-measures per §2, and continues with
+resume point: a fresh session reads this phase's ledger, re-measures per §2, and continues with
 its own budget. Resuming is cheap because the state is on disk. Continuing past the cap is expensive
 because the state is in a context window that is about to be summarised.
 
@@ -152,7 +179,7 @@ its route.
 ```markdown
 ## Auto-run report
 - **Authority:** <level> · **Dispatched:** <n> stage(s) · **Stopped on:** <condition from §5>
-- **Phase:** <phase> — <its outcome, one line>
+- **Phases:** <each phase closed this run> — <its outcome, one line each>
 - **Acceptance gate:** <the exact command> — <passed | failed | not reached>
 
 ### What shipped
@@ -170,7 +197,7 @@ its route.
 - <blocked Step, failing gate, unlogged decision, or "Nothing — the phase is closed">
 
 - **Stopping block:** <the verbatim Next action block that ended the run>
-- **Ledger:** docs/plans/auto-run.md
+- **Ledger:** docs/plans/auto-run/<phase>.auto-run.md
 ```
 
 Every row is copied from what a stage already reported. Summarising means selecting and compressing,
@@ -198,7 +225,8 @@ End the user-facing response with:
 
 ## Completion check
 
-- [ ] Authority was granted explicitly, or defaulted to `phase` and was stated.
+- [ ] Authority was granted explicitly, or defaulted to `roadmap` and was stated.
+- [ ] At `roadmap` authority, every phase in the roadmap was planned before the first dispatch.
 - [ ] Every dispatch was named by measured state or the previous block's `Next input`.
 - [ ] No stage was dispatched above the granted authority level.
 - [ ] `cg-unblock` and `cg-warmup` were never auto-dispatched.

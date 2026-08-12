@@ -11,7 +11,7 @@ description with the one you actually have.
 **Run this once.** After it, the lifecycle skills — `cg-plan`, `cg-prepare`, `cg-produce`,
 `cg-sign-off` — have real contracts to work against, and you never need this skill again.
 
-**Never delete it.** `cg verify` requires all six skills to be present and fails without
+**Never delete it.** `cg verify` requires all seven skills to be present and fails without
 them, and a repository that adopts a second module tree later needs this one again. Finishing
 is not the same as removing the instructions for finishing.
 
@@ -631,7 +631,33 @@ on it binds every agent that reads the graph. Present the whole set at once, nev
 and never ask for approval before writing them: an unwritten rule leaves the code as the only
 record of itself, which is the cost this step exists to remove.
 
-## 12. Next-action response
+## 12. Dispose of your own working files
+
+Every other Contract Graph artifact has somewhere to end up: a roadmap and a Step queue are
+archived when their phase closes, a decision graduates or is dropped with its reason. Warmup's
+outputs had nowhere, because warmup belongs to no phase — it runs once, before the lifecycle
+exists, so there is no closing event to attach disposal to. This step is that event.
+
+The three files warmup writes have different half-lives, and treating them alike is what leaves a
+repository with permanent adoption litter:
+
+| File | What it is | Where it ends up |
+|---|---|---|
+| `docs/plans/warmup-findings.md` | a **resume log** — Phase B appends a block per unit so a context break continues instead of restarting | **Delete it.** Once every mapped folder has a contract and the principles are harvested, it has nothing left to resume. Its content is already in the contracts it produced. |
+| `docs/plans/warmup-corrective-set.md` | findings that must become work | **Consumed, then archived.** It drains when `cg-plan` gives every finding a phase; move it to `docs/plans/archive/` at that point, not before. |
+| `docs/plans/warmup-report.md` | what adoption found, at a point in time | **`docs/design/`, or delete.** If it is worth keeping it is durable knowledge, and durable knowledge does not live under `docs/plans/` — a permanent contract may not cite a path there. Keep it only if a reader would return to it; archive or delete it otherwise. |
+
+Do this before the next-action response, and say in that response what happened to each file. A run
+that reports `Warmup complete` while all three survive has not finished — it has stopped.
+
+**Delete rather than archive when a file has no reader.** `archive/` is for records someone may
+audit; it is not a place to move things to avoid deciding. A resume log nobody will read is not
+made valuable by relocating it.
+
+The one exception: if warmup is **interrupted**, leave all three exactly where they are. They are
+the resume point. Disposal is part of finishing, and only of finishing.
+
+## 12a. Next-action response
 
 Choose exactly one immediate route:
 
@@ -648,12 +674,15 @@ End the user-facing response with:
 ```markdown
 ## Next action — <Warmup complete | Answers pending | Findings need delivery>
 - **User action:** <one concrete action — when answers are pending, "answer the N entries under *Pending your review*">
+- **Working files:** <what happened to warmup-findings, warmup-corrective-set, and warmup-report>
 - **Next input:** <$cg-plan | $cg-unblock | None — warmup complete, this skill is not run again> — <exact decision-log entries, corrective set, or gate evidence>
 - **Blocked by:** <exact decision, prerequisite, or failing gate>   <!-- omit unless the status is non-advancing -->
 ```
 
 ## Completion check
 
+- [ ] Each of warmup's three working files was deleted, archived, or moved to `docs/design/`, and
+      the response says which.
 - [ ] A predecessor framework was searched for, and the report says what was found — including
       "none".
 - [ ] Every rule the predecessor asserted is carried forward or listed as a deliberate drop.

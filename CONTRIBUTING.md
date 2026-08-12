@@ -29,6 +29,36 @@ reached only through `./cg` and `npm run try`, and neither of those ships. A tes
 exclusion holds, because `files` includes `src` and the default for anything added there is to
 reach users.
 
+## Changing the scaffold
+
+`SCAFFOLD_MAPPING` in `src/scripts/init.js` is the executable source of truth for what `cg init`
+writes. Its rules are directory-level: every consumer-facing file under `src/`, except runtime
+scripts and profile configuration, must match exactly one rule.
+
+Each rule has an ownership policy:
+
+- `replace` is framework-owned. `cg init` updates it from the installed package.
+- `preserve` is repository-owned context. `cg init` writes it only when it is absent.
+
+The test suite checks the mapping in both directions. Coverage rejects an unmapped file or one
+claimed by overlapping rules. A round-trip test scaffolds a temporary repository and compares the
+result with an independently encoded source-to-target map. When changing the mapping, first make
+the relevant detector fail with one deliberate mutation, then restore it and run `npm test`.
+
+Editor profiles live in `src/scaffold/profiles/` and may add discovery artifacts only; they may not
+change the universal contract or governance tree. To add one:
+
+1. Confirm the paths the real editor reads using its installed application and a scratch
+   repository. A string found in an application bundle proves presence, not absence.
+2. Add `<name>.scaffolding.conf.json` with its lowercase name, display name, root pointers,
+   optional skill wrappers, and inheritance.
+3. Add tests for its exact artifacts, missing selected artifacts, absent unselected artifacts,
+   malformed configuration, and profile neutrality.
+4. Run `npm test`, then `./cg try <name>` and inspect `tmp/<name>` in the real editor.
+
+A profile may be a named no-op when the universal scaffold already supplies everything its editor
+discovers. Do not invent a redundant file merely to give the profile a visible artifact.
+
 ## The rule that applies to this repository too
 
 **A rule and its enforcing test land in the same commit.** A PR that adds a check to `verify.js`

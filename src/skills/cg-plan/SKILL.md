@@ -111,7 +111,26 @@ Use `cg-unblock` to:
 
 Do not hide a product decision inside phase ordering.
 
-## 7. Roadmap format
+## 7. Roadmap format and where it lives
+
+Write the roadmap to `docs/plans/<programme>/roadmap.md`, and give the programme a slug that names
+the outcome rather than a date or a ticket. Every artifact the programme produces lives beside it:
+
+```
+docs/plans/<programme>/roadmap.md
+docs/plans/<programme>/<phase>_detailed_preparation.md
+```
+
+One document per phase, holding every Step. `cg-prepare` writes it; the roadmap links it.
+
+One folder per programme, because closing one must be a single move. A roadmap at the top of
+`docs/plans/` with its phases as siblings leaves nothing saying which phase belongs to which
+programme, and archiving means chasing a roadmap plus every phase separately — which is how a
+half-finished move leaves an empty folder behind that `git status` cannot see.
+
+`cg residue` treats `<programme>/roadmap.md` as a root: nothing links to a roadmap, it is where a
+reader starts. Everything else under the programme folder must be reachable by a link from it, so
+link each phase document from the roadmap as you write it.
 
 The roadmap contains:
 
@@ -157,6 +176,23 @@ For a `cg-sign-off` successor handover, first place the finding into a new or ex
 phase with an explicit dependency on its source phase. Do not pass an unplanned defect directly to
 execution or treat a handover as evidence that the source phase passed. Mark it Consumed with the
 receiving phase only after that phase exists.
+
+## Stage boundary — yield here
+
+**Finish your stage, then return to the user.** Do not invoke the next skill yourself, however
+obvious the route is. The `Next action` block names the successor so a person can choose it and so
+`cg-auto-run` can follow it under a granted authority — naming it is not permission to take it.
+
+Crossing a stage boundary unasked removes the review the boundary exists for. Someone who runs this
+skill to read what it produced, and gets back a closed phase instead, cannot act on the thing they
+asked for: the decision point is gone and the work is already downstream of it.
+
+Continuing *within* your own stage is different and expected — `cg-produce` drains its queue, and a
+resumed Step is the same stage, not a new one. The rule is one stage per invocation, not one unit
+of work per invocation.
+
+The single exception is a dispatch from `cg-auto-run`, which holds an explicit authority level, a
+stage budget, and a ledger. If you were not dispatched by it, you are the last stage of this turn.
 
 ## 9. Next-action response
 

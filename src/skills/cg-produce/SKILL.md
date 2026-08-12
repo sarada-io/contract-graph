@@ -211,6 +211,23 @@ Do not stop for a user-facing response after every green Step while the current 
 continue. When yielding, name the recalculated earliest `Ready` Step, the consolidated blocker set,
 or the exact evidence bundle that allows `cg-sign-off` to start.
 
+## Stage boundary — yield here
+
+**Finish your stage, then return to the user.** Do not invoke the next skill yourself, however
+obvious the route is. The `Next action` block names the successor so a person can choose it and so
+`cg-auto-run` can follow it under a granted authority — naming it is not permission to take it.
+
+Crossing a stage boundary unasked removes the review the boundary exists for. Someone who runs this
+skill to read what it produced, and gets back a closed phase instead, cannot act on the thing they
+asked for: the decision point is gone and the work is already downstream of it.
+
+Continuing *within* your own stage is different and expected — `cg-produce` drains its queue, and a
+resumed Step is the same stage, not a new one. The rule is one stage per invocation, not one unit
+of work per invocation.
+
+The single exception is a dispatch from `cg-auto-run`, which holds an explicit authority level, a
+stage budget, and a ledger. If you were not dispatched by it, you are the last stage of this turn.
+
 ## Completion check
 
 - [ ] Every selected Step was the earliest `Ready` Step at selection time.

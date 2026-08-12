@@ -219,45 +219,60 @@ Emergent checks prove composition; they do not repair an incomplete Step.
 
 ## 9. Write cold-start Step briefs
 
-Every Step gets:
+Write **one document per phase**: `docs/plans/<programme>/<phase>_detailed_preparation.md`, beside
+the roadmap that owns it. Every Step is a section inside it. Link it from the roadmap.
+
+One file, not a directory of briefs, because the queue is read far more often than any single Step:
+`cg next`, `cg-produce`, and a resuming session all want the whole queue at once, and a directory
+makes them open ten files to see one ordering. It also removes the failure the split shape kept
+producing — a Step marked `Complete` in its own file while the preparation record still calls it
+`Ready`, with nothing able to say which is true.
+
+Each Step is a `## Step <n>` section whose first lines are its header block. The header must stay
+machine-readable: `cg next` parses exactly these keys to compute the queue, and the gate that
+enforces `cg-auto-run` refuses to advance when it cannot.
 
 ````markdown
-# Phase <phase> Step <number>: <name>
+## Step <number>: <name>
 Weight: Design | Build | Mechanical
 Priority: <stable number>
 Depends on: <Step IDs | None>
 Blocked by: <decision IDs or external prerequisites | None>
 Status: <Waiting | Ready | Blocked>
 
-## Read first
+### Read first
 <contracts, decisions, phase, preparation, cg-produce, cg-unblock>
 
-## Goal
+### Goal
 <one observable outcome>
 
-## Expected starting state
+### Expected starting state
 <latest verified phase state plus required prerequisite handoffs>
 
-## Files I may edit
+### Files I may edit
 <exact paths or bounded path groups>
 
-## Required contract and detector changes
+### Required contract and detector changes
 <current truth that changes and the detector that proves it>
 
-## Decisions already made
+### Decisions already made
 <decision and assumption references>
 
-## Work
+### Work
 <implementation, tests, resources, dependencies, removals, and documentation>
 
-## Done when
+### Done when
 ```bash
 <one command including the contract gate>
 ```
 
-## Handoff
+### Handoff
 <evidence, repository state, queue-state update, and dependent Steps this unblocks>
 ````
+
+The phase's own context — outcome, acceptance gate, execution branch, ledger of affected items —
+goes above the first `## Step` heading in the same file. A Step brief still has to be readable
+cold: a section that leans on what a neighbouring Step said is not a brief, it is a diff.
 
 ## Preparation-completeness gate
 
@@ -273,9 +288,27 @@ Status: <Waiting | Ready | Blocked>
 - [ ] One execution context and baseline are named.
 - [ ] No parallel track or per-Step branch is allocated.
 - [ ] Completion owns only emergent integrated tests and phase-close records.
-- [ ] Every Step has a cold-start brief and one `Done when`.
+- [ ] Every Step has a cold-start section and one `Done when`.
+- [ ] The phase is one document, and `cg next` parses every Step header in it.
 
 Do not hand the earliest `Ready` Step to `cg-produce` until this gate passes.
+
+## Stage boundary — yield here
+
+**Finish your stage, then return to the user.** Do not invoke the next skill yourself, however
+obvious the route is. The `Next action` block names the successor so a person can choose it and so
+`cg-auto-run` can follow it under a granted authority — naming it is not permission to take it.
+
+Crossing a stage boundary unasked removes the review the boundary exists for. Someone who runs this
+skill to read what it produced, and gets back a closed phase instead, cannot act on the thing they
+asked for: the decision point is gone and the work is already downstream of it.
+
+Continuing *within* your own stage is different and expected — `cg-produce` drains its queue, and a
+resumed Step is the same stage, not a new one. The rule is one stage per invocation, not one unit
+of work per invocation.
+
+The single exception is a dispatch from `cg-auto-run`, which holds an explicit authority level, a
+stage budget, and a ledger. If you were not dispatched by it, you are the last stage of this turn.
 
 ## 10. Next-action response
 
