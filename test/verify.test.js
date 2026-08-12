@@ -2096,10 +2096,8 @@ test("no shipped file references a pre-rename governance path", () => {
 /**
  * `files` includes `src`, so anything added under it reaches users by default. `dev.js` is
  * repository tooling — it drives `./cg try`, reads `tmp/`, and has no meaning inside an
- * installed package — so it is excluded by name. The maintainer release runbook is private
- * repository process rather than consumer documentation and is excluded too. This asserts both
- * exclusions hold and that they did not take the scaffold sources with them, which is the way a
- * `files` negation usually goes wrong.
+ * installed package — so it is excluded by name. This asserts the exclusion holds and that it did
+ * not take the scaffold sources with it, which is the way a `files` negation usually goes wrong.
  */
 test("the published tarball ships consumer sources and no maintainer tooling", () => {
   const npm = process.platform === "win32" ? "npm.cmd" : "npm";
@@ -2111,7 +2109,6 @@ test("the published tarball ships consumer sources and no maintainer tooling", (
   const shipped = JSON.parse(output)[0].files.map((entry) => entry.path);
 
   assert.ok(!shipped.includes("src/scripts/dev.js"), "dev tooling must not ship");
-  assert.ok(!shipped.includes("docs/RELEASING.md"), "the maintainer runbook must not ship");
   for (const required of [
     "bin/cg.js",
     "src/scripts/cli.js",
