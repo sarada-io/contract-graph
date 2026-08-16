@@ -31,10 +31,13 @@ Finish with all ten true:
 Do not start if the brief lacks priority, dependencies, blockers, queue state, expected starting
 state, editable paths, required contract changes, work, handoff, or `Done when`.
 
-1. Read the constitution, principles, workflow, mapped contracts, selected phase, preparation
-   record, and every `cg-*` skill named by the brief. Read `docs/plans/decision-log.md` alongside
-   them: its *Resolved* entries are authority for any fork this Step meets — ranked above the
-   walking skeleton and neighbouring green code by `cg-unblock` D-2 — while *Pending your review*
+1. Read the global structural binding catalog, repository constitution and specifications,
+   workflow, mapped contracts, applicable scoped `P` rules, selected phase, preparation record,
+   and every `cg-*` skill named by the brief. Apply `.agents/cg/principles/architecture.yaml` `graph` before
+   any edit: recurse, selfSufficient, surface, adapters, stay, add-child, or elsewhere. Consult `E`
+   guidance only at a remaining design fork; those are not compliance rules. Read `docs/plans/decision-log.md`
+   alongside them: its *Resolved* entries are authority for any fork this Step meets — ranked above
+   the walking skeleton and neighbouring green code by `cg-unblock` D-2 — while *Pending your review*
    entries are not authority at all, and a Step blocked on one stays blocked.
 2. Recalculate queue states and confirm this is the lowest-numbered `Ready` Step.
 3. Confirm the branch or worktree and baseline match the preparation.
@@ -43,6 +46,12 @@ state, editable paths, required contract changes, work, handoff, or `Done when`.
 6. Run the narrow baseline plus the repository contract gate.
 7. Inventory assigned production files, tests, resources, dependencies, contracts, detectors, and
    retired names.
+
+If `.agents/cg/principles/architecture.yaml` `graph` decides `add-child` or `elsewhere`, stop with Next action
+`$cg-prepare` (or `$cg-plan` when the remaining order must change). Do not add the behavior to the
+current boundary because its files were already in the brief. `graph.surface` is not stay when the
+Step adds an undeclared entry, exposes internals, or bypasses the declared service.
+`graph.adapters.mix` is `add-child`: do not land a second optional vendor client on the open node.
 
 If the Step needs an undeclared path or a missing contract change, return to `cg-prepare`. Do not
 edit first and hope completion repairs it.
@@ -74,16 +83,19 @@ For every changed behavior, boundary, invariant, public entry point, or operatio
 
 1. Update the impacted folder or module contract in this Step.
 2. State current truth in full; never use a phase path or Step ID as the rule.
-3. Add or update machine enforcement when the rule is testable.
+3. Add or update machine enforcement when the rule is testable. Do not use `test -f` / `test -d`
+   as verification — name the test or command that exercises the invariant.
 4. Prove a new or changed detector fails on demand and evaluates a non-empty production set.
-5. Update inheritance mappings and synchronize generated blocks when required.
+5. Update scoped `P` IDs, `.agents/cg/enforcement.yaml` rows, and reciprocal graph edges when
+   required. A new generic `A` rule belongs only in a verifier-owning change that also registers
+   its detector; do not add one by editing installed binding YAML.
 6. Run the repository contract gate before the Step is complete.
 
 Do not delegate these actions to a later Step or to `cg-sign-off`. Those may consume
 the finished contract as evidence; none owns this Step's correctness.
 
-When creating a new module contract, use
-[the module contract template](assets/module-contract.template.md).
+When creating a new boundary contract, use
+[the YAML contract template](assets/contract.template.yaml).
 
 ### A new self-sufficient unit owes a contract in the Step that creates it
 
@@ -91,11 +103,12 @@ A component, library, sub-module, or module is self-sufficient when it delivers 
 functionality and reaches outside itself only rarely. The moment a Step creates one, it owes four
 things together — the same co-delivery rule as a rule and its detector:
 
-1. its own `contract.md`, from the template;
-2. an entry in `map/inheritance.json` with the rules that bind it, then `cg sync`;
-3. a line in the **parent's Child Contracts** naming it and what it decomposes — an undeclared
-   child is unreachable by traversal, which is the same as not existing;
-4. `cg verify` green, which **fails** a parent that declares no children while its source branches.
+1. its own `.agents/cg/contract.yaml`, from the template;
+2. any applicable repository-owned P IDs in its `rules` array; global A rules apply automatically;
+3. reciprocal relation edges: the parent names the child and the child names its parent — an
+   undeclared child is unreachable by traversal, which is the same as not existing;
+4. `cg verify` green, proving schema shape, reference resolution, reciprocity, acyclicity, and
+   reachability from the repository root.
 
 Greenfield is where this is cheap and where it is skipped. A boundary is obvious in the Step that
 introduces it and archaeology six phases later; retrofitting the graph is what `cg-warmup` exists
@@ -124,9 +137,10 @@ its removal condition.
 ## 5. Handle unexpected scope
 
 - Edit only paths declared by the Step brief.
-- Use `cg-unblock` when new evidence creates a protected design choice.
+- Stop and name `$cg-unblock` in Next action when new evidence creates a protected design choice.
 - Continue work that remains inside the Step and can still produce one coherent verified handoff.
-- Return to `cg-prepare` when a new path, dependency, contract, or ordering change is required.
+- Stop and name `$cg-prepare` in Next action when a new path, dependency, contract, or ordering
+  change is required.
 - If the Step cannot finish, leave the repository at its last contract-complete verified handoff,
   mark the Step `Blocked` with the exact decision or prerequisite, and recalculate the queue.
 - Select a later Step only when it is `Ready`, consumes no blocked output, and neither overlaps nor
@@ -161,9 +175,9 @@ Sequential execution removes ownership races; it does not authorize silent scope
 ## 7. Durable non-contract documentation
 
 If the Step changes product behavior, operator procedures, architecture rationale, or diagrams,
-those documents are written by `cg-sign-off` — it owns the durable record, and it has a standalone
-entry path that writes documentation without closing a phase. Hand it the documentation paths the
-Step brief assigned, and continue.
+record those paths in the Step handoff. `cg-sign-off` owns writing them — including its standalone
+documentation entry. Do not invoke `cg-sign-off` from this skill. When the queue drains, Next
+action already names sign-off; the handoff list is what it writes.
 
 This never delays contract co-delivery. Product documentation is additional durable evidence, not
 the source of the rule — and a contract update is never satisfied by writing a document about it.
@@ -185,6 +199,23 @@ the source of the rule — and a contract update is never satisfied by writing a
 
 Do not rebase or merge between Steps. Every selected Step continues from the verified accumulated
 state in the phase's single execution context.
+
+## Stage boundary — yield here
+
+**Finish your stage, then return to the user.** Do not invoke the next skill yourself, however
+obvious the route is. The `Next action` block names the successor so a person can choose it and so
+`cg-auto-run` can follow it under a granted authority — naming it is not permission to take it.
+
+Crossing a stage boundary unasked removes the review the boundary exists for. Someone who runs this
+skill to read what it produced, and gets back a closed phase instead, cannot act on the thing they
+asked for: the decision point is gone and the work is already downstream of it.
+
+Continuing *within* your own stage is different and expected — `cg-produce` drains its queue, and a
+resumed Step is the same stage, not a new one. The rule is one stage per invocation, not one unit
+of work per invocation.
+
+The single exception is a dispatch from `cg-auto-run`, which holds an explicit authority level, a
+stage budget, and a ledger. If you were not dispatched by it, you are the last stage of this turn.
 
 ## 9. Next-action response
 
@@ -211,31 +242,15 @@ Do not stop for a user-facing response after every green Step while the current 
 continue. When yielding, name the recalculated earliest `Ready` Step, the consolidated blocker set,
 or the exact evidence bundle that allows `cg-sign-off` to start.
 
-## Stage boundary — yield here
-
-**Finish your stage, then return to the user.** Do not invoke the next skill yourself, however
-obvious the route is. The `Next action` block names the successor so a person can choose it and so
-`cg-auto-run` can follow it under a granted authority — naming it is not permission to take it.
-
-Crossing a stage boundary unasked removes the review the boundary exists for. Someone who runs this
-skill to read what it produced, and gets back a closed phase instead, cannot act on the thing they
-asked for: the decision point is gone and the work is already downstream of it.
-
-Continuing *within* your own stage is different and expected — `cg-produce` drains its queue, and a
-resumed Step is the same stage, not a new one. The rule is one stage per invocation, not one unit
-of work per invocation.
-
-The single exception is a dispatch from `cg-auto-run`, which holds an explicit authority level, a
-stage budget, and a ledger. If you were not dispatched by it, you are the last stage of this turn.
-
 ## Completion check
 
 - [ ] Every selected Step was the earliest `Ready` Step at selection time.
+- [ ] `.agents/cg/principles/architecture.yaml` `graph` was applied before editing (recurse, selfSufficient, surface, adapters, stay, add-child, or elsewhere).
 - [ ] Every expected starting state and prerequisite handoff matched.
 - [ ] Every attempted Step is either `Complete` or explicitly `Blocked` from a verified state.
 - [ ] Every behavior change has its contract update.
-- [ ] Every new self-sufficient unit has its own contract, its inheritance entry, and a line in
-      its parent's Child Contracts.
+- [ ] Every new self-sufficient unit has its own YAML contract, applicable scoped `P` rules, and reciprocal
+      parent/child edges.
 - [ ] Every rule and detector landed together and fails on demand.
 - [ ] Only declared paths changed.
 - [ ] Positive and negative tests pass.

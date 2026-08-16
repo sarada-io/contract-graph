@@ -1,0 +1,511 @@
+$schema: https://sarada.io/contract-graph/schema/engineering-v1.schema.json
+engineeringVersion: "1.0"
+
+# This catalog contains non-binding engineering advice. Its entries can inform an engineering
+# decision, but they do not override repository choices and cg verify does not enforce them.
+#
+# Each entry is id, rule, and reason. The rule is the practice. The reason is why it exists:
+# what hidden coupling, missing owner, or unroutable edge it prevents. A rule without a
+# reason is a preference, and a later session cannot tell why it should follow it.
+#
+# The sole built-in structural authority is .agents/cg/principles/architecture.yaml. A practice moves
+# there only when it is narrowed to one structural invariant, has a deterministic measure, a
+# blocking detector registered by the installed verifier, and a fail-on-demand fixture. The
+# verifier-owning change assigns the next permanent A ID and removes the source practice
+# from this file in the same change; an adopting repository does not create built-in
+# enforcement by editing YAML alone.
+#
+# E never appears in enforcement.yaml. A lives in principles/architecture.yaml.
+# Imperative wording in rule expresses a strong recommendation, not a binding constraint.
+#
+# The pattern is recursive: repository → module → sub-module → component or library →
+# implementation. At every level, contract.yaml records a boundary's responsibility, declared
+# surface, graph position, routes, and verification. It does not prescribe a source filename
+# or internal source layout. The recursive mapping itself — kinds, self-sufficiency, declared
+# surface, encapsulation, stay / add-child / elsewhere, and adapters — lives in .agents/cg/principles/architecture.yaml `hierarchy` and `graph`, not here.
+#
+# These practices cover choices broader than the contract graph. They remain repository
+# choices unless promoted into the structural binding catalog with working enforcement.
+
+categories:
+  - Structural Best Practices
+  - Broader Engineering Considerations
+
+principles:
+  - id: E01
+    title: Declared-surface consumption
+    category: Structural Best Practices
+    # Enter, service, encapsulate, and bypass live in principles/architecture.yaml graph.surface.
+    # These entries are the caller remainder until import and compatibility detectors exist.
+    entries:
+      - id: E01-01
+        rule: Callers use only the paths, symbols, and types the consumed boundary's contract declares.
+        reason: An undeclared caller is a bypass. The next session cannot see that edge from the contract surface, so it rediscovers coupling by reading internals.
+      - id: E01-02
+        rule: A declared-surface change preserves compatibility or updates every affected caller in the same change.
+        reason: Compatibility debt lives in callers the changed node does not name. An agent that edits only the surface leaves those callers broken and the graph lying.
+
+  - id: E02
+    title: Construction
+    category: Structural Best Practices
+    # How implementations are assembled. Parents call graph.surface.service, not these ports.
+    # What the surface hides is graph.surface.encapsulate. Optional vendor children are graph.adapters.
+    # These entries do not decide nodes.
+    entries:
+      - id: E02-01
+        rule: Required runtime dependencies are supplied explicitly through constructors, parameters, or the implementation language's equivalent mechanism.
+        reason: A constructor or parameter list is the visible construction seam. Hidden supply means the graph and the type both omit an edge an agent must guess.
+      - id: E02-02
+        rule: Service locators, hidden registries, and mutable global dependencies are forbidden.
+        reason: A locator is a lookup table consulted at runtime instead of a dependency received at construction. The real dependencies disappear from the type, lookup is a bypass of the declared surface, and whoever registered last wins. The graph cannot record what the locator conceals.
+      - id: E02-03
+        rule: Implementations are constructed only in named application bootstrap roots, not at arbitrary call sites.
+        reason: Construction at arbitrary call sites scatters assembly of the graph. A named bootstrap root is the one place an agent reads to see which implementations sit behind which ports.
+      - id: E02-04
+        rule: Clock, filesystem, randomness, process, network, and persistence used by domain logic are constructor-supplied ports, including when only one implementation exists.
+        reason: A singleton clock or store imported at the use site is still a hidden dependency. The port makes the side-effect an explicit construction fact before a second implementation exists to justify a vendor child.
+      - id: E02-05
+        rule: Behavior shared across architectural boundaries is assembled by object composition, not class inheritance.
+        reason: Class inheritance across boundaries shares internals the contract surface does not declare. Composition keeps the shared behavior a named dependency an agent can route to.
+
+  - id: E03
+    title: Boundary confinement
+    category: Structural Best Practices
+    # A confinement policy may combine language visibility, package exports,
+    # build-system controls, and import-boundary detectors. Public and internal code may be co-located;
+    # directory placement alone neither establishes nor violates a boundary.
+    entries:
+      - id: E03-01
+        rule: Each implementation language has one declared boundary-confinement policy.
+        reason: Two policies for one language mean an agent cannot know which rule a boundary follows, so confinement becomes local folklore.
+      - id: E03-02
+        rule: Every governed boundary follows the confinement policy declared for its implementation language.
+        reason: An excepted boundary is an undeclared door. The graph's surface promise only holds if every governed unit is under the same mechanical rule.
+      - id: E03-03
+        rule: A confinement policy mechanically prevents callers from accessing paths and symbols outside a boundary's declared surface.
+        reason: Advice that callers should not reach internals is idle unless the language, build, or detector makes that reach fail. Otherwise E01 is a hope.
+      - id: E03-04
+        rule: When native language or build controls cannot enforce confinement, a blocking import-boundary detector enforces it.
+        reason: Some languages cannot seal a boundary. Without a blocking detector, encapsulation is a comment and bypasses stay invisible to cg verify.
+
+  - id: E04
+    title: Verification quality and generated artifacts
+    category: Structural Best Practices
+    # Declaring verification and reciprocity live in the contract schema and A12.
+    # Same-change contract updates live in graph.stay and produce. These entries do not restate those.
+    entries:
+      - id: E04-01
+        rule: The declared verification command is the smallest command that exercises the invariant, not a whole-repository suite.
+        reason: A whole-repository suite as verification hides which node failed and trains agents to treat green as proof of the local promise.
+      - id: E04-02
+        rule: A boundary's verification command exercises the observable guarantees of its declared surface.
+        reason: Tests that only exercise internals can stay green while the surface promise the parent relies on is already broken.
+      - id: E04-03
+        rule: Every shared or generated artifact has exactly one owning boundary.
+        reason: An artifact with two owners has no place on the graph. The next session cannot tell which contract to update when the artifact changes.
+      - id: E04-04
+        rule: Every generated artifact is changed through its owning source or generator. Hand-editing generated output is forbidden.
+        reason: Hand-edited output is a second source of truth. The owning node's verification no longer describes how the artifact is produced.
+
+  - id: E05
+    title: Permitted stores and infrastructure
+    category: Structural Best Practices
+    # Permission for a store or service to exist. Construction of ports is E02. Optional vendor
+    # nodes are graph.adapters. Data-set ownership is E07. A measured requirement
+    # to add infrastructure is E08-03. These entries do not decide nodes.
+    entries:
+      - id: E05-01
+        rule: The repository maintains a closed allowlist of permitted stores and infrastructure services.
+        reason: An unbounded store list is infrastructure that never appears as a graph decision. Each new store is a persistence and vendor question the allowlist forces into the open.
+      - id: E05-02
+        rule: Each allowlisted store or infrastructure service exists for exactly one named operational purpose.
+        reason: One store used for two purposes conceals a second responsibility. Agents treat the shared resource as evidence the boundaries belong together.
+      - id: E05-03
+        rule: Adding a store or infrastructure service to the allowlist requires an architectural amendment.
+        reason: A new store slipped in as a local dependency is stay when it should be an allowlist change and possibly add-child. The amendment is the recorded decision.
+
+  - id: E06
+    title: Reuse and shared capabilities
+    category: Broader Engineering Considerations
+    entries:
+      - id: E06-01
+        rule: Code remains local until reuse is justified.
+        reason: Premature extraction creates a node whose only consumers are speculative. The graph gains a boundary that does not yet earn self-sufficiency.
+      - id: E06-02
+        rule: Extracting a reusable capability requires at least two current consumers.
+        reason: One consumer is a local helper with a library costume. The second consumer is the evidence the responsibility is actually shared.
+      - id: E06-03
+        rule: The consumers of an extracted capability require the same consumer-independent responsibility.
+        reason: Two callers with different needs produce a utils bag. The extracted node then has no single owns an agent can route through.
+      - id: E06-04
+        rule: A reusable capability's declared surface can be understood without naming a consuming module.
+        reason: A library named for one consumer is still that consumer's internal. hierarchy.kinds.library requires a surface that makes sense on its own.
+      - id: E06-05
+        rule: A reusable capability does not depend on a consuming module.
+        reason: A dependency back to a consumer inverts the graph. The library can no longer be understood or replaced without that module.
+      - id: E06-06
+        rule: Similar syntax alone is not evidence of a reusable capability.
+        reason: Copy-shaped code is not a shared responsibility. Extracting it creates a false node that changes for unrelated reasons.
+
+  - id: E07
+    title: Persistence ownership and evolution
+    category: Broader Engineering Considerations
+    # Data-set ownership and schema evolution. Optional vendor adapters are
+    # graph.adapters children of the owning boundary, not a generic shared store.
+    # Whether a store may exist is E05.
+    entries:
+      - id: E07-01
+        rule: Every persisted data set, collection, table, stream, or file has exactly one owning boundary.
+        reason: A data set with two owners has no contract to route a schema change to. The next session reads both modules and guesses.
+      - id: E07-02
+        rule: Every persisted data set has exactly one owning writer.
+        reason: Multiple writers make invariants unenforceable from one node. The graph's ownership promise is the writer, not the readers.
+      - id: E07-03
+        rule: Persistence models, queries, and migrations remain internal to their owning boundary.
+        reason: Persistence representations on a declared surface are graph.surface.encapsulate violations. Callers then depend on a storage shape, not the owned concept.
+      - id: E07-04
+        rule: Shared data-access infrastructure provides only connection and transport mechanics.
+        reason: Shared connection mechanics are not a domain store. If the shared layer grows models, it becomes a hidden second owner of every data set.
+      - id: E07-05
+        rule: Shared data-access infrastructure does not own business data.
+        reason: A generic data layer that owns business records steals owns from every domain node and cannot be routed to for one product change.
+      - id: E07-06
+        rule: Shared data-access infrastructure does not define a generic domain store.
+        reason: A generic store is a utils bag for persistence. Every domain then bypasses its own contract to reach one undifferentiated table space.
+      - id: E07-07
+        rule: A boundary acquires a repository, store, or persistence abstraction only when it has a production persistence requirement.
+        reason: A repository port without a store is speculative construction. It invites a node and an allowlist entry the product does not yet need.
+      - id: E07-08
+        rule: "A persisted record that can outlive the code version that wrote it carries an integer `schemaVersion`."
+        reason: Records outlive the code that wrote them. Without a version on the record, readers cannot tell which promise the bytes still keep.
+      - id: E07-09
+        rule: Writers emit only the current record schema version.
+        reason: Emitting old versions extends the support window in production data, which the owning node cannot see from its current schema alone.
+      - id: E07-10
+        rule: The supported record schema version window is declared in code.
+        reason: An undeclared window means every reader invents compatibility. The owning boundary must state which past versions still belong to its surface promise.
+      - id: E07-11
+        rule: Readers upcast every supported older record schema version.
+        reason: Leaving old shapes in circulation forces every caller to understand retired schemas. Upcast keeps the declared surface on the current type.
+      - id: E07-12
+        rule: Readers return a typed error for a record below the declared support window.
+        reason: Silent drop or guess on unsupported bytes corrupts the owned data set. A typed error makes the window mechanically visible.
+      - id: E07-13
+        rule: A supported record schema version is removed only after its records are backfilled.
+        reason: Deleting a version while records remain is a surface change the graph still claims is compatible.
+
+  - id: E08
+    title: Deployment and runtime simplicity
+    category: Broader Engineering Considerations
+    # Deployable count and measured infrastructure. Allowlisting a new store or
+    # service is E05; this family does not own that amendment.
+    entries:
+      - id: E08-01
+        rule: A system starts as one deployable.
+        reason: Extra deployables split the graph's runtime before there is a scaling or isolation reason. Each deployable is a new operational boundary an agent must keep coherent.
+      - id: E08-02
+        rule: An additional deployable requires evidence of a distinct scaling, availability, security, or release boundary.
+        reason: Without evidence, a new deployable is an invented node at runtime. The graph then describes one system that operations treat as several.
+      - id: E08-03
+        rule: An infrastructure service is added only for a measured requirement.
+        reason: Unmeasured infrastructure is E05 allowlisting without a why. It adds vendor and persistence surface the contracts do not yet own.
+      - id: E08-04
+        rule: Every runtime request path is traceable from a public entry point through named composition roots to its side-effecting ports.
+        reason: An untraceable path is construction and side-effects an agent cannot follow from the declared surface. Bootstrap roots exist so that path is readable.
+
+  - id: E09
+    title: Safety and authorization
+    category: Broader Engineering Considerations
+    entries:
+      - id: E09-01
+        rule: Enforcement at an untrusted-input boundary is a deterministic code gate.
+        reason: A non-deterministic gate is a boundary that does not hold. The next session cannot rely on the contract's forbids if passage depends on a model roll.
+      - id: E09-02
+        rule: A model may classify untrusted input but does not authorize its passage.
+        reason: Authorization is owns. Delegating it to a model hides the decision off the domain node and makes bypass a prompt change.
+      - id: E09-03
+        rule: Every tool and externally side-effecting action passes through one named policy enforcement chokepoint.
+        reason: Scattered enforcement is several undeclared doors. One named chokepoint is the surface an agent reads to see what may execute.
+      - id: E09-04
+        rule: A policy enforcement chokepoint denies execution by default.
+        reason: Default-allow makes every forgotten grant a bypass. The graph's safety promise is the closed door, not the listed exceptions.
+      - id: E09-05
+        rule: Every policy result other than an explicit allow denies execution.
+        reason: Error, timeout, and unknown must not become passage. Otherwise the chokepoint fails open when the graph still claims it holds.
+      - id: E09-06
+        rule: Authorization decisions belong to the owning domain boundary.
+        reason: A shared authorizer that does not own the resource is a utils bag for policy. The decision must sit on the node that owns the side-effect.
+      - id: E09-07
+        rule: Authorization is enforced independently of the UI, route, prompt, or calling client.
+        reason: Client-side or prompt-side checks are bypassable surfaces. The owning node's enforcement is the one the contract can promise.
+      - id: E09-08
+        rule: A customer-visible action with an external side effect requires explicit confirmation.
+        reason: An irreversible effect without confirmation is a decision the graph never recorded. Confirmation is the explicit grant at the surface.
+      - id: E09-09
+        rule: Confirmation is bound to one action.
+        reason: A generic confirm is another locator. It authorizes whatever the next call happens to be.
+      - id: E09-10
+        rule: Confirmation cannot be replayed.
+        reason: A replayable confirm is a stolen grant. The owning boundary must treat it as single-use or the audit trail lies.
+      - id: E09-11
+        rule: Confirmation cannot be supplied solely by the calling client.
+        reason: Client-supplied confirmation is self-authorization. The owning node must bind the grant server-side or the surface is decorative.
+
+  - id: E10
+    title: Sensitive-data lifecycle
+    category: Broader Engineering Considerations
+    entries:
+      - id: E10-01
+        rule: A system that persists data about a person, account, or workspace provides a subject-erasure operation.
+        reason: Data about a person without an erasure path is a lifecycle the owning boundary cannot complete. Future sessions cannot route subject removal to one node.
+      - id: E10-02
+        rule: Whole-account removal is a separate operation from subject erasure.
+        reason: Conflating them hides two responsibilities behind one door. Erasure is subject data; account removal is the tenant node itself.
+      - id: E10-03
+        rule: Whole-account removal requires privileged authorization.
+        reason: Account removal is irreversible owns. An unprivileged path is a bypass of the node that exists to protect that record.
+      - id: E10-04
+        rule: Every whole-account removal writes an audit record that identifies its actor.
+        reason: Removal without an actor is a graph event nobody can reconstruct. The next session cannot tell whether the node was authorized to disappear.
+      - id: E10-05
+        rule: A scheduled job cannot invoke whole-account removal.
+        reason: A job is not an actor. Letting it remove accounts hides the grant in a timetable instead of an authorization surface.
+      - id: E10-06
+        rule: A customer-facing surface cannot invoke whole-account removal.
+        reason: The customer surface is not the privileged owner of the account node. That path would let a client delete the boundary that authorizes it.
+      - id: E10-07
+        rule: Customer identity resolves through one stable subject claim.
+        reason: Multiple identity keys split erasure across stores an agent cannot enumerate from one contract.
+      - id: E10-08
+        rule: Every store containing the stable subject claim is registered for erasure.
+        reason: An unregistered store is data the erasure surface does not know it owns. The graph then claims completeness it cannot verify.
+      - id: E10-09
+        rule: A successful erasure verifies that every registered store is empty for the subject.
+        reason: A fire-and-forget delete leaves residue. Verification is the only evidence the owning node's erasure promise held.
+      - id: E10-10
+        rule: An erasure receipt is written only after erasure verification succeeds.
+        reason: A receipt before verification is a lie on the audit surface. Callers and later sessions will treat the subject as gone while stores still hold them.
+      - id: E10-11
+        rule: Every persisted record class with a lifecycle declares a retention policy.
+        reason: Records without retention are immortal data sets. The owning boundary cannot state how long its persistence promise lasts.
+      - id: E10-12
+        rule: A retention policy is enforced by a scheduled job or storage TTL.
+        reason: A policy that exists only in prose is not owned. Enforcement is what makes the lifecycle visible in the running system.
+      - id: E10-13
+        rule: Secret values never appear in source, configuration, telemetry, or persisted business records.
+        reason: A secret in those places is an undeclared credential surface. Every clone, log, and backup becomes an entry the graph does not declare.
+      - id: E10-14
+        rule: Secret configuration contains only references resolved through a runtime secret source.
+        reason: Resolved secrets in config files are still stored secrets. References keep construction at the runtime source E02 can name.
+      - id: E10-15
+        rule: Customer content and personally identifiable information are redacted before they cross the telemetry boundary.
+        reason: Telemetry is a store with many readers. Unredacted content is a persistence edge from the owning domain to an observability system the contract does not own.
+
+  - id: E11
+    title: Runtime configuration
+    category: Broader Engineering Considerations
+    entries:
+      - id: E11-01
+        rule: A value is runtime-configurable only when an operator must change it without a deployment.
+        reason: Configuration that should have been code hides control flow off the node. An agent then searches flags instead of reading the boundary's owns.
+      - id: E11-02
+        rule: Runtime-configurable values are limited to policy, prompt, presentation, and cost.
+        reason: Unbounded configuration is a service locator for behavior. Those four classes are the ones that must move without a graph change.
+      - id: E11-03
+        rule: Control flow and domain logic remain in code.
+        reason: Logic in flags is an undeclared program. The contract surface no longer describes what the node does.
+      - id: E11-04
+        rule: Safety gates, confirmation requirements, roles, grants, and authorization rules remain in code.
+        reason: Safety in configuration is a default-allow waiting for a missing flag. Those rules are owns of the domain node, not operator knobs.
+      - id: E11-05
+        rule: The runtime-configuration registry is enumerable.
+        reason: A registry that cannot be listed is hidden construction. An agent cannot name every value that can change the running graph.
+      - id: E11-06
+        rule: The runtime-configuration registry is closed.
+        reason: "An open registry is E05 for configuration: unbounded keys appear without an amendment the graph can record."
+      - id: E11-07
+        rule: Every runtime-configuration value has one named owner.
+        reason: An unowned flag is a utils bag. The next session cannot tell which contract to update when the value's meaning changes.
+      - id: E11-08
+        rule: Every runtime-configuration value has schema validation.
+        reason: Unvalidated configuration is bad input that bypasses the node's types. The running system then diverges from the declared surface without a failed parse.
+      - id: E11-09
+        rule: Every runtime-configuration change has an audit trail.
+        reason: An unaudited change is a graph mutation with no actor. Later sessions cannot reconstruct why the node now behaves differently.
+      - id: E11-10
+        rule: Every runtime-configuration value has a revision.
+        reason: Without a revision, two writers collide silently and the owning node cannot tell which promise is live.
+      - id: E11-11
+        rule: Every runtime-configuration value defines safe behavior for absence or invalidity.
+        reason: Missing configuration that fails open is a locator default. The node must declare what it does when the knob is gone or the surface lies.
+      - id: E11-12
+        rule: Every runtime-configuration key has one named purpose.
+        reason: A key with two purposes is E05-02 for configuration. Callers then share a knob that changes for unrelated reasons.
+
+  - id: E12
+    title: Product shape
+    category: Broader Engineering Considerations
+    entries:
+      - id: E12-01
+        rule: Prefer configuration over structural change only when the configuration surface permits it.
+        reason: Structural change rewrites nodes. Configuration that lacks owner, validation, audit, revision, and default is a hidden program, so the preference exists only where that surface already holds.
+        cost: The configuration must carry an owner, validation, audit trail, revision, and safe default.
+      - id: E12-02
+        rule: Prefer narrower product scope and the simpler solo-maintainer operating model.
+        reason: Extra customer shapes invent modules and tenancy edges before the graph has evidence they are owned responsibilities.
+        cost: Flexibility and additional customer shapes wait for evidence rather than arriving speculatively.
+
+  - id: E13
+    title: Isolation and scope
+    category: Broader Engineering Considerations
+    entries:
+      - id: E13-01
+        rule: "Prefer the isolation boundary that makes a forgotten scope *unconstructable* over one enforced by a predicate somebody must remember to write."
+        reason: A predicate somebody must remember is a locator for scope. Unconstructable isolation puts the boundary in the type an agent reads.
+        cost: A single construction seam becomes a chokepoint every caller routes through, and widening it later touches every call site.
+      - id: E13-02
+        rule: Prefer passing scope identity as an explicit parameter over resolving it from ambient context.
+        reason: Ambient scope is a service locator for tenancy. The constructor and the contract both omit the edge.
+        cost: Every signature on the path widens, including the ones where the scope is obviously constant.
+      - id: E13-03
+        rule: Prefer one administrative surface that can be narrowed to a single customer over separate internal and customer-facing surfaces.
+        reason: Separate internal and customer surfaces duplicate owns and let the two drift. One surface with narrowing keeps a single promise to amend.
+        cost: The surface must stay modular and its configuration versioned before either is otherwise needed.
+
+  - id: E14
+    title: Doing less
+    category: Broader Engineering Considerations
+    entries:
+      - id: E14-01
+        rule: Prefer removing work over doing the same work faster.
+        reason: Faster leftover work still occupies the node. Removal is the change that actually shrinks what the next session must understand.
+        cost: Removing work usually means renegotiating a behavior or promise, which is wider than a local optimization.
+      - id: E14-02
+        rule: Prefer a cache you can invalidate correctly over one that is merely faster.
+        reason: A cache without an owner for each fact is a second, lying data set. The graph already forbids two owners of one record.
+        cost: Correct invalidation needs an owner for every cached fact, which is work the uncached design never pays.
+
+  - id: E15
+    title: What you charge for
+    category: Broader Engineering Considerations
+    entries:
+      - id: E15-01
+        rule: Prefer metering the unit you actually sell over the unit that is easiest to count.
+        reason: Metering the easy event makes the sold unit an undeclared aggregation. Billing then cannot sit on one owning boundary.
+        cost: The sold unit usually spans several events, so code and schema must define it before it can be metered.
+      - id: E15-02
+        rule: Prefer exhausting a limit to degrade the service over letting it fail.
+        reason: Hard failure at a commercial limit hides the product promise behind an outage. Degradation is a designed surface the contract can name.
+        cost: A degraded path is a second behavior to build, document, and keep working when nobody is exercising it.
+      - id: E15-03
+        rule: Prefer keeping internal cost mechanics off any surface the customer sees.
+        reason: Exposing internal units puts construction details on the declared surface. Customers then depend on a metering implementation, not the sold concept.
+        cost: Two vocabularies for one quantity require a translation that can drift.
+
+  - id: E16
+    title: Reversibility and simplicity
+    category: Broader Engineering Considerations
+    entries:
+      - id: E16-01
+        rule: Prefer the option with the smaller rollback and migration cost.
+        reason: An irreversible choice is a graph mutation the next session cannot undo. Smaller rollback keeps stay from becoming a one-way elsewhere.
+        cost: A bounded reversible intermediate may defer an otherwise cleaner end state.
+      - id: E16-02
+        rule: Prefer fewer seams, writers, credentials, and moving parts.
+        reason: Each extra seam is a node, a secret, or a writer the graph must keep coherent. Fewer parts preserve one owns until evidence demands a child.
+        cost: One component may retain narrowly related responsibility until evidence justifies another boundary.
+
+  - id: E17
+    title: Runtime degradation
+    category: Broader Engineering Considerations
+    entries:
+      - id: E17-01
+        rule: Prefer a bad input degrading the runtime to a safe default over taking the runtime down.
+        reason: A crash on bad input takes every node down for one local failure. A visible safe default keeps the rest of the graph reachable.
+        cost: A degraded runtime can hide bad input, so the fallback must be visible operationally even when quiet to the caller.
+
+  - id: E18
+    title: Defaults under uncertainty
+    category: Broader Engineering Considerations
+    entries:
+      - id: E18-01
+        rule: Prefer failing closed when a check cannot complete.
+        reason: Fail-open on an incomplete check is E09-05 for uncertainty. Passage without a decision is a bypass.
+        cost: An outage in the checking path becomes an outage in the feature.
+      - id: E18-02
+        rule: Prefer the design with the smaller blast radius over the one with the stronger perimeter.
+        reason: One trusted zone makes every forgotten check a repository-wide bypass. Partition keeps a breach inside one node's blast radius.
+        cost: Partitioning duplicates state and operational surface that one trusted zone could share.
+      - id: E18-03
+        rule: Prefer a credential that expires on its own to one that must be remembered and rotated.
+        reason: A credential that must be remembered is a secret with no lifecycle on the owning node. Expiry makes revocation the default.
+        cost: Short-lived credentials need issuing infrastructure and a renewal path that can fail.
+
+  - id: E19
+    title: Grants and evidence
+    category: Broader Engineering Considerations
+    entries:
+      - id: E19-01
+        rule: Prefer naming each authorization grant explicitly.
+        reason: Implied grants are locators for authorization. An unnamed use cannot appear on the owning node's surface or audit trail.
+        cost: Every legitimate new use requires a new grant, and the grant list becomes maintained policy.
+      - id: E19-02
+        rule: Prefer an audit record you would be willing to show an auditor to one that merely satisfies a log-retention setting.
+        reason: A retention-only log is telemetry, not evidence. Actor, intent, and outcome are what make a later session reconstruct the decision.
+        cost: Records worth showing carry actor, intent, and outcome, which adds capture, storage, and redaction work.
+
+  - id: E20
+    title: Trust boundaries
+    category: Broader Engineering Considerations
+    entries:
+      - id: E20-01
+        rule: Prefer treating anything that crossed a trust boundary as untrusted again on the far side.
+        reason: Trusting a caller because it already checked is a bypass of this node's surface. Re-validation keeps owns on this side of the edge.
+        cost: Re-validation duplicates checks a caller already performed and adds latency.
+      - id: E20-02
+        rule: Prefer an identifier that reaches a surface being opaque and non-enumerable, resolved back to the internal identifier server-side.
+        reason: Enumerable internal IDs on a surface let callers walk the graph of records the node did not declare as public entry.
+        cost: Every request gains a resolution step and a mapping that must be stored, cached, and revoked.
+      - id: E20-03
+        rule: Prefer an identifier crossing a trust boundary carrying its own integrity proof over one trusted because of where it arrived from.
+        reason: Trusting an ID because of where it arrived from is ambient authority. A proof binds the identifier to this node's check.
+        cost: Signing and verification add hot-path work plus key distribution and rotation.
+
+  - id: E21
+    title: Guarantees owned by the application
+    category: Broader Engineering Considerations
+    entries:
+      - id: E21-01
+        rule: When a platform offers no primitive for a required boundary, state that the application layer is the whole control instead of implying platform enforcement.
+        reason: Implying platform enforcement hides owns on a layer the contract cannot verify. Naming the application as the control puts the rule on a node an agent can find.
+        cost: The application rules implementing the control become security-severity and their detectors must block delivery.
+
+  - id: E22
+    title: The surface carries the task
+    category: Broader Engineering Considerations
+    entries:
+      - id: E22-01
+        rule: Prefer the surface where a task begins to carry everything that task needs over sending someone elsewhere to find it.
+        reason: Sending someone elsewhere splits one task across nodes the user cannot route. The starting surface is the contract the session already entered.
+        cost: That surface absorbs progressive detail and bounded integrations, increasing its UI responsibility.
+      - id: E22-02
+        rule: Prefer telling someone honestly that a request cannot be completed over returning something plausible that was not established.
+        reason: A plausible guess is a lying surface. The next session treats invented data as owned fact.
+        cost: An honest refusal is a designed state with copy and a follow-up path, and it gives a worse demo.
+
+  - id: E23
+    title: Perceived responsiveness
+    category: Broader Engineering Considerations
+    entries:
+      - id: E23-01
+        rule: Prefer the design whose worst case you can state over the one whose average is better.
+        reason: An average that hides the tail makes the surface promise untestable. A stated worst case is an invariant the owning node can verify.
+        cost: A predictable surface may give up throughput that a bursty design delivers on a good day.
+      - id: E23-02
+        rule: Prefer measuring the real path before optimizing it.
+        reason: Unmeasured optimization invents a bottleneck node. Measurement keeps the change on the path that actually owns the delay.
+        cost: Measurement takes time the fix would have taken and may only confirm the initial suspicion.
+      - id: E23-03
+        rule: Prefer bounded queues, pools, and payloads to unbounded ones.
+        reason: Unbounded buffers are undeclared data sets that grow until the node disappears. A bound is a visible rejection the contract can name.
+        cost: A bound turns an unpredictable slowdown into a visible rejection that needs a designed response.

@@ -75,7 +75,7 @@ tree.
 
 ```text
 request
-  → routing map
+  → contract-owned route
   → module contract
   → sub-module contract
   → relevant implementation
@@ -84,6 +84,27 @@ request
 
 The agent reads code, but only after the contracts have located the change. That replaces broad
 architectural rediscovery with bounded code reading.
+
+When the agent *writes* or extends the graph, `.agents/cg/principles/architecture.yaml` `graph` is the walk,
+not a bag of optional fields. The schema requires every key so an installed catalog cannot drop a
+step. JSON Schema does not execute the order; the YAML order is the protocol:
+
+| Order | Key | Role |
+|---|---|---|
+| 1 | `node` | One owned responsibility, one hierarchy kind, one `contract.yaml`. |
+| 2 | `recurse` | Apply the rest at every candidate inside the unit. |
+| 3 | `selfSufficient` | Does this unit deserve a node (named function, small surface, own change reasons). |
+| 4 | `surface` | Enter only through the declared contract surface. Encapsulate internals, algorithms, persistence, framework types, and vendor types behind it. A new entry or a bypass is not stay. |
+| 5 | `decide` | **stay**, **add-child**, or **elsewhere** — the only three outcomes. |
+| 6 | `compose` | Parent orchestrates; children decompose `owns`. |
+| 7 | `stop` | Quit splitting. Not per file; depth is mixed and uncapped; inseparable packages need a named rationale. |
+| 8 | `forbid` | A new folder, file, or dependency is not a node. |
+| 9 | `adapters` | Vendor split of `surface.encapsulate`: each optional vendor is a child behind a parent-owned port. |
+
+`surface` is core encapsulation, so it sits before `decide`. `adapters` is last because it is not
+a fourth decide id; it overrides `forbid` for optional Mongo/PostgreSQL-style splits. Skills apply
+that protocol; there is no import scanner, so `cg verify` still only proves declared paths exist.
+The [lifecycle](docs/lifecycle.md) spells the same walk for every stage.
 
 A useful contract answers:
 
@@ -97,20 +118,54 @@ A useful contract answers:
 The result is both a better overview of the whole system and a smaller working surface for one
 change.
 
+## What Contract Graph binds
+
+Contract Graph is opinionated about software structure, not every software-design choice. Its
+authority has four explicit lanes:
+
+| Family | Authority | Source | Loading |
+|---|---|---|---|
+| `A` | Machine-enforced structural binding | `.agents/cg/principles/architecture.yaml` | Applies to every contract automatically. |
+| `P` | Repository-owned product binding | `.agents/cg/guidelines/product.yaml` | Applies only where a contract lists its ID. |
+| `E` | Non-binding engineering guidelines | `.agents/cg/guidelines/engineering.yaml` | Consulted as advice; never treated as compliance. |
+
+An `A` entry is binding only because it states one structural invariant, one deterministic
+measure, a registered blocking detector, and a negative fixture proving the detector fails on
+demand. If any of those is missing, the statement remains guidance.
+
+This boundary makes Contract Graph complementary to SpecKit and similar specification frameworks.
+Those tools can own feature specifications, a repository constitution, broader engineering
+policy, and the delivery workflow. Contract Graph supplies the structural graph, the recursive
+mapping (`hierarchy.kinds` and the `graph` walk: node, recurse, selfSufficient, surface, decide, compose, stop, forbid, adapters),
+and the `A` rules that keep an authored graph valid.
+When both are installed, replacing `workflow.md` does not replace `.agents/cg/principles/architecture.yaml`.
+
+Non-binding does not mean permanent. An `E` practice may be promoted when structural impact,
+deterministic measurement, blocking enforcement, and a negative fixture all exist. Core promotion
+is delivered in the codebase that owns the installed verifier: it registers the detector, assigns
+the next permanent `A` ID, and removes the D copy in the same change. An adopting repository
+cannot turn prose into a built-in detector merely by editing YAML; until its verifier supports the
+rule, keep it as D guidance, adopt a product-specific version as `P`, or propose the generic
+binding to Contract Graph.
+
 ## What works today
 
 | Capability | Shipped behavior |
 |---|---|
-| Contract hierarchy | Repository and mapped-folder `contract.md` nodes with required boundaries, entry points, invariants, verification, and child-contract routes. |
-| Task routing | `map/routing.md` directs a request to its first module contracts. |
-| Brownfield adoption | `cg-warmup` discovers real module roots and writes their first contracts from the code that exists. |
-| Rule binding | Architecture and product rules are inherited into mapped contracts; generated blocks are synchronized and checked for drift. |
-| Honest enforcement | Machine-expressible rules owe detector rows, and contract shape, transient-plan references, mappings, and generated artifacts are verified. |
-| Agent discovery | Selectable profiles generate entry points for Claude Code, Codex, GitHub Copilot, and Antigravity. |
+| Contract hierarchy | One schema-backed `.agents/cg/contract.yaml` per governed boundary, recursively connected from repository to implementation. |
+| Graph verification | Parent/child reciprocity, reference resolution, acyclicity, reachability, composition state, surface paths, and invariant/verification links are machine-checked. |
+| Task routing | Each contract owns deterministic task phrases that route a request toward relevant descendants. |
+| Brownfield adoption | `cg-warmup` discovers real module roots and writes and connects contracts from the code that exists. |
+| Rule binding | Global `A` structural rules apply from `.agents/cg/principles/architecture.yaml`; contracts list only boundary-scoped `P` product rules, and `cg contract context` resolves both without copying text. |
+| Human and machine views | The YAML file is canonical; the installed JavaScript library and CLI project Markdown, JSON, tree, and Mermaid views. |
+| Principle and guideline catalogs | Architecture principles, engineering guidelines, and product guidelines are authored YAML. Engineering and product live under `guidelines/`; leftover Markdown or compiled JSON for those catalogs fails verification. |
+| Honest enforcement | Every `A` rule names a registered detector and negative fixture; repository `P` rules owe enforcement-map rows. Contract structure, transient-plan references, rule IDs, and generated discovery artifacts are verified. |
+| Agent discovery | Selectable profiles generate entry points for Claude Code, Codex, Cursor, GitHub Copilot, and Antigravity. |
 | Delivery lifecycle | Seven skills cover planning, preparation, serial production, sign-off, unblocking, brownfield warmup, and opt-in unattended traversal. |
 | State-derived routing | `cg next` reads the Step queue from disk; `cg residue` finds planning artifacts no roadmap claims. |
 
-Everything is plain Markdown, JSON, and JavaScript. The package has no runtime dependencies.
+Everything is plain Markdown, YAML, JSON, and JavaScript. The package installation includes its
+YAML parser dependency. The contract engine is exported for other Node.js tools to use directly.
 
 ## Quick start
 
@@ -122,8 +177,8 @@ npx contract-graph init .
 
 This scaffolds the contract system, generates its discovery files, verifies it, and names the next
 action. Re-running `init` updates framework-owned assets while preserving repository-owned context.
-The starter module shows the contract shape; fill the repository identity and routing map, then
-follow the printed route.
+The starter module shows the contract shape; fill the root contract's purpose, boundaries, and
+routes, then follow the printed route.
 
 ### Existing repository
 
@@ -133,17 +188,30 @@ npx contract-graph modules
 ```
 
 Brownfield initialization deliberately does not invent a `src/` module. It reports detected module
-roots as unmapped; run the scaffolded `cg-warmup` skill once to write contracts and routing for the
+roots as unmapped; run the scaffolded `cg-warmup` skill once to write and connect contracts for the
 software that is actually there.
+
+## Upgrading from 0.2
+
+0.3.0 is a breaking scaffold change: markdown contracts become YAML nodes, rule families become
+`A` / `P` / `E`, and decision-log ids become `DA-NN` / `DU-NN`. `cg init` preserves repository-owned
+catalogs, so a 0.2 tree is not upgraded by re-running init. Archive the 0.2 graph, install 0.3,
+then run `cg-warmup` from the code. Details: [Migrating from 0.2](docs/migration-0.3.0.md).
 
 ## Main commands
 
 | Command | Purpose |
 |---|---|
 | `cg init [dir]` | Install or upgrade the scaffold, generate derived artifacts, verify, and print the next action. |
-| `cg verify [dir]` | Verify contracts, skills, mappings, principles, and generated state. |
-| `cg sync [dir]` | Regenerate inherited blocks and editor discovery artifacts. |
-| `cg modules [dir]` | Show detected module roots and whether the graph governs them. |
+| `cg build [dir] [--check]` | Assemble or verify the complete package target under `build/`. |
+| `cg verify [dir]` | Verify architecture principles, contracts, graph closure, product-rule enforcement, guideline grammar, skills, and generated state. |
+| `cg contract show/context/children/parents/surface` | Query one contract and its resolved context. |
+| `cg contract route --task "…"` | Match a request against routes owned by contracts. |
+| `cg contract verify [dir]` | Verify the structured contracts and their complete authored graph. |
+| `cg graph show [dir] [--format tree\|json\|mermaid]` | Project the full composition graph. |
+| `cg graph verify [dir]` | Verify the same graph invariants for graph-oriented tooling. |
+| `cg sync [dir]` | Regenerate editor discovery artifacts; authored contracts are never rewritten. |
+| `cg modules [dir]` | Show detected module roots, whether the graph governs them, and which governed nodes still need `graph.recurse`. |
 | `cg next [dir]` | Compute the next lifecycle stage from the Step queue on disk. |
 | `cg residue [dir]` | Report unclaimed planning artifacts. |
 | `cg harvest <manifest>` | Verify decision promotion and phase-close drainage. |
@@ -152,28 +220,131 @@ software that is actually there.
 
 Run `cg --help` for flags and exit behavior.
 
-## Contracts first; governance second
+## Building the package
 
-The product is the context graph. Governance exists because a graph that drifts from the code makes
-every later session worse.
+Structural bindings are authored in `src/cg/principles/architecture.yaml`. Architecture and product
+principles are authored YAML at `src/cg/principles/architecture.yaml` and
+`src/cg/guidelines/product.yaml`. Never maintain a catalog in two formats by hand.
+From a source checkout, run:
 
-Contract Graph therefore enforces one foundational rule:
+```bash
+npm run build
+```
+
+The build validates authored YAML catalogs, then assembles the complete package target:
+
+```text
+build/                            package target; the only input to npm pack
+  package.json
+  manifest.json                   hashes every other target file
+  agent/
+    cg/
+      contract.yaml
+      principles/architecture.yaml
+      guidelines/*.yaml
+      workflow.md
+      phases.json
+      enforcement.yaml
+      schema/*.json
+    skills/**
+    hooks/**
+    rules/**
+    profiles/**
+    templates/**
+  script/*.js
+```
+
+There are three policy surfaces. `src/cg/principles/architecture.yaml` is executable structural authority: every
+`A` rule includes a deterministic measure, registered detector, and negative fixture.
+`src/cg/guidelines/engineering.yaml` contains the non-binding `E` engineering catalog. Each entry is `id`,
+`rule`, and `reason`: the practice, and why it exists. A preference may also carry `cost`.
+`src/cg/guidelines/product.yaml` contains repository-owned
+`P` guidelines and starts empty. Repeating the build with unchanged sources produces identical
+bytes.
+
+Engineering guidelines are authored YAML, analogous to the enforcement map:
+
+```yaml
+$schema: https://sarada.io/contract-graph/schema/engineering-v1.schema.json
+engineeringVersion: "1.0"
+categories:
+  - Structural Best Practices
+  - Broader Engineering Considerations
+principles:
+  - id: E01
+    title: Declared-surface consumption
+    category: Structural Best Practices
+    entries:
+      - id: E01-01
+        rule: Callers use only the paths, symbols, and types the consumed boundary's contract declares.
+        reason: An undeclared caller is a bypass. The next session cannot see that edge from the contract surface, so it rediscovers coupling by reading internals.
+  - id: E12
+    title: Product shape
+    category: Broader Engineering Considerations
+    entries:
+      - id: E12-01
+        rule: Prefer configuration over structural change only when the configuration surface permits it.
+        reason: Structural change rewrites nodes. Configuration that lacks owner, validation, audit, revision, and default is a hidden program, so the preference exists only where that surface already holds.
+        cost: The configuration must carry an owner, validation, audit trail, revision, and safe default.
+```
+
+Product bindings are the same YAML shape, empty on purpose:
+
+```yaml
+$schema: https://sarada.io/contract-graph/schema/product-v1.schema.json
+productVersion: "1.0"
+principles: []
+```
+
+A preference may carry `cost`. IDs, family ownership, duplicates, and malformed entries are
+rejected before any target file is replaced. `A` rules are authored directly in the YAML architecture-principles catalog.
+
+Run `npm run build:check` to verify the complete `build/` directory without rewriting it.
+
+`npm run pack` rebuilds and passes only this target directory to npm; the tarball lands at the
+repository root. The tarball receives `agent/cg/principles/architecture.yaml` and
+`agent/cg/guidelines/engineering.yaml` plus `agent/cg/guidelines/product.yaml`. Markdown remains only where it is the runtime instruction
+format—principally `workflow.md`, `SKILL.md`, and scaffold templates. npm does not gather additional
+files from the working tree.
+
+## Structure first; the contract graph keeps it true
+
+The product promise is recursive, scalable structure: repository → module → sub-module → component
+or library → implementation. YAML contract nodes record that structure as a traversable graph so
+every engineering loop can begin from explicit ownership and boundaries instead of rediscovering
+them from unrelated code.
+
+Structural binding exists because a graph that drifts from the code makes every later session
+worse. Its job is to keep changes confined and to close each loop with code and graph truth aligned:
+
+```text
+route → responsible contract → bounded change → contract update → verification → truthful graph
+```
+
+Contract Graph therefore has one foundational enforcement rule:
 
 > A rule and its enforcing test land in the same commit.
 
-Rules, detectors, inheritance, and lifecycle controls protect the contracts; they are not a
+Rules, detectors, binding references, and lifecycle controls protect the contracts; they are not a
 substitute for useful project context. If enforcement grows while the graph becomes less useful for
 locating code, the project has missed its purpose.
 
+The framework ships strong architecture principles, but it does not retain ownership of an adopting
+repository's architecture. `cg init` preserves installed contracts, the architecture principles,
+guidelines, enforcement mappings, and workflow context. Repository owners may deliberately keep or
+amend those defaults. Broader application-architecture advice remains guidance unless the
+repository adopts a product-specific constraint as `P` or the verifier owner promotes a generic
+structural invariant through the measured `A` gate.
+
 ## The current boundary
 
-The folder-level context graph, task routing, brownfield mapping, inheritance, synchronization, and
-verification are built and tested.
+The recursive YAML context graph, task routing, brownfield discovery workflow, rule resolution,
+structural closure verification, and projections are built and tested.
 
-The complete recursive vision is not yet machine-proven. Contract Graph requires every contract to
-name its children or declare itself a leaf, but it cannot yet prove that the declared child set is
-complete against the implementation. Code-level contract composition, verified closure, and safe
-parallel-worker coordination remain upcoming.
+Contract Graph proves the authored graph is connected and internally closed. It cannot yet prove
+that source code contains no undeclared child boundary, that every named symbol is exported, or
+that code-level imports obey every declared dependency. Ecosystem-specific composition and import
+detectors, plus safe parallel-worker coordination, remain upcoming.
 
 Contracts already create the decoupling boundary parallel work needs. What is not yet shipped is
 the structural proof that two proposed work areas are fully independent. The project will not call
@@ -182,13 +353,15 @@ parallel execution safe until that proof and write confinement exist.
 ## Read next
 
 - [Vision](docs/vision.md) — the complete concept, origin, causal model, and next structural work.
-- [Contracts](docs/contracts.md) — folder contracts, code contracts, abstraction, and current limits.
-- [Lifecycle](docs/lifecycle.md) — how the seven skills move work through the graph.
+- [Contracts](docs/contracts.md) — the YAML node format, JSON Schema, graph invariants, CLI/library views, and current limits.
+- [Lifecycle](docs/lifecycle.md) — the graph walk that decides a node, and how the seven skills move work through the graph.
+- [Migrating from 0.2](docs/migration-0.3.0.md) — breaking scaffold changes and the upgrade path.
+- [Structural binding decision](docs/decisions/architecture-principles-consolidation.md) — why binding authority is separate from architecture advice and how promotion works.
 - [Contributing](CONTRIBUTING.md) — tests and contribution expectations.
 
 ## Requirements
 
-Node.js 18.17 or newer. No runtime dependencies.
+Node.js 18.17 or newer. The package includes its YAML parser dependency.
 
 ## Licence 
 

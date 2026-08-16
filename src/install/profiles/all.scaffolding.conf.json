@@ -1,0 +1,12 @@
+{
+  "name": "all",
+  "displayName": "All supported editors",
+  "rootPointers": {},
+  "extends": [
+    "claude",
+    "codex",
+    "cursor",
+    "copilot",
+    "antigravity"
+  ]
+}

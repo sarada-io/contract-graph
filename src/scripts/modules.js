@@ -92,14 +92,16 @@ export function detectModuleRoots(repoRoot) {
 }
 
 /**
- * Compare detected roots with what `map/inheritance.json` actually governs.
+ * Compare detected roots with the units represented by contract.yaml files.
  *
- * A root is covered when the map names it or names an ancestor of it — a contract on
- * `services/` governs `services/billing/` through inheritance, and reporting that as a gap
+ * A root is covered when a contract names it or names an ancestor of it — a contract on
+ * `services/` governs `services/billing/` through that ancestor unit, and reporting that as a gap
  * would train people to ignore the report.
  */
-export function moduleCoverage(repoRoot, folders) {
-  const mapped = Object.keys(folders ?? {});
+export function moduleCoverage(repoRoot, governedUnits) {
+  const mapped = Array.isArray(governedUnits)
+    ? governedUnits.filter((unit) => unit !== ".")
+    : Object.keys(governedUnits ?? {});
   const covers = (root) =>
     mapped.some((key) => root === key || root.startsWith(`${key}/`));
 
@@ -179,4 +181,50 @@ export function subBoundaryNames(repoRoot, modulePath) {
 /** How many separate boundaries a module's source branches into. */
 export function subBoundaryCount(repoRoot, modulePath) {
   return subBoundaryNames(repoRoot, modulePath).length;
+}
+
+/** Below this, a branch is noise; at this, warmup must recurse or record why not. */
+export const SUB_BOUNDARY_ADVISORY_FLOOR = 3;
+
+export function hasLeafRationale(contract) {
+  return (contract.assumptions ?? []).some(
+    (item) => /^Leaf rationale:/i.test(item) && item.length >= 50,
+  );
+}
+
+/**
+ * Branch-point directories under this unit that no child contract claims.
+ *
+ * A composed node with two children of six packages is not finished — `graph.recurse` still
+ * applies. Matching any path segment against the branch names covers both `src/foo` children
+ * and deeper ones (`src/foo/bar` still claims `foo`).
+ */
+export function undeclaredSubBoundaries(repoRoot, contract) {
+  const names = subBoundaryNames(repoRoot, contract.unit);
+  if (!names.length) return [];
+  const prefix = contract.unit === "." ? "" : `${contract.unit}/`;
+  const declared = new Set();
+  for (const child of contract.relations?.children ?? []) {
+    const rel = typeof child?.contract === "string" ? child.contract : "";
+    const unit = rel.replace(/\/\.agents\/cg\/contract\.ya?ml$/, "");
+    const rest = prefix && unit.startsWith(prefix) ? unit.slice(prefix.length) : unit;
+    for (const part of rest.split("/")) {
+      if (names.includes(part)) declared.add(part);
+    }
+  }
+  return names.filter((name) => !declared.has(name));
+}
+
+/** Governed nodes where `graph.recurse` has not been applied or excused. */
+export function openDescent(repoRoot, records) {
+  const open = [];
+  for (const record of records ?? []) {
+    const { contract } = record;
+    if (!contract || contract.kind === "repository") continue;
+    if (hasLeafRationale(contract)) continue;
+    const names = undeclaredSubBoundaries(repoRoot, contract);
+    if (names.length < SUB_BOUNDARY_ADVISORY_FLOOR) continue;
+    open.push({ unit: contract.unit, count: names.length, names });
+  }
+  return open;
 }

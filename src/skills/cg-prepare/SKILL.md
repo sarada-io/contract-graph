@@ -87,6 +87,15 @@ Blocked`. No later Step may be `Ready`, `In progress`, or `Complete` before the 
 
 ## 3. Build the Step ledger
 
+Before assigning paths, apply `.agents/cg/principles/architecture.yaml` `hierarchy.kinds` and `graph` to
+every behavior the phase adds: recurse until the smallest node, then stay, add-child, or elsewhere.
+Size, reuse, or a new dependency is not a new node. `graph.surface` is declared entry and
+encapsulation: `graph.surface.service` lists the named operations callers use; a new entry point is
+a surface amendment or `add-child`, and internals on the surface are not stay. `graph.adapters` is
+the vendor case: a second optional vendor client is
+`add-child` behind a parent-owned port. A Step whose editable paths sit
+on the wrong domain is a preparation defect.
+
 Inventory every affected item:
 
 | Item | Current owner | Final owner | Action | Consumers | Step(s) | Verification |
@@ -113,10 +122,10 @@ Apply these rules to every Step:
 
 - A behavior, boundary, invariant, entry point, or operational-assumption change owns the matching
   contract and detector update.
-- A Step that introduces a self-sufficient unit — one delivering a nameable functionality and
-  reaching outside itself only rarely — owns that unit's contract, its `inheritance.json` entry,
-  and the line added to its parent's Child Contracts. `cg verify` fails a parent that declares no
-  children while its source branches, so this cannot be deferred to a later Step.
+- A Step that introduces a self-sufficient unit — `graph.selfSufficient` in
+  `.agents/cg/principles/architecture.yaml` — owns that unit's `contract.yaml`, its applicable `P` rules,
+  and reciprocal parent/child edges. `cg verify` rejects a structurally incomplete graph, so this
+  cannot be deferred to a later Step.
 - A new or changed rule and its detector land with the implementation.
 - No Step depends on `cg-sign-off` or a later cleanup Step to make its contract
   truthful.
@@ -144,7 +153,7 @@ Each Step carries:
 |---|---|
 | `Priority` | stable Step number used to break ties between ready Steps |
 | `Depends on` | Steps whose verified handoffs this Step consumes |
-| `Blocked by` | unresolved `DL-02` entries or unavailable external prerequisites |
+| `Blocked by` | unresolved `DU-NN` entries or unavailable external prerequisites |
 | `Status` | `Waiting`, `Ready`, `Blocked`, `In progress`, or `Complete` |
 
 Set state deterministically:
@@ -209,7 +218,7 @@ Every Step has one runnable `Done when` command. It includes:
 
 Separately list `cg-sign-off` checks that only make sense after the full sequence:
 
-- declared graph equals built graph;
+- authored contracts still describe and route through the implemented composition;
 - exactly one final owner, writer, route, or resource;
 - full role-by-route matrix;
 - composed isolation across security domains; and
@@ -278,11 +287,12 @@ cold: a section that leans on what a neighbouring Step said is not a brief, it i
 
 - [ ] The phase outcome and acceptance gate are unchanged.
 - [ ] Every affected item appears in the Step ledger.
+- [ ] `.agents/cg/principles/architecture.yaml` `graph` placed each new behavior (recurse, selfSufficient, surface, adapters, stay, add-child, or elsewhere).
 - [ ] Steps have one stable priority order and explicit dependency edges.
 - [ ] Every Step has a valid initial queue state and exact blocker references.
 - [ ] Every Step owns its contract and detector changes.
-- [ ] Every Step creating a self-sufficient unit owns its contract and its parent's Child
-      Contracts line.
+- [ ] Every Step creating a self-sufficient unit owns its `contract.yaml` and reciprocal
+      `relations.children` / `relations.parent` edges.
 - [ ] Every atomic move stays inside one Step.
 - [ ] Every repeated path has an explicit before/after handoff.
 - [ ] One execution context and baseline are named.

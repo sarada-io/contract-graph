@@ -1,0 +1,25 @@
+{
+  "_comment": "Which rule families each lifecycle phase loads. `always` families are read on every task; contracts carry only the IDs scoped to their boundary. `conditional` families are loaded when work touches that domain — making E ambient would turn advice into a rule. Every family that ships must be named by at least one phase; `cg verify` fails otherwise.",
+  "phases": {
+    "plan": {
+      "always": ["A", "P"],
+      "conditional": ["E"]
+    },
+    "prepare": {
+      "always": ["A", "P"],
+      "conditional": ["E"]
+    },
+    "produce": {
+      "always": ["A", "P"],
+      "conditional": ["E"]
+    },
+    "sign-off": {
+      "always": ["A", "P"],
+      "conditional": ["E"]
+    },
+    "unblock": {
+      "always": ["A", "P"],
+      "conditional": ["E"]
+    }
+  }
+}

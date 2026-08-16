@@ -1,0 +1,47 @@
+$schema: https://sarada.io/contract-graph/schema/contract-v1.schema.json
+contractVersion: "1.0"
+# Quote any scalar that contains ": " so YAML does not parse it as a nested mapping.
+id: replace-with-stable-id
+name: Replace with boundary name
+kind: module
+unit: replace/with/repository-relative/unit
+summary: Replace with one sentence that distinguishes this boundary from every sibling.
+purpose: Explain why the parent contains this unit, how the parent uses it, and who enters it.
+responsibilities:
+  owns:
+    - Name the one cohesive capability this boundary owns.
+  allows:
+    - Name work that correctly belongs here.
+  forbids:
+    - Name work that belongs elsewhere and identify its owner.
+surface:
+  - id: public-api
+    kind: service
+    path: replace/with/path/relative/to/unit
+    summary: Name the service type whose operations are how callers use this boundary.
+    symbols: []
+    contract:
+      accepts: []
+      returns: []
+      fails: []
+      guarantees:
+        - State the observable promise this surface keeps.
+invariants: []
+relations:
+  parent:
+    contract: .agents/cg/contract.yaml
+    uses: Explain what responsibility the parent delegates here.
+  composition: leaf
+  children: []
+  dependencies: []
+rules: []
+verification: []
+routes: []
+agent:
+  readFirst:
+    - Read the parent contract and resolve every rule listed in `rules`.
+  beforeChange:
+    - "Apply the repository binding catalog `graph` section before editing: recurse, selfSufficient, surface, stay, add-child, or elsewhere."
+    - Update this contract with every boundary, surface, invariant, or dependency change; create a child contract.yaml when the decision is add-child.
+assumptions: []
+exceptions: []

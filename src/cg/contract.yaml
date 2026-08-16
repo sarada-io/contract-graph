@@ -1,0 +1,72 @@
+$schema: https://sarada.io/contract-graph/schema/contract-v1.schema.json
+contractVersion: "1.0"
+id: repository
+name: Repository contract
+kind: repository
+unit: .
+summary: The root of this repository's traversable context graph.
+purpose: Replace this sentence with what the repository builds, its stable technical identity, and how its top-level capabilities cooperate. State exclusions in `responsibilities.forbids`. This contract is the first context an agent receives before routing into narrower contracts.
+responsibilities:
+  owns:
+    - The product-wide boundary, top-level composition, and routes into governed implementation units.
+  allows:
+    - Repository-wide workflow, architecture, product, and governance decisions.
+  forbids:
+    - Replace this sentence with the product shapes and responsibilities this repository must not acquire.
+surface: []
+invariants:
+  - id: CG_GRAPH_VALID
+    statement: Every governed boundary is reachable from this root through reciprocal parent and child contract edges.
+    verification:
+      - cg-verify
+relations:
+  parent: null
+  composition: composed
+  children:
+    - contract: src/.agents/cg/contract.yaml
+      uses: Starter implementation module; replace this edge with the repository's real top-level boundaries.
+  dependencies: []
+rules: []
+verification:
+  - id: cg-verify
+    command: cg verify
+    covers:
+      - CG_GRAPH_VALID
+routes:
+  - id: starter-source
+    when:
+      - source
+      - implementation
+      - module
+    contracts:
+      - src/.agents/cg/contract.yaml
+agent:
+  readFirst:
+    - Read `.agents/cg/principles/architecture.yaml`; its `hierarchy.kinds` and `graph` sections are the recursive mapping and node decision. Its A rules are the machine-enforced structural authority.
+    - Read repository-owned P rules under `.agents/cg/guidelines/` when this contract lists them.
+    - Read `.agents/cg/workflow.md` for the repository-owned delivery lifecycle. SpecKit or another framework may replace that file; it does not replace `graph`.
+    - Use `cg contract route --task <request>` or the routes in this file to select the first child contracts.
+  beforeChange:
+    - "Apply `.agents/cg/principles/architecture.yaml` `graph` before editing: recurse, selfSufficient, surface, stay, add-child, or elsewhere."
+    - Traverse child contracts until the smallest responsible boundary is clear; only then inspect implementation.
+    - Update this contract in the same change when owns, surface, invariants, relations, or routes change; create a child contract.yaml in the same change when the decision is add-child.
+    - Preserve unrelated working-tree changes.
+assumptions: []
+exceptions: []
+extensions:
+  contractGraph:
+    skills:
+      - name: cg-auto-run
+        path: .agents/skills/cg-auto-run/SKILL.md
+      - name: cg-plan
+        path: .agents/skills/cg-plan/SKILL.md
+      - name: cg-prepare
+        path: .agents/skills/cg-prepare/SKILL.md
+      - name: cg-produce
+        path: .agents/skills/cg-produce/SKILL.md
+      - name: cg-sign-off
+        path: .agents/skills/cg-sign-off/SKILL.md
+      - name: cg-unblock
+        path: .agents/skills/cg-unblock/SKILL.md
+      - name: cg-warmup
+        path: .agents/skills/cg-warmup/SKILL.md

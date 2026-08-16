@@ -4,7 +4,8 @@ npm-debug.log*
 .DS_Store
 .claude/settings.local.json
 
-# Local working files — never committed
+# Generated working trees — `npm run clean` deletes them
 plan/
 tmp/
 build/
+compiled/   # leftover name for build/; keep ignored so it cannot be committed

@@ -5,8 +5,8 @@
  * `cg verify` proves a scaffold is well-formed. It cannot prove an editor *finds* it, because
  * that depends on the editor. This closes that gap by hand: scaffold, open, look.
  *
- * Never shipped as a command — `bin/cg.js` does not route here. Run it through `npm run try`
- * (works everywhere) or `./cg try <target>` (POSIX shells).
+ * Never shipped as a command — `bin/cg.js` does not route here. Run it through `npm run try`,
+ * which works on every supported development platform.
  *
  * Destructive by design: it deletes and recreates its target directory. Every path is asserted
  * to sit inside `<repo>/tmp/` before anything is removed — see `resolveTarget`.
@@ -46,6 +46,11 @@ const TARGETS = {
     reads: ["AGENTS.md", ".agents/"],
     open: "codex — AGENTS.md should be picked up as project context",
   },
+  cursor: {
+    label: "Cursor",
+    reads: ["AGENTS.md", ".agents/skills/cg-*/SKILL.md"],
+    open: "Cursor — AGENTS.md should appear as project rules, and /cg-plan should be offered as a skill",
+  },
   copilot: {
     label: "GitHub Copilot",
     reads: [".github/copilot-instructions.md"],
@@ -57,7 +62,6 @@ const USAGE = `cg dev helper — scaffold a throwaway repo you can open in a rea
 
 Usage:
   npm run try -- <target>                scaffold tmp/<target> and verify it
-  ./cg try <target>                      same, POSIX shells
 
 Targets:
 ${Object.entries(TARGETS)
@@ -139,7 +143,7 @@ function main(argv) {
   process.stdout.write(`${existed ? "replaced" : "created"} ${rel}\n`);
   process.stdout.write(
     `  scaffolded: ${counts.folders} contract(s), ${counts.roots} root file(s), ` +
-      `${counts.skills} skill(s), ${counts.design} design rule(s)\n`,
+      `${counts.skills} skill(s), ${counts.engineering} engineering guideline(s)\n`,
   );
 
   for (const message of advisories) process.stderr.write(`  ${message}\n`);

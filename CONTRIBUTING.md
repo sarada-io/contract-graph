@@ -6,28 +6,62 @@
 node --test "test/**/*.test.js"
 ```
 
-Node 18.17+. No dependencies to install — that is deliberate, and a PR adding a runtime dependency
-needs to argue for it. This is a tool whose whole job is trust; every dependency is supply-chain
-surface on a verifier.
+Node 18.17+. Run `npm install` once; the package deliberately keeps its runtime surface to the YAML
+parser it bundles for canonical contract and binding files. A PR adding another runtime dependency
+needs to argue for it because every dependency is supply-chain surface on a verifier.
+
+## Building the package
+
+Files under `src/cg/principles/` are the human-edited architecture principles catalog
+(`architecture.yaml`). Engineering and product guidelines are YAML under `src/cg/guidelines/`
+(`engineering.yaml`, `product.yaml`). After changing either, run:
+
+```bash
+npm run build
+npm run build:check
+```
+
+The first command replaces the root-level `build/` package target; the second proves every file
+and mode in that target matches its package source without writing. Never edit `build/` directly.
+It is gitignored, as is `tmp/` from `npm run try`. `npm run clean` deletes both. `npm run pack`
+rebuilds `build/` and writes the tarball at the repository root (`*.tgz` is gitignored). Architecture
+and product YAML are copied into `build/agent/cg/principles/` in the checkout and
+`agent/cg/principles/` inside the tarball.
+
+Product entries are short YAML sentences: `id` plus `text`, under a `Pnn` heading. The catalog
+ships with `principles: []`. Design entries are `id`, `rule`, and `reason`. The rule is the
+practice; the reason is why it exists. A preference may also carry `cost`. `E` never appears in
+`enforcement.yaml`.
 
 ## Trying a scaffold locally
 
 ```bash
-./cg try claude          # POSIX shells
-npm run try -- claude    # everywhere, including Windows
+npm run try -- claude
 ```
 
 Scaffolds a throwaway repository in `tmp/<target>`, runs `init` → `sync` → `verify`, and reports
 which artifacts the named editor actually reads. `tmp/` is gitignored and safe to delete.
 
-`cg verify` proves a scaffold is well-formed; `./cg try` is how you check an editor finds it. The
+`cg verify` proves a scaffold is well-formed; `npm run try` is how you check an editor finds it. The
 second is not something the verifier can close on its own.
 
-The helper is `src/scripts/dev.js`, and it is **excluded from the published package** by the
-`"!src/scripts/dev.js"` entry in `files`. It is repository tooling: it writes to `tmp/`, it is
-reached only through `./cg` and `npm run try`, and neither of those ships. A test asserts the
-exclusion holds, because `files` includes `src` and the default for anything added there is to
-reach users.
+The helper is `src/scripts/dev.js`, and it is **excluded from the package target**. It is
+repository tooling: it writes to `tmp/`, it is reached only through `npm run try`, and it does not
+ship. A test asserts the exclusion and exact target-to-tarball correspondence.
+
+## Source layout
+
+```text
+src/scripts/    engine — CLI, verifier, and contract graph
+src/skills/     lifecycle skills → .agents/skills/
+src/cg/         authored contract-graph core → .agents/cg/
+src/install/    init extras: hooks, rules, profiles, and templates
+```
+
+`src/cg/` mirrors the installed graph: `contract.yaml`, `workflow.md`, `phases.json`,
+`enforcement.yaml`, `binding/`, `principles/`, and `schema/`. `src/install/templates/` holds the
+starter module and the `docs/{plans,design,guides}` trees. Profile configs live in
+`src/install/profiles/` and are never copied into an adopting repo.
 
 ## Changing the scaffold
 
@@ -45,7 +79,7 @@ claimed by overlapping rules. A round-trip test scaffolds a temporary repository
 result with an independently encoded source-to-target map. When changing the mapping, first make
 the relevant detector fail with one deliberate mutation, then restore it and run `npm test`.
 
-Editor profiles live in `src/scaffold/profiles/` and may add discovery artifacts only; they may not
+Editor profiles live in `src/install/profiles/` and may add discovery artifacts only; they may not
 change the universal contract or governance tree. To add one:
 
 1. Confirm the paths the real editor reads using its installed application and a scratch
@@ -54,17 +88,18 @@ change the universal contract or governance tree. To add one:
    optional skill wrappers, and inheritance.
 3. Add tests for its exact artifacts, missing selected artifacts, absent unselected artifacts,
    malformed configuration, and profile neutrality.
-4. Run `npm test`, then `./cg try <name>` and inspect `tmp/<name>` in the real editor.
+4. Run `npm test`, then `npm run try -- <name>` and inspect `tmp/<name>` in the real editor.
 
 A profile may be a named no-op when the universal scaffold already supplies everything its editor
-discovers. Do not invent a redundant file merely to give the profile a visible artifact.
+discovers. Do not invent a redundant file merely to give the profile a visible artifact. Cursor is
+this case: it reads `AGENTS.md` and `.agents/skills/`, so its profile extends `codex` and adds no
+unique path.
 
 ## The rule that applies to this repository too
 
-**A rule and its enforcing test land in the same commit.** A PR that adds a check to `verify.js`
-without a fail-on-demand test in `test/` will be asked for the test. A PR that adds a rule to a
-fork-loaded principle file without either a detector (`invariant`) or a cost clause (`guide`) will be asked for
-that.
+**A binding and its enforcing test land in the same commit.** A PR that adds a check to `verify.js`
+without a fail-on-demand test in `test/` will be asked for the test. A PR that adds an `E`
+preference with an empty `cost` will be asked to fill it or omit the field.
 
 ### Fail-on-demand, specifically
 
@@ -76,36 +111,55 @@ check that does nothing.
 one thing, `assertFails(dir, code, note)` asserts the right code fires and prints every actual
 failure when it does not.
 
-## Changing a fork-loaded principle file
+## Changing an architecture practice
 
-A pack rule is either:
+Architecture entries are advisory. The usual shape is:
 
-```markdown
-- **DP-SET-01-01** `invariant` — <the rule>
+```yaml
+- id: E01-01
+  rule: <the practice>
+  reason: <why this practice exists>
 ```
-…which owes exactly one enforcement-map row and a real detector, or:
 
-```markdown
-- **DP-SET-01-01** `guide` — <the rule>
-  **Cost:** <what choosing this makes harder, slower, or unavailable>
+A preference between workable designs may also carry `cost`:
+
+```yaml
+- id: E12-01
+  rule: <the preference>
+  reason: <why this preference exists>
+  cost: <what choosing this makes harder, slower, or unavailable>
 ```
-…which must never have an enforcement-map row.
 
-Marking a testable rule as a `guide` to avoid writing its detector is the failure mode the marker
-exists to catch.
+Neither form may have an enforcement-map row. A practice that should bind belongs in `P` or,
+when it meets the structural promotion gate, in `A`.
 
-**Rule IDs are never renumbered.** Append within a principle; redefine in place; never reuse. Set
+## Promoting architecture guidance to structural binding
+
+In this verifier-owning repository, an `E` practice may move to `src/cg/principles/architecture.yaml` only when
+all four facts are present:
+
+1. violating it would damage graph routing, ownership, boundary structure, or structural truth;
+2. one deterministic measurement states pass versus fail;
+3. a blocking detector is registered by the installed verifier; and
+4. a negative fixture proves that detector fires.
+
+Implement and register the detector, assign the next permanent `A` ID, and remove the
+overlapping D practice in the same change. Every architecture-principle entry carries `rule`, `measure`, and
+`enforcedBy`; every detector entry carries its registered implementation and exact negative-fixture
+name. Binding prose without all of this does not merge. An initialized consumer repository cannot
+add a built-in detector by changing its preserved YAML alone; product-specific enforcement belongs
+in `P`, while a generic structural proposal belongs here.
+
+**Rule IDs are never renumbered.** Append within a guideline or the architecture-principles catalog; redefine in place; never reuse. Set
 *names* may be renamed, split, or merged — they are routing labels, not identities.
 
-## Adding a fork-loaded principle file
+## Adding an engineering guideline
 
-Add `src/principles/<name>.md`. The file name must be lowercase-kebab and its rules must
-carry the matching uppercase set token: `src/principles/operations.md` holds
-`OP-*`. The
-verifier checks this.
-
-A pack should arrive with rules, not as an empty namespace — an empty set invites rules written to
-fill it.
+Add it to `src/cg/guidelines/engineering.yaml` under the next unused `Enn` heading, or append
+inside an existing heading. Do not renumber. Product-specific bindings belong in `product.yaml`
+as `P`, not here.
+The verifier checks that every entry sits under its owning principle and retains its stable ID.
+A new family prefix is a verifier change, not a YAML addition.
 
 ## Imported rules
 

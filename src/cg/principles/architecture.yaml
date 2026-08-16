@@ -1,0 +1,202 @@
+$schema: https://sarada.io/contract-graph/schema/architecture-v1.schema.json
+architectureVersion: "1.0"
+scope: structural-integrity
+promise: Repository code is represented by a canonical, recursively decomposed contract graph whose declared structure is internally measurable.
+
+promotion:
+  requires: [structural-impact, deterministic-measure, blocking-detector, negative-fixture]
+  action: In the verifier-owning change, register the detector, assign the next permanent A ID, and remove the promoted practice from guidelines/engineering.yaml.
+
+hierarchy:
+  root: repository
+  kinds:
+    repository: The graph root. Its children are product or domain capability modules only.
+    module: A package-level product or domain capability, not a horizontal technical layer.
+    submodule: A named capability inside a module that still decomposes into components or libraries.
+    component: A self-sufficient unit that delivers one function and is entered at a small surface.
+    library: A reusable capability understood without naming a consumer. It has no children.
+  transitions:
+    repository: [module]
+    module: [submodule, component, library]
+    submodule: [submodule, component, library]
+    component: [component, library]
+    library: []
+
+# Recursive mapping and node decision. SpecKit or another framework may replace workflow.md;
+# it must not replace this. A rules check a graph that already exists. This section is
+# what writes and extends the graph. The key order is the walk: node, recurse, selfSufficient,
+# surface, decide, compose, stop, forbid, adapters. Stay / add-child / elsewhere remain the only outcomes.
+# Inside surface the walk is enter, service, promise, encapsulate, bypass. Service is the first
+# way to declare entry: named operations that encapsulate the implementation contract.yaml points at.
+graph:
+  node: A contract node is one owned responsibility at one hierarchy kind, stored at <unit>/.agents/cg/contract.yaml.
+  recurse: Apply decide at every node. A module listed by cg modules is not a leaf until selfSufficient and stop have been applied to every candidate inside it.
+  selfSufficient:
+    test: A unit earns a node when it delivers a nameable function and reaches outside itself only rarely.
+    inbound: A unit entered at one or two named types has a boundary. graph.surface.service is the first way to name those types. A unit entered at many scattered points has no edge to contract.
+    outbound: Depending on a shared kernel and published sibling ports is self-sufficiency. Reaching into sibling internals is a misplaced boundary, not a node.
+    change: A unit that changes for its own reasons is a node. A unit that only changes when a sibling changes belongs on that sibling; record why on the parent.
+  surface:
+    enter: A node is entered only through the surface its contract declares. Declared to the graph is not language-public, HTTP-public, or customer-facing.
+    service: The first way to declare that surface is a service — one or two named types whose operations take parameters, do the work, and return the completed result. contract.yaml surface lists those services and points at the implementation they encapsulate. Constructor-supplied ports assemble a service behind the call; they are not how a parent or sibling talks to this node. Many scattered functions across unmanaged files have no edge until a small set of services categorises that work; introducing those services is a corrective Step, not stay on the scatter.
+    promise: That surface is the unit's promise to its parent and dependents. A new entry point is a surface amendment or add-child, not stay.
+    encapsulate: The surface exposes owned concepts and observable promises. It does not expose algorithms, construction details, mutable internal state, persistence representations, framework types, or vendor types. Encapsulation behind the contract is the boundary.
+    bypass: Reaching past the declared surface is a misplaced boundary, not a convenience. Corrective Step, not stay.
+  decide:
+    - id: stay
+      when: The change serves this node's owns and does not introduce a distinct responsibility.
+      do: Keep the work on this node. Modify this contract.yaml when owns, allows, forbids, surface, invariants, verification, relations, or routes change. Implementation-only edits that preserve those fields do not create a node.
+    - id: add-child
+      when: The change is a necessary part of how this node fulfills owns, and is itself a distinct nameable responsibility.
+      do: Create a child contract.yaml at the child unit, add reciprocal parent and child edges, and declare the child's surface in the same change. Kind is the hierarchy.kinds value permitted by hierarchy.transitions from this node.
+    - id: elsewhere
+      when: The change remains independently meaningful without this node.
+      do: Do not add the behavior here. Route to the existing node that owns it, or add a child under that node.
+  compose:
+    - A child decomposes its parent's owns.
+    - The parent owns ordering, orchestration, and conditional flow among children.
+    - A child does not coordinate another child's internals.
+    - Every cross-boundary dependency is a relations.dependencies edge to another contract node.
+  stop:
+    - Do not create a node per directory or per file.
+    - Depth is not capped. Two levels is valid — a module leaf under the repository after recurse, selfSufficient, and stop have been applied.
+    - Four or five kinds are valid when each nested child is self-sufficient. Mixed depth across modules in one graph is expected. hierarchy.transitions constrain kind, not height.
+    - A leaf is the smallest owned responsibility.
+    - Several packages may form one boundary only when the parent names them and states why they are inseparable.
+  forbid:
+    - A new folder, file, dependency, or increase in size is not evidence a node is required, except graph.adapters.mix.
+    - Do not park a distinct responsibility on an open node because its files were already in the edit set.
+    - Names such as common, shared, utils, or helpers are not a responsibility.
+  adapters:
+    port: An optional external resource is reached through one parent-owned port. Vendor types on that port are graph.surface.encapsulate; this field only names the split into child options.
+    option: Each concrete option is its own child node that implements that port. Two stores, two clouds, or two transports are two children, not two clients inside one unit.
+    mix: Importing a second optional vendor client into a node that already has one is add-child, not stay. A shared database file is not evidence they belong together.
+
+rules:
+  - id: A01
+    rule: Every contract node uses the canonical restricted YAML format.
+    measure: Every discovered node parses as restricted YAML and satisfies the contract schema.
+    enforcedBy:
+      - id: A01-E-01
+        implementation: cg.verify.contract-node-format
+        negativeFixture: contract YAML rejects ambiguous or executable YAML features
+
+  - id: A02
+    rule: Every contract node is stored at the canonical path declared by its unit.
+    measure: Every node occupies <unit>/.agents/cg/contract.yaml.
+    enforcedBy:
+      - id: A02-E-01
+        implementation: cg.verify.contract-node-location
+        negativeFixture: a contract stored outside its declared unit fails
+
+  - id: A03
+    rule: Every governed boundary declares exactly one named responsibility.
+    measure: responsibilities.owns contains exactly one non-empty value in every contract node.
+    enforcedBy:
+      - id: A03-E-01
+        implementation: cg.verify.single-responsibility
+        negativeFixture: a contract with multiple owned responsibilities fails
+
+  - id: A04
+    rule: Every parent-child pair follows the registered boundary hierarchy.
+    measure: Each parent and child kind is registered, and every parent-child kind pair appears in hierarchy.transitions.
+    enforcedBy:
+      - id: A04-E-01
+        implementation: cg.verify.boundary-hierarchy
+        negativeFixture: a forbidden parent-child boundary transition fails
+
+  - id: A05
+    rule: Every node declares whether it is a leaf, composed, or the unmapped repository root.
+    measure: A leaf has no children, a composed node has children, and only a childless repository root may be unmapped.
+    enforcedBy:
+      - id: A05-E-01
+        implementation: cg.verify.composition-state
+        negativeFixture: a composed contract with no children fails verification
+
+  - id: A06
+    rule: Declared composition forms one rooted tree.
+    measure: There is one repository root; every other node has one reciprocal parent; every node is root-reachable; no composition cycle exists.
+    enforcedBy:
+      - id: A06-E-01
+        implementation: cg.verify.composition-tree
+        negativeFixture: composition cycles are rejected
+
+  - id: A07
+    rule: Every child unit is structurally contained by its declared parent unit.
+    measure: Each child unit is a directory descendant of its parent unit.
+    enforcedBy:
+      - id: A07-E-01
+        implementation: cg.verify.child-confinement
+        negativeFixture: a child unit outside its parent fails
+
+  - id: A08
+    rule: Every declared dependency resolves to another contract node.
+    measure: Every relations.dependencies target exists and no node depends on itself.
+    enforcedBy:
+      - id: A08-E-01
+        implementation: cg.verify.dependency-reference
+        negativeFixture: a dangling dependency reference fails
+
+  - id: A09
+    rule: The declared dependency graph is acyclic.
+    measure: Dependency traversal finds no cycle.
+    enforcedBy:
+      - id: A09-E-01
+        implementation: cg.verify.dependency-acyclicity
+        negativeFixture: dependency cycles are rejected
+
+  - id: A10
+    rule: Every non-repository boundary declares a public surface.
+    measure: Each non-repository node has at least one surface entry.
+    enforcedBy:
+      - id: A10-E-01
+        implementation: cg.verify.surface-presence
+        negativeFixture: a non-root contract without a public surface fails
+
+  - id: A11
+    rule: Every declared public-surface path exists inside its boundary.
+    measure: Every surface path resolves within the declaring unit and exists.
+    enforcedBy:
+      - id: A11-E-01
+        implementation: cg.verify.surface-path
+        negativeFixture: declared surface paths must exist inside their unit
+
+  - id: A12
+    rule: Every invariant and verification declaration is reciprocal.
+    measure: Each invariant names existing verification or explicit debt, and each verification covers exactly the invariants that name it.
+    enforcedBy:
+      - id: A12-E-01
+        implementation: cg.verify.invariant-verification
+        negativeFixture: invariant and verification references must agree in both directions
+
+  - id: A13
+    rule: Every binding rule has registered blocking enforcement.
+    measure: Every rule names at least one detector ID whose implementation is registered by the installed Contract Graph verifier.
+    enforcedBy:
+      - id: A13-E-01
+        implementation: cg.verify.binding-enforcement
+        negativeFixture: an unregistered binding detector fails verification
+
+  - id: A14
+    rule: Every named responsibility is owned by exactly one contract node.
+    measure: Normalized responsibilities.owns values are unique across the graph.
+    enforcedBy:
+      - id: A14-E-01
+        implementation: cg.verify.unique-responsibility
+        negativeFixture: duplicate owned responsibilities across contracts fail
+
+  - id: A15
+    rule: Top-level modules represent domain or product capabilities, not horizontal technical layers.
+    measure: Each repository child of kind module has an id, name, and unit basename other than controller(s), service(s), repository/repositories, or model(s).
+    enforcedBy:
+      - id: A15-E-01
+        implementation: cg.verify.capability-modules
+        negativeFixture: a top-level module named as a technical layer fails
+
+  - id: A16
+    rule: A contract node is named for its owned responsibility, not as a miscellaneous bag.
+    measure: Each non-repository node's id, name, and unit basename is other than common, shared, utils, helpers, util, or helper.
+    enforcedBy:
+      - id: A16-E-01
+        implementation: cg.verify.named-responsibility
+        negativeFixture: a boundary named common, shared, utils, or helpers fails

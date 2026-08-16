@@ -59,16 +59,18 @@ for every phase in it, not just the first.
 reaches it is one the contracts could not settle, so it is the owner's to settle.
 
 `cg-warmup` is dispatchable at no level. It runs once, it rewrites the contract surface the other
-stages depend on, and its `New principles — please confirm` register exists to be read by a person.
+stages depend on, and its `Harvested rules and structural candidates — please confirm` register
+exists to be read by a person.
 
 ## 2. Measure state before the first dispatch
 
 Do not ask the user where they are. Establish it:
 
-1. Read `.agents/cg/contract.md` and the routing map.
+1. Read `.agents/cg/contract.yaml` and route through its connected contract graph. Dispatched
+   skills apply `.agents/cg/principles/architecture.yaml` `graph`; this adapter adds no graph rules.
 2. Read `docs/plans/` for the active roadmap and the selected phase.
 3. Read the phase's preparation record: does a Step queue exist, and what is each Step's state?
-4. Read `docs/plans/decision-log.md` for `DL-02` entries that block the selected phase.
+4. Read `docs/plans/decision-log.md` for `DU-NN` entries that block the selected phase.
 5. Read `docs/plans/auto-run/` if present — a prior run may have checkpointed this phase mid-queue.
 
 Name the first stage from that measurement:

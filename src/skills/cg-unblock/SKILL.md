@@ -30,8 +30,8 @@ Stop for an answer only when all four conditions hold:
 4. **Undeferrable:** no safe assumption permits the current Step to finish and no other
    dependency-safe `Ready` Step can continue.
 
-If conditions 1–3 hold but condition 4 fails only because other work is `Ready`, append a `DL-02`,
-mark only the affected Step `Blocked`, and continue the queue. Do not invent an assumption for a
+If conditions 1–3 hold but condition 4 fails only because other work is `Ready`, append a `DU`
+entry, mark only the affected Step `Blocked`, and continue the queue. Do not invent an assumption for a
 material, costly decision merely because unrelated work exists. If one of conditions 1–3 fails,
 apply D-2, record any required assumption, and continue. D-3 still overrides both routes.
 
@@ -39,21 +39,22 @@ apply D-2, record any required assumption, and continue. D-3 still overrides bot
 
 Use the first source that answers the fork:
 
-1. Binding principles and folder/module contracts.
-2. Accepted decisions in `docs/plans/decision-log.md`.
-3. Permanent design records and published product requirements.
-4. The repository's walking skeleton or an already-green neighboring implementation.
-5. `OP-01-01` — the option with the smaller rollback and migration cost.
-6. `OP-01-02` — the option with fewer seams, writers, credentials, and moving parts.
-7. `DP-01-01` — configuration instead of structural change, only when the configuration
+1. Global `A` bindings, `.agents/cg/principles/architecture.yaml` `graph` (kinds, recurse, selfSufficient,
+   surface including service, adapters, stay, add-child, elsewhere), applicable scoped `P` bindings, and boundary contracts.
+2. The repository constitution and published specifications.
+3. Accepted decisions in `docs/plans/decision-log.md`.
+4. Permanent design records and published product requirements.
+5. The repository's walking skeleton or an already-green neighboring implementation.
+6. `E16-01` — the option with the smaller rollback and migration cost.
+7. `E16-02` — the option with fewer seams, writers, credentials, and moving parts.
+8. `E12-01` — configuration instead of structural change, only when the configuration
    surface permits it.
-8. `DP-01-02` — the narrower product scope and the simpler solo-maintainer operating model.
+9. `E12-02` — the narrower product scope and the simpler solo-maintainer operating model.
 
-Before using items 5–8, explicitly load only the applicable file or files from
-`.agents/cg/principles/design.md` (`DP-`), `.agents/cg/principles/operations.md` (`OP-`),
-`.agents/cg/principles/ux.md` (`UP-`), or `.agents/cg/principles/security.md` (`SP-`). A guide
-answers only after sources 1–4 do not, and the recorded assumption or decision must cite the rule
-ID and acknowledge its stated cost. Other applicable rules in those files may answer the fork
+Before using items 6–9, explicitly load only the applicable entries from the
+architecture catalog under `.agents/cg/principles/`. An architecture preference
+answers only after sources 1–5 do not, and the recorded assumption or decision must cite the rule
+ID, its reason, and its stated cost. Other applicable rules in those files may answer the fork
 before these four general defaults; file order does not override a binding source.
 
 Never use a passing build to overrule a contract. If code and contract disagree, the contract wins.
@@ -65,7 +66,7 @@ Log an owner decision even when a likely answer exists if the fork changes:
 - identity, account/tenant, authorization, credential, or trust-boundary isolation;
 - billing, metering, entitlement, or the per-unit runtime cost floor;
 - destructive or irreversible data behavior;
-- a binding principle or permanent contract invariant;
+- a `A` or `P` binding, or a permanent contract invariant;
 - a published interface already consumed by another context or repository;
 - a new external dependency, provider, store, or operational control plane.
 
@@ -87,30 +88,25 @@ Step. Do not silently narrow scope.
 
 ## D-5 — Decision log
 
+`docs/plans/decision-log.md` is a ledger of entries, not a skill. Do not copy this section, the
+entry shape, warmup behaviour, or promotion rules into that file. An adopting `cg-warmup` run
+fills *Pending your review* first: boundaries it could not settle from the code, and every
+exception it proposes to a `A` or `P` binding. It answers what it can and logs the rest rather
+than interviewing the owner, so the owner gets one consolidated list instead of a question per
+module.
+
 Use the repository's established numbering:
 
-- `DL-01`: autonomous decisions recorded for traceability; add directly to *Resolved*.
-- `DL-02`: decisions requiring owner review; append to *Pending your review*.
+- `DA-NN`: autonomous decisions recorded for traceability; add directly to *Resolved*.
+- `DU-NN`: decisions requiring owner review; append to *Pending your review*.
 
-Use this shape:
+Copy one filled heading from [the decision entry template](assets/decision-entry.template.md).
+Do not paste that template's instructional prose into the ledger.
 
-```markdown
-### DL-02-<NN> — <short title>
-**Raised:** <date> · <source>
-**Blocks:** <the smallest exact unit that cannot proceed>
-**Unblocks when:** <objective answer or prerequisite state>
-
-**Context:** <why D-1 or D-3 applies>
-
-**Options:**
-- **A) <option>** <recommendation and trade-off>
-- **B) <option>** <trade-off>
-- **Other:** type your own.
-
-**Your answer:** _(blank)_
-```
-
-When answered, move the entry to *Resolved* and record the answer. Never duplicate or renumber it.
+When answered, move the entry to *Resolved*, record the answer, the date, and the one bounded
+edit that reverses it. A resolved entry is binding authority until it is promoted or dropped —
+ranked above the walking skeleton and neighbouring code. That is why the log drains at phase
+close rather than growing. Never duplicate or renumber an entry.
 
 ### D-5a — Promotion test and destination
 
@@ -126,10 +122,10 @@ Classify each candidate once. Do not promote a one-off merely because it was dif
 
 | Destination | Use when | Delivery obligation |
 |---|---|---|
-| Module or folder `contract.md` | The rule binds one owned implementation boundary, behavior, interface, or operating assumption. | State it in full and deliver its detector in the same execution change. |
-| Architecture Principle (`AP-`) | The structural invariant must hold for any product built in the repository. | Add the binding rule, enforcement-map row, detector, inheritance scope, and regenerated contracts together. |
-| Product Principle (`PP-`) | The binding rule exists because of this product's market, pricing, or shape. | Add the binding rule, enforcement-map row, detector, inheritance scope, and regenerated contracts together. |
-| A fork-loaded family — design (`DP-`), operations (`OP-`), user experience (`UP-`), security (`SP-`) | The recurring decision aid belongs to one domain and is consulted at a fork, but must not become ambient contract inheritance. | Declare modality: an `invariant` gets a detector and enforcement-map row in the same change; a `guide` states its cost and gets no map row. |
+| Boundary `contract.yaml` | The rule binds one owned implementation boundary, behavior, interface, or operating assumption. | State it in the structured contract and deliver its detector in the same execution change. |
+| Engineering guideline (`E`) | The recurring structural advice is useful but is not yet a measurable invariant. | Add `id`, `rule`, and `reason`. A preference between workable designs may also carry `cost`. A later verifier-owning change may promote it when all `A` obligations can ship together. |
+| Architecture Principle (`A`) | The structural invariant is generic, deterministic, and the destination change owns the verifier that can enforce it. | In the verifier-owning change, register the blocking detector, add its negative fixture, assign the next permanent ID in `principles/architecture.yaml`, and remove any equivalent D practice. An adopting repository cannot create built-in enforcement through YAML alone. |
+| Product Principle (`P`) | The binding rule exists because of this product's market, pricing, or shape. | Add the binding rule, `.agents/cg/enforcement.yaml` row, detector, and affected contracts' rule IDs together. |
 | Drop | The result is case-specific, superseded, duplicated, or cannot stand without its originating case. | Leave no permanent rule, and record why beside the decision ID in the phase-close classification manifest. A resolved decision is binding authority until it is promoted or dropped, so one that vanishes from the log with no reason takes a rule the repository was following with it. The manifest is archived with the phase; the log still drains. |
 
 Promotion is delivery work, not a decision-log edit alone. Route it through the Contract Graph phase whose
@@ -140,7 +136,7 @@ acceptance gate can prove the destination's obligations.
 - Mark every affected Step `Blocked`, keep dependent Steps `Waiting`, and recalculate the queue.
 - Mention pending decisions in chat only when no `Ready` Step remains.
 - When several pending decisions remain, present one consolidated set so the owner can answer them
-  together; keep each decision as its own stable `DL-02` entry.
+  together; keep each decision as its own stable `DU-NN` entry.
 - Point to the logged entry instead of restating a long option survey.
 - In the completion report, list assumptions taken and work deliberately left out.
 - Never claim that an unanswered decision is resolved because an implementation happens to compile.

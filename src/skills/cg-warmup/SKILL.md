@@ -1,12 +1,14 @@
 ---
 name: cg-warmup
-description: Adopt Contract Graph into a repository that already has code. Run once, after cg init, before the lifecycle skills are useful. Runs as three phases — a whole-repository survey, then a resumable per-module loop that writes each unit's contract, children, bindings and findings to disk before moving on, then one consolidation. Finds any predecessor governance framework and carries its rules forward rather than writing over them, discovers the real module roots and descends below build manifests, fills the inheritance and routing maps, assesses the repository against the binding principles, and harvests the rules the code already enforces into product and architecture principles so no later session has to re-read the code to learn them — listing every new rule for the owner to confirm. Resumes from cg modules after a context break rather than restarting. Never reports a compliance score, never edits behaviour, never deletes or runs the predecessor, and never marks a rule enforced that no detector proves.
+description: Adopt Contract Graph into a repository that already has code. Run once, after cg init, before the lifecycle skills are useful. Runs as three phases — a whole-repository survey, then a resumable per-module loop that writes and connects each unit's contract.yaml before moving on, then one consolidation. Finds any predecessor governance framework and carries its rules forward rather than writing over them, discovers real module roots and self-sufficient components, builds the contract graph, verifies the structural binding, and harvests durable product rules or non-binding architecture practices so later sessions do not re-read the code to learn them. Resumes from cg modules after a context break rather than restarting. Never reports a compliance score, edits behaviour, deletes or runs the predecessor, or marks a rule enforced that no detector proves.
 ---
 
 # CG Warmup
 
 A fresh `cg init` describes a repository that does not exist yet. Warmup replaces that
-description with the one you actually have.
+description with the one you actually have. A brownfield typically has no existing Contract Graph contracts. Write the graph from the
+code and §2a. Predecessor markdown, if found, is a checklist against the tree — not a graph to
+copy.
 
 **Run this once.** After it, the lifecycle skills — `cg-plan`, `cg-prepare`, `cg-produce`,
 `cg-sign-off` — have real contracts to work against, and you never need this skill again.
@@ -18,22 +20,35 @@ is not the same as removing the instructions for finishing.
 ## Why it exists
 
 `cg verify` on a freshly initialised brownfield repository reports **OK**. That is not a claim
-that your repository is governed; it is a claim that the *scaffold* is well-formed. The
-inheritance map ships with one example entry, so the verifier checks exactly that entry and
-looks at nothing else. A forty-module repository can pass while thirty-nine modules are
-invisible.
+that your repository is governed; it is a claim that the empty root graph is well-formed. A
+forty-module repository can pass while all forty modules are still unrepresented; `cg modules`
+names that coverage gap until warmup writes and connects their contracts.
 
 Warmup closes that gap, and the honest measure of it finishing is coverage: every module root
-mapped, every mapped module carrying a contract, and every finding resolved to something
+governed, every governed module carrying a connected contract, and every finding resolved to something
 executable.
+
+Warmup declares and mechanically protects an existing cohesive declared surface before proposing
+restructuring. It must not add wrapper types or move code solely to impose a source-layout
+convention. Restructuring becomes a corrective Step when the existing surface mixes distinct
+responsibilities, cannot be mechanically confined, exposes internals
+(`graph.surface.encapsulate`), mixes optional vendor clients (`graph.adapters`), or has no small
+inbound surface — many functions spread across unmanaged files and folders.
+
+That last case is what `graph.surface.service` is for. Forty functionalities with no named entry
+do not become forty nodes. Categorise them into a small set of services and point `contract.yaml`
+`surface` at those types. If the service types already exist, declare them. If they do not,
+warmup records a corrective Step to introduce them so later sessions enter five named operations
+instead of rediscovering forty files. Folder wrappers to impose layout are still forbidden;
+services are the inbound categorisation, not a new directory tree.
 
 ## How this skill runs — read this before §1
 
 **This is not a linear procedure. It is a survey, a loop, and a consolidation.**
 
 ```text
-Phase A — once      §1–§3    predecessor · module roots · routing skeleton
-Phase B — per unit  §4–§6    ←──┐  contract · descend · bind · sync · record
+Phase A — once      §1–§3    predecessor · module roots · code-first context · root routes
+Phase B — per unit  §4–§6    ←──┐  contract · descend · connect · bind · record
                                └──┘  repeat until `cg modules` exits 0
 Phase C — once      §7–§12   root contract · assess · harvest · decisions · report
 ```
@@ -43,9 +58,10 @@ is the whole reason it is a loop. A forty-module repository will not fit in one 
 agent that tries to read every module before writing anything either drops what it learned about
 the first ones or reads them twice — which is the exact cost this project exists to remove.
 
-Everything Phase B learns is written to disk as it goes: the contract, the entry in
-`map/inheritance.json`, and one appended block in `docs/plans/warmup-findings.md`. Those files
-*are* the working state. Nothing is held in your head between modules.
+Everything Phase B learns is written to disk as it goes: the unit's `contract.yaml`, reciprocal
+parent and child edges, its applicable `P` rules, and one appended block in
+`docs/plans/warmup-findings.md`. Those files *are* the working state. Nothing is held in your head
+between modules.
 
 **If you are resuming after a context break, you are not starting over.** Run:
 
@@ -53,14 +69,22 @@ Everything Phase B learns is written to disk as it goes: the contract, the entry
 cg modules
 ```
 
-Every row it still reports `UNMAPPED` is a unit that has not been through Phase B. Every row it
-reports `governed` is done — do not revisit it. Read the tail of `docs/plans/warmup-findings.md`
-to see what earlier iterations recorded, then re-enter Phase B at the first unmapped row. Phase A
-does not run again; its outputs are already on disk.
+- **UNMAPPED** — this unit has not been through Phase B. Enter §4 for it.
+- **DESCEND** — a contract exists, but `graph.recurse` is unfinished (undeclared packages, no
+  `Leaf rationale`). Re-enter §4 at *Descend with the binding graph*. Do not treat `governed` as
+  done.
+- **governed** with no DESCEND row — finished. Do not revisit it.
 
-Phase C runs exactly once, when `cg modules` exits 0. It needs the *whole* set — the same rule
-surfaces in five modules and must be written once, not five times — which is why harvesting into
-principles cannot happen inside the loop.
+Read the tail of `docs/plans/warmup-findings.md` for earlier notes. Phase A does not run again.
+
+**Before Phase A, confirm the installed binding can recurse.** Run `cg verify`. If it fails because
+`.agents/cg/principles/architecture.yaml` is missing `hierarchy.kinds` or `graph.recurse`, the catalog is
+older than this skill (`cg init` preserves catalogs). Stop. Ask the owner to copy the packaged
+binding or confirm a deliberate amendment. Do not write nodes against a catalog that cannot recurse.
+
+Phase C runs exactly once, when `cg modules` exits 0 (no UNMAPPED, no DESCEND). It needs the *whole*
+set — the same rule surfaces in five modules and must be written once, not five times — which is
+why harvesting into principles cannot happen inside the loop.
 
 ## Required outcome
 
@@ -69,17 +93,20 @@ Finish with all twelve true:
 1. Any predecessor governance framework is found, read, and carried forward or logged — never
    silently replaced.
 2. Every real module root is discovered and either mapped or explicitly excluded with a reason.
-3. Every mapped folder has a `contract.md` describing the code that is there — not an aspiration —
-   and every module that holds more than one boundary declares its children.
-4. `map/inheritance.json` names, for each module, the rules that actually bind it.
-5. `map/routing.md` routes a task to the module contracts it touches.
+3. Every governed boundary has exactly one `.agents/cg/contract.yaml` describing the code that is
+   there — not an aspiration — and every non-leaf declares its children. `graph.recurse` has been
+   applied inside each module; a `cg modules` row is not a leaf by itself.
+4. The global `A` catalog passes, and each contract's `rules` array names only additional
+   repository-owned `P` bindings that apply to that boundary.
+5. Contract-owned `routes` match task language to the contracts a request must load.
 6. Every unit that went through the loop left a findings block behind, so no module's code had to
    be read twice and a context break never restarts the work.
 7. The repository contract states what this product is and is not — the root of the graph carries
    no placeholder.
-8. Every principle assessment lands as a detector, a proposed exception, or a corrective Step.
-9. The rules the code already enforces are consolidated across units, written as principles, bound,
-   and listed for the owner to confirm — so no later session has to re-read the code to learn them.
+8. Every binding failure lands as a detector repair, a proposed exception, or a corrective Step.
+9. The rules the code already enforces are consolidated across units, classified as P bindings,
+   D practices, A promotion candidates, or fork guidance, and listed for the owner to confirm —
+   so no later session has to re-read the code to learn them.
 10. Every open question is a decision-log entry or a recorded assumption — none was asked in chat.
 11. The report states coverage and the limits of its own evidence.
 12. The user-facing response names the next action, next skill, input artifact, and readiness
@@ -105,8 +132,8 @@ Search for it. Names vary — the tell is a directory of governance prose, not c
 | the build file | tasks wired into `check`, `test`, or `lint` that run those verifiers |
 | any second decision log | a populated ledger under a different path than `docs/plans/decision-log.md` |
 
-Rule IDs that no longer resolve are the strongest signal: a comment citing `PP-01-04` when no
-`PP-` rule exists means a predecessor defined it and was removed underneath the code.
+Rule IDs that no longer resolve are the strongest signal: a comment citing `P01-04` when no
+`P` rule exists means a predecessor defined it and was removed underneath the code.
 
 **But most identifiers in a codebase are work items, not rules, and chasing them wastes the run.**
 The grammar around the ID settles it in one read:
@@ -140,16 +167,19 @@ A graph whose product principles were pasted out of a deleted file looks complet
 When you find one, do these three things:
 
 - **Read its rules before writing yours.** Every rule the predecessor asserted is either
-  reproduced in the new graph — as a principle, a contract invariant, or an enforcement-map row —
+  reproduced in the new graph — as a binding, best practice, contract invariant, or product-rule
+  enforcement row —
   or it is a deliberate drop. There is no third case. A rule that quietly fails to reappear is the
   regression this step exists to prevent.
-- **Carry its product rules into `principles/product.md` now.** That file ships empty because a
-  greenfield repository has not earned a `PP-` rule yet, and rules accrue there through decision
-  harvest over several phases. A repository with a predecessor has already done that work. Waiting
-  for those rules to re-accrue drops them, and the drop is invisible: the architecture family is
-  pre-seeded and will look complete while the product family is empty. Copy each rule across with
-  its ID where the ID still fits, restate it in full, and give it a row in the enforcement map
-  naming the detector that already proves it.
+- **Carry a predecessor product rule only when the code still obeys it.** `.agents/cg/guidelines/product.yaml`
+  ships empty because a greenfield repository has not earned a `P` rule yet. A brownfield
+  repository has usually already written some. Waiting for those rules to re-accrue drops them,
+  and the drop is invisible: the architecture family is pre-seeded and will look complete while
+  the product family is empty. Copy each rule that the tree still holds, with its ID where the ID
+  still fits, restate it in full, and give it a row in `.agents/cg/enforcement.yaml` naming the
+  detector that already proves it. A predecessor `product.md` is a checklist to verify against the
+  code, not the source of the product survey. §2a reads the tree; a rule the code no longer obeys
+  is a deliberate drop, not a carry.
 - **A detector that loses its rule is the highest-severity finding here.** The predecessor's map
   is where you find them: a passing test bound to a rule ID that no longer exists is now
   deletable, and nothing in the new constitution argues back. List every one in the report even
@@ -159,7 +189,7 @@ When you find one, do these three things:
   new coverage is *weaker* anywhere, say so in that sentence — do not average it away against the
   places it is stronger.
 - **Never delete it, and never run it.** Its scripts read paths that may no longer exist, and
-  deleting a toolchain is not reversible by one edit. Retiring it is a `DL-02` with options, and
+  deleting a toolchain is not reversible by one edit. Retiring it is a `DU-NN` with options, and
   the fact that it is wired into the build — so the build now fails for a governance reason — is
   part of that entry, not a separate cleanup.
 
@@ -174,7 +204,7 @@ Start with the tool, which reads build manifests rather than guessing from direc
 cg modules
 ```
 
-It prints every detected root, whether the inheritance map already governs it, and exits **1**
+It prints every detected root, whether a discovered contract already governs it, and exits **1**
 while any is unmapped — so it is also the gate that tells you when this skill is finished.
 
 ```
@@ -211,34 +241,66 @@ fixtures, and anything the repository already ignores.
 Do **not** stop and ask the owner to confirm the list. Proceed on the roots a manifest identified,
 recording that as an assumption, and raise only the genuinely ambiguous ones — §10.
 
-## 3. Sketch the routing map
+## 2a. Snapshot the product from the code
 
-`map/routing.md` ships as a stub because only the repository knows its own capabilities. Add one
-row per capability, surface, or subsystem, naming the module contracts a task touching it must
-load.
+Module roots tell you where the build cuts. They do not tell you what the product is. Contracts
+are only as good as this snapshot, and the snapshot comes from the tree — deployables, entry
+points, persistence, CI, tests — not from a predecessor `product.md`.
 
-Write the rows in the words a request arrives in — "checkout fails at payment", not
-"PaymentServiceImpl" — because the routing table is read by whoever received the request, before
-they know which class is involved.
+Write the answers into `docs/plans/warmup-findings.md` now, then into the root contract in §7 and
+the harvest in §9. A hundred interview questions are not a hundred `P` or `E` rules. Each answer
+is context that makes the next contract true, or a constraint that forbids something, or a
+corrective Step when the composition is wrong.
 
-Sketch it now from the module list, and correct a row in Phase B whenever reading a module shows
-the routing was wrong. Doing it here rather than at the end means the loop has somewhere to write
-a correction to, instead of carrying one in context for thirty modules.
+| Question | What to read | Where it lands |
+|---|---|---|
+| SaaS, enterprise install, or consumer app | tenancy in signatures and paths; billing/metering types; whether infrastructure is per-customer | root `purpose` / `forbids`; `P` if the market shape forbids a different product |
+| Monolith, mini-monolith, or microservices | `cg modules`, Boot/application entry points, how many artifacts CI ships | root composition; `P` only if this repository committed to a count; otherwise describe what is there |
+| Named domain model or scattered types | ubiquitous language in ports vs DTOs that leak persistence or vendor types | `graph.surface.encapsulate`; a missing model is a corrective Step, not a leaf per file |
+| API/services first, classic web, mobile, or desktop | launchers, HTTP surfaces, mobile/desktop projects, template roots | root `routes` `when` phrases; surface `kind` |
+| Defined CI/CD | workflows that must pass to merge | `verification` commands; absence is a finding, not a guessed pipeline |
+| Defined security policy | authorization chokepoints, secret handling, trust-boundary tests | `P` when product-specific; `E` when advisory; a missing chokepoint is a Step |
+| Composition healthy, or restructure required | `graph.recurse`, `graph.surface`, `graph.adapters` against the packages you actually opened | stay if the surface is cohesive; **a brave restructure is a corrective Step** when responsibilities, vendor clients, or inbound scatter cannot be confined — not silent stay, and not a rewrite of behaviour in this skill |
+
+Warmup never edits behaviour. If the snapshot says the composition is wrong, §8 records the Step
+and `cg-plan` owns the delivery. Protecting a declared cohesive surface comes first; proposing to
+split or merge it is allowed once that surface is named.
+
+## 3. Sketch the root routes
+
+The repository contract's `routes` array is the first task-to-contract edge. Add one route per
+capability, surface, or subsystem. Each route owns a stable `id`, phrases under `when`, and one or
+more canonical contract paths under `contracts`.
+
+Write `when` phrases in the words a request arrives in — "checkout fails at payment", not
+"PaymentServiceImpl" — because routing happens before the caller knows which class is involved.
+Use `cg contract route --task "<request>"` to exercise the routes.
+
+Sketch them now from the module list, and correct a route in Phase B whenever reading a module
+shows it was wrong. The contract file is the only routing source; do not create a companion map.
 
 ---
 
 # Phase B — repeat §4–§6 for one unit at a time
 
-Pick the first row `cg modules` still reports `UNMAPPED`. Run §4, §5, and §6 for **that unit
-only**, then run `cg modules` again and pick the next. Do not batch: do not read three modules
-before writing a contract, and do not defer a binding or a finding to "later in the loop". When
-`cg modules` exits 0, go to Phase C.
+Pick the first row `cg modules` still reports `UNMAPPED`, or if none, the first `DESCEND`. Run §4,
+§5, and §6 for **that unit only**, then run `cg modules` again and pick the next. Do not batch: do
+not read three modules before writing a contract, and do not defer a binding or a finding to "later
+in the loop". When `cg modules` exits 0, go to Phase C.
+
+**Binding authority.** Read `.agents/cg/principles/architecture.yaml` before writing a node. `hierarchy.kinds`
+is the recursive mapping (repository → module → submodule → component or library). `graph` is the
+node decision (recurse, selfSufficient, surface, stay, add-child, elsewhere, compose, stop, forbid, adapters). A
+self-sufficient unit earns a child node; `cg modules` listing a module is not a leaf. Do not
+consult `engineering.yaml` to decide whether a folder is a contract. D entries are advice after
+the graph is placed.
 
 ## 4. Write this unit's contract
 
-Copy [the module contract template](assets/module-contract.template.md). It already carries the
-two `BEGIN/END INHERITED` markers in the right place — leave them empty and adjacent, because
-`cg sync` fills that block and `cg verify` rejects a hand-edited one.
+Copy [the YAML contract template](assets/contract.template.yaml) to
+`<unit>/.agents/cg/contract.yaml`. Keep the schema's field names and replace every instructional
+value. The YAML file is the contract: do not create a companion Markdown file or a separate
+inheritance map. CommonMark is allowed inside descriptive string values.
 
 Read this unit's code now. Read it once, and write everything you learn from it before moving on —
 §5 and §6 exist so that nothing you noticed has to survive in context past this iteration.
@@ -246,7 +308,7 @@ Read this unit's code now. Read it once, and write everything you learn from it 
 **Never generate contracts mechanically.** Not with a script, not by substituting a module name
 into one shared body, not by writing several at once from a list of directory names. Ten contracts
 is ten readings; that is the cost, and paying it is the entire product. A templated contract says
-`Purpose: core responsibilities for <module>` and `Used by: dependent modules` — sentences that are
+`purpose: core responsibilities for <module>` and parent `uses: dependent modules` — sentences that are
 true of every module ever written, which is the same as saying nothing. It will pass `cg verify`,
 because the verifier proves a rule ID exists and a heading is present, never that a sentence
 carries information. A generated graph is indistinguishable from no graph at the moment an agent
@@ -258,57 +320,56 @@ If a sentence is true of the next module too, it belongs in the repository contr
 A contract earns its place by letting an agent route *without* reading the code underneath it.
 Four of its fields carry that weight, and they are the ones a description-shaped contract omits:
 
-- **Project role** — why the parent system contains this unit and what it does with it. Not what
-  the code is; what the system needed.
-- **Parent contract** and **Used by** — the edges back up and inward, so a unit found from below
-  can be placed without a search.
-- **Child Contracts** — the edges down, and the section that decides whether this is a graph or a
-  list. Name each child and say in a phrase how it decomposes this responsibility. Where the unit
-  is genuinely the smallest owned boundary, write `None — leaf module`; `cg verify` requires the
-  section, so an empty one is an omission nobody can distinguish from a leaf.
+- **`purpose`** — why the parent contains this unit, how the parent uses it, and who enters it.
+- **`relations.parent`** — the edge back up, including the delegated responsibility under `uses`.
+- **`relations.children`** — the edges down. Each child path says how it decomposes this
+  responsibility. A smallest owned boundary explicitly uses `composition: "leaf"` and an empty
+  child array; a parent uses `"composed"` and at least one child.
 
-Then the boundary itself: **Allowed** and **Forbidden Responsibilities** (the section that does
-the work — one left empty governs nothing), **Invariants**, **Entry Points**, a **Verify Command**
-that runs today, and **Sibling Contracts** with their direction.
+Then the boundary itself: `responsibilities.owns/allows/forbids`, a language-native `surface` with
+observable accepts, returns, failures, and guarantees, `invariants`, executable `verification`,
+and lateral `relations.dependencies` with their direction.
 
-### Descend to every self-sufficient unit
+### Descend with the binding graph
 
 `cg modules` stops at build manifests, and no manifest declares a package — so the level of the
 graph that matters most for routing is exactly the level detection is blind to. Stopping at the
-module leaves an agent reading the whole of it to find one component inside.
+module leaves an agent reading the whole of it to find one component inside. A `governed` module
+that still prints `DESCEND` is not finished.
 
-**The test is self-sufficiency.** A unit deserves its own contract when you can name a
-functionality it delivers *and* it reaches outside itself only rarely. Both halves matter: a
-coherent responsibility with tendrils into every sibling is not a component, it is a layer; and
-a well-isolated directory that delivers no nameable functionality is a utility bag.
+Apply `.agents/cg/principles/architecture.yaml` `graph.recurse` and `graph.selfSufficient` to every candidate
+inside this unit. Cite those fields; do not invent a local test. `hierarchy.kinds` names the child's
+kind; `hierarchy.transitions` constrains it. `graph.stop` is when to become a leaf; `graph.forbid`
+is what never counts as a node. Depth is not capped: a two-level module leaf and a five-kind nest
+can coexist. Do not stop at three because a sentence said three is normal, and do not add a fourth
+because a folder exists. Apply `selfSufficient` at this node.
 
-Measure it rather than eyeballing the folder tree. Read the imports at the candidate's edge:
+`cg modules DESCEND` waits until three undeclared package branches; two self-sufficient packages
+still take `add-child`. `cg modules DESCEND` and `cg verify` `[0]` name undeclared packages on leaves *and* on composed
+nodes that have not claimed their children. Answer that now. If several packages form one
+boundary, `graph.stop` requires a `Leaf rationale:` assumption that names them and says why they
+are inseparable.
 
-- **Inbound** — who enters, and through what. A unit entered at one or two named types has a
-  boundary. One entered at a dozen scattered points has no edge to write a contract about.
-- **Outbound** — what it reaches for. Depending on the shared kernel and a published sibling
-  port is self-sufficiency; reaching into three siblings' internals is not, and the right finding
-  there is that the boundary is wrong (§10), not that a contract should describe the tangle.
-- **Reason to change** — a unit that changes for its own reasons is a component. One that only
-  ever changes when a sibling changes is part of that sibling.
+`graph.surface` is declared entry and encapsulation. Enter only through the contract surface.
+`graph.surface.service` is the first way to declare it: list the named services whose operations
+take parameters, do the work, and return the completed result; `contract.yaml` `surface` points at
+those types. Internals, algorithms, persistence, framework types, and vendor types stay behind
+that call. An undeclared entry or a bypass is a corrective Step, not stay.
 
-`cg verify` **fails** a module that declares no children while its source branches into several
-packages, so this is not optional and not deferrable to a later pass.
+If this unit is many functions across unmanaged files with no small inbound surface, do not
+create a node per file. Categorise the work into a small set of services. Declare them when the
+types exist; otherwise §8 a corrective Step to introduce them. Do not consult E01 to make that
+node decision. E01 is caller consumption of an already-declared surface.
 
-Several packages can genuinely form one boundary, and saying so is a legitimate answer — but it
-is a claim about *these* packages, so it has to name them and say what makes them inseparable.
-`cg verify` rejects a justification that names none of them: a sentence that would be equally true
-of any module is not evidence, it is a way of not answering. Two or three packages sharing one
-lifecycle is plausible; a dozen almost never is, and asserting it over twelve is how a graph ends
-up describing nothing.
+`graph.adapters` is the vendor split of `graph.surface.encapsulate`. An optional external resource
+is a parent-owned port; each concrete option is `add-child`, not `stay`. Two vendor clients in one
+unit is a corrective Step, not a shared database file. E02 is construction of the service behind
+the call; do not consult it to make that node decision.
 
-Use [the sub-module template](assets/submodule-contract.template.md), map it in
-`inheritance.json` with `"kind": "folder"` and a `depth` matching its segment count, and add it to
-the parent's **Child Contracts**. A child that exists but is not declared by its parent is
-unreachable by traversal, which is the same as not existing.
-
-Two or three levels is normal. Do not descend to every directory — a contract per package turns
-the graph into the file tree, and a file tree is what the agent already had.
+Use [the component contract template](assets/component-contract.template.yaml) when `add-child`
+selects a component or library, and add reciprocal edges: the parent names the child's canonical
+contract path and the child names the parent. `cg verify` rejects a dangling, one-sided, cyclic, or
+root-unreachable edge.
 
 Two rules that decide whether this is worth doing at all:
 
@@ -319,33 +380,40 @@ Two rules that decide whether this is worth doing at all:
   rule — `cg verify` fails the build for it, because a contract that depends on a deletable
   file is a contract that expires.
 
-Leave `<!-- Replace this section -->` markers only where you genuinely could not determine the
+Leave a string beginning `Replace this sentence` only where you genuinely could not determine the
 answer. Each one is a question for §10 — a marker with no entry behind it is a hole nobody will
 find again.
 
-## 5. Bind this unit and sync
+## 5. Bind and verify this unit
 
-`map/inheritance.json` decides which rules are stamped into which contract. Nothing infers it
-and nothing checks a scope is *correct* — the verifier proves only that a rule ID exists.
-
-Add an entry for this unit and each child you wrote in §4: its path key, `depth` matching the
-segment count, `kind` (`module` for a workspace root that needs its own `CLAUDE.md`/`AGENTS.md`
-pointers, `folder` otherwise), the `contract` path, and its `rules`.
+The structural `A` catalog applies globally and is never copied into contract `rules`. That
+array is reserved for additional repository-owned `P` bindings whose scope requires authoring
+judgement. Add applicable `P` IDs directly; `cg verify` proves every ID exists. Do not copy rule
+text into the contract; `cg contract context --id <id>` resolves global A rules and scoped P
+rules together.
 
 **When unsure whether a rule binds a module, include it.** A wrongly narrow scope means a
 folder silently stops being told about a rule it must obey, and silence is the failure mode
 this whole framework exists to remove. A wrongly broad scope is visible and annoying, which is
 the better error.
 
-Only `AP-` and `PP-` rules are ever inherited. `DP-`, `OP-`, `UP-`, and `SP-` are fork-loaded —
-`cg verify` rejects an inheritance entry naming one, because an unavoidable guide is just a rule.
+`E` entries are non-binding and never appear
+in a contract's `rules` array.
 
-Run `cg sync`, then `cg verify`, **before moving to the next unit**. A broken map found now costs
-one unit's rework; found thirty units later it costs thirty. Then re-run `cg modules` — this unit
-stops being reported, and the count going down is your progress.
+Run `cg sync`, then `cg contract verify`, then `cg verify`, **before moving to the next unit**.
+`cg sync` writes this module's `AGENTS.md` and `CLAUDE.md` pointers from its contract so the
+folder is openable as a workspace root. A broken edge found now costs one unit's rework; found
+thirty units later it costs thirty.
 
-An entry may govern a parent: a contract on `services/` covers `services/billing/` beneath it.
-Prefer that where the modules genuinely share a boundary, and separate contracts where they do not.
+A verification command that only proves a path exists (`test -f`, `test -d`, `[ -f`) is not
+verification. Name the test or build that exercises the invariant. If the unit has no such command
+yet, that is a §8 finding, not an existence check.
+
+Then re-run `cg modules` — UNMAPPED and DESCEND for this unit both clear when recurse is done.
+
+A parent contract may govern nested build modules only when they genuinely share one responsibility.
+Prefer separate child contracts whenever the nested module has its own public surface or reason to
+change.
 
 ## 6. Record what this unit taught you, then forget it
 
@@ -357,11 +425,11 @@ you must never pay for twice. Before selecting the next unit, append one block t
 ### <unit path>
 - **Rule candidates:** <constraints the code obeys that no principle states — §9 decides the
   family and whether they survive; here you only record what you saw and the files that show it>
-- **Principle observations:** <for any `AP-`/`PP-` rule this unit bears on: the rule ID, whether
-  a detector exists here, and what you read — §8 consolidates these>
+- **Rule observations:** <A failures, applicable P rules, or D practices this unit bears on;
+  include what you read and any detector evidence — §8 consolidates these>
 - **Detectors found:** <tests in this unit that guard a boundary, and the rule ID they cite if any>
-- **Open questions:** <boundaries you could not settle — §10 turns these into `DL-02` entries>
-- **Routing correction:** <a `map/routing.md` row this unit showed to be wrong, already fixed>
+- **Open questions:** <boundaries you could not settle — §10 turns these into `DU-NN` entries>
+- **Routing correction:** <a root or parent `routes` entry this unit showed to be wrong, already fixed>
 ```
 
 Every field may be `none`. An empty block is still written, because "this unit yielded nothing" is
@@ -378,29 +446,30 @@ source.
 # Phase C — once, after `cg modules` exits 0
 
 §7–§12 run one time over the whole repository. Their input is
-`docs/plans/warmup-findings.md` — every block Phase B appended — plus the contracts and maps now
+`docs/plans/warmup-findings.md` — every block Phase B appended — plus the connected contracts now
 on disk. **Read that file first.** Do not re-open module source to reconstruct what the loop
 already recorded; if a block is too thin to work from, that is a defect in the block, and the fix
 is to go back to that one unit rather than to re-read them all.
 
 ## 7. Fill the repository contract
 
-`.agents/cg/contract.md` is the root of the graph — the first thing every future session reads,
-and the node every route starts from. `cg init` ships it with `Project Identity` and *What This
-Product Is Not* as `<!-- Replace this section -->` placeholders, and **nothing else fills them.**
-They are not in `map/inheritance.json`, so `cg verify` never asks. A warmup that maps forty
+`.agents/cg/contract.yaml` is the root of the graph — the first thing every future session reads,
+and the node every route starts from. `cg init` ships its `purpose` and
+`responsibilities.forbids` with `Replace this sentence` placeholders, and **nothing else fills
+them.**
+The root is not a discovered implementation module, so module coverage never asks. A warmup that maps forty
 modules and leaves this empty has built a graph whose root says nothing about the product.
 
 It is written here rather than in Phase A because only now do you have the answer: every module
-has a stated *Project role*, and the repository's identity is what those roles add up to.
+has a stated purpose in its parent, and the repository's identity is what those roles add up to.
 
 Write:
 
-- **Project Identity** — what this repository builds, in the words its own team would use; its
+- **`purpose`** — what this repository builds, in the words its own team would use; its
   stable technical identity (package root, module prefix, configuration prefix); its request or
   pipeline shape; and each top-level module named with the one thing the product uses it for.
   A newcomer should be able to route from this paragraph alone.
-- **What This Product Is Not** — the exclusions, which do more work than the inclusions. State
+- **`responsibilities.forbids`** — the exclusions, which do more work than the inclusions. State
   what this repository will not become, so an agent proposing one recognises it as out of bounds.
   Take these from what the code refuses to do: a boundary every module respects, a dependency
   nothing declares, a store nothing writes to.
@@ -408,44 +477,46 @@ Write:
 Both come from evidence, not aspiration — the same rule as §4. If the repository genuinely does
 not settle a question, say so plainly here rather than inventing a direction for it.
 
-Leave no `<!-- Replace this section -->` marker behind in this file. A placeholder at the root of
+Leave no `Replace this sentence` marker behind in this file. A placeholder at the root of
 the graph is the one hole every session pays for.
 
-## 8. Assess the repository against the principles
+## 8. Assess structural binding failures
 
 This is the part that must not overclaim.
 
-Work through `principles/architecture.md` and `product.md` — the binding families — against the
-*Principle observations* collected in the findings file. For each rule, establish which of three
-states it is in **for this repository**:
+Run `cg verify` against the global `A` catalog and every scoped `P` rule. Do not assess
+engineering.yaml as compliance: it is non-binding decision guidance. For each binding, establish
+which of three states it is in **for this repository**:
 
 | State | What it means | Where it goes |
 |---|---|---|
-| **Enforced** | a detector exists and passes | the enforcement-map row names it |
-| **Assessed** | no detector; you read the code and formed a view | a finding, resolved below |
-| **Unknown** | you could not tell without running or instrumenting it | say so; do not guess |
+| **Enforced** | the registered detector exists and passes | the A catalog or P enforcement row names it |
+| **Violated** | the registered detector runs and fails | a corrective Step or an owner-approved exception |
+| **Unproven** | the claimed binding has no working detector in this repository | it is not enforced; resolve the false claim below |
 
-Every **Assessed** finding must resolve to exactly one of these, and to nothing else:
+Every non-green finding must resolve to exactly one of these, and to nothing else:
 
-1. **A detector, written now** — the rule stops being aspirational for this repository, and the
-   `<…> *(not yet built)*` marker comes out of the enforcement map in the same change.
-2. **A proposed exception** — a `DL-02` entry in `docs/plans/decision-log.md` stating what the
+1. **A repository-owned detector, written now** — valid for a `P` rule when its enforcement row
+   and affected contract references are updated in the same change. A missing `A` detector
+   cannot be created by editing installed YAML; record an upgrade or verifier-owner delivery Step.
+2. **A proposed exception** — a `DU-NN` entry in `docs/plans/decision-log.md` stating what the
    repository does instead, what that costs, and the one bounded edit that reverses it. Warmup
-   proposes; it never accepts. A binding principle is protected under `cg-unblock` D-3, so waiving
+   proposes; it never accepts. A `A` or `P` binding is protected under `cg-unblock` D-3, so waiving
    one is the owner's call even when the answer looks obvious. An exception nobody wrote down is a
    violation nobody remembers.
 3. **A corrective Step** — handed to `cg-plan` or `cg-prepare`, because a fix that changes
    behaviour owes its contract and detector in the same change and is therefore delivery work,
-   not warmup work.
+   not warmup work. Undeclared entries, internals on the surface, mixed optional vendor
+   clients, or unmanaged scatter with no small inbound surface cite `graph.surface.service`,
+   `graph.surface`, or `graph.adapters` here, not silent stay. Scatter becomes a small set of
+   services, not a node per file.
 
 **Never produce a compliance score, a percentage, or a grade.** A number computed from readings
-implies a measurement that was not taken. State counts instead — how many rules have detectors,
-how many were read, how many are unknown — because a count carries its own denominator and a
-score hides it.
+implies a measurement that was not taken. State counts instead — how many bindings are enforced,
+violated, or unproven — because a count carries its own denominator and a score hides it.
 
-**Do not run this table over the fork-loaded files.** Every rule in `design.md`, `operations.md`,
-`ux.md`, and `security.md` is a `guide`, and `cg verify` fails the build when a guide has an
-enforcement-map row. A guide makes no claim about your code, so there is nothing to assess.
+**Do not run this table over `engineering.yaml`.** Its D entries are
+non-binding practices. They may inform a finding but make no compliance claim.
 
 **Warmup never edits behaviour.** It writes governance, detectors, and findings. The moment a
 finding requires a code change, it becomes a Step for `cg-produce`.
@@ -480,7 +551,7 @@ descriptions belong in the contract sections you already wrote:
 2. **The code obeys it today**, and you can name the files that prove it.
 3. **A violation would be a defect**, not a preference. If you cannot say what breaks, it is a
    style note.
-4. **No existing rule already covers it.** A restatement of `AP-02-02` in local vocabulary makes
+4. **No existing rule already covers it.** A restatement of an existing A or P rule in local vocabulary makes
    the graph longer without making it stronger.
 
 The strongest source is the one §1 already found: **a detector that enforces no rule.** Somebody
@@ -490,33 +561,35 @@ wrote a test to hold a line. The line is the rule; write it down and bind them.
 
 | The rule is… | Family |
 |---|---|
-| structural, and would hold for any repository | `AP-` — inherited everywhere, so the bar is high |
-| true because of *this* product's market, pricing, shape, or tenancy | `PP-` — the family a brownfield repository has most of and ships with none of |
-| a lean between two workable designs | a fork file, as a `guide` with its cost |
+| structural advice without complete enforcement | `E` — a non-binding best practice |
+| generic structural invariant that could satisfy a deterministic measure, blocking detector, and negative fixture | `A` candidate — route it to the verifier-owning repository; do not assign a local ID |
+| true because of *this* product's market, pricing, shape, or tenancy | `P` — the family a brownfield repository has most of and ships with none of |
+| a lean between two workable designs | `E` — a non-binding preference, with `cost` when the trade-off is not obvious |
 
 Two errors to avoid, in the order they are tempting:
 
-- **Do not file a product rule as an architecture rule.** Tenancy is the usual casualty. "Every
+- **Do not file a product rule as an engineering guideline.** Tenancy is the usual casualty. "Every
   document lives under a tenant path prefix" is a real, testable, load-bearing rule — and it is a
-  `PP-` rule, because a single-tenant repository inheriting it could never satisfy it. The test is
+  `P` rule, because a single-tenant repository inheriting it could never satisfy it. The test is
   whether a repository building something else would be *wrong* to adopt it.
-- **Do not file a testable rule as a `guide`.** A `guide` is where a rule goes when no detector
-  could exist, never where one goes because writing the detector is work. If you can describe the
-  test, the rule is an `invariant` or an `AP-`/`PP-` rule and owes its row.
+- **Do not promote a D practice to A on wording alone.** Promotion requires structural impact,
+  a deterministic measure, a blocking detector, and a fail-on-demand fixture.
 
 ### What each harvested rule owes
 
-Every `AP-` and `PP-` rule needs **exactly one enforcement-map row** — `cg verify` fails without
-it. Write the row even when the detector does not exist yet; mark it `*(not yet built)*` and it is
-tracked debt rather than a silent gap. Then bind it in `map/inheritance.json` and run `cg sync`: a
-rule bound to nothing governs nothing.
+Every `A` candidate records the proposed invariant, deterministic measure, blocking detector,
+and negative fixture, then becomes delivery work in the repository that owns the verifier. Only
+that verifier-owning change assigns the next permanent ID in `principles/architecture.yaml` and removes an
+equivalent D practice. Every `P` rule needs exactly one repository `.agents/cg/enforcement.yaml`
+row and is listed in the affected contracts' `rules` arrays. A detector recipe without working enforcement is
+not a binding.
 
-### When a harvested rule contradicts a binding principle
+### When a harvested rule contradicts a binding
 
-Common, and it is *information*. The code was built to a rule the architecture principles disagree
-with, and one of the two is wrong. Never resolve it yourself and never quietly drop the harvested
-rule — raise a `DL-02` naming both rules, the code that follows the harvested one, and the cost of
-moving either way. Same `D-3` floor as §10: a binding principle is not yours to waive, and neither
+Common, and it is *information*. The code was built to a rule an existing A or P binding
+contradicts, and one of the two is wrong. Never resolve it yourself and never quietly drop the harvested
+rule — raise a `DU-NN` naming both rules, the code that follows the harvested one, and the cost of
+moving either way. Same `D-3` floor as §10: a `A` or `P` binding is not yours to waive, and neither
 is a rule the whole codebase already follows.
 
 ### Keep it proportionate
@@ -537,11 +610,11 @@ Route every open question by what it would cost to be wrong:
 
 | Question | Route | Why |
 |---|---|---|
-| a module root a build manifest identified | proceed; record an assumption | reversible by one edit to `inheritance.json` |
-| a boundary with no manifest behind it — a package tree, a shared directory | **`DL-02`** | wrong here makes several contracts wrong, and no default is safe |
+| a module root a build manifest identified | proceed; record an assumption | reversible by removing its contract edge and file |
+| a boundary with no manifest behind it — a package tree, a shared directory | **`DU-NN`** | wrong here makes several contracts wrong, and no default is safe |
 | which rules bind a module | proceed, including the rule when unsure | §5 — the broad scope is the visible error |
-| an exception to a binding principle | **`DL-02`, always** | a binding principle is protected; it is never yours to waive quietly |
-| a contract section you could not determine | marker, plus **`DL-02`** when the boundary is material | otherwise the marker is the record |
+| an exception to a `A` or `P` binding | **`DU-NN`, always** | a binding is protected; it is never yours to waive quietly |
+| a contract section you could not determine | marker, plus **`DU-NN`** when the boundary is material | otherwise the marker is the record |
 
 Reversible choices go in the plan's assumption ledger, one line each:
 
@@ -549,10 +622,12 @@ Reversible choices go in the plan's assumption ledger, one line each:
 - A1 <decision taken> — reverse by: <one bounded edit>
 ```
 
-If the reverse clause will not fit in one clause, it was not reversible — make it a `DL-02`.
+If the reverse clause will not fit in one clause, it was not reversible — make it a `DU-NN`.
 
-Owner questions go in `docs/plans/decision-log.md` under *Pending your review*, using the shape
-already in that file. Keep each as its own stable entry, and never renumber one.
+Owner questions go in `docs/plans/decision-log.md` under *Pending your review*, using
+[the decision entry template](../cg-unblock/assets/decision-entry.template.md). Keep each as its
+own stable `DU-NN` entry, and never renumber one. Do not copy that shape, this section, or
+promotion rules into the ledger file.
 
 Two rules that make this work rather than becoming a queue nobody drains:
 
@@ -573,38 +648,39 @@ repository has no discoverable modules at all.
 ## Predecessor
 - framework found: <none | what it was, and where>
 - rules it stated: <n> — <by family>
-- rules carried forward: <n> — <as principles, contract invariants, or enforcement-map rows>
+- rules carried forward: <n> — <as principles, contract invariants, or enforcement.yaml rows>
 - rules deliberately dropped: <n> — <each with its reason>
 - detectors that lost their rule: <n> — <each test, and the rule ID that no longer resolves>
-- still enforced by it and not yet by this graph: <n> — <which, and the DL-02 that decides them>
+- still enforced by it and not yet by this graph: <n> — <which, and the DU-NN that decides them>
 
 ## Modules
 - discovered: <n> — <how: build file, ownership boundary>
-- mapped: <n>
+- governed by connected contracts: <n>
 - excluded: <n> — <each with its reason>
 
 ## Contracts
 - written: <n> — <n> module, <n> sub-module
 - deepest path from the repository contract to a leaf: <n> levels
-- declaring `None — leaf`: <n>
-- carrying unresolved `<!-- Replace this section -->` markers: <n> — <which>
+- declaring `composition: "leaf"`: <n>
+- carrying unresolved `Replace this sentence` markers: <n> — <which>
 
-## Principles
+## Bindings
 - enforced (detector exists and passes): <n>
-- assessed by reading (evidence, not proof): <n>
-- unknown (needs running or instrumenting): <n>
+- violated (detector runs and fails): <n>
+- unproven (no working detector): <n>
 
-## New principles — please confirm
-Harvested from the code (§9). Each is a rule this repository already follows that no principle
-stated. They are written, bound, and green — this list is for you to keep, reword, or delete.
+## Harvested rules and structural candidates — please confirm
+Harvested from the code (§9). Repository-owned `P` rules listed here are written, scoped, and
+green; `E` entries are explicitly advisory. Generic structural findings remain `A` candidates
+until a verifier-owning delivery change registers their detectors and assigns permanent IDs.
 
 | ID | Rule | Why it is that family | Evidence in the code | Detector |
 |---|---|---|---|---|
-| <PP-nn-nn> | <the rule, stated in full> | <product-specific / structural / a lean> | <the files that prove it> | <name, or `not yet built`> |
+| <Pnn-nn / Enn-nn / A candidate> | <the rule, stated in full> | <product-specific / advisory / generic structural> | <the files that prove it> | <working detector, `advisory`, or proposed detector> |
 
-- contradicting a binding principle: <n> — <each is a `DL-02`, listed under *Waiting on you*>
-- **To delete one:** remove it from the principle file, its enforcement-map row, and its entries in
-  `map/inheritance.json`, then run `cg sync`.
+- contradicting a binding: <n> — <each is a `DU-NN`, listed under *Waiting on you*>
+- **To delete one:** remove a P rule from `.agents/cg/guidelines/product.yaml`, its enforcement row, and affected
+  contract references. Amend an A rule only with its detector and negative fixture in the same change.
 
 ## Findings
 - detectors written now: <n>
@@ -612,7 +688,7 @@ stated. They are written, bound, and green — this list is for you to keep, rew
 - corrective Steps handed to planning: <n>
 
 ## Waiting on you
-- `DL-02` entries under *Pending your review*: <n>
+- `DU-NN` entries under *Pending your review*: <n>
 - assumptions recorded and proceeding: <n>
 
 ## Gate
@@ -620,16 +696,14 @@ stated. They are written, bound, and green — this list is for you to keep, rew
 ```
 
 **Waiting on you** is the section to read first — the whole ask, in one place, and nothing in it
-stopped the rest of the work. The principles section is the honest one: if most rules are
-`assessed` rather than `enforced`, say so plainly. That is the true state of a repository at
+stopped the rest of the work. The bindings section is the honest one: if rules are
+`unproven` rather than `enforced`, say so plainly. That is the true state of a repository at
 adoption, and pretending otherwise makes the first real violation a surprise, not a caught defect.
 
-**New principles is the section to read second**, and it is a different kind of ask. Those rules
-are already written and already green; nothing waits on the reply. What the owner is confirming is
-that each one is a rule they want to keep, in the words they would have used — because from here
-on it binds every agent that reads the graph. Present the whole set at once, never one at a time,
-and never ask for approval before writing them: an unwritten rule leaves the code as the only
-record of itself, which is the cost this step exists to remove.
+**Harvested rules and structural candidates is the section to read second.** What the owner is
+confirming is which repository-owned `P` rules and advisory `E` practices to keep, and which
+generic candidates to propose to the verifier owner. Present the whole set at once, never one at a
+time. Never describe a candidate as binding before its detector is registered.
 
 ## 12. Dispose of your own working files
 
@@ -643,9 +717,9 @@ repository with permanent adoption litter:
 
 | File | What it is | Where it ends up |
 |---|---|---|
-| `docs/plans/warmup-findings.md` | a **resume log** — Phase B appends a block per unit so a context break continues instead of restarting | **Delete it.** Once every mapped folder has a contract and the principles are harvested, it has nothing left to resume. Its content is already in the contracts it produced. |
+| `docs/plans/warmup-findings.md` | a **resume log** — Phase B appends a block per unit so a context break continues instead of restarting | **Delete it.** Once every governed unit has a connected contract and the rules are harvested, it has nothing left to resume. Its content is already in the contracts it produced. |
 | `docs/plans/warmup-corrective-set.md` | findings that must become work | **Consumed, then archived.** It drains when `cg-plan` gives every finding a phase; move it to `docs/plans/archive/` at that point, not before. |
-| `docs/plans/warmup-report.md` | what adoption found, at a point in time | **`docs/design/`, or delete.** If it is worth keeping it is durable knowledge, and durable knowledge does not live under `docs/plans/` — a permanent contract may not cite a path there. Keep it only if a reader would return to it; archive or delete it otherwise. |
+| `docs/plans/warmup-report.md` | what adoption found, at a point in time | **`docs/decisions/`, or delete.** If it is worth keeping it is durable knowledge, and durable knowledge does not live under `docs/plans/` — a permanent contract may not cite a path there. Keep it only if a reader would return to it; archive or delete it otherwise. |
 
 Do this before the next-action response, and say in that response what happened to each file. A run
 that reports `Warmup complete` while all three survive has not finished — it has stopped.
@@ -661,7 +735,7 @@ the resume point. Disposal is part of finishing, and only of finishing.
 
 Choose exactly one immediate route:
 
-- contracts written, gate green, and questions logged: point the owner at the `DL-02` set and name
+- contracts written, gate green, and questions logged: point the owner at the `DU-NN` set and name
   `cg-unblock` to apply the answers when they come;
 - contracts written and nothing is pending: use `cg-plan` with the first real piece of work;
 - findings need delivery: use `cg-plan` with the corrective set;
@@ -673,48 +747,49 @@ End the user-facing response with:
 
 ```markdown
 ## Next action — <Warmup complete | Answers pending | Findings need delivery>
-- **User action:** <one concrete action — when answers are pending, "answer the N entries under *Pending your review*">
-- **Working files:** <what happened to warmup-findings, warmup-corrective-set, and warmup-report>
+- **User action:** <one concrete action — when answers are pending, "answer the N entries under *Pending your review*"; always say what happened to warmup-findings, warmup-corrective-set, and warmup-report>
 - **Next input:** <$cg-plan | $cg-unblock | None — warmup complete, this skill is not run again> — <exact decision-log entries, corrective set, or gate evidence>
 - **Blocked by:** <exact decision, prerequisite, or failing gate>   <!-- omit unless the status is non-advancing -->
 ```
 
 ## Completion check
 
-- [ ] Each of warmup's three working files was deleted, archived, or moved to `docs/design/`, and
+- [ ] Each of warmup's three working files was deleted, archived, or moved to `docs/decisions/`, and
       the response says which.
 - [ ] A predecessor framework was searched for, and the report says what was found — including
       "none".
 - [ ] Every rule the predecessor asserted is carried forward or listed as a deliberate drop.
-- [ ] The predecessor's product rules are in `principles/product.md`, not left to re-accrue.
+- [ ] The predecessor's product rules are in the `P` catalog under `guidelines/`, not left to re-accrue.
 - [ ] Every predecessor detector whose rule ID no longer resolves is named in the report.
 - [ ] Nothing belonging to the predecessor was deleted or executed.
 - [ ] `cg modules` exits 0, or every remaining row is excluded with a stated reason.
 - [ ] Every unit that went through Phase B has a findings block, including the empty ones.
 - [ ] No unit's source was read in Phase C — consolidation used the findings file.
 - [ ] Harvested rules were merged across units before being written, not repeated per unit.
-- [ ] Every module root is mapped or excluded with a stated reason.
-- [ ] Every mapped folder has a contract describing code that exists.
-- [ ] `.agents/cg/contract.md` has Project Identity and *What This Product Is Not* written from
-      evidence — no `<!-- Replace this section -->` marker left at the root of the graph.
-- [ ] Every contract states Project role, Parent contract, and Used by — the edges that let an
+- [ ] Every module root is governed by a contract or excluded with a stated reason.
+- [ ] Every governed boundary has one `contract.yaml` describing code that exists.
+- [ ] `.agents/cg/contract.yaml` has `purpose` and `responsibilities.forbids` written from
+      evidence — no `Replace this sentence` marker remains at the root of the graph.
+- [ ] Every contract states `purpose` and a reciprocal parent edge — the context that lets an
       agent route without reading the code underneath.
-- [ ] Every contract declares its Child Contracts, or says `None — leaf`.
+- [ ] Every contract declares `composition: "composed"` with children or `"leaf"` without them.
 - [ ] Every child contract is declared by its parent; none is reachable only by file search.
 - [ ] No contract cites a plan path or a ticket as the source of a rule.
-- [ ] Every `Forbidden Responsibilities` section says something.
-- [ ] `inheritance.json` scopes were widened rather than guessed narrow.
-- [ ] `routing.md` is written in the words requests arrive in.
+- [ ] Every `responsibilities.forbids` value says something.
+- [ ] Contract `rules` contains only applicable P rules; global A rules are not duplicated.
+- [ ] Contract `routes.when` phrases use the words requests arrive in.
 - [ ] Every finding is a detector, a recorded exception, or a corrective Step.
-- [ ] The rules the code already enforces are written as principles, not left in the code.
-- [ ] Every harvested rule is in the right family — no product rule filed as `AP-`, no testable
-      rule filed as a `guide`.
-- [ ] Every harvested `AP-`/`PP-` rule has one enforcement-map row and is bound in
-      `inheritance.json`.
-- [ ] Every harvested rule contradicting a binding principle is a `DL-02`, not a silent choice.
+- [ ] The rules the code already enforces are recorded in the correct binding, practice, or
+      candidate destination rather than left implicit in the code.
+- [ ] Every harvested item is in the right destination: D practice, A candidate, or
+      repository-specific P rule.
+- [ ] Every harvested A candidate has a proposed measure, detector, and negative fixture and is
+      routed to verifier-owner delivery; every P rule has one enforcement row and is bound in each
+      affected contract.
+- [ ] Every harvested rule contradicting a binding is a `DU-NN`, not a silent choice.
 - [ ] The harvested set is listed in the report for the owner to confirm, in one place.
-- [ ] Every open question is a `DL-02` entry or a recorded assumption — none was asked in chat.
-- [ ] Every `<!-- Replace this section -->` marker has a decision-log entry behind it.
+- [ ] Every open question is a `DU-NN` entry or a recorded assumption — none was asked in chat.
+- [ ] Every unresolved `Replace this sentence` marker has a decision-log entry behind it.
 - [ ] Pending questions were presented once, as a consolidated set.
 - [ ] No logged question stopped work that was not actually blocked by it.
 - [ ] No score, percentage, or grade appears anywhere in the report.

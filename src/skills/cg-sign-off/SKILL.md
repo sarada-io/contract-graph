@@ -67,17 +67,17 @@ Classify every admission, test, contract, or acceptance finding:
 | Finding | Required action |
 |---|---|
 | phase-level composition test or close record | fix directly in closure-owned paths and re-run affected gates |
-| defect within an already prepared Step's paths | write a corrective Step brief, run `cg-produce`, then resume sign-off |
-| defect requiring new paths or a changed remaining order | send the finding through `cg-prepare`, run the corrective Step, then resume sign-off |
-| competing design or protected decision | use `cg-unblock`; keep the phase Blocked while independent verification continues |
-| genuinely out-of-phase work | hand it to `cg-plan`, or to `cg-prepare` only when a matching future phase already exists |
-| missing prerequisite or outcome error | hand it to `cg-plan`, mark the phase Incomplete or Blocked, and resume after correction |
+| defect within an already prepared Step's paths | write a corrective Step brief and stop with Next action `$cg-produce` |
+| defect requiring new paths or a changed remaining order | stop with Next action `$cg-prepare` carrying the finding |
+| competing design or protected decision | stop with Next action `$cg-unblock`; keep the phase Blocked while independent verification continues |
+| genuinely out-of-phase work | stop with Next action `$cg-plan`, or `$cg-prepare` only when a matching future phase already exists |
+| missing prerequisite or outcome error | stop with Next action `$cg-plan`, mark the phase Incomplete or Blocked, and resume after correction |
 
 Closure-owned fixes are limited to paths reserved by `cg-prepare`: emergent composition tests and
 phase-close records. If a repair changes production behavior, a boundary, an invariant, an entry
-point, a contract, or a detector, execute a corrective Step instead. The same human or agent may
-perform it; the transition to `cg-produce` is a responsibility boundary, not a requirement for
-another task or person.
+point, a contract, or a detector, write a corrective Step brief and yield. Do not invoke
+`cg-produce` or `cg-prepare` from this skill. The Next action block names the hop; the user or
+`cg-auto-run` takes it. Sign-off resumes as a new invocation after that handoff is green.
 
 Use this corrective brief:
 
@@ -107,16 +107,15 @@ Source: cg-sign-off
 <state sign-off must re-admit>
 ```
 
-After every repair:
+When a corrective Step returns and sign-off is resumed:
 
-1. run its `cg-produce` completion gate;
-2. confirm the corrective handoff matches the current execution context;
-3. repeat admission;
-4. re-run the full phase gate and every original Step gate; and
-5. continue until green or blocked by a recorded decision or unavailable prerequisite.
+1. confirm the corrective handoff matches the current execution context;
+2. repeat admission;
+3. re-run the full phase gate and every original Step gate; and
+4. continue until green or blocked by a recorded decision or unavailable prerequisite.
 
-Do not leave a current-phase rejection as prose. Sign-off owns driving the corrective Step through
-the loop.
+Do not leave a current-phase rejection as prose. Sign-off owns classifying the defect and emitting
+the exact Next action that continues the loop.
 
 ## 3. Verify the continuous sequential history
 
@@ -160,7 +159,7 @@ Typical assertions:
 | published contract plus consumers | detector evaluates all consumers and fails on demand |
 | roles redistributed | complete role-by-route matrix permits only intended roles |
 | shared record evolved | exactly one final writer per field |
-| module registration changed | declared graph equals built graph and launch targets |
+| module registration changed | authored contracts still describe the implemented units and launch targets |
 | read/write paths compose | security domains remain isolated with correct fallback |
 
 Emergent tests prove phase composition. They never compensate for a missing Step-owned contract,
@@ -175,8 +174,10 @@ detector, or functional test.
 5. Run the phase acceptance gate from `cg-plan`.
 6. Confirm no unexpected worktree residue remains.
 
-If a binding rule is absent from a contract, create and run a corrective Step, then resume
-confirmation. Do not write it as an isolated closure cleanup.
+If an applicable P binding is absent from a contract, or an A detector fails, write a corrective
+Step brief and stop with Next action `$cg-produce`. Do not repair it as isolated closure cleanup.
+If `.agents/cg/principles/architecture.yaml` `graph.recurse` would add a child for a self-sufficient unit
+that has no contract, that is the same produce defect.
 
 ## 7. Harvest decisions
 
@@ -194,13 +195,16 @@ that cohort. It must not default to every resolved decision in the shared decisi
 4. Confirm each eligible ID is in the log's `Resolved` section. A pending or unknown ID is never
    eligible. Other resolved decisions and every pending decision remain in the log for their own
    cohort or answer.
-5. Classify each eligible decision once through `cg-unblock` D-5a: module contract, Architecture
-   Principle, Product Principle, Design Principle, or drop. A `drop` carries one line saying why:
+5. Classify each eligible decision once through `cg-unblock` D-5a: module contract, Contract
+   Binding, Engineering guideline, Product Principle, or drop. A `drop` carries one line saying why:
    the entry was binding authority under D-2 until this moment, and the manifest is the archived
    record that it existed and stopped.
 6. State each proposed permanent rule and delivery obligation without citing its source decision,
    a plan ticket, or a `docs/plans/` path. Binding and invariant destinations name their detector
-   and enforcement-map treatment; a design guide names its cost and no detector/map row.
+   and enforcement treatment; an A promotion also names its deterministic measure and negative
+   fixture, while a D preference names its reason and optional cost and no detector/map row. A `A` destination is valid only
+   when the destination phase changes the verifier that registers its detector. Otherwise retain
+   it as `E`, adopt it as repository-specific `P`, or record it as an upstream A proposal.
 7. Run the shipped detector. It checks cohort membership in both directions, that every
    promotion owes what its destination owes, that no promoted rule cites its own decision or a
    transient path, and that every dropped decision carries its reason:
@@ -244,7 +248,7 @@ A valid empty cohort closes without acceptance or a route.
 
 Classify phase content:
 
-- **Missing binding rule:** run the §2 repair loop through `cg-produce`.
+- **Missing binding rule:** use the §2 repair loop (yield to `$cg-produce`).
 - **Durable rationale or threat model:** write it as a design record under §8.
 - **Current product or operator procedure:** write it as a guide under §8.
 - **Progress, sequencing, or command output:** leave it in the phase record.
@@ -410,6 +414,23 @@ handover or decision that unblocks it, and do not archive it as Complete.
 If the gate cannot become green, stop at Incomplete or Blocked with corrective and handover records
 ready for continuation. Do not perform archival steps.
 
+## Stage boundary — yield here
+
+**Finish your stage, then return to the user.** Do not invoke the next skill yourself, however
+obvious the route is. The `Next action` block names the successor so a person can choose it and so
+`cg-auto-run` can follow it under a granted authority — naming it is not permission to take it.
+
+Crossing a stage boundary unasked removes the review the boundary exists for. Someone who runs this
+skill to read what it produced, and gets back a closed phase instead, cannot act on the thing they
+asked for: the decision point is gone and the work is already downstream of it.
+
+Continuing *within* your own stage is different and expected — `cg-produce` drains its queue, and a
+resumed Step is the same stage, not a new one. The rule is one stage per invocation, not one unit
+of work per invocation.
+
+The single exception is a dispatch from `cg-auto-run`, which holds an explicit authority level, a
+stage budget, and a ledger. If you were not dispatched by it, you are the last stage of this turn.
+
 ## 11. Sign-off report and next action
 
 Report the execution baseline, queue-state transitions, and actual Step history; final gate results;
@@ -450,23 +471,6 @@ End the user-facing response with:
 
 Name the next selected phase and skill, or state explicitly that no next skill remains. Do not
 invent a lifecycle transition for a standalone documentation task.
-
-## Stage boundary — yield here
-
-**Finish your stage, then return to the user.** Do not invoke the next skill yourself, however
-obvious the route is. The `Next action` block names the successor so a person can choose it and so
-`cg-auto-run` can follow it under a granted authority — naming it is not permission to take it.
-
-Crossing a stage boundary unasked removes the review the boundary exists for. Someone who runs this
-skill to read what it produced, and gets back a closed phase instead, cannot act on the thing they
-asked for: the decision point is gone and the work is already downstream of it.
-
-Continuing *within* your own stage is different and expected — `cg-produce` drains its queue, and a
-resumed Step is the same stage, not a new one. The rule is one stage per invocation, not one unit
-of work per invocation.
-
-The single exception is a dispatch from `cg-auto-run`, which holds an explicit authority level, a
-stage budget, and a ledger. If you were not dispatched by it, you are the last stage of this turn.
 
 ## Sign-off check
 

@@ -1,0 +1,328 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sarada.io/contract-graph/schema/contract-v1.schema.json",
+  "title": "Contract Graph contract",
+  "description": "The canonical, machine-readable contract for one governed software boundary. Descriptive strings may contain CommonMark.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "contractVersion",
+    "id",
+    "name",
+    "kind",
+    "unit",
+    "summary",
+    "purpose",
+    "responsibilities",
+    "surface",
+    "invariants",
+    "relations",
+    "rules",
+    "verification",
+    "routes",
+    "agent"
+  ],
+  "properties": {
+    "$schema": { "const": "https://sarada.io/contract-graph/schema/contract-v1.schema.json" },
+    "contractVersion": { "const": "1.0" },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._/-]*$",
+      "description": "Stable graph identity. It must not change merely because entries are reordered."
+    },
+    "name": { "type": "string", "minLength": 1 },
+    "kind": {
+      "enum": ["repository", "module", "submodule", "component", "library"]
+    },
+    "unit": {
+      "type": "string",
+      "pattern": "^(\\.|[A-Za-z0-9_@][A-Za-z0-9._@/-]*)$",
+      "description": "Repository-relative directory governed by this contract."
+    },
+    "summary": { "type": "string", "minLength": 1 },
+    "purpose": { "type": "string", "minLength": 1, "contentMediaType": "text/markdown" },
+    "responsibilities": { "$ref": "#/$defs/responsibilities" },
+    "surface": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/surface" }
+    },
+    "invariants": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/invariant" }
+    },
+    "relations": { "$ref": "#/$defs/relations" },
+    "rules": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^P[0-9]{2}-[0-9]{2}$" }
+    },
+    "verification": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/verification" }
+    },
+    "routes": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/route" }
+    },
+    "agent": { "$ref": "#/$defs/agent" },
+    "assumptions": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1, "contentMediaType": "text/markdown" }
+    },
+    "exceptions": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/exception" }
+    },
+    "extensions": {
+      "type": "object",
+      "description": "Namespaced data understood by repository-specific or future tooling."
+    }
+  },
+  "$defs": {
+    "nonEmptyMarkdown": {
+      "type": "string",
+      "minLength": 1,
+      "contentMediaType": "text/markdown"
+    },
+    "relativePath": {
+      "type": "string",
+      "pattern": "^(\\.|[A-Za-z0-9_@][A-Za-z0-9._@/-]*)$"
+    },
+    "stringList": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/nonEmptyMarkdown" }
+    },
+    "responsibilities": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["owns", "allows", "forbids"],
+      "properties": {
+        "owns": {
+          "allOf": [
+            { "$ref": "#/$defs/stringList" },
+            { "minItems": 1, "maxItems": 1 }
+          ]
+        },
+        "allows": { "$ref": "#/$defs/stringList" },
+        "forbids": { "$ref": "#/$defs/stringList" }
+      }
+    },
+    "surface": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "path", "summary", "symbols", "contract"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$" },
+        "kind": {
+          "enum": ["service", "module", "package", "class", "function", "type", "schema", "command", "http", "event", "file", "other"]
+        },
+        "path": { "$ref": "#/$defs/relativePath" },
+        "summary": { "$ref": "#/$defs/nonEmptyMarkdown" },
+        "symbols": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "contract": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["accepts", "returns", "fails", "guarantees"],
+          "properties": {
+            "accepts": { "$ref": "#/$defs/stringList" },
+            "returns": { "$ref": "#/$defs/stringList" },
+            "fails": { "$ref": "#/$defs/stringList" },
+            "guarantees": { "$ref": "#/$defs/stringList" }
+          }
+        }
+      }
+    },
+    "invariant": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "statement", "verification"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[A-Z][A-Z0-9_-]*$" },
+        "statement": { "$ref": "#/$defs/nonEmptyMarkdown" },
+        "verification": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$" }
+        },
+        "debt": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["reason"],
+          "properties": {
+            "reason": { "$ref": "#/$defs/nonEmptyMarkdown" },
+            "trackedBy": { "type": "string", "minLength": 1 }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "verification": { "maxItems": 0 } },
+            "required": ["verification"]
+          },
+          "then": { "required": ["debt"] }
+        }
+      ]
+    },
+    "contractRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["contract", "uses"],
+      "properties": {
+        "contract": {
+          "type": "string",
+          "pattern": "^(\\.agents/cg/contract\\.yaml|[A-Za-z0-9_@][A-Za-z0-9._@/-]*/\\.agents/cg/contract\\.yaml)$"
+        },
+        "uses": { "$ref": "#/$defs/nonEmptyMarkdown" },
+        "via": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "relations": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["parent", "composition", "children", "dependencies"],
+      "properties": {
+        "parent": {
+          "oneOf": [
+            { "type": "null" },
+            { "$ref": "#/$defs/contractRef" }
+          ]
+        },
+        "composition": { "enum": ["leaf", "composed", "unmapped"] },
+        "children": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/contractRef" }
+        },
+        "dependencies": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/contractRef" }
+        }
+      }
+    },
+    "verification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "command", "covers"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$" },
+        "command": { "type": "string", "minLength": 1 },
+        "covers": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^[A-Z][A-Z0-9_-]*$" }
+        }
+      }
+    },
+    "route": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "when", "contracts"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$" },
+        "when": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "contracts": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^(\\.agents/cg/contract\\.yaml|[A-Za-z0-9_@][A-Za-z0-9._@/-]*/\\.agents/cg/contract\\.yaml)$" }
+        }
+      }
+    },
+    "agent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["readFirst", "beforeChange"],
+      "properties": {
+        "readFirst": { "$ref": "#/$defs/stringList" },
+        "beforeChange": { "$ref": "#/$defs/stringList" }
+      }
+    },
+    "exception": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rule", "reason", "approvedBy"],
+      "properties": {
+        "rule": { "type": "string", "pattern": "^(A[0-9]{2}|P[0-9]{2}-[0-9]{2})$" },
+        "reason": { "$ref": "#/$defs/nonEmptyMarkdown" },
+        "approvedBy": { "type": "string", "minLength": 1 },
+        "expires": { "type": "string", "format": "date" }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "kind": { "not": { "const": "repository" } } },
+        "required": ["kind"]
+      },
+      "then": { "properties": { "surface": { "minItems": 1 } } }
+    },
+    {
+      "if": {
+        "properties": {
+          "relations": {
+            "properties": { "composition": { "const": "leaf" } },
+            "required": ["composition"]
+          }
+        },
+        "required": ["relations"]
+      },
+      "then": {
+        "properties": {
+          "relations": { "properties": { "children": { "maxItems": 0 } } }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "relations": {
+            "properties": { "composition": { "const": "composed" } },
+            "required": ["composition"]
+          }
+        },
+        "required": ["relations"]
+      },
+      "then": {
+        "properties": {
+          "relations": { "properties": { "children": { "minItems": 1 } } }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "relations": {
+            "properties": { "composition": { "const": "unmapped" } },
+            "required": ["composition"]
+          }
+        },
+        "required": ["relations"]
+      },
+      "then": {
+        "properties": {
+          "kind": { "const": "repository" },
+          "relations": {
+            "properties": {
+              "parent": { "type": "null" },
+              "children": { "maxItems": 0 }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

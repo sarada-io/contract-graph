@@ -5,7 +5,10 @@ import { fileURLToPath } from "node:url";
 import { DEFAULT_DOCS_ROOT } from "./model.js";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-export const PROFILE_CONFIG_ROOT = path.join(HERE, "..", "scaffold", "profiles");
+const RUNTIME_ROOT = path.join(HERE, "..");
+export const PROFILE_CONFIG_ROOT = fs.existsSync(path.join(RUNTIME_ROOT, "agent", "profiles"))
+  ? path.join(RUNTIME_ROOT, "agent", "profiles")
+  : path.join(RUNTIME_ROOT, "install", "profiles");
 const CONFIG_SUFFIX = ".scaffolding.conf.json";
 const CONFIG_FIELDS = new Set([
   "name",
@@ -33,7 +36,7 @@ export function availableProfiles(root = PROFILE_CONFIG_ROOT) {
 }
 
 export const profilePath = (repoRoot) =>
-  path.join(repoRoot, ".agents", "cg", "map", "profile.json");
+  path.join(repoRoot, ".agents", "cg", "profile.json");
 
 function fieldError(file, field, message) {
   throw new ProfileError(`${file}: field \`${field}\` ${message}`);

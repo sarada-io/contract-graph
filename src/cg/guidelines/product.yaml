@@ -1,0 +1,21 @@
+$schema: https://sarada.io/contract-graph/schema/product-v1.schema.json
+productVersion: "1.0"
+
+# Repository-owned P guidelines. This file ships empty: a P rule exists because of this
+# product's market, pricing, shape, or tenancy, not because Contract Graph ships someone
+# else's product opinions. Greenfield repositories accrue rules through decision harvest.
+# Brownfield warmup copies the product rules already embodied in the code.
+#
+# Add the detector row in the same change (src/cg/enforcement.yaml here; after init,
+# .agents/cg/enforcement.yaml) and list the ID on affected contracts' rules arrays.
+#
+# First harvested rule:
+#
+# principles:
+#   - id: P01
+#     title: Billing shape
+#     entries:
+#       - id: P01-01
+#         text: Every price is quoted in minor units.
+
+principles: []

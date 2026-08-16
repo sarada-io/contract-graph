@@ -16,6 +16,8 @@ import fs from "node:fs";
 import path from "node:path";
 
 import {
+  BEST_PRACTICE_FAMILIES,
+  CORE_BINDING_FAMILIES,
   FORK_FAMILIES,
   PLAN_TICKET,
   RULE_FAMILIES,
@@ -28,7 +30,9 @@ export class HarvestError extends Error {}
 /** Where a classified decision may go. Mirrors `cg-unblock` D-5a. */
 export const DESTINATIONS = Object.freeze([
   "contract",
+  ...CORE_BINDING_FAMILIES,
   ...RULE_FAMILIES,
+  ...BEST_PRACTICE_FAMILIES,
   ...FORK_FAMILIES,
   "drop",
 ]);
@@ -59,6 +63,10 @@ function readJson(file) {
   }
 }
 
+/** Owner (`DU-NN`) and autonomous (`DA-NN`) decision-log ids. */
+export const DECISION_ID = /^D[AU]-\d{2}$/;
+const DECISION_HEADING = /^###\s+(D[AU]-\d{2})\b/;
+
 /** The decision IDs listed under a `## Resolved` heading in the decision log. */
 export function resolvedDecisionIds(logFile) {
   if (!fs.existsSync(logFile)) throw new HarvestError(`missing decision log: ${logFile}`);
@@ -71,7 +79,7 @@ export function resolvedDecisionIds(logFile) {
       continue;
     }
     if (!inResolved) continue;
-    const entry = /^###\s+(DL-\d{2}-\d+)/.exec(line);
+    const entry = DECISION_HEADING.exec(line);
     if (entry) ids.add(entry[1]);
   }
   return ids;
@@ -112,6 +120,10 @@ export function checkHarvest(
   const classifiedSet = new Set(classified);
   if (classified.length !== classifiedSet.size) {
     fail(`${name}: the same decision is classified more than once`);
+  }
+  const malformed = [...new Set([...eligible, ...classified].filter((id) => !DECISION_ID.test(id)))];
+  if (malformed.length) {
+    fail(`${name}: decision id(s) must be DA-NN or DU-NN: ${malformed.join(", ")}`);
   }
   const missing = eligible.filter((id) => !classifiedSet.has(id));
   const extra = classified.filter((id) => !eligibleSet.has(id));
@@ -155,7 +167,20 @@ export function checkHarvest(
       fail(`${name}: ${id} states its rule by citing the decision it came from`);
     }
 
-    if (FORK_FAMILIES.includes(entry.destination)) {
+    if (CORE_BINDING_FAMILIES.includes(entry.destination)) {
+      if (!isNonEmptyString(entry.measure)) {
+        fail(`${name}: ${id} promotes to ${entry.destination} and owes a deterministic measure`);
+      }
+      if (!isNonEmptyString(entry.detector)) {
+        fail(`${name}: ${id} promotes to ${entry.destination} and owes a blocking detector`);
+      }
+      if (!isNonEmptyString(entry.negativeFixture)) {
+        fail(`${name}: ${id} promotes to ${entry.destination} and owes a fail-on-demand fixture`);
+      }
+    } else if (BEST_PRACTICE_FAMILIES.includes(entry.destination)) {
+      // A best practice is deliberately advisory. It moves to A only after it acquires the
+      // structural impact, measure, detector, and negative fixture required above.
+    } else if (FORK_FAMILIES.includes(entry.destination)) {
       if (!["invariant", "guide"].includes(entry.modality)) {
         fail(
           `${name}: ${id} promotes to ${entry.destination} without \`modality\` of invariant or guide`,

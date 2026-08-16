@@ -16,12 +16,9 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import {
-  inheritancePath,
-  loadInheritance,
-  principlesRoot,
-  RULE_FAMILIES,
-} from "./model.js";
+import { productHasHarvestedRules } from "./model.js";
+import { loadContractGraph } from "./contracts.js";
+import { profilePath } from "./profiles.js";
 
 /** Markdown inline links and reference definitions. Bare paths in prose are deliberately ignored. */
 const LINK = /\[[^\]]*\]\(<?([^)>\s]+)[^)]*\)|^\[[^\]]+\]:\s*(\S+)/gm;
@@ -39,8 +36,6 @@ const WARMUP_FILES = new Set([
   "warmup-corrective-set.md",
 ]);
 
-const PRINCIPLE_ID = new RegExp(String.raw`(?:${RULE_FAMILIES.join("|")})-\d{2}-\d{2}`);
-
 /**
  * Has warmup finished?
  *
@@ -49,21 +44,21 @@ const PRINCIPLE_ID = new RegExp(String.raw`(?:${RULE_FAMILIES.join("|")})-\d{2}-
  * are exactly the litter this command exists to name.
  */
 export function warmupComplete(repoRoot) {
-  let folders;
+  let graph;
   try {
-    folders = loadInheritance(inheritancePath(repoRoot));
+    graph = loadContractGraph(repoRoot);
   } catch {
     return false;
   }
-  if (!Object.keys(folders).length) return false;
+  if (graph.failures.length || graph.records.filter((record) => record.contract.unit !== ".").length === 0) {
+    return false;
+  }
 
-  const product = path.join(principlesRoot(repoRoot), "product.md");
-  if (!fs.existsSync(product)) return false;
-  // Prose only: the shipped file's example rule lives inside a fence and is not a harvested rule.
-  const body = fs.readFileSync(product, "utf8").split("```").filter((_, i) => i % 2 === 0).join("");
-  if (!PRINCIPLE_ID.test(body)) return false;
-
-  return Object.values(folders).every((entry) => fs.existsSync(path.join(repoRoot, entry.contract)));
+  try {
+    return productHasHarvestedRules(repoRoot);
+  } catch {
+    return false;
+  }
 }
 
 const isMarkdown = (file) => file.toLowerCase().endsWith(".md");
@@ -171,7 +166,7 @@ export function residue(repoRoot, { docs } = {}) {
 }
 
 function readDocsRoot(repoRoot) {
-  const record = path.join(repoRoot, ".agents", "cg", "map", "profile.json");
+  const record = profilePath(repoRoot);
   if (!fs.existsSync(record)) return "docs";
   try {
     return JSON.parse(fs.readFileSync(record, "utf8")).docs ?? "docs";

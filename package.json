@@ -1,15 +1,27 @@
 {
   "name": "contract-graph",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "A traversable software context graph for coding agents: route from repository to module to sub-module before reading code.",
   "type": "module",
   "bin": {
     "cg": "bin/cg.js"
   },
+  "exports": {
+    ".": "./src/scripts/contracts.js",
+    "./contracts": "./src/scripts/contracts.js",
+    "./schema": "./src/cg/schema/contract.schema.json",
+    "./architecture-schema": "./src/cg/schema/architecture.schema.json",
+    "./engineering-schema": "./src/cg/schema/engineering.schema.json",
+    "./product-schema": "./src/cg/schema/product.schema.json",
+    "./architecture-rules": "./src/cg/principles/architecture.yaml",
+    "./build": "./build/manifest.json",
+    "./build/*": "./build/*"
+  },
   "files": [
     "bin",
     "src",
     "!src/scripts/dev.js",
+    "build",
     "docs",
     "README.md",
     "LICENSE"
@@ -20,7 +32,10 @@
   "scripts": {
     "test": "node --test \"test/**/*.test.js\"",
     "try": "node src/scripts/dev.js",
-    "pack": "mkdir -p build && npm pack --pack-destination ./build"
+    "build": "node bin/cg.js build",
+    "build:check": "node bin/cg.js build --check",
+    "pack": "node bin/cg.js build --quiet && npm pack --ignore-scripts ./build",
+    "clean": "node --input-type=module -e \"import fs from 'node:fs'; for (const dir of ['build', 'tmp', 'compiled']) fs.rmSync(dir, { recursive: true, force: true })\""
   },
   "keywords": [
     "contract-graph",
@@ -47,5 +62,8 @@
   "homepage": "https://github.com/sarada-io/contract-graph#readme",
   "bugs": {
     "url": "https://github.com/sarada-io/contract-graph/issues"
+  },
+  "dependencies": {
+    "yaml": "^2.9.0"
   }
 }

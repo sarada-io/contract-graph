@@ -1,0 +1,175 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sarada.io/contract-graph/schema/architecture-v1.schema.json",
+  "title": "Contract Graph architecture principles catalog",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "architectureVersion", "scope", "promise", "promotion", "hierarchy", "graph", "rules"],
+  "properties": {
+    "$schema": {
+      "const": "https://sarada.io/contract-graph/schema/architecture-v1.schema.json"
+    },
+    "architectureVersion": { "const": "1.0" },
+    "scope": { "const": "structural-integrity" },
+    "promise": { "type": "string", "minLength": 1 },
+    "promotion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requires", "action"],
+      "properties": {
+        "requires": {
+          "const": ["structural-impact", "deterministic-measure", "blocking-detector", "negative-fixture"]
+        },
+        "action": { "type": "string", "minLength": 1 }
+      }
+    },
+    "hierarchy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["root", "kinds", "transitions"],
+      "properties": {
+        "root": { "const": "repository" },
+        "kinds": { "$ref": "#/$defs/kindMap" },
+        "transitions": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["repository", "module", "submodule", "component", "library"],
+          "properties": {
+            "repository": { "$ref": "#/$defs/kindList" },
+            "module": { "$ref": "#/$defs/kindList" },
+            "submodule": { "$ref": "#/$defs/kindList" },
+            "component": { "$ref": "#/$defs/kindList" },
+            "library": { "$ref": "#/$defs/kindList" }
+          }
+        }
+      }
+    },
+    "graph": { "$ref": "#/$defs/graph" },
+    "rules": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/rule" }
+    }
+  },
+  "$defs": {
+    "kindList": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": ["repository", "module", "submodule", "component", "library"]
+      }
+    },
+    "kindMap": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "module", "submodule", "component", "library"],
+      "properties": {
+        "repository": { "type": "string", "minLength": 1 },
+        "module": { "type": "string", "minLength": 1 },
+        "submodule": { "type": "string", "minLength": 1 },
+        "component": { "type": "string", "minLength": 1 },
+        "library": { "type": "string", "minLength": 1 }
+      }
+    },
+    "graph": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["node", "recurse", "selfSufficient", "surface", "decide", "compose", "stop", "forbid", "adapters"],
+      "properties": {
+        "node": { "type": "string", "minLength": 1 },
+        "recurse": { "type": "string", "minLength": 1 },
+        "selfSufficient": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["test", "inbound", "outbound", "change"],
+          "properties": {
+            "test": { "type": "string", "minLength": 1 },
+            "inbound": { "type": "string", "minLength": 1 },
+            "outbound": { "type": "string", "minLength": 1 },
+            "change": { "type": "string", "minLength": 1 }
+          }
+        },
+        "surface": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["enter", "service", "promise", "encapsulate", "bypass"],
+          "properties": {
+            "enter": { "type": "string", "minLength": 1 },
+            "service": { "type": "string", "minLength": 1 },
+            "promise": { "type": "string", "minLength": 1 },
+            "encapsulate": { "type": "string", "minLength": 1 },
+            "bypass": { "type": "string", "minLength": 1 }
+          }
+        },
+        "decide": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "when", "do"],
+            "properties": {
+              "id": { "enum": ["stay", "add-child", "elsewhere"] },
+              "when": { "type": "string", "minLength": 1 },
+              "do": { "type": "string", "minLength": 1 }
+            }
+          }
+        },
+        "compose": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "stop": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "forbid": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "adapters": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["port", "option", "mix"],
+          "properties": {
+            "port": { "type": "string", "minLength": 1 },
+            "option": { "type": "string", "minLength": 1 },
+            "mix": { "type": "string", "minLength": 1 }
+          }
+        }
+      }
+    },
+    "rule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "rule", "measure", "enforcedBy"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^A[0-9]{2}$" },
+        "rule": { "type": "string", "minLength": 1 },
+        "measure": { "type": "string", "minLength": 1 },
+        "enforcedBy": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/detector" }
+        }
+      }
+    },
+    "detector": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "implementation", "negativeFixture"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^A[0-9]{2}-E-[0-9]{2}$" },
+        "implementation": {
+          "type": "string",
+          "pattern": "^cg\\.verify\\.[a-z][a-z0-9-]*$"
+        },
+        "negativeFixture": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

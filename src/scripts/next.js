@@ -13,6 +13,8 @@
 import fs from "node:fs";
 import path from "node:path";
 
+import { profilePath } from "./profiles.js";
+
 /** The Step lifecycle, as `cg-prepare` and `cg-produce` write it into brief headers. */
 export const STEP_STATES = Object.freeze([
   "Waiting",
@@ -199,7 +201,7 @@ export function next(repoRoot, { docs } = {}) {
 }
 
 function readDocsRoot(repoRoot) {
-  const record = path.join(repoRoot, ".agents", "cg", "map", "profile.json");
+  const record = profilePath(repoRoot);
   if (!fs.existsSync(record)) return "docs";
   try {
     return JSON.parse(fs.readFileSync(record, "utf8")).docs ?? "docs";

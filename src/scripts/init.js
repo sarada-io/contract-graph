@@ -1,8 +1,8 @@
 /**
  * Scaffold Contract Graph governance into a target repository.
  *
- * Applies the explicit source-to-repository mapping plus the selected fork-loaded principle
- * files. Framework core is replaced on every run; the repository's own context under
+ * Applies the explicit source-to-repository mapping. Framework core is replaced on every
+ * run; the repository's own context under
  * `.agents/cg/` is copied only when absent — see `SCAFFOLD_MAPPING`. Install and re-install
  * are the same verb, which is how a repository picks up a new release.
  */
@@ -15,10 +15,11 @@ import { fileURLToPath } from "node:url";
 import {
   DEFAULT_DOCS_ROOT,
   DOCS_TREES,
-  inheritancePath,
+  governanceContractPath,
   manifestPath,
   phasesPath,
 } from "./model.js";
+import { loadContract, stringifyContractYaml } from "./contracts.js";
 import {
   loadProfileSelection,
   normalizeProfiles,
@@ -28,10 +29,11 @@ import {
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 export const SOURCE_ROOT = path.join(HERE, "..");
+const PACKAGED_LAYOUT = fs.existsSync(path.join(SOURCE_ROOT, "agent", "cg", "contract.yaml"));
 
 /** The version stamped into every manifest entry, read from the installed package. */
 export const PACKAGE_VERSION = JSON.parse(
-  fs.readFileSync(path.join(SOURCE_ROOT, "..", "package.json"), "utf8"),
+  fs.readFileSync(path.join(PACKAGED_LAYOUT ? SOURCE_ROOT : path.join(SOURCE_ROOT, ".."), "package.json"), "utf8"),
 ).version;
 
 /**
@@ -44,37 +46,47 @@ export const PACKAGE_VERSION = JSON.parse(
  *   every run. That is what makes install and re-install the same command: a repository picks
  *   up new skills by running the one verb it already knows.
  * - `preserve` — the repository's own context, copied only when absent. `.agents/cg/` is the
- *   contract graph this repository built: its root contract, routing and inheritance maps,
+ *   contract graph this repository built: its root and boundary contracts, routes, bindings,
  *   harvested principle families. `cg-warmup` writes that, over hours, from real code. No
  *   release has a version of it to offer, so no run of `cg init` may overwrite it. The document
  *   trees and the starter module are preserved for the same reason.
  */
 export const SCAFFOLD_MAPPING = Object.freeze([
   {
-    source: "principles",
+    source: "cg/principles",
+    packageSource: "agent/cg/principles",
     target: ".agents/cg/principles",
     mode: "always",
-    select: "top-level-markdown",
+    select: "tree",
     install: "preserve",
   },
-  { source: "governance", target: ".agents/cg", mode: "always", select: "tree", install: "preserve" },
-  { source: "skills", target: ".agents/skills", mode: "always", select: "tree", install: "replace" },
-  { source: "scaffold/hooks", target: ".agents/hooks", mode: "always", select: "tree", install: "replace" },
+  {
+    source: "cg/guidelines",
+    packageSource: "agent/cg/guidelines",
+    target: ".agents/cg/guidelines",
+    mode: "always",
+    select: "top-level-principles",
+    install: "preserve",
+  },
+  { source: "cg/contract.yaml", packageSource: "agent/cg/contract.yaml", target: ".agents/cg/contract.yaml", mode: "always", select: "file", install: "preserve" },
+  { source: "cg/workflow.md", packageSource: "agent/cg/workflow.md", target: ".agents/cg/workflow.md", mode: "always", select: "file", install: "preserve" },
+  { source: "cg/phases.json", packageSource: "agent/cg/phases.json", target: ".agents/cg/phases.json", mode: "always", select: "file", install: "preserve" },
+  { source: "cg/enforcement.yaml", packageSource: "agent/cg/enforcement.yaml", target: ".agents/cg/enforcement.yaml", mode: "always", select: "file", install: "preserve" },
+  { source: "cg/schema", packageSource: "agent/cg/schema", target: ".agents/cg/schema", mode: "always", select: "tree", install: "replace" },
+  { source: "skills", packageSource: "agent/skills", target: ".agents/skills", mode: "always", select: "tree", install: "replace" },
+  { source: "install/hooks", packageSource: "agent/hooks", target: ".agents/hooks", mode: "always", select: "tree", install: "replace" },
   // Shipped so the file exists on a first install; its *content* belongs to `cg sync`, which
   // regenerates it unconditionally. Marking it `replace` would make every clean re-run report a
   // pending change to a file the next command rewrites anyway.
-  { source: "scaffold/rules", target: ".agents/rules", mode: "always", select: "tree", install: "preserve" },
+  { source: "install/rules", packageSource: "agent/rules", target: ".agents/rules", mode: "always", select: "tree", install: "preserve" },
   // `starter` rather than `always`: the module tree is an example contract for a repository
   // that has no modules yet. Writing it into a brownfield repo invents a module that does not
   // exist — see `shouldScaffoldModule`.
-  { source: "scaffold/module", target: "src", mode: "starter", select: "tree", install: "preserve" },
-  // The three document trees the skills already write to. `docsRoot` marks a target whose
-  // first segment is replaced by the repository's chosen docs root, so a repo that already
-  // owns `docs/` can put them somewhere else without the mapping growing a special case.
-  { source: "scaffold/docs/plans", target: "docs/plans", mode: "always", select: "tree", docsRoot: true, install: "preserve" },
-  { source: "scaffold/docs/design", target: "docs/design", mode: "always", select: "tree", docsRoot: true, install: "preserve" },
-  { source: "scaffold/docs/guides", target: "docs/guides", mode: "always", select: "tree", docsRoot: true, install: "preserve" },
-  { source: "scaffold/profiles", target: null, mode: "never", select: "tree", install: "preserve" },
+  { source: "install/templates/module", packageSource: "agent/templates/module", target: "src", mode: "starter", select: "tree", install: "preserve" },
+  // One tree: plans, decisions, and guides. `docsRoot` replaces the leading `docs` segment so a
+  // repo that already owns `docs/` can put them somewhere else without a special case per tree.
+  { source: "install/templates/docs", packageSource: "agent/templates/docs", target: "docs", mode: "always", select: "tree", docsRoot: true, install: "preserve" },
+  { source: "install/profiles", packageSource: "agent/profiles", target: null, mode: "never", select: "tree", install: "preserve" },
 ]);
 
 /**
@@ -133,15 +145,23 @@ function* walkTree(from, to, rule) {
 
 /** Every {source, target} pair one mapping rule installs, in a stable order. */
 function* enumerateRule(rule, repoRoot, docsRoot) {
-  const source = path.join(SOURCE_ROOT, rule.source);
-  const target = path.join(repoRoot, resolveTarget(rule, docsRoot));
+  const sourceRel = PACKAGED_LAYOUT ? rule.packageSource : rule.source;
+  const targetRel = resolveTarget(rule, docsRoot);
+  const source = path.join(SOURCE_ROOT, sourceRel);
+  const target = path.join(repoRoot, targetRel);
+
+  if (rule.select === "file") {
+    yield { source, target, rule };
+    return;
+  }
 
   if (rule.select === "tree") {
     yield* walkTree(source, target, rule);
     return;
   }
-  if (rule.select === "top-level-markdown") {
-    for (const filename of fs.readdirSync(source).filter((name) => name.endsWith(".md")).sort()) {
+  if (rule.select === "top-level-principles") {
+    const names = fs.readdirSync(source).filter((name) => name.endsWith(".yaml")).sort();
+    for (const filename of names) {
       yield { source: path.join(source, filename), target: path.join(target, filename), rule };
     }
     return;
@@ -258,7 +278,7 @@ const IGNORED_AT_ROOT = new Set([".git", ".gitignore", ".github", "LICENSE", "RE
 /**
  * The starter module tree is scaffolded only where it means something.
  *
- * It is a worked example: one module with a contract, pointers, and an inherited block, for
+ * It is a worked example: one module with a structured contract and pointers, for
  * a repository that has no modules yet. A brownfield repository already has its modules
  * somewhere else — a Go tree with `api/` and `core/` gains nothing from an invented `src/`
  * describing a module that does not exist, and `cg verify` would then pass while governing
@@ -271,19 +291,17 @@ export function shouldScaffoldModule(repoRoot, target) {
 }
 
 /**
- * A brownfield scaffold has no starter module, so it must not ship a map entry for one.
- *
- * The bundled `inheritance.json` maps `src` as a worked example. Left in place after the
- * starter tree is skipped, it points at a contract that does not exist and `cg sync` fails
- * on the very first run — the map is emptied instead, for `cg-warmup` to fill with the
- * repository's real modules.
+ * A brownfield scaffold has no starter module, so its new root contract must not claim one.
+ * Warmup will replace the empty composition with edges to the repository's actual boundaries.
  */
-function clearStarterInheritance(repoRoot, brownfield, written) {
-  const file = inheritancePath(repoRoot);
+function clearStarterComposition(repoRoot, brownfield, written) {
+  const file = governanceContractPath(repoRoot);
   if (!brownfield || !written.includes(file)) return;
-  const parsed = JSON.parse(fs.readFileSync(file, "utf8"));
-  parsed.folders = {};
-  fs.writeFileSync(file, `${JSON.stringify(parsed, null, 2)}\n`, "utf8");
+  const parsed = loadContract(file, { repoRoot, validate: false });
+  parsed.relations.composition = "unmapped";
+  parsed.relations.children = [];
+  parsed.routes = parsed.routes.filter((route) => route.id !== "starter-source");
+  fs.writeFileSync(file, stringifyContractYaml(parsed), "utf8");
 }
 
 
@@ -325,7 +343,7 @@ export function init(repoRoot, { profiles, docs, dryRun = false } = {}) {
     return { ...out, profiles: selectedProfiles, docs: docsRoot, brownfield };
   }
 
-  clearStarterInheritance(repoRoot, brownfield, written);
+  clearStarterComposition(repoRoot, brownfield, written);
 
   writeManifest(repoRoot, PACKAGE_VERSION, out, docsRoot);
 

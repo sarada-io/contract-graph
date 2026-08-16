@@ -6,7 +6,7 @@ description: Create or revise a phase-wise Contract Graph roadmap from binding c
 # CG Plan
 
 Turn a broad outcome into an ordered phase roadmap. Do not prepare implementation Steps here.
-Read `.agents/skills/cg-unblock/SKILL.md` alongside this skill.
+Read `.agents/skills/cg-unblock/SKILL.md` when a fork fails D-1, not before.
 
 ## Required outcome
 
@@ -26,7 +26,11 @@ Finish with all eight true:
 
 Before writing or revising the roadmap:
 
-1. Read the repository constitution, principles, workflow, and contract map.
+1. Read the global structural binding catalog, repository constitution and specifications,
+   workflow, contract map, and applicable scoped `P` rules. Apply `.agents/cg/principles/architecture.yaml`
+   `hierarchy.kinds` and `graph` (recurse, selfSufficient, surface, adapters, stay, add-child, elsewhere) when dividing
+   work across boundaries. Consult `E` guidance only when the work reaches a
+   remaining design decision; those are not compliance rules and do not replace `graph`.
 2. Find the active roadmap by status rather than filename.
 3. Load only contracts needed to understand the target and confirmed dependencies.
 4. Inspect the actual source, tests, resources, build graph, and current worktree.
@@ -67,8 +71,9 @@ Rules:
 - Put migrations before removal of the compatibility path.
 - Put production measurement after the environment it measures exists.
 - Name the components, libraries, sub-modules, or modules a phase introduces. Each is a node in
-  the context graph and owes its own contract when it is delivered — say so here so preparation
-  allocates it, rather than leaving the graph to be reconstructed later.
+  the context graph: pick its `hierarchy.kinds` value and apply `graph` (recurse, selfSufficient,
+  adapters, stay, add-child, elsewhere). It owes its own contract when it is delivered — say so here so
+  preparation allocates it, rather than leaving the graph to be reconstructed later.
 - Keep a phase small enough to prepare and complete without carrying half-applied invariants.
 - Do not create phases merely to distribute equal amounts of work.
 - Never assign files, execution Steps, or branches in this skill.

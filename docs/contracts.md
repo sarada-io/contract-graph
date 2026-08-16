@@ -1,215 +1,303 @@
-# Contracts
+# Contracts — the 0.3 data model
 
-Contracts are the core of Contract Graph because they turn a repository into context an agent can
-traverse. Everything else — routing, rule families, lifecycle skills, and the verifier — either
-helps an agent find the right contracts or keeps those contracts true.
+Contract Graph represents a repository as connected, machine-readable contracts. A contract is
+the durable promise for one owned software boundary and the routing node that leads an agent to
+the next smaller boundary.
 
-There are **two tiers**, and they answer different questions:
+## One artifact per boundary
 
-| Tier | Artifact | Answers | Status |
-|---|---|---|---|
-| **Folder contract** | `<folder>/.agents/cg/contract.md` | how this folder is used in its parent, what it owns, and where context continues | built and verified |
-| **Code contract** | one `XxxContract` type per directory | what this unit promises its callers | pattern documented; verification not built |
-
-The folder tier is what `cg verify` enforces today. The code tier is the structural pattern that
-makes the folder tier meaningful, and its machine-checkable half is the framework's largest open
-item.
-
----
-
-## 1. The context graph
-
-The primary traversal is top to bottom:
+Every governed directory owns exactly one canonical file:
 
 ```text
-repository contract
-  → module contract
-      → sub-module contract
-          → unit contract
+<unit>/.agents/cg/contract.yaml
 ```
 
-The repository contract explains the product and points to task routing. Routing selects the first
-module contracts for a request. Each selected contract then explains that module **in the context
-of its parent** and names the child contracts that decompose it. The agent stops descending when
-the change surface and its constraints are clear, and only then reads source.
+The repository root is the unit `.` and therefore owns `.agents/cg/contract.yaml`. Parent,
+dependency, and routing edges live in that node rather than companion maps. Human-readable
+Markdown is a projection produced by `cg contract show`; it is not a second source of truth.
 
-A folder contract should therefore answer:
+Descriptive YAML scalar values may contain CommonMark. This keeps prose close to the structured fields
+it explains without splitting one contract across two files.
 
-- What role does this unit play in its parent?
-- Who calls it, and through which public entry points?
-- What responsibilities and data does it own?
-- Which responsibilities are explicitly outside it?
-- Which child contracts explain its internal decomposition?
-- Which sibling contracts may be affected across a public boundary?
-- What invariants and dependency directions must remain true?
-- Which command verifies a change contained here?
+Contract YAML uses a deliberately restricted YAML 1.2 profile. Duplicate keys, aliases, anchors,
+explicit tags, merge keys, multiple documents, non-string keys, and non-JSON scalar values are
+rejected. The package includes the parser; repositories do not supply executable loaders or tags.
 
-This is more than documentation colocated with code. The links between contracts are the navigation
-mechanism for the next session. A contract that describes its directory but not its place in the
-parent or the next context below it is not yet a complete graph node.
+## The recursive model
 
-The hierarchy is the main path, not a restriction to a pure tree. A module may consume sibling
-contracts, and one task may enter multiple branches. Those lateral relationships are explicit
-edges rather than a reason to fall back to repository-wide search.
+The composition spine is:
 
-## 2. The binding invariant
-
-> **Change is free on either side of a contract.**
-
-Everything follows from this. An implementation may be rewritten, split, or replaced without
-consulting its callers; a caller may change how it uses a capability without consulting the
-implementation. What both sides rely on is the contract, which is therefore:
-
-- **maintained by default** — modified only with deliberate review;
-- **well tested** — the tests hold the guarantee the contract makes;
-- **the entry point for humans and agents alike** — one artifact, both audiences.
-
-A contract that is cheap to change is not a contract. A contract that can never change is a
-liability. The discipline is that changing one is a visible, tested, reviewed act.
-
-## 3. The decomposition
-
-The top tier is **domain-shaped**. Functional decomposition begins only below it:
-
-```
-Domain → Sub-domain → Context → Function → Unit
+```text
+repository → module → (submodule)* → component | library → implementation
 ```
 
-Each directory owns **exactly one responsibility** and is completely abstracted from the outside
-world by its contract.
+Every node uses the same schema. `kind` describes its architectural scale; it does not change the
+meaning of the other fields. Kind definitions and the stay / add-child / elsewhere decision live
+in `.agents/cg/principles/architecture.yaml` `hierarchy.kinds` and `graph`, so every shipped skill reads one
+protocol. A child must decompose its parent's responsibility, and every child
+edge must be reciprocated by the child's parent edge.
 
-Expressed as directories, the pattern is recursive at every level:
+Depth is mixed and uncapped. A module may be a leaf under the repository (two levels) after
+`graph.recurse`, `graph.selfSufficient`, and `graph.stop` have been applied. Another module may nest
+submodule, component, and library nodes (four or five kinds) when each child is self-sufficient.
+`hierarchy.transitions` constrain which kind may sit under which, not how tall the graph may grow.
 
-```
-chat/
-    ChatProcessingContract
-    request/
-        RequestProcessingContract
-        auth/
-            AuthenticationContract
-            impl/
-        plan/
-            PlanContract
-            impl/
-    response/
-        ResponseProcessingContract
-        impl/
-```
+Hierarchy is the primary route, but `relations.dependencies` may connect siblings or shared
+libraries laterally. Dependency edges do not confer ownership and do not make a contract reachable;
+every contract must still be reachable from the root through composition edges.
 
-## 4. Five structural rules
+## Required contract fields
 
-1. Every directory holds **exactly one** `*Contract` type naming its responsibility.
-2. Child directories **decompose** the parent's responsibility — nothing else lives there.
-3. Implementations live in a sibling **`impl/`**, at every level.
-4. A parent contract is implemented **by composing its children's contracts**.
-5. A caller only ever sees `XxxContract`. Reaching into another package's `impl/` is the one move
-   that breaks the model.
+| Field | Meaning |
+|---|---|
+| `$schema` | Canonical schema URL: `https://sarada.io/contract-graph/schema/contract-v1.schema.json`. |
+| `contractVersion` | Contract format version. Version 0.3 uses `"1.0"`. |
+| `id` | Stable graph identity. Reordering or moving presentation must not change it casually. |
+| `name`, `kind`, `unit` | Human name, boundary type, and repository-relative directory owned. |
+| `summary`, `purpose` | A short discriminator and how the parent uses the boundary. CommonMark is allowed. |
+| `responsibilities` | What the boundary owns, allows, and explicitly forbids. |
+| `surface` | The language-native public entry points and their observable promises. |
+| `invariants` | Stable statements that must remain true, linked to verification or explicit debt. |
+| `relations` | Parent, composition state, children, and lateral dependencies. |
+| `rules` | Applicable repository-owned `P` rule IDs. Global `A` rules apply automatically. |
+| `verification` | Smallest executable commands and the invariant IDs each proves. |
+| `routes` | Task phrases and the canonical contracts they select. |
+| `agent` | What an agent reads first and checks before changing the boundary. |
 
-**Rule 5 is what makes the binding invariant true. Rules 1–4 are what make rule 5 enforceable.**
+Optional `assumptions`, `exceptions`, and namespaced `extensions` carry truth that does not belong
+in the core model. Unknown top-level fields are rejected so misspellings cannot silently become
+unused contract data.
 
-### Per language
+The package also installs the same schema at `.agents/cg/schema/contract.schema.json`, so local
+validation does not depend on network access. The Sarada URL is its stable public identity and must
+serve the matching schema bytes when 0.3 is published.
 
-The pattern is structural, not syntactic. What changes is the type mechanism and the visibility
-mechanism:
+## Declared surfaces are concrete promises
 
-| Language | Contract | Confinement of `impl/` |
-|---|---|---|
-| Java | `interface` | package-private implementations; module-info exports |
-| TypeScript | `interface` / `type` | package entry point exports only the contract |
-| Python | `Protocol` / ABC | `__all__` plus a package `__init__` that re-exports only the contract |
-| Go | `interface` | lowercase (unexported) implementation types |
-| C# | `interface` | `internal` implementations |
+Each non-repository boundary declares at least one surface (A10). A surface names:
 
-If a language cannot hide `impl/`, rule 5 becomes a convention rather than a boundary — and a
-convention is what Contract Graph exists to replace. Compensate with a detector.
+- its stable ID and language-neutral kind;
+- its path relative to the governed unit;
+- the exported symbols callers use, when symbols apply;
+- what it accepts and returns;
+- its observable failure modes; and
+- the guarantees callers may rely on.
 
-## 5. What was measured
+That list is the unit's promise to its parent and dependents, not “public” in the language, HTTP,
+or customer-facing sense. `graph.surface` is the protocol: enter only here. The first way to
+declare entry is a **service** (`kind: service`): one or two named types whose operations take
+parameters, do the work, and return the completed result. `contract.yaml` `surface` lists those
+services and points at the implementation they encapsulate. Constructor ports assemble a service
+behind the call; they are not how a parent talks to the node. Encapsulate algorithms, construction,
+mutable internals, persistence, framework types, and vendor types behind the service. A new entry
+or a bypass is not stay. `graph.adapters.port` is the vendor case of that encapsulation.
 
-The question: if each contract carries a doc comment referencing the contracts below it, can a
-reader — human or agent — reconstruct the whole system graph by traversal alone?
+The code form remains language-native. A service may be a class, a module of functions, an HTTP
+resource, or another native export. TypeScript exports, Java interfaces, schemas, commands, events,
+and HTTP endpoints remain valid surfaces when they are that callable promise. The YAML contract
+declares the cohesive surface and the repository mechanically protects its internals; Contract Graph
+does not prescribe one source layout.
 
-Tested on a five-contract slice with a realistic composing implementation.
+`cg verify` currently proves that every non-repository node declares a surface and that every
+declared surface path exists (A10, A11). Language-specific detectors must additionally prove
+that symbols are exported and callers do not bypass the surface.
 
-| Mechanism | Graph traversable | Broken edge caught | Missing edge caught |
-|---|---|---|---|
-| Interfaces alone | ✗ | n/a | n/a |
-| Interfaces + doc-comment references | ✓ | ✓ | **✗** |
-| Interfaces + machine-readable edge | ✓ | ✓ | ✓ |
+## Composition has no implicit state
 
-**Interfaces alone recover none of the graph.** A parent contract's signature describes its own
-capability, not its children — the children are constructor-injected into the implementation. Every
-downward edge lives in the `impl/` package the contract deliberately hides. Dependency analysis of
-the compiled contract layer confirms it: the contract depends on nothing but the standard library.
+`relations.composition` is one of:
 
-**Doc references get most of the way.** The compiler validates them, so a stale or misspelled edge
-cannot survive, and IDEs make them clickable.
+- `leaf` — the contract is the smallest owned boundary and `children` is empty;
+- `composed` — responsibility is decomposed and `children` contains at least one contract edge;
+- `unmapped` — root-only transitional state after brownfield init and before warmup discovers the
+  real top-level boundaries.
 
-**The hole is completeness.** Deleting a reference entirely — the graph now silently missing a whole
-subtree — passes documentation linting with zero errors. Doclint validates the references that
-exist; nothing asks whether the set is complete. So the graph is trustworthy only as far as the
-discipline that wrote it, which is exactly the property Contract Graph is trying to eliminate.
+There is no implicit or omitted state. `unmapped` is explicit, valid only at the repository root,
+and must have no child edges. Warmup replaces it with `leaf` or `composed` after inspecting the
+repository. If an inner boundary cannot be classified safely, the agent records the uncertainty
+in the decision log while continuing unrelated work; it cannot use `unmapped` to hide the gap.
 
-### Closing the hole
+Contract references are explicit objects:
 
-A one-field annotation makes the edge structural instead of prose:
-
-```java
-@Composes({AuthenticationContract.class, PlanContract.class})
-public interface RequestProcessingContract {
-    Result process(Utterance utterance);
-}
-```
-
-Two properties follow, both verified on the slice:
-
-- **The graph reconstructs from a single root**, by reflection over the annotation alone.
-- **Drift is detectable in both directions.** Cross-checking declared edges against the types the
-  implementation actually injects catches the exact edit documentation linting could not:
-
-```
-declared : AuthenticationContract
-injected : AuthenticationContract, PlanContract
-RESULT   : FAIL — injected but not declared: PlanContract
+```yaml
+contract: modules/billing/.agents/cg/contract.yaml
+uses: Delegates charging and refund policy to the billing capability.
+via: [BillingPort]
 ```
 
-Recommended: **both.** The machine-readable edge for the machine — one root, a complete graph, a
-build that fails on drift. Prose for the human — what the responsibility *is*, which no annotation
-conveys.
+Paths are repository-relative and always end in `.agents/cg/contract.yaml`. Contract edges do not
+use JSON Schema `$ref`; `$ref` is reserved for schema composition, while `contract` means a graph
+edge.
 
-## 6. What no annotation fixes
+## Invariants and verification are reciprocal
 
-Three things are not structural and must stay in prose, in the contract's doc comment or the owning
-`contract.md`:
+An invariant names verification IDs, and every verification entry names the invariant IDs it
+covers. `cg verify` checks both directions. An invariant without executable verification must
+carry a `debt` object explaining the gap and optionally the work item that tracks it.
 
-- **Ordering.** `Plan → Execute → Verify` is a sequence. A composition edge is a "knows about"
-  relation; a set of edges is a DAG, not a pipeline.
-- **Conditional flow.** Rejection and fallback paths are control flow.
-- **Cardinality and optionality.** Whether a child is invoked once, many times, or not at all.
+This distinction prevents `verification: []` from looking the same as a forgotten field. It does
+not turn debt into enforcement: a rule is enforced only when its detector exists, blocks, and has
+a fail-on-demand test.
 
-Do not try to encode these. A notation rich enough to express them is a second programming language
-living in your annotations, and it will drift from the first one.
+## Binding rules are executable data, not generated prose
 
-## 7. Context cost, honestly
+The structural binding catalog lives at `.agents/cg/principles/architecture.yaml`. Its `A` rules apply to
+every contract node without being copied into each node's `rules` array. Each binding has a
+deterministic measure and names a detector registered by the installed verifier plus the negative
+fixture that proves the detector can fail.
 
-Reading a root contract costs ~15 lines and yields the next hop. Reaching a leaf is roughly five
-small file reads with no backtracking.
+A contract lists only applicable repository-owned `P` product rule IDs under `rules`. `cg
+contract context` resolves those IDs against the product catalog under `.agents/cg/guidelines/` and includes P
+rules from the selected contract's ancestors, alongside the ambient A rules.
 
-That is cheaper than loading a 200-line module contract when the goal is to **pinpoint one area** —
-the stated goal — and **more expensive** when the goal is to summarise everything. The tree
-optimises for the first, deliberately. Claiming otherwise invites a benchmark it would lose.
+This replaces 0.2's generated inherited blocks. It avoids duplicated rule text, hand-edited
+generated regions, and a separate inheritance map that could disagree with the contract. The ID
+remains stable; the binding or product catalog remains the sole source of its full wording.
 
-## 8. Status, and the open question
+`E` engineering practices do not
+appear in `rules`. Engineering guidelines remain repository choice; copying them into a contract must not turn
+advice into implicit authority.
 
-Mapped folder contracts, their inherited context, and their generated entry points are built and
-verified. Task routing exists. The code tier and the completeness of recursive child edges have
-**no structural verification**, which means:
+A non-binding practice moves to `A` only when it has structural impact, a deterministic measure,
+a blocking detector implemented by the installed verifier, and a negative fixture. Promotion in
+the verifier-owning codebase assigns the next permanent `A` ID and removes the D copy in the
+same change, so one obligation never has two authorities. An adopting repository cannot register a
+new built-in detector by editing the catalog alone; it keeps the practice advisory, adopts a scoped
+`P` rule, or proposes the generic detector upstream until verifier support exists.
 
-- a useful top-down context graph can be authored, but closure per folder can only be asserted;
-- a subtree cannot be handed to an agent with confidence that it is the whole subtree;
-- parallel work across a contract is work across a boundary that might not hold.
+### Principle ownership after installation
 
-The honest position: **either the machine-readable edge gets built, or the code tier stays an
-informal convention.** The middle position — documentation describing a graph the repository does
-not maintain — is the worst of the three, because it reads as a guarantee and is not one.
+Contract Graph separates framework mechanics from repository policy:
 
-This is the framework's largest open decision. See [the vision](vision.md#what-remains).
+- schemas, contract tooling, verification code, and lifecycle skills are framework-owned and may
+  be replaced by a later `cg init`;
+- authored contracts, the architecture-principles catalog, guideline catalogs, enforcement mappings,
+  and workflow context are repository-owned and are preserved after their first installation.
+
+The shipped architecture principles are strong starting constraints, not immutable vendor policy.
+Engineering guidelines are strong recommendations, but remain non-binding. After installation,
+the repository owner may deliberately retain, amend, replace, or retire either catalog. An
+architecture-principle amendment remains limited to semantics the installed verifier can detect. Creating a new
+generic `A` binding requires a verifier change; repository-specific authority belongs in `P`.
+Every amendment remains explicit because silently changing structural authority would make one
+engineering session reinterpret the graph for every later session.
+
+Contract Graph's permanent authority is narrower than the complete set of good software practices.
+It owns the YAML graph protocol and the structural governance needed to keep that graph useful
+through change. A broader application-architecture preference remains guidance unless the
+repository adopts a product-specific form as `P` or the verifier owner promotes a generic
+structural invariant through the structural gate.
+
+A repository constitution supplied by SpecKit or another specification framework may govern the
+broader product and engineering choices. It complements rather than replaces these structural
+bindings: constitutions express repository policy, while A detectors protect graph integrity.
+
+### Architecture principles and guideline catalogs
+
+Architecture principles are authored YAML at `src/cg/principles/architecture.yaml`, analogous to
+`enforcement.yaml`. Product guidelines are authored YAML at `src/cg/guidelines/product.yaml` and
+ship empty. `cg build` validates both catalogs and copies them into the package target.
+They appear at `agent/cg/principles/` and `agent/cg/guidelines/` inside the tarball. Leftover `engineering.md`,
+`product.md`, or compiled `engineering.json` / `product.json` fails verification the same way
+leftover `enforcement.md` does.
+
+There are three authored policy surfaces:
+
+- `src/cg/principles/architecture.yaml` — recursive mapping (`hierarchy.kinds`), node decision (`graph` walk:
+  node, recurse, selfSufficient, surface, decide, compose, stop, forbid, adapters), permitted
+  boundary hierarchy, and global `A` structural bindings with measures, registered detectors,
+  and negative fixtures. The walk is documented in [lifecycle](lifecycle.md). `graph.surface` is
+  declared entry and encapsulation behind the contract. `graph.surface.service` is the first way to
+  declare that entry: named operations `contract.yaml` points at. `graph.adapters` is the vendor split of
+  that encapsulation. These are not `A` detectors and do not scan imports;
+- `src/cg/guidelines/engineering.yaml` — the non-binding `E` engineering catalog; and
+- `product.yaml` — repository-owned `P` bindings specific to the adopting product, initially empty.
+
+The engineering catalog uses two categories: **Structural Best Practices** and **Broader Engineering
+Considerations**. Each entry is `id`, `rule`, and `reason`: the practice, and why it exists.
+Family determines authority.
+`A` is globally binding, `P` is boundary-scoped binding, and `E` is the non-binding engineering catalog.
+A preference in that catalog may carry an explicit cost.
+
+The build manifest records the SHA-256 of every package file. Authored YAML catalogs are copied,
+not compiled to JSON. `cg build --check` verifies the complete target without changing it.
+`npm run pack` rebuilds it and passes only that directory to npm, so the verified directory and
+the tarball cannot select files from different sources.
+
+This is a source/runtime distinction, not a rejection of Markdown. Architecture principles, engineering
+guidelines, product guidelines, and enforcement remain YAML in both source and package because humans amend
+them and the verifier consumes their structure directly. After `cg init`, `architecture.yaml`,
+`engineering.yaml`, and
+`product.yaml` are repository-owned and preserved. Agent procedures remain Markdown where reading
+prose is their runtime behavior, including `workflow.md` and each `SKILL.md`.
+
+## Routing belongs to contracts
+
+Routes are owned by the contract that has enough context to choose among its descendants. Each
+route has:
+
+- a stable `id`;
+- one or more task phrases under `when`; and
+- one or more canonical contract paths under `contracts`.
+
+The root routes broad product language into top-level capabilities. A module may then route more
+specific language into its components. The CLI performs deterministic phrase matching and returns
+the strongest matches; it does not ask a model to invent the first edge.
+
+## Graph invariants enforced in 0.3
+
+`cg contract verify`, `cg graph verify`, and `cg verify` reject:
+
+- invalid or unsupported YAML and unsupported contract versions;
+- missing required fields and unknown top-level or structured fields;
+- invalid IDs, unsafe unit paths, duplicate IDs, or duplicate governed units;
+- anything other than exactly one owned responsibility per boundary;
+- the same owned responsibility declared by more than one contract;
+- a top-level module named as a horizontal technical layer;
+- parent-child kinds outside the hierarchy declared by the binding catalog;
+- a contract stored outside its governed unit;
+- missing contract references;
+- non-reciprocal parent and child edges;
+- a child outside its parent's unit;
+- composition or dependency cycles and contracts unreachable from the root;
+- invalid composition states, leaf contracts with children, composed contracts without children,
+  or `unmapped` below the repository root;
+- missing declared surface paths;
+- unknown binding rule IDs;
+- dangling or one-sided invariant/verification references; and
+- permanent contract strings that cite transient plan paths or ticket IDs.
+
+These checks prove the authored graph is internally closed. They do not yet prove that source code
+contains no undeclared architectural child, that every exported symbol matches its declaration, or
+that implementation imports respect every boundary. Those require ecosystem-specific detectors.
+
+## Installed JavaScript interface
+
+The package exports its contract engine from `contract-graph` and
+`contract-graph/contracts`. It includes loaders, graph discovery and validation, lookup by ID,
+unit, or path, context resolution, deterministic routing, and Markdown/tree/Mermaid projections.
+
+The CLI provides the same operations:
+
+```bash
+cg contract show --id billing
+cg contract context --id billing
+cg contract children --id billing
+cg contract parents --id billing
+cg contract surface --id billing
+cg contract route --task "refund failed after checkout"
+cg contract verify
+cg graph show
+cg graph show --format mermaid
+cg graph verify
+```
+
+Commands read one or more connected YAML files; no executable JavaScript is supplied by the
+repository being inspected. Repository data stays declarative, while the installed, versioned
+library owns parsing, traversal, rendering, and verification.
+
+## Authoring rule
+
+Contracts are written from the code and architectural intent one boundary at a time. Generating
+many files from a shared prose template creates syntactically valid but useless context. Templates
+provide field shape only. The author must supply distinct purpose, ownership, surface, invariants,
+and edges for each unit, then run `cg verify` before moving on.

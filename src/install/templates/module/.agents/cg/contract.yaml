@@ -1,0 +1,48 @@
+$schema: https://sarada.io/contract-graph/schema/contract-v1.schema.json
+contractVersion: "1.0"
+id: src
+name: src
+kind: module
+unit: src
+summary: Starter implementation boundary; rewrite this contract to describe the code this module owns.
+purpose: Replace this sentence with why the parent repository contains this module, how the parent uses it, and who enters through its public surface.
+responsibilities:
+  owns:
+    - Replace this sentence with the cohesive capability owned by this module.
+  allows:
+    - Replace this sentence with work that correctly belongs inside this boundary.
+  forbids:
+    - Replace this sentence with work that belongs to a sibling boundary, naming that boundary.
+surface:
+  - id: module-api
+    kind: service
+    path: .
+    summary: Replace this sentence with the named service type whose operations are how the parent uses this module.
+    symbols: []
+    contract:
+      accepts: []
+      returns: []
+      fails: []
+      guarantees:
+        - Replace this sentence with the observable promise kept by this surface.
+invariants: []
+relations:
+  parent:
+    contract: .agents/cg/contract.yaml
+    uses: The repository delegates its starter implementation capability to this module.
+  composition: leaf
+  children: []
+  dependencies: []
+rules: []
+verification: []
+routes: []
+agent:
+  readFirst:
+    - Read the parent contract and the full text of every rule listed in `rules`.
+    - Follow `relations.children` when the task belongs to a narrower owned boundary.
+  beforeChange:
+    - "Apply `../.agents/cg/principles/architecture.yaml` `graph` before editing: recurse, selfSufficient, surface, stay, add-child, or elsewhere."
+    - Inspect implementation only after this contract has located the responsible surface.
+    - Update this contract when its purpose, composition, responsibilities, surface, invariants, or dependency directions change; create a child contract.yaml when the decision is add-child.
+assumptions: []
+exceptions: []

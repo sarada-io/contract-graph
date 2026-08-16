@@ -1,57 +1,59 @@
 /**
- * Verify that every folder-scoped contract is complete, current, and self-sufficient.
+ * Verify the structured contract graph, structural bindings, principles, lifecycle, and discovery.
  *
  * Checks:
- *   1. Every module folder has `CLAUDE.md` and `AGENTS.md` — openable as a workspace root.
- *   2. Every mapped `CONTRACT.md` has its required sections.
- *   3. Re-running the generator produces no diff — inherited block not stale or hand-edited.
- *   4. A `CONTRACT.md` over the suggested threshold advises; size alone never fails.
- *   5. No `CONTRACT.md` cites a transient plan path or ticket ID — self-sufficiency.
- *   6. Every rule ID in `map/inheritance.json` exists under `principles/`.
- *   7. Every entry's `depth` and `contract` path agree with its key.
+ *   1. Every module contract has `CLAUDE.md` and `AGENTS.md` pointers.
+ *   2. Contract YAML shape, references, reciprocity, cycles, and root reachability are valid.
+ *   5. No permanent contract cites a transient plan path or ticket ID.
+ *   6. Every contract rule ID exists under the product bindings.
  *   8. Every root entry file carries a current principle index.
  *   9. Every canonical skill uses the cg- namespace, valid frontmatter, UI metadata,
  *      a catalog entry, and an exact generated Claude discovery wrapper.
  *  11. The phase map names only real rule families, and every family that ships is
  *      reachable from at least one phase.
- *  10. Design-principle sets have correct grammar, explicit modality and costs,
- *      modality-correct detector rows, unique IDs, and no inheritance entries; and every
- *      architecture and product principle carries exactly one enforcement-map row.
+ *  10. Structural bindings name registered enforcement; non-binding architecture practices
+ *      have valid grammar; and every product binding carries exactly one enforcement-map row.
  */
 
 import fs from "node:fs";
 import path from "node:path";
 
 import {
+  BINDING_FILENAME,
+  BindingError,
+  loadBindingCatalog,
+} from "./binding.js";
+import { loadContract, loadContractGraph } from "./contracts.js";
+
+import {
   ContractError,
   countLines,
-  END_MARKER,
   splitLines,
-  MAX_CONTRACT_LINES,
-  REQUIRED_SECTIONS,
-  REQUIRED_SECTION_PATTERNS,
   planPathPattern,
   PLAN_TICKET,
-  generate,
   generateAgentRule,
   generateClaudeSkillWrapper,
   generateRoot,
-  inheritancePath,
-  loadInheritance,
-  loadPrinciples,
+  loadBindingPrinciples,
   loadPhases,
   ROOT_POINTERS,
   ROOT_BEGIN_MARKER,
+  CORE_BINDING_FAMILIES,
+  BEST_PRACTICE_FAMILIES,
+  ENFORCEMENT_FILENAME,
   phaseTokens,
-  principlesRoot,
+  guidelinesRoot,
   principleFiles,
   FORK_FAMILIES,
   RULE_FAMILIES as FAMILIES,
-  enforcementPath,
+  loadEnforcementMap,
+  loadEngineeringMap,
+  familyOf,
+  productHasHarvestedRules,
+  ENGINEERING_FILENAME,
   governanceContractPath,
-  RULE_FAMILIES,
 } from "./model.js";
-import { moduleCoverage, subBoundaryCount, subBoundaryNames } from "./modules.js";
+import { moduleCoverage, openDescent } from "./modules.js";
 import { ProfileError, resolveProfileSelection } from "./profiles.js";
 
 const POINTERS = ["CLAUDE.md", "AGENTS.md"];
@@ -72,6 +74,8 @@ const SKILL_INTERFACE_KEYS = ["display_name", "short_description", "default_prom
 const SKILL_LINE_BUDGETS = { default: 500, "cg-warmup": 1000 };
 const skillLineBudget = (name) => SKILL_LINE_BUDGETS[name] ?? SKILL_LINE_BUDGETS.default;
 const WRAPPER_LINE_BUDGET = 12;
+/** `test -f path` and `[ -f path ]` prove a file exists, not that an invariant holds. */
+const EXISTENCE_ONLY = /^\s*(?:test\s+-[efd]\s+\S+|\[\s+-[efd]\s+\S+\s*\])\s*$/;
 
 /**
  * The canonical skills, in the order their names sort.
@@ -93,17 +97,6 @@ export const CORE_CG_SKILLS = [
   "cg-unblock",
   "cg-warmup",
 ];
-
-/** Fork-loaded families declare a modality per rule; inherited families never do. */
-const FORK_ALT = FORK_FAMILIES.join("|");
-const FORK_RULE = new RegExp(
-  String.raw`^- \*\*((${FORK_ALT})-\d{2}-\d{2})\*\* \x60(invariant|guide)\x60 — (\S.*)$`,
-);
-const FORK_ID = new RegExp(String.raw`(?:${FORK_ALT})-\d{2}-\d{2}`, "g");
-const FORK_COST = /^ {2}\*\*Cost:\*\* \S.*$/;
-
-/** Architecture and product principles ship under `principles/` as `XX-nn-nn`. */
-const PRINCIPLE_ID = new RegExp(String.raw`(?:${RULE_FAMILIES.join("|")})-\d{2}-\d{2}`, "g");
 
 const read = (file) => fs.readFileSync(file, "utf8");
 const exists = (file) => fs.existsSync(file);
@@ -207,7 +200,17 @@ export function checkSkills(
 ) {
   const root = path.join(repoRoot, ".agents", "skills");
   const catalogPath = governanceContractPath(repoRoot);
-  const catalog = exists(catalogPath) ? read(catalogPath) : "";
+  let catalog = new Set();
+  if (exists(catalogPath)) {
+    try {
+      const parsed = loadContract(catalogPath, { repoRoot, validate: false });
+      catalog = new Set(
+        (parsed.extensions?.contractGraph?.skills ?? []).map((entry) => entry?.name).filter(Boolean),
+      );
+    } catch {
+      // The graph validator reports malformed YAML with its exact location.
+    }
+  }
 
   const skillNames = listDirs(root).filter((name) =>
     exists(path.join(root, name, "SKILL.md")),
@@ -252,8 +255,8 @@ export function checkSkills(
       fail(`[9] ${relative}: frontmatter description exceeds 1024 characters`);
     }
 
-    if (!catalog.includes(`](../skills/${folderName}/SKILL.md)`)) {
-      fail(`[9] ${relative}: skill is missing from .agents/cg/contract.md catalog`);
+    if (!catalog.has(folderName)) {
+      fail(`[9] ${relative}: skill is missing from .agents/cg/contract.yaml catalog`);
     }
 
     const interfaceFile = path.join(root, folderName, "agents", "openai.yaml");
@@ -337,47 +340,46 @@ export function checkAgentRule(fail, repoRoot) {
 }
 
 /**
- * First-cell text of every enforcement-map table row, or `null` when the file is absent.
- * One reader serves both coverage checks so the two can never disagree about what a row is.
+ * Rule IDs from the authored enforcement map, or `null` when the file is absent.
+ * Parse failures are recorded as [10] and return an empty list so later coverage
+ * checks do not invent a second diagnosis.
  */
-function enforcementRowCells(repoRoot) {
-  const file = enforcementPath(repoRoot);
-  if (!exists(file)) return null;
-  return splitLines(read(file))
-    .filter((line) => line.startsWith("|"))
-    .map((line) => line.split("|")[1] ?? "");
+function enforcementRuleIds(fail, repoRoot) {
+  try {
+    const catalog = loadEnforcementMap(repoRoot);
+    if (catalog === null) return null;
+    return catalog.entries.flatMap((entry) => entry.rules);
+  } catch (error) {
+    fail(`[10] ${error.message}`);
+    return [];
+  }
 }
 
 /**
- * [10] Every architecture and product principle owes exactly one enforcement-map row, and the
- * map may not cite a principle ID no principles file defines.
- *
- * A fork-loaded principle states its own modality, so a `guide` is legitimately absent from the map.
- * `AP-` and `PP-` rules carry no modality marker: the map claims a row for every one of them,
- * and this is the check that makes the claim true rather than decorative.
+ * [10] Every repository-authored product binding owes exactly one enforcement-map row, and the
+ * map may not cite a product rule no guideline file defines. Core A enforcement lives in the
+ * architecture catalog; engineering guidelines never appear here.
  */
-export function checkPrincipleEnforcement(fail, repoRoot, rules) {
-  const cells = enforcementRowCells(repoRoot);
-  if (cells === null) {
-    if (rules.size) fail("[10] principles: missing `.agents/cg/map/enforcement.md`");
+export function checkPrincipleEnforcement(fail, repoRoot, rules, ids) {
+  const productRules = new Map([...rules].filter(([ruleId]) => familyOf(ruleId) === "P"));
+  if (ids === null) {
+    if (productRules.size) fail(`[10] principles: missing enforcement map \`${ENFORCEMENT_FILENAME}\``);
     return;
   }
 
-  const ids = cells.flatMap((cell) => cell.match(PRINCIPLE_ID) ?? []);
   const count = (id) => ids.filter((x) => x === id).length;
-  for (const ruleId of rules.keys()) {
+  for (const ruleId of productRules.keys()) {
     if (count(ruleId) !== 1) {
       fail(`[10] principle \`${ruleId}\` must have exactly one enforcement-map row`);
     }
   }
   for (const ruleId of [...new Set(ids)].sort()) {
-    if (!rules.has(ruleId)) {
+    if (familyOf(ruleId) === "P" && !rules.has(ruleId)) {
       fail(`[10] enforcement map references unknown principle ID \`${ruleId}\``);
     }
   }
 }
 
-/** Verify the explicitly loaded, never-inherited domain-principle sets. */
 /**
  * The phase map is only worth having if it cannot drift from what is installed.
  *
@@ -395,14 +397,14 @@ export function checkPhases(fail, repoRoot) {
   }
 
   // Every family ships; the phase map is the only thing that decides where each is loaded.
-  const present = principleFiles(repoRoot).map((info) => info.family);
-  const known = new Set([...FAMILIES, ...FORK_FAMILIES]);
+  const present = [...CORE_BINDING_FAMILIES, ...principleFiles(repoRoot).flatMap((info) => info.families)];
+  const known = new Set([...CORE_BINDING_FAMILIES, ...FAMILIES, ...BEST_PRACTICE_FAMILIES, ...FORK_FAMILIES]);
 
   const named = phaseTokens(phases);
   for (const token of named) {
     if (!known.has(token)) {
       fail(
-        `[11] map/phases.json: token \`${token}\` matches no rule family; expected one of ` +
+        `[11] phases.json: token \`${token}\` matches no rule family; expected one of ` +
           `${[...known].join(", ")}`,
       );
     }
@@ -411,89 +413,79 @@ export function checkPhases(fail, repoRoot) {
   for (const family of present) {
     if (!named.includes(family)) {
       fail(
-        `[11] map/phases.json: \`${family}\` principles are installed but no phase loads them — ` +
+        `[11] phases.json: \`${family}\` principles are installed but no phase loads them — ` +
           "governance no phase reads is governance nobody reads",
       );
     }
   }
+
+  const binding = [...CORE_BINDING_FAMILIES, ...principleFiles(repoRoot, { bindingOnly: true }).flatMap((info) => info.families)];
+  for (const [phase, entry] of Object.entries(phases)) {
+    for (const family of binding) {
+      if (!entry.always.includes(family)) {
+        fail(`[11] phases.json: ${phase}.always omits binding family \`${family}\``);
+      }
+    }
+    for (const family of entry.always) {
+      if (!binding.includes(family)) {
+        fail(
+          `[11] phases.json: ${phase}.always contains non-binding family \`${family}\`; ` +
+            "advisory families belong in conditional",
+        );
+      }
+    }
+    for (const family of entry.conditional) {
+      if (binding.includes(family)) {
+        fail(
+          `[11] phases.json: ${phase}.conditional contains binding family \`${family}\`; ` +
+            "binding families belong in always",
+        );
+      }
+    }
+  }
 }
 
-export function checkForkPrinciples(fail, repoRoot, folders = null) {
-  const root = principlesRoot(repoRoot);
+/** Verify the non-binding engineering catalog and its enforcement-map exclusions. */
+export function checkForkPrinciples(fail, repoRoot, enforcementIds) {
+  const root = guidelinesRoot(repoRoot);
   if (!exists(root)) return 0;
 
+  let catalog;
+  try {
+    catalog = loadEngineeringMap(repoRoot);
+  } catch (error) {
+    fail(`[10] ${error.message}`);
+    return 0;
+  }
+  if (!catalog) {
+    fail(`[10] missing non-binding engineering catalog: ${ENGINEERING_FILENAME}`);
+    return 0;
+  }
+
   const rules = new Map();
-  for (const info of principleFiles(repoRoot).filter((entry) => !entry.inherited)) {
-    const { file, filename, family } = info;
-    const relative = rel(repoRoot, file);
-    const lines = splitLines(read(file));
-    const marker = `- **${family}-`;
-    let parsedInFile = 0;
-
-    lines.forEach((line, index) => {
-      if (!/^- \*\*[A-Z]{2}-/.test(line)) return;
-      const number = index + 1;
-      const match = FORK_RULE.exec(line);
-      if (!match) {
-        fail(
-          `[10] ${relative}:${number}: malformed rule; expected ` +
-            `\`${family}-nn-nn\`, \`invariant\` or \`guide\`, and rule text`,
-        );
-        return;
-      }
-      const [, ruleId, actualFamily, modality] = match;
-      parsedInFile += 1;
-      if (actualFamily !== family) {
-        fail(
-          `[10] ${relative}:${number}: \`${ruleId}\` is a ${actualFamily} rule and does not ` +
-            `belong in ${filename}`,
-        );
-      }
-      if (rules.has(ruleId)) {
-        fail(`[10] fork principles: duplicate rule ID \`${ruleId}\``);
-      } else {
-        rules.set(ruleId, modality);
-      }
-
-      // A guide owes exactly one non-empty Cost clause before the next rule starts.
-      let nextRule = lines.length;
-      for (let i = number; i < lines.length; i += 1) {
-        if (lines[i].startsWith(marker)) {
-          nextRule = i;
-          break;
-        }
-      }
-      const costLines = lines.slice(number, nextRule).filter((l) => l.startsWith("  **Cost:**"));
-      const validCosts = costLines.filter((l) => FORK_COST.test(l));
-      if (modality === "guide" && validCosts.length !== 1) {
-        fail(
-          `[10] ${relative}:${number}: guide \`${ruleId}\` must have exactly one non-empty \`Cost:\` clause`,
-        );
-      }
-    });
-
-    if (parsedInFile === 0) {
-      fail(`[10] ${relative}: ${family} principle file has no valid rules`);
+  for (const principle of catalog.principles) {
+    for (const rule of principle.rules) {
+      if (rules.has(rule.id)) fail(`[10] fork principles: duplicate rule ID \`${rule.id}\``);
+      else rules.set(rule.id, rule.modality);
     }
   }
 
-  const cells = enforcementRowCells(repoRoot);
-  if (cells === null && rules.size) {
-    fail("[10] fork principles: missing `.agents/cg/map/enforcement.md`");
+  if (enforcementIds === null && rules.size) {
+    fail(`[10] fork principles: missing enforcement map \`${ENFORCEMENT_FILENAME}\``);
   }
-  const enforcementIds = (cells ?? []).flatMap((cell) => cell.match(FORK_ID) ?? []);
+  const ids = enforcementIds ?? [];
 
-  const count = (id) => enforcementIds.filter((x) => x === id).length;
+  const count = (id) => ids.filter((x) => x === id).length;
   for (const [ruleId, modality] of rules) {
     if (modality === "invariant" && count(ruleId) !== 1) {
       fail(`[10] invariant \`${ruleId}\` must have exactly one enforcement-map row`);
     }
-    if (modality === "guide" && count(ruleId)) {
-      fail(`[10] guide \`${ruleId}\` must not have an enforcement-map row`);
+    if ((modality === "guide" || modality === "best-practice") && count(ruleId)) {
+      fail(`[10] non-binding ${modality} \`${ruleId}\` must not have an enforcement-map row`);
     }
   }
-  for (const ruleId of [...new Set(enforcementIds)].sort()) {
-    if (!rules.has(ruleId)) {
+  for (const ruleId of [...new Set(ids)].sort()) {
+    if (familyOf(ruleId) !== "P" && !rules.has(ruleId)) {
       fail(`[10] enforcement map references unknown principle ID \`${ruleId}\``);
     }
     if (count(ruleId) > 1) {
@@ -501,237 +493,7 @@ export function checkForkPrinciples(fail, repoRoot, folders = null) {
     }
   }
 
-  let map = folders;
-  if (map === null) {
-    try {
-      map = JSON.parse(read(inheritancePath(repoRoot))).folders ?? {};
-    } catch (error) {
-      fail(`[10] fork principles: cannot inspect inheritance.json: ${error.message}`);
-      map = {};
-    }
-  }
-  for (const [key, entry] of Object.entries(map)) {
-    for (const ruleId of entry.rules ?? []) {
-      const family = String(ruleId).slice(0, 2);
-      if (FORK_FAMILIES.includes(family)) {
-        fail(
-          `[10] ${key}: \`${ruleId}\` is loaded at a fork and must never be inherited — ` +
-            "an unavoidable guide is just a rule",
-        );
-      }
-    }
-  }
-
   return rules.size;
-}
-
-function checkPointers(key, entry, fail, repoRoot) {
-  if (entry.kind !== "module") return;
-  for (const pointer of POINTERS) {
-    const file = path.join(repoRoot, key, pointer);
-    if (!exists(file)) {
-      fail(`[1] ${key}: missing ${pointer} — folder is not openable as a workspace root`);
-      continue;
-    }
-    const text = read(file);
-    if (!text.includes("`.agents/cg/contract.md`")) {
-      fail(`[1] ${key}/${pointer}: missing canonical module contract pointer`);
-    }
-    if (!text.includes("../.agents/cg/principles/")) {
-      fail(`[1] ${key}/${pointer}: missing canonical repository principles pointer`);
-    }
-  }
-}
-
-function checkMapShape(key, entry, fail) {
-  const segments = key.split("/");
-  if (entry.depth !== segments.length) {
-    fail(
-      `[7] ${key}: depth ${entry.depth} does not match the ${segments.length} path segment(s) in the key`,
-    );
-  }
-  if (!entry.contract.startsWith(`${key}/`)) {
-    fail(`[7] ${key}: contract path ${entry.contract} is not inside the folder`);
-  }
-}
-
-function checkSections(key, entry, text, fail) {
-  // Match the heading as a complete line. A substring test would accept
-  // `## Verify Commands (typo)` as `## Verify Command` and silently pass a contract
-  // whose required section was renamed out from under it.
-  const headings = new Set(splitLines(text).map((line) => line.trimEnd()));
-  for (const heading of REQUIRED_SECTIONS[entry.kind]) {
-    if (!headings.has(heading)) {
-      fail(`[2] ${entry.contract}: missing required section \`${heading}\``);
-    }
-  }
-  for (const pattern of REQUIRED_SECTION_PATTERNS[entry.kind]) {
-    if (!pattern.test(text)) {
-      fail(`[2] ${entry.contract}: no section heading matching ${pattern.source}`);
-    }
-  }
-}
-
-function checkBudget(entry, text, advise) {
-  const count = countLines(text);
-  if (count > MAX_CONTRACT_LINES) {
-    advise(
-      `[4] ${entry.contract}: ${count} lines exceeds the suggested ${MAX_CONTRACT_LINES}-line ` +
-        "readability threshold — consider whether the implementation owns more than one real " +
-        "boundary; size alone does not require a split",
-    );
-  }
-}
-
-function checkSelfSufficiency(entry, text, fail, planPath) {
-  splitLines(text).forEach((line, index) => {
-    const number = index + 1;
-    if (planPath.test(line)) {
-      fail(
-        `[5] ${entry.contract}:${number}: cites a transient plan path — a permanent contract may ` +
-          "cite a permanent design record, never a plan",
-      );
-    }
-    const ticket = PLAN_TICKET.exec(line);
-    if (ticket) {
-      fail(
-        `[5] ${entry.contract}:${number}: cites plan ticket id \`${ticket[0]}\` — state the rule in full instead`,
-      );
-    }
-  });
-}
-
-/**
- * Ask whether a module's packages are one boundary. Do not try to answer it.
- *
- * The downward edge is the product, and it is the level `cg modules` is blind to — no build
- * manifest declares a package. But nothing mechanical separates "many packages, one purpose" from
- * "many packages, many boundaries". Measured on a repository whose author had already decided,
- * by hand, module by module:
- *
- *     module            packages  cross-package edges  author's answer
- *     mandala-data            12                    9  decompose
- *     mandala-chat             4                    1  decompose
- *     mandala-contracts       15                    4  one boundary
- *     mandala-orchestrator    10                   13  one boundary
- *
- * Count does not separate them (4 decomposes, 15 does not). Coupling does not separate them
- * (0.25 decomposes, 0.27 does not; 0.75 decomposes, 1.30 does not). Even within one module the
- * author gave contracts to 7 of 12 packages — the bounded-context slices, not the shared
- * plumbing. That distinction is semantic and no import graph carries it.
- *
- * So this advises rather than fails, for the same reason `cg modules` does: a heuristic that
- * fails the build is one everyone learns to bypass. And it is silenced by *any* stated reason,
- * because the author is the one who can answer — judging the wording only taught a previous run
- * to write a longer sentence.
- */
-const LEAF_CLAIM = /^##[ \t]+Child Contracts[ \t]*$/m;
-const SUB_BOUNDARY_ADVISORY_FLOOR = 3;
-
-function checkLeafClaims(repoRoot, folders, advise) {
-  for (const [key, entry] of Object.entries(folders)) {
-    let body;
-    try {
-      body = fs.readFileSync(path.join(repoRoot, entry.contract), "utf8");
-    } catch {
-      continue;
-    }
-    const match = LEAF_CLAIM.exec(body);
-    if (!match) continue;
-
-    const after = body.slice(match.index + match[0].length);
-    const section = after.split(/^## /m)[0];
-    // A leaf claim is the *absence* of a declared child, not a particular word for it. Keying
-    // on "none" let six contracts escape by saying "one boundary: ..." instead.
-    if (/contract\.md/.test(section)) continue;
-
-    const names = subBoundaryNames(repoRoot, key);
-    const count = names.length;
-    if (count < SUB_BOUNDARY_ADVISORY_FLOOR) continue;
-
-    // Any stated reason clears this. The author knows which packages are one boundary; the
-    // verifier does not, and policing the wording only produced longer sentences.
-    const stated = section.replace(/<!--[\s\S]*?-->/g, "").replace(/\bnone\b/gi, "").trim();
-    if (stated.length >= 40) continue;
-    {
-      advise(
-        `[0] ${key}: declares no child contracts over ${count} separate packages. A unit that ` +
-          "delivers a nameable functionality and reaches outside itself only rarely owes its " +
-          `own contract. To claim they are one boundary instead, account for all ${count} of ` +
-          "them and say what makes them inseparable — naming a few, or a sentence that would " +
-          "be equally true of any module, is not evidence",
-      );
-    }
-  }
-}
-
-/**
- * Catch a warmup that reported success without finishing.
- *
- * Measured on two real adoption runs. One left `Project Identity` as its shipped placeholder —
- * the root of the graph, the first thing every session reads — and nothing objected, because the
- * repository contract is not in `map/inheritance.json` so no section check covers it. The same
- * run wrote no findings file at all, which means the per-unit loop never recorded anything and a
- * context break would have restarted the work from zero.
- *
- * Both are advisory. A greenfield repository legitimately has neither yet: `init` tells that user
- * to fill the identity themselves, and there is no loop to leave findings behind. The findings
- * check is therefore gated on a map that something already populated.
- */
-function checkWarmupCompletion(repoRoot, folders, docsRoot, advise) {
-  const contract = governanceContractPath(repoRoot);
-  if (exists(contract) && read(contract).includes("<!-- Replace this section")) {
-    advise(
-      "[0] .agents/cg/contract.md still carries a `Replace this section` placeholder — the root " +
-        "of the graph is the first thing every session reads, and nothing else fills it",
-    );
-  }
-
-  if (!Object.keys(folders).length) return;
-
-  // `product.md` untouched after warmup means the harvest step was skipped — the clearest sign
-  // available, and invisible until now: a run reported success with eleven modules mapped and
-  // the shipped principles file byte-for-byte unchanged.
-  const product = path.join(principlesRoot(repoRoot), "product.md");
-  // Computed once and reused below. `PRINCIPLE_ID` is a global regex, so a second `.test` on the
-  // same source answers from wherever the first one stopped — the bug that made a fresh scaffold
-  // look harvested. Prose only: an example rule ID inside a fence is documentation, not a rule.
-  const harvested =
-    exists(product) &&
-    PRINCIPLE_ID.test(read(product).split("```").filter((_, i) => i % 2 === 0).join(""));
-  PRINCIPLE_ID.lastIndex = 0;
-
-  if (exists(product) && !harvested) {
-    advise(
-      "[0] principles/product.md defines no rules although folders are mapped — `cg-warmup` " +
-        "harvests this repository's product rules from its code, so an untouched file means that " +
-        "step was skipped, not that the repository owes none",
-    );
-  }
-
-  // The same file is required and then unwanted, and which one depends on whether warmup has
-  // finished. Asking only "is it present?" entrenched it: a completed adoption kept a resume log
-  // forever because removing it made the verifier complain, which is the opposite of a stack of
-  // documents that is meant to be consumed and discarded.
-  const findings = path.join(repoRoot, docsRoot, "plans", "warmup-findings.md");
-  const complete =
-    harvested && Object.values(folders).every((entry) => exists(path.join(repoRoot, entry.contract)));
-
-  if (!exists(findings) && !complete) {
-    advise(
-      `[0] ${docsRoot}/plans/warmup-findings.md is absent although ${Object.keys(folders).length} ` +
-        "folder(s) are mapped — `cg-warmup` records each unit's findings there as it goes, so an " +
-        "absent file means the loop kept its state in context and a break would restart it",
-    );
-  } else if (exists(findings) && complete) {
-    advise(
-      `[0] ${docsRoot}/plans/warmup-findings.md survives a finished warmup — it is a resume log, ` +
-        "not a record: every mapped folder has a contract and the principles are harvested, so " +
-        "the file has nothing left to resume. Delete it; `cg-warmup` §12 owns this disposal",
-    );
-  }
-
-  adviseUnarchivedClosures(advise, repoRoot, docsRoot);
 }
 
 /**
@@ -779,83 +541,32 @@ function adviseUnarchivedClosures(advise, repoRoot, docsRoot) {
   }
 }
 
-/**
- * Catch a graph that was generated rather than written.
- *
- * Measured on a real adoption run: an agent decided ten contracts was mechanical work, wrote a
- * script, and emitted all ten from one string template — `Purpose: core responsibilities for
- * <module>`, `Used by: dependent modules`, every module bound to an identical list of every rule,
- * every module declared a leaf. It passed `cg modules` with full coverage. Nothing in the verifier
- * objected, because the verifier proves a rule ID exists and a heading is present; it cannot read
- * a sentence and notice it says nothing.
- *
- * These two signals can be read mechanically. Both are advisory: a small repository may honestly
- * have two similar contracts, and a rule that genuinely binds everything is legitimate. What is
- * not legitimate is *every* contract agreeing — that is a template, not a judgement.
- */
-function checkTemplatedContracts(repoRoot, folders, fail) {
-  const entries = Object.entries(folders);
-  if (entries.length < 3) return;
-
-  const signatures = new Set(entries.map(([, e]) => e.rules.join(",")));
-  if (signatures.size === 1) {
-    fail(
-      `[12] all ${entries.length} mapped folders inherit an identical rule set — a scope chosen ` +
-        "per module is never uniform across a whole repository; check this was authored, not generated",
-    );
-  }
-
-  // A sentence repeated verbatim across most contracts is boilerplate: true of every module,
-  // therefore informative about none. Generated regions are excluded — those are meant to match.
-  const seen = new Map();
-  for (const [, entry] of entries) {
-    let body;
-    try {
-      body = fs.readFileSync(path.join(repoRoot, entry.contract), "utf8");
-    } catch {
-      continue;
-    }
-    const authored = body.split(END_MARKER).pop();
-    // Every prose line, not just bullets. Restricting this to `- ` items let ten contracts
-    // carry one identical justification sentence — the exact shape the check exists to catch.
-    const lines = new Set(
-      splitLines(authored)
-        .map((line) => line.trim())
-        .filter((line) => line.length > 24 && !line.startsWith("#") && !line.startsWith("<!--")),
-    );
-    for (const line of lines) seen.set(line, (seen.get(line) ?? 0) + 1);
-  }
-
-  const threshold = Math.max(3, Math.ceil(entries.length * 0.6));
-  const boilerplate = [...seen].filter(([, n]) => n >= threshold).map(([line]) => line);
-  if (boilerplate.length) {
-    fail(
-      `[12] ${boilerplate.length} line(s) appear verbatim in ${threshold}+ of ${entries.length} ` +
-        `contracts, e.g. ${JSON.stringify(boilerplate[0].slice(0, 60))} — a sentence true of ` +
-        "every module describes none of them",
-    );
-  }
-}
-
 /** Run every check. Returns {failures, advisories, counts}. */
 export function verify(repoRoot) {
   const failures = [];
   const advisories = [];
   const fail = (message) => failures.push(message);
 
-  let rules;
-  let folders;
+  let bindingRules;
+  let bindingCatalog;
+  let graph;
   let profile;
   try {
-    rules = loadPrinciples(repoRoot);
-    folders = loadInheritance(inheritancePath(repoRoot));
+    bindingRules = loadBindingPrinciples(repoRoot);
+    bindingCatalog = loadBindingCatalog(path.join(repoRoot, BINDING_FILENAME), { repoRoot });
+    graph = loadContractGraph(repoRoot, { hierarchy: bindingCatalog.hierarchy.transitions });
     profile = resolveProfileSelection(repoRoot);
   } catch (error) {
+    if (error instanceof BindingError) {
+      return { failures: [`[10] ${error.message}`], advisories, counts: null };
+    }
     if (error instanceof ContractError || error instanceof ProfileError || error instanceof SyntaxError) {
       return { failures: [error.message], advisories, counts: null };
     }
     throw error;
   }
+
+  for (const message of graph.failures) fail(`[2] ${message}`);
 
   // Derived from the repository's own recorded docs root, so relocating the document
   // trees relocates the self-sufficiency check with them.
@@ -865,51 +576,127 @@ export function verify(repoRoot) {
   // heuristic that fails the build is one everyone learns to bypass. But an unmapped module
   // is the difference between "the scaffold is well-formed" and "this repository is
   // governed", so it must not be silent either.
-  const coverage = moduleCoverage(repoRoot, folders);
+  const governedUnits = graph.records.map((record) => record.contract.unit);
+  const coverage = moduleCoverage(repoRoot, governedUnits);
   for (const module of coverage.unmapped) {
     advisories.push(
       `[0] ${module.path}/ looks like a module root (${module.manifest}) but no entry in ` +
-        "map/inheritance.json governs it — run the `cg-warmup` skill once, or record why it is excluded",
+        "contract graph governs it — run the `cg-warmup` skill once to write and connect its contract, or record why it is excluded",
     );
   }
 
-  checkTemplatedContracts(repoRoot, folders, fail);
-  checkWarmupCompletion(repoRoot, folders, profile.docs, (m) => advisories.push(m));
-  checkLeafClaims(repoRoot, folders, (m) => advisories.push(m));
+  const rootPurpose = graph.root?.contract.purpose ?? "";
+  if (/Replace this (?:sentence|section)/i.test(rootPurpose)) {
+    advisories.push(
+      "[0] .agents/cg/contract.yaml still carries its purpose placeholder — the graph root is the first context every session receives",
+    );
+  }
+
+  const nonRoot = graph.records.filter((record) => record.contract.unit !== ".");
+  let harvestedProduct = false;
+  try {
+    harvestedProduct = productHasHarvestedRules(repoRoot);
+  } catch {
+    harvestedProduct = false;
+  }
+  if (nonRoot.length && !harvestedProduct) {
+    advisories.push(
+      "[0] the P catalog under guidelines/ defines no repository-specific rules although implementation boundaries are governed — brownfield warmup must confirm this is intentional or harvest the product rules already embodied in code",
+    );
+  }
+  const findings = path.join(repoRoot, profile.docs, "plans", "warmup-findings.md");
+  if (nonRoot.length && !harvestedProduct && !exists(findings)) {
+    advisories.push(
+      `[0] ${profile.docs}/plans/warmup-findings.md is absent while warmup is incomplete — record each inspected unit before moving on so a context break can resume`,
+    );
+  } else if (nonRoot.length && harvestedProduct && exists(findings)) {
+    advisories.push(
+      `[0] ${profile.docs}/plans/warmup-findings.md survives a finished warmup — it is a resume log with no reader left; delete it`,
+    );
+  }
+  if (nonRoot.length >= 3) {
+    const signatures = new Set(nonRoot.map((record) => record.contract.rules.join(",")));
+    if (signatures.size === 1) {
+      fail(
+        `[12] all ${nonRoot.length} non-root contracts bind an identical rule set — ` +
+          "scope rules per boundary instead of generating one repository-wide list",
+      );
+    }
+    const prose = new Map();
+    for (const record of nonRoot) {
+      const values = new Set([
+        record.contract.summary,
+        record.contract.purpose,
+        ...record.contract.responsibilities.owns,
+        ...record.contract.responsibilities.allows,
+        ...record.contract.responsibilities.forbids,
+      ].filter((value) => value.length > 24));
+      for (const value of values) prose.set(value, (prose.get(value) ?? 0) + 1);
+    }
+    const threshold = Math.max(3, Math.ceil(nonRoot.length * 0.6));
+    const repeated = [...prose].find(([, count]) => count >= threshold);
+    if (repeated) {
+      fail(
+        `[12] contract prose appears verbatim in ${repeated[1]} of ${nonRoot.length} boundaries, e.g. ` +
+          `${JSON.stringify(repeated[0].slice(0, 60))} — describe each boundary rather than cloning a template`,
+      );
+    }
+  }
+
+  for (const record of graph.records) {
+    const { contract } = record;
+    const unknown = contract.rules.filter((rule) => !bindingRules.has(rule));
+    if (unknown.length) {
+      fail(`[6] ${record.relative}: rule id(s) not defined by the structural or product binding catalogs: ${unknown.join(", ")}`);
+    }
+
+    const serialized = JSON.stringify(contract, null, 2);
+    splitLines(serialized).forEach((line, index) => {
+      if (planPath.test(line)) {
+        fail(`[5] ${record.relative}:${index + 1}: cites a transient plan path — state permanent contract truth in full`);
+      }
+      const ticket = PLAN_TICKET.exec(line);
+      if (ticket) fail(`[5] ${record.relative}:${index + 1}: cites plan ticket id \`${ticket[0]}\` — state the rule in full instead`);
+    });
+
+    if (contract.kind === "module") {
+      for (const pointer of POINTERS) {
+        const file = path.join(repoRoot, contract.unit, pointer);
+        if (!exists(file)) {
+          fail(`[1] ${contract.unit}: missing ${pointer} — module is not openable as a workspace root`);
+          continue;
+        }
+        const text = read(file);
+        if (!text.includes(".agents/cg/contract.yaml")) fail(`[1] ${contract.unit}/${pointer}: missing canonical module contract pointer`);
+        if (!text.includes(".agents/cg/principles/architecture.yaml")) fail(`[1] ${contract.unit}/${pointer}: missing structural binding pointer`);
+        if (!text.includes(".agents/cg/guidelines/")) fail(`[1] ${contract.unit}/${pointer}: missing canonical repository guidelines pointer`);
+      }
+    }
+
+    for (const entry of contract.verification ?? []) {
+      if (EXISTENCE_ONLY.test(entry.command ?? "")) {
+        fail(
+          `[12] ${record.relative}: verification \`${entry.id}\` only proves a path exists — ` +
+            "name the test or command that exercises the invariant",
+        );
+      }
+    }
+  }
+
+  for (const row of openDescent(repoRoot, graph.records)) {
+    advisories.push(
+      `[0] ${row.unit}: ${row.count} undeclared code-bearing packages (${row.names.join(", ")}) — ` +
+        "apply graph.recurse or record Leaf rationale: why they are inseparable",
+    );
+  }
 
   checkAgentRule(fail, repoRoot);
   checkPhases(fail, repoRoot);
   const skillCount = checkSkills(fail, repoRoot, CORE_CG_SKILLS, profile);
-  const designCount = checkForkPrinciples(fail, repoRoot, folders);
-  checkPrincipleEnforcement(fail, repoRoot, rules);
-
-  for (const [key, entry] of Object.entries(folders)) {
-    checkMapShape(key, entry, fail);
-    checkPointers(key, entry, fail, repoRoot);
-
-    // [6] Dangling rule references are reported per folder, then the folder is skipped
-    // for generation so one bad id does not mask the remaining checks.
-    const unknown = entry.rules.filter((r) => !rules.has(r));
-    if (unknown.length) {
-      fail(`[6] ${key}: rule id(s) not defined under principles/: ${unknown.join(", ")}`);
-      continue;
-    }
-
-    let generated;
-    try {
-      generated = generate(repoRoot, entry, rules);
-    } catch (error) {
-      fail(`[3] ${key}: ${error.message}`);
-      continue;
-    }
-
-    checkSections(key, entry, generated.current, fail);
-    checkBudget(entry, generated.current, (m) => advisories.push(m));
-    checkSelfSufficiency(entry, generated.current, fail, planPath);
-    if (generated.current !== generated.desired) {
-      fail(`[3] ${entry.contract}: inherited block is stale or was hand-edited. Run \`cg sync\`.`);
-    }
-  }
+  const enforcementIds = enforcementRuleIds(fail, repoRoot);
+  const engineeringCount = checkForkPrinciples(fail, repoRoot, enforcementIds);
+  checkPrincipleEnforcement(fail, repoRoot, bindingRules, enforcementIds);
+  adviseUnarchivedClosures((message) => advisories.push(message), repoRoot, profile.docs);
 
   // Same shape as the orphan wrapper check: narrowing the profile selection used to leave a
   // fully generated entry point behind, silently. A file carrying the generated index whose
@@ -943,10 +730,10 @@ export function verify(repoRoot) {
     failures,
     advisories,
     counts: {
-      folders: Object.keys(folders).length,
+      folders: nonRoot.length,
       roots: Object.keys(profile.rootPointers).length,
       skills: skillCount,
-      design: designCount,
+      engineering: engineeringCount,
       modules: { detected: coverage.detected.length, unmapped: coverage.unmapped.length },
     },
   };
