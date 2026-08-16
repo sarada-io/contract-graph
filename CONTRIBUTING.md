@@ -24,14 +24,38 @@ npm run build:check
 The first command replaces the root-level `build/` package target; the second proves every file
 and mode in that target matches its package source without writing. Never edit `build/` directly.
 It is gitignored, as is `tmp/` from `npm run try`. `npm run clean` deletes both. `npm run pack`
-rebuilds `build/` and writes the tarball at the repository root (`*.tgz` is gitignored). Architecture
-and product YAML are copied into `build/agent/cg/principles/` in the checkout and
-`agent/cg/principles/` inside the tarball.
+rebuilds `build/` and writes `contract-graph-<version>.tgz` at the repository root (`*.tgz` is
+gitignored). Architecture and product YAML are copied into `build/agent/cg/principles/` in the
+checkout and `agent/cg/principles/` inside the tarball. The packaged `bin` is `script/cli.js`, not
+the checkout's `bin/cg.js`.
 
 Product entries are short YAML sentences: `id` plus `text`, under a `Pnn` heading. The catalog
 ships with `principles: []`. Design entries are `id`, `rule`, and `reason`. The rule is the
 practice; the reason is why it exists. A preference may also carry `cost`. `E` never appears in
 `enforcement.yaml`.
+
+## Publishing
+
+`package.json` `version` is the source of truth. The git tag and the npm version follow it.
+
+The registry artifact is the tarball from `npm run pack`, not the git checkout and not the
+`build/` directory. `npm publish ./build` packs that folder again at publish time; `npm publish`
+from the repo root would ship `src/` and `bin/cg.js`. Publish the file you just packed:
+
+```bash
+git status --short          # must be empty — pack reads the working tree
+npm test
+npm run pack
+npm login
+npm publish contract-graph-<version>.tgz --access public
+```
+
+Smoke-test the extracted tarball (after `npm install --omit=dev` in the extract, so `yaml`
+resolves) before publishing: greenfield `cg init` keeps the starter `src` module; brownfield with
+a build manifest does not invent one, reports `UNMAPPED`, and still reaches `cg verify: OK`.
+
+Do not publish from a dirty tree. `npm pack` reads files on disk, so uncommitted edits ship and
+committed-but-unbuilt catalog changes do not.
 
 ## Trying a scaffold locally
 
