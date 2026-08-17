@@ -219,6 +219,24 @@ connects contracts for the unmapped roots `modules` reported.
 Brownfield initialization deliberately does not invent a `src/` module. Until warmup finishes,
 `cg verify: OK` means the scaffold is well-formed, not that this repository is governed.
 
+## Bundled skills
+
+After `init`, day-to-day work is the `/cg-*` skills, not the CLI. An agent reads the matching
+skill, walks the graph, and names the next action. Commands install, verify, and inspect; they
+do not plan, produce, or write contracts.
+
+| Skill | When to use |
+|---|---|
+| `/cg-warmup` | Once, on an existing repository: discover real boundaries and write and connect their contracts. |
+| `/cg-plan` | Turn a broad outcome into an ordered phase roadmap against the current graph. |
+| `/cg-prepare` | Convert one selected phase into a sequential queue of contract-complete Steps. |
+| `/cg-produce` | Run the earliest ready Step: implementation, tests, and contract updates as one change. |
+| `/cg-sign-off` | Close a phase when the graph still describes the code; also used for documentation-only work. |
+| `/cg-unblock` | Record a fork, assumption, or blocked Step so independent work can continue. |
+| `/cg-auto-run` | Opt-in. Drive later stages unattended within a granted authority. Never auto-runs warmup or unblock. |
+
+The [lifecycle](docs/lifecycle.md) is the full walk and the order those skills hand off.
+
 ## Main commands
 
 | Command | Purpose |
