@@ -1,4 +1,4 @@
-# Contracts — the 0.3 data model
+# Contracts
 
 Contract Graph represents a repository as connected, machine-readable contracts. A contract is
 the durable promise for one owned software boundary and the routing node that leads an agent to
@@ -51,7 +51,7 @@ every contract must still be reachable from the root through composition edges.
 | Field | Meaning |
 |---|---|
 | `$schema` | Canonical schema URL: `https://sarada.io/contract-graph/schema/contract-v1.schema.json`. |
-| `contractVersion` | Contract format version. Version 0.3 uses `"1.0"`. |
+| `contractVersion` | Contract format version. Current nodes use `"1.0"`. |
 | `id` | Stable graph identity. Reordering or moving presentation must not change it casually. |
 | `name`, `kind`, `unit` | Human name, boundary type, and repository-relative directory owned. |
 | `summary`, `purpose` | A short discriminator and how the parent uses the boundary. CommonMark is allowed. |
@@ -70,7 +70,7 @@ unused contract data.
 
 The package also installs the same schema at `.agents/cg/schema/contract.schema.json`, so local
 validation does not depend on network access. The Sarada URL is its stable public identity and must
-serve the matching schema bytes when 0.3 is published.
+serve the matching schema bytes.
 
 ## Declared surfaces are concrete promises
 
@@ -149,9 +149,9 @@ A contract lists only applicable repository-owned `P` product rule IDs under `ru
 contract context` resolves those IDs against the product catalog under `.agents/cg/guidelines/` and includes P
 rules from the selected contract's ancestors, alongside the ambient A rules.
 
-This replaces 0.2's generated inherited blocks. It avoids duplicated rule text, hand-edited
-generated regions, and a separate inheritance map that could disagree with the contract. The ID
-remains stable; the binding or product catalog remains the sole source of its full wording.
+This avoids duplicated rule text, hand-edited generated regions, and a separate inheritance map
+that could disagree with the contract. The ID remains stable; the binding or product catalog
+remains the sole source of its full wording.
 
 `E` engineering practices do not
 appear in `rules`. Engineering guidelines remain repository choice; copying them into a contract must not turn
@@ -243,7 +243,7 @@ The root routes broad product language into top-level capabilities. A module may
 specific language into its components. The CLI performs deterministic phrase matching and returns
 the strongest matches; it does not ask a model to invent the first edge.
 
-## Graph invariants enforced in 0.3
+## Graph invariants enforced
 
 `cg contract verify`, `cg graph verify`, and `cg verify` reject:
 
@@ -253,6 +253,7 @@ the strongest matches; it does not ask a model to invent the first edge.
 - anything other than exactly one owned responsibility per boundary;
 - the same owned responsibility declared by more than one contract;
 - a top-level module named as a horizontal technical layer;
+- a boundary named as a miscellaneous bag rather than a responsibility;
 - parent-child kinds outside the hierarchy declared by the binding catalog;
 - a contract stored outside its governed unit;
 - missing contract references;
