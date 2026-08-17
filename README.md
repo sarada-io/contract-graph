@@ -28,44 +28,60 @@ Faster code generation increases four pressures at once:
 Abstraction is what lets a codebase scale beyond the amount of implementation any one person or
 model can hold in context. Contracts make that abstraction explicit, navigable, and reviewable.
 
-## Software as a contract graph
+## The composition spine
 
 ```mermaid
 flowchart TB
     subgraph PROJECT["Project"]
-        ROOT["Repository contract"]
+        direction TB
+        ROOT["Project contract"]
 
-        subgraph MODULE_A["Module"]
-            MC["Module contract"]
-
-            subgraph SUBMODULE["Sub-module"]
-                SMC["Sub-module contract"]
-
-                subgraph COMPONENT["Component / Library"]
-                    CC["Component contract"]
-                    CODE["Relevant implementation"]
-                end
-            end
+        subgraph MODULE_A["Module A"]
+            direction TB
+            MCA["Module contract"] --> CODEA["Implementation"]
         end
 
-        subgraph MODULE_B["Module"]
-            MC2["Module contract"]
-            CODE2["Implementation"]
+        subgraph MODULE_B["Module B"]
+            direction TB
+            MCB["Module contract"]
+            subgraph SUBMODULE["Sub-module"]
+                direction TB
+                SMC["Sub-module contract"]
+                subgraph COMPONENT["Component / Library"]
+                    direction TB
+                    CC["Component contract"] --> CODEB["Relevant implementation"]
+                end
+                SMC --> CC
+            end
+            MCB --> SMC
+        end
+
+        subgraph MODULE_C["Module C"]
+            direction TB
+            MCC["Module contract"]
+            subgraph SUBMODULE_CB["Sub-module B"]
+                direction TB
+                SMCB["Sub-module contract"] --> CODECB["Implementation"]
+            end
+            subgraph SUBMODULE_CA["Sub-module A"]
+                direction TB
+                SMCA["Sub-module contract"] --> CODECA["Implementation"]
+            end
+            MCC --> SUBMODULE_CA
+            MCC --> SUBMODULE_CB
         end
     end
 
-    ROOT --> MC
-    ROOT --> MC2
-    MC --> SMC
-    SMC --> CC
-    CC --> CODE
-    MC2 --> CODE2
+    ROOT --> MODULE_A
+    ROOT --> MODULE_B
+    ROOT --> MODULE_C
 ```
 
 The boxes are abstraction boundaries; the arrows are context routes. The repository contract gives
 the system overview. A module contract explains that module in the project. Its child contracts
 progressively narrow the responsibility until the relevant code is small enough to inspect
-directly.
+directly. Depth is mixed: Module A is a leaf, Module C splits into two sub-modules, and Module B
+continues to a component or library.
 
 Real software also has lateral edges: one module consumes another module's public contract, or a
 task enters two branches. The hierarchy is the graph's spine, not a claim that software is a pure
@@ -169,34 +185,39 @@ YAML parser dependency. The contract engine is exported for other Node.js tools 
 
 ## Quick start
 
+`npx contract-graph init` installs the scaffold, discovery files, **and** the `/cg-*` skills.
+Editors load skills when a session starts, so **restart the IDE** (or reload the window) before
+the first `/cg-warmup` or `/cg-plan`. Until then those commands will not be offered.
+
 ### New repository
 
 ```bash
 npx contract-graph init .
 ```
 
-This scaffolds the contract system, generates its discovery files, verifies it, and names the next
-action. Re-running `init` updates framework-owned assets while preserving repository-owned context.
-The starter module shows the contract shape; fill the root contract's purpose, boundaries, and
-routes, then follow the printed route.
+Restart the IDE, fill the root contract's purpose, boundaries, and routes, then run `/cg-plan`.
+Re-running `init` updates framework-owned assets while preserving repository-owned context. The
+starter module shows the contract shape.
 
 ### Existing repository
+
+1. Install the scaffold:
 
 ```bash
 npx contract-graph init .
 npx contract-graph modules
 ```
 
-Brownfield initialization deliberately does not invent a `src/` module. It reports detected module
-roots as unmapped; run the scaffolded `cg-warmup` skill once to write and connect contracts for the
-software that is actually there.
+`modules` lists detected roots and which are still unmapped. It does not write contracts.
 
-## Upgrading from 0.2
+2. Restart the IDE so `/cg-warmup` and other relevent skills are loaded.
+3. Run `/cg-warmup` once in a new chat.
 
-0.3.0 is a breaking scaffold change: markdown contracts become YAML nodes, rule families become
-`A` / `P` / `E`, and decision-log ids become `DA-NN` / `DU-NN`. `cg init` preserves repository-owned
-catalogs, so a 0.2 tree is not upgraded by re-running init. Archive the 0.2 graph, install 0.3,
-then run `cg-warmup` from the code. Details: [Migrating from 0.2](docs/migration-0.3.0.md).
+Warmup is the brownfield adoption step, not an optional follow-up to `init`. It writes and
+connects contracts for the unmapped roots `modules` reported.
+
+Brownfield initialization deliberately does not invent a `src/` module. Until warmup finishes,
+`cg verify: OK` means the scaffold is well-formed, not that this repository is governed.
 
 ## Main commands
 
@@ -355,8 +376,6 @@ parallel execution safe until that proof and write confinement exist.
 - [Vision](docs/vision.md) — the complete concept, origin, causal model, and next structural work.
 - [Contracts](docs/contracts.md) — the YAML node format, JSON Schema, graph invariants, CLI/library views, and current limits.
 - [Lifecycle](docs/lifecycle.md) — the graph walk that decides a node, and how the seven skills move work through the graph.
-- [Migrating from 0.2](docs/migration-0.3.0.md) — breaking scaffold changes and the upgrade path.
-- [Structural binding decision](docs/decisions/architecture-principles-consolidation.md) — why binding authority is separate from architecture advice and how promotion works.
 - [Contributing](CONTRIBUTING.md) — tests and contribution expectations.
 
 ## Requirements

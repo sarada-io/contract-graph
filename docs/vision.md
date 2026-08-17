@@ -1,4 +1,4 @@
-# Vision — software as a traversable contract graph
+# Vision
 
 Contract Graph exists so a coding agent can understand where a change belongs before it reads the
 implementation.
@@ -175,7 +175,7 @@ The seam alone is not yet proof of independence. Safe automated parallelism also
 - write confinement so a worker cannot escape its assigned boundary; and
 - coordination for shared generated files, builds, and contract changes.
 
-Contract Graph 0.3 machine-proves authored composition-edge reciprocity, acyclicity, and root
+Contract Graph machine-proves authored composition-edge reciprocity, acyclicity, and root
 reachability. It does not yet prove that implementation dependencies disclose every architectural
 child or that a worker remains inside an assigned write set. Parallelism is a consequence the
 contract model enables and the roadmap must finish verifying, not a current safety claim.
