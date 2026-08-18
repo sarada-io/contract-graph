@@ -185,32 +185,39 @@ YAML parser dependency. The contract engine is exported for other Node.js tools 
 
 ## Quick start
 
-`npx contract-graph init` installs the scaffold, discovery files, **and** the `/cg-*` skills.
-Editors load skills when a session starts, so **restart the IDE** (or reload the window) before
-the first `/cg-warmup` or `/cg-plan`. Until then those commands will not be offered.
+Install Contract Graph globally so the `cg` command remains available to later AI chats:
+
+```bash
+npm i -g contract-graph
+```
+
+`cg init` installs the scaffold, discovery files, **and** the `/cg-*` skills. Editors load skills
+when a session starts, so **restart the IDE** (or reload the window) before the first `/cg-warmup`
+or `/cg-plan`. Until then those commands will not be offered.
 
 ### New repository
 
 ```bash
-npx contract-graph init .
+cg init .
 ```
 
 Restart the IDE, fill the root contract's purpose, boundaries, and routes, then run `/cg-plan`.
 Re-running `init` updates framework-owned assets while preserving repository-owned context. The
-starter module shows the contract shape.
+starter module shows the contract shape. Update the global package with
+`npm i -g contract-graph@latest` before re-running `init` when upgrading Contract Graph.
 
 ### Existing repository
 
 1. Install the scaffold:
 
 ```bash
-npx contract-graph init .
-npx contract-graph modules
+cg init .
+cg modules
 ```
 
 `modules` lists detected roots and which are still unmapped. It does not write contracts.
 
-2. Restart the IDE so `/cg-warmup` and other relevent skills are loaded.
+2. Restart the IDE so `/cg-warmup` and other relevant skills are loaded.
 3. Run `/cg-warmup` once in a new chat.
 
 Warmup is the brownfield adoption step, not an optional follow-up to `init`. It writes and
