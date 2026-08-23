@@ -10,7 +10,11 @@ export const PROFILE_CONFIG_ROOT = fs.existsSync(path.join(RUNTIME_ROOT, "agent"
   ? path.join(RUNTIME_ROOT, "agent", "profiles")
   : path.join(RUNTIME_ROOT, "install", "profiles");
 const CONFIG_SUFFIX = ".scaffolding.conf.json";
-const PROFILE_CHOICE_ORDER = ["codex", "claude", "antigravity", "copilot", "cursor", "zcode"];
+const LEGACY_PROFILE_ALIASES = Object.freeze({
+  antigravity: "agents",
+  codex: "agents",
+  cursor: "agents",
+});
 const CONFIG_FIELDS = new Set([
   "name",
   "displayName",
@@ -38,11 +42,13 @@ export function availableProfiles(root = PROFILE_CONFIG_ROOT) {
 
 /** Concrete choices shown by `cg init`; `all` remains a backwards-compatible CLI alias. */
 export function selectableProfiles(root = PROFILE_CONFIG_ROOT) {
-  const available = availableProfiles(root).filter((name) => name !== "all");
-  return [
-    ...PROFILE_CHOICE_ORDER.filter((name) => available.includes(name)),
-    ...available.filter((name) => !PROFILE_CHOICE_ORDER.includes(name)),
-  ];
+  return availableProfiles(root)
+    .filter((name) => name !== "all")
+    .sort((left, right) => {
+      const a = loadProfileConfig(left, { root }).displayName.toLowerCase();
+      const b = loadProfileConfig(right, { root }).displayName.toLowerCase();
+      return a < b ? -1 : a > b ? 1 : left.localeCompare(right);
+    });
 }
 
 /** Expand the legacy `all` alias so metadata can record the actual installed harnesses. */
@@ -133,7 +139,7 @@ export function normalizeProfiles(profiles, { root = PROFILE_CONFIG_ROOT } = {})
   if (!Array.isArray(profiles) || profiles.length === 0 || profiles.some((name) => !name)) {
     throw new ProfileError("profiles must be a non-empty array of names");
   }
-  const normalized = [...new Set(profiles)];
+  const normalized = [...new Set(profiles.map((name) => LEGACY_PROFILE_ALIASES[name] ?? name))];
   const available = availableProfiles(root);
   const unknown = normalized.filter((name) => !available.includes(name));
   if (unknown.length) {

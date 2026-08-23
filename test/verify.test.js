@@ -41,6 +41,7 @@ import {
   ProfileError,
   availableProfiles,
   loadProfileConfig,
+  profileChoices,
   resolveProfiles,
 } from "../src/scripts/profiles.js";
 import {
@@ -201,13 +202,10 @@ test("a missing scaffold profile record fails verification", () => {
 
 test("shipped profile configs validate and all resolves to their union", () => {
   assert.deepEqual(availableProfiles(), [
+    "agents",
     "all",
-    "antigravity",
     "claude",
-    "codex",
     "copilot",
-    "cursor",
-    "zcode",
   ]);
   const all = resolveProfiles(["all"]);
   assert.deepEqual(all.rootPointers, {
@@ -215,14 +213,26 @@ test("shipped profile configs validate and all resolves to their union", () => {
     "AGENTS.md": "",
     ".github/copilot-instructions.md": "../",
   });
+  assert.deepEqual(resolveProfiles(["agents"]).rootPointers, { "AGENTS.md": "" });
   assert.deepEqual(resolveProfiles(["cursor"]).rootPointers, { "AGENTS.md": "" });
   assert.deepEqual(resolveProfiles(["antigravity"]).rootPointers, { "AGENTS.md": "" });
-  assert.deepEqual(resolveProfiles(["zcode"]).rootPointers, { "AGENTS.md": "" });
-  assert.equal(resolveProfiles(["cursor"]).skillWrappers, null);
+  assert.deepEqual(resolveProfiles(["codex"]).rootPointers, { "AGENTS.md": "" });
+  assert.equal(resolveProfiles(["agents"]).skillWrappers, null);
   assert.deepEqual(all.skillWrappers, {
     dir: ".claude/skills",
     template: "claude-wrapper",
   });
+});
+
+test("installer profile choices are alphabetical by their displayed names", () => {
+  assert.deepEqual(
+    profileChoices().map(({ label }) => label),
+    [
+      "AGENTS.md agents (Antigravity, Codex, Cursor)",
+      "Claude Code",
+      "GitHub Copilot (VS Code extension)",
+    ],
+  );
 });
 
 test("a malformed profile config fails with its filename and field", () => {
@@ -262,15 +272,12 @@ const PROFILE_ARTIFACTS = {
     "CLAUDE.md",
     ...CORE_CG_SKILLS.map((name) => `.claude/skills/${name}/SKILL.md`),
   ],
-  antigravity: ["AGENTS.md"],
+  agents: ["AGENTS.md"],
   claude: [
     "CLAUDE.md",
     ...CORE_CG_SKILLS.map((name) => `.claude/skills/${name}/SKILL.md`),
   ],
-  codex: ["AGENTS.md"],
   copilot: [".github/copilot-instructions.md"],
-  cursor: ["AGENTS.md"],
-  zcode: ["AGENTS.md"],
 };
 
 const isDiscoveryArtifact = (file) =>
@@ -333,7 +340,7 @@ test("a selected Claude profile fails when its wrappers are deleted", () => {
 
 test("a profile that never selected Claude is green without wrappers", () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-no-claude-wrapper-"));
-  init(dir, { profiles: ["codex"] });
+  init(dir, { profiles: ["agents"] });
   sync(dir);
   assert.ok(!fs.existsSync(path.join(dir, ".claude")));
   assert.deepEqual(verify(dir).failures, []);
@@ -343,19 +350,20 @@ test("an unknown profile fails by name and lists valid profiles", () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-unknown-profile-"));
   assert.throws(
     () => init(dir, { profiles: ["unknown-editor"] }),
-    /unknown profile\(s\): unknown-editor\. Available: all, antigravity, claude, codex, copilot, cursor, zcode/,
+    /unknown profile\(s\): unknown-editor\. Available: agents, all, claude, copilot/,
   );
   assert.deepEqual(filesUnder(dir), []);
 });
 
 /**
- * Cursor reads AGENTS.md and `.agents/skills/` natively. The profile is therefore a named
- * alias of Codex's pointer: it must not invent `.cursor/rules` or `.cursor/skills` copies.
+ * Legacy tool-specific names migrate to the shared AGENTS.md profile. They remain accepted so
+ * existing scripts and profile metadata do not break when upgrading.
  */
-test("a Cursor-only selection reuses AGENTS.md and does not create a .cursor/ surface", () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-cursor-only-"));
-  init(dir, { profiles: ["cursor"] });
+test("legacy Codex, Cursor, and Antigravity selections collapse to the shared agents profile", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-agents-aliases-"));
+  init(dir, { profiles: ["cursor", "codex", "antigravity"] });
   sync(dir);
+  assert.deepEqual(JSON.parse(read(dir, PROFILE)).profiles, ["agents"]);
   assert.ok(fs.existsSync(path.join(dir, "AGENTS.md")));
   assert.ok(!fs.existsSync(path.join(dir, "CLAUDE.md")));
   assert.ok(!fs.existsSync(path.join(dir, ".claude")));
@@ -364,6 +372,23 @@ test("a Cursor-only selection reuses AGENTS.md and does not create a .cursor/ su
   const result = verify(dir);
   assert.deepEqual(result.failures, []);
   assert.equal(result.counts.roots, 1);
+});
+
+test("legacy profile metadata migrates to agents on the next init", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-agents-metadata-migration-"));
+  fs.mkdirSync(path.join(dir, ".agents", "cg"), { recursive: true });
+  write(
+    dir,
+    PROFILE,
+    `${JSON.stringify({
+      cgVersion: PACKAGE_VERSION,
+      profiles: ["codex", "cursor", "antigravity"],
+      docs: "docs",
+    }, null, 2)}\n`,
+  );
+
+  init(dir, {});
+  assert.deepEqual(JSON.parse(read(dir, PROFILE)).profiles, ["agents"]);
 });
 
 test("the keyboard picker moves, toggles, and keeps installed profiles locked", () => {
@@ -396,7 +421,7 @@ test("the interactive picker accepts arrow, Space, and Enter key input", async (
 
   const selection = multiSelect(
     [
-      { value: "codex", label: "Codex" },
+      { value: "agents", label: "AGENTS.md agents" },
       { value: "claude", label: "Claude Code" },
     ],
     { input, output },
@@ -406,7 +431,7 @@ test("the interactive picker accepts arrow, Space, and Enter key input", async (
   input.write(" ");
   input.write("\r");
 
-  assert.deepEqual(await selection, ["codex", "claude"]);
+  assert.deepEqual(await selection, ["agents", "claude"]);
   assert.equal(input.isRaw, false, "the picker restores the terminal mode");
 });
 
@@ -1210,7 +1235,7 @@ test("re-running CLI init adds profiles and retains the recorded Contract Graph 
 
   assert.deepEqual(JSON.parse(read(dir, PROFILE)), {
     cgVersion: PACKAGE_VERSION,
-    profiles: ["codex", "claude"],
+    profiles: ["agents", "claude"],
     docs: "docs",
   });
   assert.match(output, new RegExp(`cg ${PACKAGE_VERSION.replaceAll(".", "\\.")}`));
@@ -1230,7 +1255,7 @@ test("CLI init highlights existing AGENTS.md and CLAUDE.md before preserving the
       "init",
       dir,
       "--profile",
-      "codex,claude",
+      "agents,claude",
     ],
     { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] },
   );
@@ -2717,8 +2742,7 @@ test("the published tarball ships consumer sources and no maintainer tooling", (
     "agent/cg/schema/engineering.schema.json",
     "agent/cg/schema/product.schema.json",
     "agent/profiles/all.scaffolding.conf.json",
-    "agent/profiles/cursor.scaffolding.conf.json",
-    "agent/profiles/zcode.scaffolding.conf.json",
+    "agent/profiles/agents.scaffolding.conf.json",
     "agent/templates/module/CLAUDE.md",
     "agent/skills/cg-plan/SKILL.md",
   ]) {

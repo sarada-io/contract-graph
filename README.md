@@ -177,7 +177,7 @@ binding to Contract Graph.
 | Human and machine views | The YAML file is canonical; the installed JavaScript library and CLI project Markdown, JSON, tree, and Mermaid views. |
 | Principle and guideline catalogs | Architecture principles, engineering guidelines, and product guidelines are authored YAML. Engineering and product live under `guidelines/`; leftover Markdown or compiled JSON for those catalogs fails verification. |
 | Honest enforcement | Every `A` rule names a registered detector and negative fixture; repository `P` rules owe enforcement-map rows. Contract structure, transient-plan references, rule IDs, and generated discovery artifacts are verified. |
-| Agent discovery | Selectable profiles generate entry points for Codex, Claude Code, Antigravity, GitHub Copilot + VS Code, Cursor, and ZCode. |
+| Agent discovery | Three selectable discovery profiles cover AGENTS.md-compatible agents (Antigravity, Codex, and Cursor), Claude Code, and the GitHub Copilot extension for VS Code. |
 | Delivery lifecycle | Seven skills cover planning, preparation, serial production, sign-off, unblocking, brownfield warmup, and opt-in unattended traversal. |
 | State-derived routing | `cg next` reads the Step queue from disk; `cg residue` finds planning artifacts no roadmap claims. |
 
@@ -227,8 +227,12 @@ cg init .
 
 In an interactive terminal, `init` opens a keyboard checklist: use Up/Down to move, Space to
 select, and Enter to continue. For automation or a non-interactive terminal, pass a comma-separated
-selection explicitly, for example `cg init . --profile codex,claude`. A non-interactive first run
+selection explicitly, for example `cg init . --profile agents,claude`. A non-interactive first run
 without `--profile` installs all supported profiles.
+
+Antigravity, Codex, and Cursor share the `agents` profile because all three use the same root
+`AGENTS.md` and `.agents/skills/` layout. The former `antigravity`, `codex`, and `cursor` profile
+names remain accepted as compatibility aliases and are recorded as `agents` on the next `init`.
 
 Restart the IDE, fill the root contract's purpose, boundaries, and routes, then run `/cg-plan`.
 Re-running `init` updates framework-owned assets while preserving repository-owned context. The
@@ -276,19 +280,16 @@ layout differs by agent host:
 |---|---|---|---|
 | [Codex](https://learn.chatgpt.com/docs/agent-configuration/agents-md) | Native | [Native](https://learn.chatgpt.com/docs/build-skills) | None |
 | [Cursor](https://cursor.com/docs/rules) | Native | [Native](https://cursor.com/docs/skills) | None |
-| [GitHub Copilot](https://docs.github.com/en/copilot/reference/custom-instructions-support) | Native in supported agent surfaces | [Native](https://docs.github.com/en/copilot/concepts/agents/about-agent-skills) | The Copilot profile also points its repository instructions at the canonical entry |
+| [GitHub Copilot for VS Code](https://docs.github.com/en/copilot/reference/custom-instructions-support) | Support varies by Copilot surface | [Native in agent mode](https://docs.github.com/en/copilot/concepts/agents/about-agent-skills) | The tested VS Code-extension profile points its repository instructions at the canonical entry |
 | [Claude Code](https://code.claude.com/docs/en/memory#agents-md) | Not read directly | Project skills use [`.claude/skills/`](https://code.claude.com/docs/en/skills#where-skills-live) | `CLAUDE.md` import plus generated `.claude/skills/` wrappers |
 | [Google Antigravity](https://antigravity.google/docs/cli/gcli-migration/) | Native at the workspace root (alongside legacy `GEMINI.md`) | Native at `.agents/skills/` | The profile uses the root entry; the older shared `.agents/rules/cg.md` pointer remains bundled for compatibility |
-| [ZCode](https://zcode.z.ai/en/docs/agents) | Native at the workspace root; nested files are not read | [Imported from Codex skills](https://zcode.z.ai/en/docs/skill) rather than discovered directly at `.agents/skills/` | The ZCode profile creates the root entry; import project skills in Settings → Skills |
 
 For GitHub Copilot, agent skills are documented for the cloud agent, code review, CLI, GitHub app,
 and agent mode in Visual Studio Code and JetBrains IDEs. Support varies for other Copilot surfaces,
 so the dedicated `.github/copilot-instructions.md` pointer remains part of that profile.
 
 Antigravity therefore uses the canonical root `AGENTS.md` and `.agents/skills/`; it no longer
-depends on the legacy rules pointer. ZCode shares the root `AGENTS.md`, but its official
-project-skill workflow is an import into ZCode's project store; after `init`, use
-Settings → Skills → Import → Codex CLI.
+depends on the legacy rules pointer.
 
 ## Bundled skills
 

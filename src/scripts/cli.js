@@ -611,12 +611,6 @@ async function main(argv) {
         `\n  profiles: ${result.profiles.join(", ")} · cg ${result.cgVersion} · docs: ${result.docs}/\n`,
     );
 
-    if (result.profiles.includes("zcode")) {
-      process.stdout.write(
-        "  ZCode: import the project skills in Settings → Skills → Import → Codex CLI.\n",
-      );
-    }
-
     for (const message of advisories) process.stdout.write(`  ${message}\n`);
 
     const rivals = detectRivalDocTrees(repoRoot, result.docs);

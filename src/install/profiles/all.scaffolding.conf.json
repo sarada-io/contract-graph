@@ -3,11 +3,8 @@
   "displayName": "All supported editors",
   "rootPointers": {},
   "extends": [
+    "agents",
     "claude",
-    "codex",
-    "cursor",
-    "copilot",
-    "antigravity",
-    "zcode"
+    "copilot"
   ]
 }
