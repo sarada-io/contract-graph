@@ -1,6 +1,6 @@
 {
   "name": "copilot",
-  "displayName": "GitHub Copilot",
+  "displayName": "GitHub Copilot + VS Code",
   "rootPointers": {
     ".github/copilot-instructions.md": "../"
   },

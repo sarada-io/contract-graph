@@ -13,9 +13,10 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { PassThrough } from "node:stream";
 import test from "node:test";
 
-import { init, SCAFFOLD_MAPPING, SOURCE_ROOT } from "../src/scripts/init.js";
+import { init, PACKAGE_VERSION, SCAFFOLD_MAPPING, SOURCE_ROOT } from "../src/scripts/init.js";
 import {
   BINDING_FILENAME,
   BUILT_IN_DETECTORS,
@@ -25,6 +26,7 @@ import { checkHarvest } from "../src/scripts/harvest.js";
 import { detectModuleRoots, moduleCoverage, subBoundaryCount } from "../src/scripts/modules.js";
 import { renderAgentRule, renderModulePointer } from "../src/scripts/model.js";
 import { next, permits } from "../src/scripts/next.js";
+import { multiSelect, updatePickerState } from "../src/scripts/picker.js";
 import { residue } from "../src/scripts/residue.js";
 import { sync } from "../src/scripts/sync.js";
 import { CORE_CG_SKILLS, verify } from "../src/scripts/verify.js";
@@ -169,10 +171,14 @@ test("init never overwrites an existing file", () => {
   assert.equal(read(dir, CONTRACT), sentinel);
 });
 
-test("init persists the selected profiles and domain packs", () => {
+test("init persists its version and the selected profiles", () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-profile-record-"));
   init(dir, { profiles: ["claude"] });
-  assert.deepEqual(JSON.parse(read(dir, PROFILE)), { profiles: ["claude"], docs: "docs" });
+  assert.deepEqual(JSON.parse(read(dir, PROFILE)), {
+    cgVersion: PACKAGE_VERSION,
+    profiles: ["claude"],
+    docs: "docs",
+  });
 });
 
 test("a Claude-only selection syncs and verifies without other root pointers", () => {
@@ -194,7 +200,15 @@ test("a missing scaffold profile record fails verification", () => {
 });
 
 test("shipped profile configs validate and all resolves to their union", () => {
-  assert.deepEqual(availableProfiles(), ["all", "antigravity", "claude", "codex", "copilot", "cursor"]);
+  assert.deepEqual(availableProfiles(), [
+    "all",
+    "antigravity",
+    "claude",
+    "codex",
+    "copilot",
+    "cursor",
+    "zcode",
+  ]);
   const all = resolveProfiles(["all"]);
   assert.deepEqual(all.rootPointers, {
     "CLAUDE.md": "",
@@ -202,6 +216,8 @@ test("shipped profile configs validate and all resolves to their union", () => {
     ".github/copilot-instructions.md": "../",
   });
   assert.deepEqual(resolveProfiles(["cursor"]).rootPointers, { "AGENTS.md": "" });
+  assert.deepEqual(resolveProfiles(["antigravity"]).rootPointers, { "AGENTS.md": "" });
+  assert.deepEqual(resolveProfiles(["zcode"]).rootPointers, { "AGENTS.md": "" });
   assert.equal(resolveProfiles(["cursor"]).skillWrappers, null);
   assert.deepEqual(all.skillWrappers, {
     dir: ".claude/skills",
@@ -246,7 +262,7 @@ const PROFILE_ARTIFACTS = {
     "CLAUDE.md",
     ...CORE_CG_SKILLS.map((name) => `.claude/skills/${name}/SKILL.md`),
   ],
-  antigravity: [],
+  antigravity: ["AGENTS.md"],
   claude: [
     "CLAUDE.md",
     ...CORE_CG_SKILLS.map((name) => `.claude/skills/${name}/SKILL.md`),
@@ -254,6 +270,7 @@ const PROFILE_ARTIFACTS = {
   codex: ["AGENTS.md"],
   copilot: [".github/copilot-instructions.md"],
   cursor: ["AGENTS.md"],
+  zcode: ["AGENTS.md"],
 };
 
 const isDiscoveryArtifact = (file) =>
@@ -326,7 +343,7 @@ test("an unknown profile fails by name and lists valid profiles", () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-unknown-profile-"));
   assert.throws(
     () => init(dir, { profiles: ["unknown-editor"] }),
-    /unknown profile\(s\): unknown-editor\. Available: all, antigravity, claude, codex, copilot, cursor/,
+    /unknown profile\(s\): unknown-editor\. Available: all, antigravity, claude, codex, copilot, cursor, zcode/,
   );
   assert.deepEqual(filesUnder(dir), []);
 });
@@ -347,6 +364,50 @@ test("a Cursor-only selection reuses AGENTS.md and does not create a .cursor/ su
   const result = verify(dir);
   assert.deepEqual(result.failures, []);
   assert.equal(result.counts.roots, 1);
+});
+
+test("the keyboard picker moves, toggles, and keeps installed profiles locked", () => {
+  const original = {
+    cursor: 0,
+    selected: new Set([0]),
+    locked: new Set([0]),
+  };
+  const locked = updatePickerState(original, "space", 3);
+  assert.equal(locked, original, "Space cannot remove an already-installed profile");
+
+  const moved = updatePickerState(original, "down", 3);
+  assert.equal(moved.cursor, 1);
+  const selected = updatePickerState(moved, "space", 3);
+  assert.deepEqual([...selected.selected], [0, 1]);
+  assert.equal(updatePickerState(selected, "up", 3).cursor, 0);
+  assert.equal(updatePickerState(original, "up", 3).cursor, 2, "navigation wraps");
+});
+
+test("the interactive picker accepts arrow, Space, and Enter key input", async () => {
+  const input = new PassThrough();
+  input.isTTY = true;
+  input.isRaw = false;
+  input.setRawMode = (value) => {
+    input.isRaw = value;
+    return input;
+  };
+  const output = new PassThrough();
+  output.isTTY = true;
+
+  const selection = multiSelect(
+    [
+      { value: "codex", label: "Codex" },
+      { value: "claude", label: "Claude Code" },
+    ],
+    { input, output },
+  );
+  input.write(" ");
+  input.write("\x1b[B");
+  input.write(" ");
+  input.write("\r");
+
+  assert.deepEqual(await selection, ["codex", "claude"]);
+  assert.equal(input.isRaw, false, "the picker restores the terminal mode");
 });
 
 // ---------------------------------------------------------- structured contracts
@@ -1133,6 +1194,54 @@ test("the CLI refuses an unknown option instead of ignoring it", () => {
   assert.ok(!fs.existsSync(target), "a refused invocation must scaffold nothing");
 
   assert.equal(run(["init", target]).code, 0);
+});
+
+test("re-running CLI init adds profiles and retains the recorded Contract Graph version", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-cli-additive-profiles-"));
+  const cli = path.join(SOURCE_ROOT, "..", "bin", "cg.js");
+  const options = { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] };
+
+  execFileSync(process.execPath, [cli, "init", dir, "--profile", "codex"], options);
+  const output = execFileSync(
+    process.execPath,
+    [cli, "init", dir, "--profile", "claude"],
+    options,
+  );
+
+  assert.deepEqual(JSON.parse(read(dir, PROFILE)), {
+    cgVersion: PACKAGE_VERSION,
+    profiles: ["codex", "claude"],
+    docs: "docs",
+  });
+  assert.match(output, new RegExp(`cg ${PACKAGE_VERSION.replaceAll(".", "\\.")}`));
+  assert.ok(fs.existsSync(path.join(dir, "AGENTS.md")));
+  assert.ok(fs.existsSync(path.join(dir, "CLAUDE.md")));
+});
+
+test("CLI init highlights existing AGENTS.md and CLAUDE.md before preserving their content", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-cli-existing-instructions-"));
+  fs.writeFileSync(path.join(dir, "AGENTS.md"), "# Existing agent guidance\n\nKeep this.\n");
+  fs.writeFileSync(path.join(dir, "CLAUDE.md"), "# Existing Claude guidance\n\nKeep this too.\n");
+
+  const output = execFileSync(
+    process.execPath,
+    [
+      path.join(SOURCE_ROOT, "..", "bin", "cg.js"),
+      "init",
+      dir,
+      "--profile",
+      "codex,claude",
+    ],
+    { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] },
+  );
+
+  assert.match(output, /existing agent instruction file\(s\)/);
+  assert.match(output, /AGENTS\.md — existing content will be preserved/);
+  assert.match(output, /CLAUDE\.md — existing content will be preserved/);
+  assert.match(read(dir, "AGENTS.md"), /^Read .*\.agents\/cg\/AGENTS\.md.*\n\n# Existing agent guidance/m);
+  assert.match(read(dir, "AGENTS.md"), /Keep this\./);
+  assert.match(read(dir, "CLAUDE.md"), /^@\.agents\/cg\/AGENTS\.md\n\n# Existing Claude guidance/m);
+  assert.match(read(dir, "CLAUDE.md"), /Keep this too\./);
 });
 
 /**
@@ -2595,6 +2704,7 @@ test("the published tarball ships consumer sources and no maintainer tooling", (
   for (const required of [
     "script/cli.js",
     "script/contracts.js",
+    "script/picker.js",
     "agent/cg/contract.yaml",
     "agent/cg/principles/architecture.yaml",
     "agent/cg/workflow.md",
@@ -2608,6 +2718,7 @@ test("the published tarball ships consumer sources and no maintainer tooling", (
     "agent/cg/schema/product.schema.json",
     "agent/profiles/all.scaffolding.conf.json",
     "agent/profiles/cursor.scaffolding.conf.json",
+    "agent/profiles/zcode.scaffolding.conf.json",
     "agent/templates/module/CLAUDE.md",
     "agent/skills/cg-plan/SKILL.md",
   ]) {

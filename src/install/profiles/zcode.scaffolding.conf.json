@@ -1,0 +1,6 @@
+{
+  "name": "zcode",
+  "displayName": "ZCode",
+  "rootPointers": {},
+  "extends": ["codex"]
+}

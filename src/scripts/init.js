@@ -21,10 +21,11 @@ import {
 } from "./model.js";
 import { loadContract, stringifyContractYaml } from "./contracts.js";
 import {
+  expandProfileAliases,
   loadProfileSelection,
-  normalizeProfiles,
   profilePath,
   resolveProfiles,
+  selectableProfiles,
 } from "./profiles.js";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -311,7 +312,9 @@ export function init(repoRoot, { profiles, docs, dryRun = false } = {}) {
   const { written, skipped } = out;
 
   const previous = loadProfileSelection(repoRoot, { allowMissing: true });
-  const selectedProfiles = normalizeProfiles(profiles ?? previous?.profiles ?? ["all"]);
+  const selectedProfiles = expandProfileAliases(
+    profiles ?? previous?.profiles ?? selectableProfiles(),
+  );
   resolveProfiles(selectedProfiles);
   // A repository never silently changes its docs root: once recorded, the record wins
   // unless this run passes an explicit one.
@@ -340,7 +343,13 @@ export function init(repoRoot, { profiles, docs, dryRun = false } = {}) {
   ensureLedgerIgnored(repoRoot, out, dryRun);
 
   if (dryRun) {
-    return { ...out, profiles: selectedProfiles, docs: docsRoot, brownfield };
+    return {
+      ...out,
+      profiles: selectedProfiles,
+      docs: docsRoot,
+      cgVersion: PACKAGE_VERSION,
+      brownfield,
+    };
   }
 
   clearStarterComposition(repoRoot, brownfield, written);
@@ -348,7 +357,11 @@ export function init(repoRoot, { profiles, docs, dryRun = false } = {}) {
   writeManifest(repoRoot, PACKAGE_VERSION, out, docsRoot);
 
   const record = profilePath(repoRoot);
-  const desired = `${JSON.stringify({ profiles: selectedProfiles, docs: docsRoot }, null, 2)}\n`;
+  const desired = `${JSON.stringify(
+    { cgVersion: PACKAGE_VERSION, profiles: selectedProfiles, docs: docsRoot },
+    null,
+    2,
+  )}\n`;
   const current = fs.existsSync(record) ? fs.readFileSync(record, "utf8") : null;
   if (current === desired) {
     skipped.push(record);
@@ -358,5 +371,11 @@ export function init(repoRoot, { profiles, docs, dryRun = false } = {}) {
     written.push(record);
   }
 
-  return { ...out, profiles: selectedProfiles, docs: docsRoot, brownfield };
+  return {
+    ...out,
+    profiles: selectedProfiles,
+    docs: docsRoot,
+    cgVersion: PACKAGE_VERSION,
+    brownfield,
+  };
 }

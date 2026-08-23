@@ -177,7 +177,7 @@ binding to Contract Graph.
 | Human and machine views | The YAML file is canonical; the installed JavaScript library and CLI project Markdown, JSON, tree, and Mermaid views. |
 | Principle and guideline catalogs | Architecture principles, engineering guidelines, and product guidelines are authored YAML. Engineering and product live under `guidelines/`; leftover Markdown or compiled JSON for those catalogs fails verification. |
 | Honest enforcement | Every `A` rule names a registered detector and negative fixture; repository `P` rules owe enforcement-map rows. Contract structure, transient-plan references, rule IDs, and generated discovery artifacts are verified. |
-| Agent discovery | Selectable profiles generate entry points for Claude Code, Codex, Cursor, GitHub Copilot, and Antigravity. |
+| Agent discovery | Selectable profiles generate entry points for Codex, Claude Code, Antigravity, GitHub Copilot + VS Code, Cursor, and ZCode. |
 | Delivery lifecycle | Seven skills cover planning, preparation, serial production, sign-off, unblocking, brownfield warmup, and opt-in unattended traversal. |
 | State-derived routing | `cg next` reads the Step queue from disk; `cg residue` finds planning artifacts no roadmap claims. |
 
@@ -225,9 +225,16 @@ or `/cg-plan`. Until then those commands will not be offered.
 cg init .
 ```
 
+In an interactive terminal, `init` opens a keyboard checklist: use Up/Down to move, Space to
+select, and Enter to continue. For automation or a non-interactive terminal, pass a comma-separated
+selection explicitly, for example `cg init . --profile codex,claude`. A non-interactive first run
+without `--profile` installs all supported profiles.
+
 Restart the IDE, fill the root contract's purpose, boundaries, and routes, then run `/cg-plan`.
 Re-running `init` updates framework-owned assets while preserving repository-owned context. The
-starter module shows the contract shape. Update the global package with
+profile checklist keeps installed choices selected and lets you add more; `--profile` is additive
+on a re-run as well. The concrete selection and installed Contract Graph version are recorded in
+`.agents/cg/profile.json`. The starter module shows the contract shape. Update the global package with
 `npm i -g contract-graph@latest` before re-running `init` when upgrading Contract Graph.
 
 ### Existing repository
@@ -254,7 +261,8 @@ Brownfield initialization deliberately does not invent a `src/` module. Until wa
 
 `cg init` keeps repository-authored root instructions. Contract Graph stores its full shared entry
 point in `.agents/cg/AGENTS.md`; `cg sync` prepends one discovery line to each root file selected by
-the editor profiles and leaves the existing body intact. In particular:
+the editor profiles and leaves the existing body intact. Before doing so, `init` highlights any
+existing instruction file that will receive the entry. In particular:
 
 - root `AGENTS.md` points to `.agents/cg/AGENTS.md` on its first line;
 - root `CLAUDE.md` imports that canonical file with Claude Code's `@` syntax; and
@@ -270,11 +278,17 @@ layout differs by agent host:
 | [Cursor](https://cursor.com/docs/rules) | Native | [Native](https://cursor.com/docs/skills) | None |
 | [GitHub Copilot](https://docs.github.com/en/copilot/reference/custom-instructions-support) | Native in supported agent surfaces | [Native](https://docs.github.com/en/copilot/concepts/agents/about-agent-skills) | The Copilot profile also points its repository instructions at the canonical entry |
 | [Claude Code](https://code.claude.com/docs/en/memory#agents-md) | Not read directly | Project skills use [`.claude/skills/`](https://code.claude.com/docs/en/skills#where-skills-live) | `CLAUDE.md` import plus generated `.claude/skills/` wrappers |
-| [Google Antigravity](https://antigravity.google/docs/skills) | Uses its own workspace rules | Native | `.agents/rules/cg.md` |
+| [Google Antigravity](https://antigravity.google/docs/cli/gcli-migration/) | Native at the workspace root (alongside legacy `GEMINI.md`) | Native at `.agents/skills/` | The profile uses the root entry; the older shared `.agents/rules/cg.md` pointer remains bundled for compatibility |
+| [ZCode](https://zcode.z.ai/en/docs/agents) | Native at the workspace root; nested files are not read | [Imported from Codex skills](https://zcode.z.ai/en/docs/skill) rather than discovered directly at `.agents/skills/` | The ZCode profile creates the root entry; import project skills in Settings → Skills |
 
 For GitHub Copilot, agent skills are documented for the cloud agent, code review, CLI, GitHub app,
 and agent mode in Visual Studio Code and JetBrains IDEs. Support varies for other Copilot surfaces,
 so the dedicated `.github/copilot-instructions.md` pointer remains part of that profile.
+
+Antigravity therefore uses the canonical root `AGENTS.md` and `.agents/skills/`; it no longer
+depends on the legacy rules pointer. ZCode shares the root `AGENTS.md`, but its official
+project-skill workflow is an import into ZCode's project store; after `init`, use
+Settings → Skills → Import → Codex CLI.
 
 ## Bundled skills
 
@@ -298,7 +312,7 @@ The [lifecycle](docs/lifecycle.md) is the full walk and the order those skills h
 
 | Command | Purpose |
 |---|---|
-| `cg init [dir]` | Install or upgrade the scaffold, generate derived artifacts, verify, and print the next action. |
+| `cg init [dir]` | Select and add IDE/harness support, install or upgrade the scaffold, generate derived artifacts, verify, and print the next action. |
 | `cg build [dir] [--check]` | Assemble or verify the complete package target under `build/`. |
 | `cg verify [dir]` | Verify architecture principles, contracts, graph closure, product-rule enforcement, guideline grammar, skills, and generated state. |
 | `cg contract show/context/children/parents/surface` | Query one contract and its resolved context. |
