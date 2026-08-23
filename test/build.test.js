@@ -136,7 +136,7 @@ test("cg build --check detects drift without rewriting compiled output", () => {
   assert.equal(fs.readFileSync(output, "utf8"), before, "check mode must not rewrite output");
 });
 
-test("the product catalog rejects a non-PP rule", () => {
+test("the product catalog rejects a non-P rule", () => {
   const dir = fixture();
   fs.writeFileSync(
     path.join(dir, "src", "cg", "guidelines", "product.yaml"),

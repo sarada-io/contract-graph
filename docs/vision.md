@@ -213,7 +213,7 @@ The foundational enforcement rule is:
 
 Guidance that cannot be mechanically rejected remains explicitly non-binding instead of pretending
 to be an invariant. A practice may be promoted only when it has structural impact, a deterministic
-measure, a blocking detector, and a negative fixture; promotion removes the D copy as it assigns
+measure, a blocking detector, and a negative fixture; promotion removes the `E` copy as it assigns
 the permanent A identity. Because `A` is enforced by installed verifier code, that promotion is
 implemented by the verifier owner rather than asserted by an adopting repository's YAML alone. An
 adopter may retain the practice, adopt a product-scoped `P` rule, or propose a generic A change

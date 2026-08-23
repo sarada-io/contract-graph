@@ -159,7 +159,7 @@ advice into implicit authority.
 
 A non-binding practice moves to `A` only when it has structural impact, a deterministic measure,
 a blocking detector implemented by the installed verifier, and a negative fixture. Promotion in
-the verifier-owning codebase assigns the next permanent `A` ID and removes the D copy in the
+the verifier-owning codebase assigns the next permanent `A` ID and removes the `E` copy in the
 same change, so one obligation never has two authorities. An adopting repository cannot register a
 new built-in detector by editing the catalog alone; it keeps the practice advisory, adopts a scoped
 `P` rule, or proposes the generic detector upstream until verifier support exists.
@@ -214,9 +214,8 @@ There are three authored policy surfaces:
 
 The engineering catalog uses two categories: **Structural Best Practices** and **Broader Engineering
 Considerations**. Each entry is `id`, `rule`, and `reason`: the practice, and why it exists.
-Family determines authority.
-`A` is globally binding, `P` is boundary-scoped binding, and `E` is the non-binding engineering catalog.
-A preference in that catalog may carry an explicit cost.
+Family determines authority. `A` is globally binding, `P` is boundary-scoped binding, and `E` is
+the non-binding engineering catalog. A preference in that catalog may carry an explicit cost.
 
 The build manifest records the SHA-256 of every package file. Authored YAML catalogs are copied,
 not compiled to JSON. `cg build --check` verifies the complete target without changing it.

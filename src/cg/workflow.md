@@ -36,8 +36,8 @@ decision inputs, never inherited ambient rules and never compliance findings. Th
 mapping and node decision — kinds, self-sufficiency, stay, add a child, or route elsewhere —
 live in `.agents/cg/principles/architecture.yaml` `hierarchy` and `graph`, not in
 this workflow, so a SpecKit (or other) delivery workflow cannot drop them by replacing this file.
-During harvest, use `cg-unblock` D-5a: route a recurring decision once to a contract invariant, a
-D guideline, an A promotion candidate, a scoped P binding, or drop.
+During harvest, use `cg-unblock` D-5a: route a recurring decision once to a contract invariant, an
+`E` guideline, an A promotion candidate, a scoped P binding, or drop.
 
 ## Required Sequence
 
@@ -45,7 +45,7 @@ D guideline, an A promotion candidate, a scoped P binding, or drop.
 2. Read `.agents/cg/principles/architecture.yaml`; its `hierarchy.kinds` and `graph` sections are the
    recursive mapping and node decision, and its A rules bind every governed boundary.
 3. Read the repository's specification or constitution and resolve applicable P IDs from the
-   selected contracts. Consult D only when it is relevant to a decision.
+   selected contracts. Consult `E` only when it is relevant to a decision.
 4. Identify impacted boundaries with `cg contract route --task "<request>"` and contract-owned routes.
 5. Load those module contracts, then traverse their child-contract links until the smallest
    responsible boundary is clear. Before reading or editing implementation, apply

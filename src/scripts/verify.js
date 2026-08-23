@@ -6,12 +6,13 @@
  *   2. Contract YAML shape, references, reciprocity, cycles, and root reachability are valid.
  *   5. No permanent contract cites a transient plan path or ticket ID.
  *   6. Every contract rule ID exists under the product bindings.
- *   8. Every root entry file carries a current principle index.
+ *   8. The canonical agent entry carries a current principle index and every selected root
+ *      discovery file points to it on the first line.
  *   9. Every canonical skill uses the cg- namespace, valid frontmatter, UI metadata,
  *      a catalog entry, and an exact generated Claude discovery wrapper.
  *  11. The phase map names only real rule families, and every family that ships is
  *      reachable from at least one phase.
- *  10. Structural bindings name registered enforcement; non-binding architecture practices
+ *  10. Structural bindings name registered enforcement; non-binding engineering guidelines
  *      have valid grammar; and every product binding carries exactly one enforcement-map row.
  */
 
@@ -32,8 +33,10 @@ import {
   planPathPattern,
   PLAN_TICKET,
   generateAgentRule,
+  generateCgAgent,
   generateClaudeSkillWrapper,
   generateRoot,
+  renderRootReference,
   loadBindingPrinciples,
   loadPhases,
   ROOT_POINTERS,
@@ -698,21 +701,33 @@ export function verify(repoRoot) {
   checkPrincipleEnforcement(fail, repoRoot, bindingRules, enforcementIds);
   adviseUnarchivedClosures((message) => advisories.push(message), repoRoot, profile.docs);
 
-  // Same shape as the orphan wrapper check: narrowing the profile selection used to leave a
-  // fully generated entry point behind, silently. A file carrying the generated index whose
-  // profile is no longer selected is stale; one without it is the repository's own file and
-  // is none of our business.
-  for (const relPath of Object.keys(ROOT_POINTERS)) {
+  // Same shape as the orphan wrapper check: narrowing the profile selection must not leave a
+  // generated discovery pointer behind. Files without Contract Graph's marker or exact pointer
+  // remain the repository's own concern.
+  for (const [relPath, prefix] of Object.entries(ROOT_POINTERS)) {
     if (relPath in profile.rootPointers) continue;
     const file = path.join(repoRoot, relPath);
-    if (!exists(file) || !read(file).includes(ROOT_BEGIN_MARKER)) continue;
+    if (!exists(file)) continue;
+    const contents = read(file);
+    const firstLine = splitLines(contents)[0]?.trim();
+    if (!contents.includes(ROOT_BEGIN_MARKER) && firstLine !== renderRootReference(relPath, prefix)) {
+      continue;
+    }
     fail(
-      `[8] ${relPath}: carries a generated principle index but no selected profile writes it — ` +
+      `[8] ${relPath}: carries a Contract Graph pointer but no selected profile writes it — ` +
         "delete it, or re-select the profile that owns it",
     );
   }
 
   const projectName = path.basename(repoRoot);
+  try {
+    const generated = generateCgAgent(repoRoot);
+    if (generated.current !== generated.desired) {
+      fail(`[8] .agents/cg/AGENTS.md: principle index is missing, stale, or hand-edited. Run \`cg sync\`.`);
+    }
+  } catch (error) {
+    fail(`[8] .agents/cg/AGENTS.md: ${error.message}`);
+  }
   for (const [relPath, prefix] of Object.entries(profile.rootPointers)) {
     let generated;
     try {
@@ -722,7 +737,7 @@ export function verify(repoRoot) {
       continue;
     }
     if (generated.current !== generated.desired) {
-      fail(`[8] ${relPath}: principle index is missing, stale, or hand-edited. Run \`cg sync\`.`);
+      fail(`[8] ${relPath}: Contract Graph pointer is missing, stale, or not the first line. Run \`cg sync\`.`);
     }
   }
 

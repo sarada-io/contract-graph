@@ -1,6 +1,6 @@
 ---
 name: cg-warmup
-description: Adopt Contract Graph into a repository that already has code. Run once, after cg init, before the lifecycle skills are useful. Runs as three phases — a whole-repository survey, then a resumable per-module loop that writes and connects each unit's contract.yaml before moving on, then one consolidation. Finds any predecessor governance framework and carries its rules forward rather than writing over them, discovers real module roots and self-sufficient components, builds the contract graph, verifies the structural binding, and harvests durable product rules or non-binding architecture practices so later sessions do not re-read the code to learn them. Resumes from cg modules after a context break rather than restarting. Never reports a compliance score, edits behaviour, deletes or runs the predecessor, or marks a rule enforced that no detector proves.
+description: Adopt Contract Graph into a repository that already has code. Run once, after cg init, before the lifecycle skills are useful. Runs as three phases — a whole-repository survey, then a resumable per-module loop that writes and connects each unit's contract.yaml before moving on, then one consolidation. Finds any predecessor governance framework and carries its rules forward rather than writing over them, discovers real module roots and self-sufficient components, builds the contract graph, verifies the structural binding, and harvests durable product rules or non-binding engineering guidelines so later sessions do not re-read the code to learn them. Resumes from cg modules after a context break rather than restarting. Never reports a compliance score, edits behaviour, deletes or runs the predecessor, or marks a rule enforced that no detector proves.
 ---
 
 # CG Warmup
@@ -105,7 +105,7 @@ Finish with all twelve true:
    no placeholder.
 8. Every binding failure lands as a detector repair, a proposed exception, or a corrective Step.
 9. The rules the code already enforces are consolidated across units, classified as P bindings,
-   D practices, A promotion candidates, or fork guidance, and listed for the owner to confirm —
+   `E` practices, A promotion candidates, or fork guidance, and listed for the owner to confirm —
    so no later session has to re-read the code to learn them.
 10. Every open question is a decision-log entry or a recorded assumption — none was asked in chat.
 11. The report states coverage and the limits of its own evidence.
@@ -292,7 +292,7 @@ in the loop". When `cg modules` exits 0, go to Phase C.
 is the recursive mapping (repository → module → submodule → component or library). `graph` is the
 node decision (recurse, selfSufficient, surface, stay, add-child, elsewhere, compose, stop, forbid, adapters). A
 self-sufficient unit earns a child node; `cg modules` listing a module is not a leaf. Do not
-consult `engineering.yaml` to decide whether a folder is a contract. D entries are advice after
+consult `engineering.yaml` to decide whether a folder is a contract. `E` entries are advice after
 the graph is placed.
 
 ## 4. Write this unit's contract
@@ -425,7 +425,7 @@ you must never pay for twice. Before selecting the next unit, append one block t
 ### <unit path>
 - **Rule candidates:** <constraints the code obeys that no principle states — §9 decides the
   family and whether they survive; here you only record what you saw and the files that show it>
-- **Rule observations:** <A failures, applicable P rules, or D practices this unit bears on;
+- **Rule observations:** <A failures, applicable P rules, or `E` practices this unit bears on;
   include what you read and any detector evidence — §8 consolidates these>
 - **Detectors found:** <tests in this unit that guard a boundary, and the rule ID they cite if any>
 - **Open questions:** <boundaries you could not settle — §10 turns these into `DU-NN` entries>
@@ -501,7 +501,7 @@ Every non-green finding must resolve to exactly one of these, and to nothing els
    cannot be created by editing installed YAML; record an upgrade or verifier-owner delivery Step.
 2. **A proposed exception** — a `DU-NN` entry in `docs/plans/decision-log.md` stating what the
    repository does instead, what that costs, and the one bounded edit that reverses it. Warmup
-   proposes; it never accepts. A `A` or `P` binding is protected under `cg-unblock` D-3, so waiving
+   proposes; it never accepts. An `A` or `P` binding is protected under `cg-unblock` D-3, so waiving
    one is the owner's call even when the answer looks obvious. An exception nobody wrote down is a
    violation nobody remembers.
 3. **A corrective Step** — handed to `cg-plan` or `cg-prepare`, because a fix that changes
@@ -515,7 +515,7 @@ Every non-green finding must resolve to exactly one of these, and to nothing els
 implies a measurement that was not taken. State counts instead — how many bindings are enforced,
 violated, or unproven — because a count carries its own denominator and a score hides it.
 
-**Do not run this table over `engineering.yaml`.** Its D entries are
+**Do not run this table over `engineering.yaml`.** Its `E` entries are
 non-binding practices. They may inform a finding but make no compliance claim.
 
 **Warmup never edits behaviour.** It writes governance, detectors, and findings. The moment a
@@ -572,7 +572,7 @@ Two errors to avoid, in the order they are tempting:
   document lives under a tenant path prefix" is a real, testable, load-bearing rule — and it is a
   `P` rule, because a single-tenant repository inheriting it could never satisfy it. The test is
   whether a repository building something else would be *wrong* to adopt it.
-- **Do not promote a D practice to A on wording alone.** Promotion requires structural impact,
+- **Do not promote an `E` practice to A on wording alone.** Promotion requires structural impact,
   a deterministic measure, a blocking detector, and a fail-on-demand fixture.
 
 ### What each harvested rule owes
@@ -580,7 +580,7 @@ Two errors to avoid, in the order they are tempting:
 Every `A` candidate records the proposed invariant, deterministic measure, blocking detector,
 and negative fixture, then becomes delivery work in the repository that owns the verifier. Only
 that verifier-owning change assigns the next permanent ID in `principles/architecture.yaml` and removes an
-equivalent D practice. Every `P` rule needs exactly one repository `.agents/cg/enforcement.yaml`
+equivalent `E` practice. Every `P` rule needs exactly one repository `.agents/cg/enforcement.yaml`
 row and is listed in the affected contracts' `rules` arrays. A detector recipe without working enforcement is
 not a binding.
 
@@ -589,7 +589,7 @@ not a binding.
 Common, and it is *information*. The code was built to a rule an existing A or P binding
 contradicts, and one of the two is wrong. Never resolve it yourself and never quietly drop the harvested
 rule — raise a `DU-NN` naming both rules, the code that follows the harvested one, and the cost of
-moving either way. Same `D-3` floor as §10: a `A` or `P` binding is not yours to waive, and neither
+moving either way. Same `D-3` floor as §10: an `A` or `P` binding is not yours to waive, and neither
 is a rule the whole codebase already follows.
 
 ### Keep it proportionate
@@ -613,7 +613,7 @@ Route every open question by what it would cost to be wrong:
 | a module root a build manifest identified | proceed; record an assumption | reversible by removing its contract edge and file |
 | a boundary with no manifest behind it — a package tree, a shared directory | **`DU-NN`** | wrong here makes several contracts wrong, and no default is safe |
 | which rules bind a module | proceed, including the rule when unsure | §5 — the broad scope is the visible error |
-| an exception to a `A` or `P` binding | **`DU-NN`, always** | a binding is protected; it is never yours to waive quietly |
+| an exception to an `A` or `P` binding | **`DU-NN`, always** | a binding is protected; it is never yours to waive quietly |
 | a contract section you could not determine | marker, plus **`DU-NN`** when the boundary is material | otherwise the marker is the record |
 
 Reversible choices go in the plan's assumption ledger, one line each:
@@ -781,7 +781,7 @@ End the user-facing response with:
 - [ ] Every finding is a detector, a recorded exception, or a corrective Step.
 - [ ] The rules the code already enforces are recorded in the correct binding, practice, or
       candidate destination rather than left implicit in the code.
-- [ ] Every harvested item is in the right destination: D practice, A candidate, or
+- [ ] Every harvested item is in the right destination: `E` practice, A candidate, or
       repository-specific P rule.
 - [ ] Every harvested A candidate has a proposed measure, detector, and negative fixture and is
       routed to verifier-owner delivery; every P rule has one enforcement row and is bound in each

@@ -363,7 +363,7 @@ test("a contract stored outside its declared unit fails", () => {
   assertFails(dir, 2, "unit and canonical file disagree");
 });
 
-test("[6] a contract PP rule id absent from product principles fails", () => {
+test("[6] a contract P rule id absent from product guidelines fails", () => {
   const dir = makeRepo();
   editObject(dir, CONTRACT, (contract) => { contract.rules.push("P99-99"); });
   assertFails(dir, 6, "dangling rule reference");
@@ -427,10 +427,16 @@ test("[1] a pointer without the principles reference fails", () => {
 
 // ---------------------------------------------------------- root indexes
 
-test("[8] a stale root principle index fails", () => {
+test("[8] a stale canonical principle index fails", () => {
   const dir = makeRepo();
-  edit(dir, "AGENTS.md", (t) => t.replace(/\(\d+ rules\)/, "(999 rules)"));
+  edit(dir, ".agents/cg/AGENTS.md", (t) => t.replace(/\(\d+ rules\)/, "(999 rules)"));
   assertFails(dir, 8, "stale generated principle index");
+});
+
+test("[8] a selected root file must point to the canonical instructions on its first line", () => {
+  const dir = makeRepo();
+  edit(dir, "AGENTS.md", (t) => `# moved the pointer\n\n${t}`);
+  assertFails(dir, 8, "root pointer moved below repository-authored content");
 });
 
 // --------------------------------------------------------------- skills
@@ -520,7 +526,7 @@ test("[10] an empty cost clause fails", () => {
   assertFails(dir, 10, "cost: expected a non-empty string");
 });
 
-test("[2] an architecture practice cannot become a binding contract rule", () => {
+test("[2] an engineering guideline cannot become a binding contract rule", () => {
   const dir = makeRepo();
   editObject(dir, CONTRACT, (contract) => { contract.rules[0] = "E12-01"; });
   assertFails(dir, 2, "invalid binding rule ID");
@@ -529,7 +535,7 @@ test("[2] an architecture practice cannot become a binding contract rule", () =>
 test("[2] a contract cannot repeat an ambient structural binding", () => {
   const dir = makeRepo();
   editObject(dir, CONTRACT, (contract) => { contract.rules[0] = "A01"; });
-  assertFails(dir, 2, "CB rules apply globally and never need copying into a contract");
+  assertFails(dir, 2, "A rules apply globally and never need copying into a contract");
 });
 
 test("[10] the structural binding catalog is required", () => {
@@ -616,13 +622,13 @@ test("[10] an enforcement row for an unknown product id fails", () => {
 
 // ------------------------------------------- architecture principle coverage
 
-test("[10] a non-binding architecture practice cannot carry an enforcement-map row", () => {
+test("[10] a non-binding engineering guideline cannot carry an enforcement-map row", () => {
   const dir = makeRepo();
   addEnforcement(dir, "E01-01", "a detector would imply binding authority");
-  assertFails(dir, 10, "AP remains advice until deliberately promoted to CB");
+  assertFails(dir, 10, "E remains advice until deliberately promoted to A");
 });
 
-test("a new architecture practice remains non-binding without a detector", () => {
+test("a new engineering guideline remains non-binding without a detector", () => {
   const dir = makeRepo();
   edit(dir, ENGINEERING, (t) =>
     t.replace(
@@ -633,13 +639,13 @@ test("a new architecture practice remains non-binding without a detector", () =>
   assert.deepEqual(verify(dir).failures, []);
 });
 
-test("loadBindingPrinciples includes ambient CB rules without copying them into contracts", () => {
+test("loadBindingPrinciples includes ambient A rules without copying them into contracts", () => {
   const dir = makeRepo();
   assert.ok(loadBindingPrinciples(dir).has("A01"));
   assert.ok(!loadPrinciples(dir).has("A01"));
   assert.ok(!readObject(dir, CONTRACT).rules.includes("A01"));
   assert.ok(!readObject(dir, ROOT_CONTRACT).rules.includes("A01"));
-  assert.match(read(dir, "AGENTS.md"), /\*\*A\*\* Structural integrity/);
+  assert.match(read(dir, ".agents/cg/AGENTS.md"), /\*\*A\*\* Structural integrity/);
 });
 
 test("deleting architecture.yaml cannot silently remove the non-binding decision catalog", () => {
@@ -782,7 +788,7 @@ test("a promotion owes what its destination owes", () => {
   );
   assert.match(
     harvestFailures((m) => {
-      m.classifications[0].destination = "DP";
+      m.classifications[0].destination = "Z";
     }),
     /expected one of/,
   );
@@ -1001,7 +1007,7 @@ test("a repository holding only README, LICENSE and git metadata still counts as
  * wholesale destroys hand-written instructions with no recovery but git — and `sync` is the
  * very next command `init` tells you to run.
  */
-test("sync preserves a hand-written root pointer and adds its block under the H1", () => {
+test("sync preserves a hand-written root file and prepends its canonical pointer", () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-brownfield-"));
   init(dir, {});
   const mine = "# Our house rules\n\nAlways run `make lint` before pushing.\n";
@@ -1009,19 +1015,43 @@ test("sync preserves a hand-written root pointer and adds its block under the H1
 
   sync(dir);
   const after = read(dir, "CLAUDE.md");
+  assert.equal(after.split("\n")[0], "@.agents/cg/AGENTS.md");
   assert.match(after, /# Our house rules/);
   assert.match(after, /make lint/, "hand-written guidance must survive");
-  assert.match(after, /BEGIN PRINCIPLES INDEX/);
+  assert.match(read(dir, ".agents/cg/AGENTS.md"), /BEGIN PRINCIPLES INDEX/);
   assert.deepEqual(verify(dir).failures, []);
   assert.deepEqual(sync(dir).changed, [], "a second sync must rewrite nothing");
 });
 
-test("sync refuses a root pointer with content but no H1 to anchor the block", () => {
+test("sync preserves existing AGENTS, CLAUDE, and Copilot instructions", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-existing-agent-files-"));
+  fs.mkdirSync(path.join(dir, ".github"));
+  write(dir, "AGENTS.md", "# Existing AGENTS\n\nKeep agent guidance.\n");
+  write(dir, "CLAUDE.md", "# Existing CLAUDE\n\nKeep Claude guidance.\n");
+  write(dir, ".github/copilot-instructions.md", "# Existing Copilot\n\nKeep Copilot guidance.\n");
+
+  init(dir, {});
+  sync(dir);
+
+  assert.equal(read(dir, "AGENTS.md").split("\n")[0],
+    "Read [`.agents/cg/AGENTS.md`](.agents/cg/AGENTS.md) before planning or changing code.");
+  assert.equal(read(dir, "CLAUDE.md").split("\n")[0], "@.agents/cg/AGENTS.md");
+  assert.equal(read(dir, ".github/copilot-instructions.md").split("\n")[0],
+    "Read [`../.agents/cg/AGENTS.md`](../.agents/cg/AGENTS.md) before planning or changing code.");
+  assert.match(read(dir, "AGENTS.md"), /Keep agent guidance/);
+  assert.match(read(dir, "CLAUDE.md"), /Keep Claude guidance/);
+  assert.match(read(dir, ".github/copilot-instructions.md"), /Keep Copilot guidance/);
+  assert.deepEqual(verify(dir).failures, []);
+});
+
+test("sync preserves a root file with no H1 because the pointer needs no anchor", () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-brownfield-noh1-"));
   init(dir, {});
   write(dir, "CLAUDE.md", "just some prose with no heading at all\n");
-  assert.throws(() => sync(dir), /no H1 to anchor/);
-  assert.match(read(dir, "CLAUDE.md"), /just some prose/, "the file must be left alone");
+  sync(dir);
+  assert.equal(read(dir, "CLAUDE.md").split("\n")[0], "@.agents/cg/AGENTS.md");
+  assert.match(read(dir, "CLAUDE.md"), /just some prose/, "repository guidance must survive");
+  assert.deepEqual(verify(dir).failures, []);
 });
 
 // -------------------------------------------------- narrowing a selection
@@ -1259,10 +1289,10 @@ test("cg-warmup harvests enforced code rules into the correct authority", () => 
   // Family placement is the whole difficulty. A product rule filed as `E` loses its binding
   // authority; a testable rule filed as a `guide` buys silence for the price of the detector.
   assert.match(skill, /Do not file a product rule as an engineering guideline/);
-  assert.match(skill, /Do not promote a D practice to A on wording alone/);
+  assert.match(skill, /Do not promote an `E` practice to A on wording alone/);
 
-  // PP bindings owe a repository detector row. A generic CB candidate owes the complete built-in
-  // measurement and negative-fixture package and must go to the verifier owner; AP remains advice.
+  // P bindings owe a repository detector row. A generic A candidate owes the complete built-in
+  // measurement and negative-fixture package and must go to the verifier owner; E remains advice.
   assert.match(skill, /Every `P` rule needs exactly one repository `.agents\/cg\/enforcement\.yaml`/);
   assert.match(skill, /Every `A` candidate[\s\S]*deterministic measure[\s\S]*negative fixture/);
   assert.match(skill, /route it to the verifier-owning repository; do not assign a local ID/);
@@ -2157,7 +2187,7 @@ test("[11] a phase naming the same token twice fails", () => {
 test("[11] every phase always loads structural bindings", () => {
   const dir = makeRepo();
   edit(dir, PHASES, (t) => t.replace('"always": ["A", "P"]', '"always": ["P"]'));
-  assertFails(dir, 11, "CB is ambient binding for every phase");
+  assertFails(dir, 11, "A is ambient binding for every phase");
 });
 
 // ---------------------------------------------------------------- model
@@ -2826,7 +2856,7 @@ test("a finished warmup is advised to remove its resume log", () => {
   // Not yet finished: product rules are unharvested, so the log still has a job.
   assert.ok(!verify(dir).advisories.some((m) => m.includes("survives a finished warmup")));
 
-  // Harvested as a real PP entry. The shipped catalog's only PP example is a YAML comment.
+  // Harvested as a real P entry. The shipped catalog's only P example is a YAML comment.
   setProductEntries(dir, "P09", "Harvested", [
     { id: "P09-01", text: "a harvested rule." },
   ]);

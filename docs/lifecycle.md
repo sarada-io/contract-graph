@@ -27,12 +27,12 @@ Every stage keeps the same precedence and does not infer authority from forceful
 3. Apply the repository's specifications, constitution, and accepted decisions. SpecKit or another
    specification framework may own this layer without replacing Contract Graph's structural layer.
 4. Consult `E` engineering entries when judgement remains.
-   They may influence a choice, but a D disagreement is not a compliance failure.
+   They may influence a choice, but an `E` disagreement is not a compliance failure.
 
 Promotion is a structural change, not a prose edit at phase close. `cg-sign-off` or `cg-unblock`
-may classify a D practice as a candidate. In the codebase that owns the verifier, `cg-produce`
+may classify an `E` practice as a candidate. In the codebase that owns the verifier, `cg-produce`
 must deliver its permanent `A` ID, deterministic measure, registered blocking detector, negative
-fixture, and removal of the D copy together; `cg-sign-off` then proves that complete change. An
+fixture, and removal of the `E` copy together; `cg-sign-off` then proves that complete change. An
 adopting repository whose installed verifier does not recognize the proposed detector records the
 candidate or proposes it upstream instead of claiming a new A locally. A product-specific rule
 follows the separate `P` path: guideline text, enforcement-map row, detector, and affected
@@ -68,7 +68,7 @@ files with no small inbound surface — becomes a small set of those services as
 not a node per file. `adapters` is last because it is not a fourth
 decide id. It overrides `forbid` for optional vendors.
 Mixed Mongo and PostgreSQL clients, an undeclared entry, or internals on the surface are a
-corrective Step, not silent stay. That is a protocol skills apply. It is not a `A` detector and
+corrective Step, not silent stay. That is a protocol skills apply. It is not an `A` detector and
 does not scan imports; `cg verify` still only proves declared paths exist (A10, A11).
 
 Warmup, prepare, and produce walk this sequence before they keep work on the open node. An
@@ -89,7 +89,7 @@ under explicit authority, and `cg-warmup` is run once at brownfield adoption.
 | `cg-sign-off` | Verify every prepared Step completed through a dependency-safe history and that the resulting graph still describes and routes through the implemented system; drive current-phase defects through corrective Steps; harvest decisions; close only on a green gate. Owns the durable record too — design records, product and operator guidance, and diagrams — and is entered standalone when only documentation is needed. Never repairs contract correctness as detached cleanup. |
 | `cg-unblock` | Govern forks across the lifecycle: apply contract-backed or reversible defaults, record assumptions, log blocked Steps, keep independent work moving. |
 | `cg-auto-run` | **Opt-in.** Dispatch one stage at a time, follow its `Next action` only while measured state advances within the granted authority, and stop on blockers, `cg-unblock`, failed gates, or the dispatch budget. It performs no lifecycle stage itself. |
-| `cg-warmup` | **Once, at adoption.** Discover an existing repository's real boundaries, write and connect their YAML contracts, add contract-owned routes, verify every applicable structural binding, and harvest product bindings or non-binding architecture practices. Raises what it cannot settle as `DU-NN` entries in the decision log rather than asking in chat. Never scores, never edits behaviour. |
+| `cg-warmup` | **Once, at adoption.** Discover an existing repository's real boundaries, write and connect their YAML contracts, add contract-owned routes, verify every applicable structural binding, and harvest product bindings or non-binding engineering guidelines. Raises what it cannot settle as `DU-NN` entries in the decision log rather than asking in chat. Never scores, never edits behaviour. |
 
 ```mermaid
 flowchart TD

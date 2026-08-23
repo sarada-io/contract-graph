@@ -1,7 +1,7 @@
 /**
- * Regenerate every derived artifact: root principle indexes, module workspace-root pointers,
- * the shared-agent rule pointer, and the Claude discovery wrappers. Contracts themselves are
- * authored YAML and are never rewritten by sync.
+ * Regenerate every derived artifact: the canonical agent entry, root discovery pointers, module
+ * workspace-root pointers, the shared-agent rule pointer, and the Claude discovery wrappers.
+ * Contracts themselves are authored YAML and are never rewritten by sync.
  *
  * Idempotent. Running it twice writes nothing the second time, which is exactly what
  * `cg verify`'s drift check depends on.
@@ -12,6 +12,7 @@ import path from "node:path";
 
 import {
   generateAgentRule,
+  generateCgAgent,
   generateClaudeSkillWrapper,
   generateModulePointer,
   generateRoot,
@@ -42,6 +43,7 @@ export function sync(repoRoot, { dryRun = false } = {}) {
   // Generate the same units in both modes; `apply` is the only place that suppresses writes for
   // a dry run, so `cg sync --check` reports exactly what a real sync would change.
   const projectName = path.basename(repoRoot);
+  apply(generateCgAgent(repoRoot), changed, dryRun);
   for (const [relPath, prefix] of Object.entries(profile.rootPointers)) {
     apply(generateRoot(repoRoot, relPath, prefix, projectName), changed, dryRun);
   }

@@ -25,12 +25,13 @@ The first command replaces the root-level `build/` package target; the second pr
 and mode in that target matches its package source without writing. Never edit `build/` directly.
 It is gitignored, as is `tmp/` from `npm run try`. `npm run clean` deletes both. `npm run pack`
 rebuilds `build/` and writes `contract-graph-<version>.tgz` at the repository root (`*.tgz` is
-gitignored). Architecture and product YAML are copied into `build/agent/cg/principles/` in the
-checkout and `agent/cg/principles/` inside the tarball. The packaged `bin` is `script/cli.js`, not
+gitignored). Architecture YAML is copied into `build/agent/cg/principles/` and engineering and
+product YAML into `build/agent/cg/guidelines/` in the checkout (`agent/cg/principles/` and
+`agent/cg/guidelines/` inside the tarball). The packaged `bin` is `script/cli.js`, not
 the checkout's `bin/cg.js`.
 
 Product entries are short YAML sentences: `id` plus `text`, under a `Pnn` heading. The catalog
-ships with `principles: []`. Design entries are `id`, `rule`, and `reason`. The rule is the
+ships with `principles: []`. Engineering entries are `id`, `rule`, and `reason`. The rule is the
 practice; the reason is why it exists. A preference may also carry `cost`. `E` never appears in
 `enforcement.yaml`.
 
@@ -135,7 +136,7 @@ check that does nothing.
 one thing, `assertFails(dir, code, note)` asserts the right code fires and prints every actual
 failure when it does not.
 
-## Changing an architecture practice
+## Engineering guideline entries
 
 Architecture entries are advisory. The usual shape is:
 
@@ -157,10 +158,10 @@ A preference between workable designs may also carry `cost`:
 Neither form may have an enforcement-map row. A practice that should bind belongs in `P` or,
 when it meets the structural promotion gate, in `A`.
 
-## Promoting architecture guidance to structural binding
+## Promoting an engineering guideline to structural binding
 
-In this verifier-owning repository, an `E` practice may move to `src/cg/principles/architecture.yaml` only when
-all four facts are present:
+In this verifier-owning repository, an `E` practice may move to
+`src/cg/principles/architecture.yaml` only when all four facts are present:
 
 1. violating it would damage graph routing, ownership, boundary structure, or structural truth;
 2. one deterministic measurement states pass versus fail;
@@ -168,20 +169,22 @@ all four facts are present:
 4. a negative fixture proves that detector fires.
 
 Implement and register the detector, assign the next permanent `A` ID, and remove the
-overlapping D practice in the same change. Every architecture-principle entry carries `rule`, `measure`, and
-`enforcedBy`; every detector entry carries its registered implementation and exact negative-fixture
-name. Binding prose without all of this does not merge. An initialized consumer repository cannot
-add a built-in detector by changing its preserved YAML alone; product-specific enforcement belongs
-in `P`, while a generic structural proposal belongs here.
+overlapping `E` practice in the same change. Every architecture-principle entry carries `rule`,
+`measure`, and `enforcedBy`; every detector entry carries its registered implementation and exact
+negative-fixture name. Binding prose without all of this does not merge. An initialized consumer
+repository cannot add a built-in detector by changing its preserved YAML alone; product-specific
+enforcement belongs in `P`, while a generic structural proposal belongs here.
 
-**Rule IDs are never renumbered.** Append within a guideline or the architecture-principles catalog; redefine in place; never reuse. Set
-*names* may be renamed, split, or merged — they are routing labels, not identities.
+**Rule IDs are never renumbered.** Append within a guideline or the architecture-principles
+catalog; redefine in place; never reuse. Set *names* may be renamed, split, or merged — they are
+routing labels, not identities.
 
 ## Adding an engineering guideline
 
 Add it to `src/cg/guidelines/engineering.yaml` under the next unused `Enn` heading, or append
 inside an existing heading. Do not renumber. Product-specific bindings belong in `product.yaml`
 as `P`, not here.
+
 The verifier checks that every entry sits under its owning principle and retains its stable ID.
 A new family prefix is a verifier change, not a YAML addition.
 

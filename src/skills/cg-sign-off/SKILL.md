@@ -195,15 +195,16 @@ that cohort. It must not default to every resolved decision in the shared decisi
 4. Confirm each eligible ID is in the log's `Resolved` section. A pending or unknown ID is never
    eligible. Other resolved decisions and every pending decision remain in the log for their own
    cohort or answer.
-5. Classify each eligible decision once through `cg-unblock` D-5a: module contract, Contract
-   Binding, Engineering guideline, Product Principle, or drop. A `drop` carries one line saying why:
+5. Classify each eligible decision once through `cg-unblock` D-5a: module contract, architecture
+   principle, engineering guideline, product guideline, or drop. A `drop` carries one line saying why:
    the entry was binding authority under D-2 until this moment, and the manifest is the archived
    record that it existed and stopped.
 6. State each proposed permanent rule and delivery obligation without citing its source decision,
    a plan ticket, or a `docs/plans/` path. Binding and invariant destinations name their detector
    and enforcement treatment; an A promotion also names its deterministic measure and negative
-   fixture, while a D preference names its reason and optional cost and no detector/map row. A `A` destination is valid only
-   when the destination phase changes the verifier that registers its detector. Otherwise retain
+   fixture, while an `E` preference names its reason and optional cost and no detector/map row.
+   An `A` destination is valid only when the destination phase changes the verifier that registers
+   its detector. Otherwise retain
    it as `E`, adopt it as repository-specific `P`, or record it as an upstream A proposal.
 7. Run the shipped detector. It checks cohort membership in both directions, that every
    promotion owes what its destination owes, that no promoted rule cites its own decision or a

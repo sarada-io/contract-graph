@@ -66,7 +66,7 @@ Log an owner decision even when a likely answer exists if the fork changes:
 - identity, account/tenant, authorization, credential, or trust-boundary isolation;
 - billing, metering, entitlement, or the per-unit runtime cost floor;
 - destructive or irreversible data behavior;
-- a `A` or `P` binding, or a permanent contract invariant;
+- an `A` or `P` binding, or a permanent contract invariant;
 - a published interface already consumed by another context or repository;
 - a new external dependency, provider, store, or operational control plane.
 
@@ -91,7 +91,7 @@ Step. Do not silently narrow scope.
 `docs/plans/decision-log.md` is a ledger of entries, not a skill. Do not copy this section, the
 entry shape, warmup behaviour, or promotion rules into that file. An adopting `cg-warmup` run
 fills *Pending your review* first: boundaries it could not settle from the code, and every
-exception it proposes to a `A` or `P` binding. It answers what it can and logs the rest rather
+exception it proposes to an `A` or `P` binding. It answers what it can and logs the rest rather
 than interviewing the owner, so the owner gets one consolidated list instead of a question per
 module.
 
@@ -124,8 +124,8 @@ Classify each candidate once. Do not promote a one-off merely because it was dif
 |---|---|---|
 | Boundary `contract.yaml` | The rule binds one owned implementation boundary, behavior, interface, or operating assumption. | State it in the structured contract and deliver its detector in the same execution change. |
 | Engineering guideline (`E`) | The recurring structural advice is useful but is not yet a measurable invariant. | Add `id`, `rule`, and `reason`. A preference between workable designs may also carry `cost`. A later verifier-owning change may promote it when all `A` obligations can ship together. |
-| Architecture Principle (`A`) | The structural invariant is generic, deterministic, and the destination change owns the verifier that can enforce it. | In the verifier-owning change, register the blocking detector, add its negative fixture, assign the next permanent ID in `principles/architecture.yaml`, and remove any equivalent D practice. An adopting repository cannot create built-in enforcement through YAML alone. |
-| Product Principle (`P`) | The binding rule exists because of this product's market, pricing, or shape. | Add the binding rule, `.agents/cg/enforcement.yaml` row, detector, and affected contracts' rule IDs together. |
+| Architecture Principle (`A`) | The structural invariant is generic, deterministic, and the destination change owns the verifier that can enforce it. | In the verifier-owning change, register the blocking detector, add its negative fixture, assign the next permanent ID in `principles/architecture.yaml`, and remove any equivalent `E` practice. An adopting repository cannot create built-in enforcement through YAML alone. |
+| Product guideline (`P`) | The binding rule exists because of this product's market, pricing, or shape. | Add the binding rule, `.agents/cg/enforcement.yaml` row, detector, and affected contracts' rule IDs together. |
 | Drop | The result is case-specific, superseded, duplicated, or cannot stand without its originating case. | Leave no permanent rule, and record why beside the decision ID in the phase-close classification manifest. A resolved decision is binding authority until it is promoted or dropped, so one that vanishes from the log with no reason takes a rule the repository was following with it. The manifest is archived with the phase; the log still drains. |
 
 Promotion is delivery work, not a decision-log edit alone. Route it through the Contract Graph phase whose

@@ -103,6 +103,9 @@ export const ROOT_POINTERS = {
   ".github/copilot-instructions.md": "../",
 };
 
+/** Canonical Contract Graph instructions shared by every editor-specific root pointer. */
+export const CG_AGENT_ENTRY = ".agents/cg/AGENTS.md";
+
 
 /** Default root for the three scaffolded document trees. Overridable at `cg init`. */
 export const DEFAULT_DOCS_ROOT = "docs";
@@ -985,8 +988,8 @@ function loadPrincipleRules(repoRoot, selection) {
 /**
  * Return [{id, title, count}] in document order.
  *
- * Drives the generated index in every root entry file, so a harness that reads only
- * `AGENTS.md` still learns that the principles exist and what each one covers.
+ * Drives the generated index in `.agents/cg/AGENTS.md`. Editor-specific root files point there
+ * without copying the index into repository-owned instructions.
  */
 export function parsePrincipleIndex(file, { allowEmpty = false, families = RULE_FAMILIES } = {}) {
   if (!exists(file)) throw new ContractError(`missing principles file: ${file}`);
@@ -1042,18 +1045,20 @@ export function loadPrincipleIndex(repoRoot) {
 }
 
 /** Render the principle index for a root entry file, without trailing newline. */
-export function renderRootIndex(repoRoot, prefix) {
+export function renderRootIndex(repoRoot, prefix, { local = false } = {}) {
   const principles = loadPrincipleIndex(repoRoot);
   const core = loadCoreBindingRules(repoRoot);
   const total = core.size + principles.reduce((sum, e) => sum + e.count, 0);
   const target = `${prefix}.agents/cg/guidelines/`;
   const bindingTarget = `${prefix}${BINDING_FILENAME}`;
+  const targetHref = local ? "guidelines/" : target;
+  const bindingHref = local ? "principles/architecture.yaml" : bindingTarget;
 
   const lines = [
     ROOT_BEGIN_LINE,
     "## Binding rules — index",
     "",
-    `**You MUST read [\`${bindingTarget}\`](${bindingTarget}) before planning any change.** It is binding: where ` +
+    `**You MUST read [\`${bindingTarget}\`](${bindingHref}) before planning any change.** It is binding: where ` +
       "your code and the architecture catalog disagree, **the catalog wins and the code is wrong.** Its `graph` " +
       "section is the recursive mapping: kinds, self-sufficiency, stay, add-child, or elsewhere; " +
       "a SpecKit or other delivery workflow does not replace that decision. The index " +
@@ -1061,13 +1066,13 @@ export function renderRootIndex(repoRoot, prefix) {
       "(`A01`), never by position.",
   ];
   lines.push("", `**${FAMILY_BLURB.A}**`, "");
-  lines.push(`- [**A** Structural integrity](${bindingTarget}) — ${core.size} rules`);
+  lines.push(`- [**A** Structural integrity](${bindingHref}) — ${core.size} rules`);
   for (const family of RULE_FAMILIES) {
     const rows = principles.filter((e) => familyOf(e.id) === family);
     if (!rows.length) continue;
     lines.push("", `**${FAMILY_BLURB[family]}**`, "");
     for (const { id, title, count, filename } of rows) {
-      const file = `${target}${filename}`;
+      const file = `${targetHref}${filename}`;
       lines.push(
         `- [**${id}** ${title}](${file}) — ${count} rule${count === 1 ? "" : "s"}`,
       );
@@ -1075,6 +1080,80 @@ export function renderRootIndex(repoRoot, prefix) {
   }
   lines.push(ROOT_END_MARKER);
   return lines.join("\n");
+}
+
+/** Render the canonical shared instructions stored inside `.agents/cg/`. */
+export function renderCgAgent(repoRoot) {
+  return [
+    "# Contract Graph — agent entry point",
+    "",
+    "**Start here: [`.agents/cg/contract.yaml`](contract.yaml)** — the root of the project's context graph. " +
+      "It explains the system, sets the reading order, and routes work into module and sub-module " +
+      "contracts before implementation code is read.",
+    "",
+    "`.agents/cg/` is a dot-directory. If your tool's indexer skips hidden paths, open " +
+      "these files by exact path rather than relying on search.",
+    "",
+    renderRootIndex(repoRoot, "", { local: true }),
+    "",
+    "## Required reading order",
+    "",
+    "1. [`.agents/cg/contract.yaml`](contract.yaml) — repository contract and graph root.",
+    `2. [\`${BINDING_FILENAME}\`](principles/architecture.yaml) — architecture principles: \`hierarchy.kinds\` and \`graph\` (recurse, selfSufficient, stay / add-child / elsewhere), then A detectors.`,
+    "3. [`.agents/cg/guidelines/`](guidelines/) — non-binding engineering guidelines and repository-owned product guidelines.",
+    "4. [`.agents/cg/workflow.md`](workflow.md) — the repository-owned agent workflow.",
+    "5. Run `cg contract route --task \"<request>\"` — resolve the first task-to-contract edge " +
+      "from routes owned by contracts.",
+    "6. `<module>/.agents/cg/contract.yaml`, then its relevant child contracts — traverse until " +
+      "the responsible boundary is clear; only then read implementation. Use `cg contract context` " +
+      "to resolve the rules that bind the selected boundary.",
+    "",
+    "The principle index in this file is generated. Keep repository-specific instructions in the " +
+      "root entry files or other repository-owned context. Regenerate with `cg sync`.",
+    "",
+  ].join("\n");
+}
+
+/** Return {path, current, desired} for the canonical shared instructions. */
+export function generateCgAgent(repoRoot) {
+  const file = path.join(repoRoot, CG_AGENT_ENTRY);
+  const current = readIfPresent(file);
+
+  if (current.includes(ROOT_BEGIN_MARKER)) {
+    return {
+      path: file,
+      current,
+      desired: applyBlock(
+        current,
+        renderRootIndex(repoRoot, "", { local: true }),
+        file,
+        ROOT_BEGIN_MARKER,
+        ROOT_END_MARKER,
+      ),
+    };
+  }
+
+  if (current.trim()) {
+    if (!splitLines(current).some((line) => line.startsWith("# "))) {
+      throw new ContractError(
+        `${CG_AGENT_ENTRY}: existing file has no H1 to anchor the generated principle index. ` +
+          "Add a top-level heading, or move this file aside and re-run `cg sync`.",
+      );
+    }
+    return {
+      path: file,
+      current,
+      desired: applyBlock(
+        current,
+        renderRootIndex(repoRoot, "", { local: true }),
+        file,
+        ROOT_BEGIN_MARKER,
+        ROOT_END_MARKER,
+      ),
+    };
+  }
+
+  return { path: file, current, desired: renderCgAgent(repoRoot) };
 }
 
 /** Render a complete root entry file: static preamble plus the generated index. */
@@ -1111,52 +1190,47 @@ export function renderRootPointer(repoRoot, prefix, projectName) {
   ].join("\n");
 }
 
-/** Return {path, current, desired} for one root entry file. */
+/** The one-line discovery pointer each supported root file carries before repository guidance. */
+export function renderRootReference(relPath, prefix) {
+  if (relPath === "CLAUDE.md") return `@${prefix}${CG_AGENT_ENTRY}`;
+  return `Read [\`${prefix}${CG_AGENT_ENTRY}\`](${prefix}${CG_AGENT_ENTRY}) before planning or changing code.`;
+}
+
+/** Remove a legacy generated index while retaining repository-authored text around it. */
+function removeRootIndex(text, file) {
+  const lines = splitLines(text);
+  const begin = lines.findIndex((line) => line.startsWith(ROOT_BEGIN_MARKER));
+  const end = lines.findIndex((line) => line.trim() === ROOT_END_MARKER);
+  if (begin < 0 && end < 0) return text;
+  if (begin < 0 || end < 0 || end < begin) {
+    throw new ContractError(`${file}: unbalanced or reversed PRINCIPLES INDEX markers`);
+  }
+  return [...lines.slice(0, begin), ...lines.slice(end + 1)].join("\n").replace(/^\n+|\n+$/g, "");
+}
+
 /**
- * The generated part of a root entry file, and nothing else.
+ * Return {path, current, desired} for one root discovery file.
  *
- * Three cases, and the middle one is the reason this is not a one-liner:
- *
- *   - the file already carries the markers → replace what is between them;
- *   - the file exists with content of its own → **keep it** and add the generated block
- *     under its H1. A repository adopting Contract Graph usually already has a `CLAUDE.md`,
- *     and replacing it wholesale destroys hand-written instructions with no way back but
- *     git. `sync` owns the region between the markers, never the whole file;
- *   - the file is absent or empty → write the full pointer.
+ * Existing content belongs to the repository. Contract Graph owns only the first line, which
+ * points at its canonical instructions. A legacy generated index is removed during migration;
+ * everything outside that marked block survives, including files with no H1.
  */
 export function generateRoot(repoRoot, relPath, prefix, projectName) {
   const file = path.join(repoRoot, relPath);
   const current = readIfPresent(file);
+  const reference = renderRootReference(relPath, prefix);
+  let remainder = current;
 
-  if (current.includes(ROOT_BEGIN_MARKER)) {
-    const desired = applyBlock(
-      current,
-      renderRootIndex(repoRoot, prefix),
-      file,
-      ROOT_BEGIN_MARKER,
-      ROOT_END_MARKER,
-    );
-    return { path: file, current, desired };
+  // A pristine legacy entry file contains no repository content to retain.
+  if (current === renderRootPointer(repoRoot, prefix, projectName)) remainder = "";
+  else if (current.includes(ROOT_BEGIN_MARKER) || current.includes(ROOT_END_MARKER)) {
+    remainder = removeRootIndex(current, file);
   }
 
-  if (current.trim()) {
-    if (!splitLines(current).some((line) => line.startsWith("# "))) {
-      throw new ContractError(
-        `${relPath}: existing file has no H1 to anchor the generated principle index. ` +
-          "Add a top-level heading, or move this file aside and re-run `cg sync`.",
-      );
-    }
-    const desired = applyBlock(
-      current,
-      renderRootIndex(repoRoot, prefix),
-      file,
-      ROOT_BEGIN_MARKER,
-      ROOT_END_MARKER,
-    );
-    return { path: file, current, desired };
-  }
-
-  return { path: file, current, desired: renderRootPointer(repoRoot, prefix, projectName) };
+  const lines = splitLines(remainder).filter((line) => line.trim() !== reference);
+  const body = lines.join("\n").replace(/^\n+|\n+$/g, "");
+  const desired = `${reference}${body ? `\n\n${body}` : ""}\n`;
+  return { path: file, current, desired };
 }
 
 /** Module workspace-root pointer files `cg verify` [1] requires. */

@@ -101,9 +101,10 @@ request
 The agent reads code, but only after the contracts have located the change. That replaces broad
 architectural rediscovery with bounded code reading.
 
-When the agent *writes* or extends the graph, `.agents/cg/principles/architecture.yaml` `graph` is the walk,
-not a bag of optional fields. The schema requires every key so an installed catalog cannot drop a
-step. JSON Schema does not execute the order; the YAML order is the protocol:
+When the agent *writes* or extends the graph,
+`.agents/cg/principles/architecture.yaml` `graph` is the walk, not a bag of optional fields. The
+schema requires every key so an installed catalog cannot drop a step. JSON Schema does not execute
+the order; the YAML order is the protocol:
 
 | Order | Key | Role |
 |---|---|---|
@@ -152,16 +153,16 @@ demand. If any of those is missing, the statement remains guidance.
 This boundary makes Contract Graph complementary to SpecKit and similar specification frameworks.
 Those tools can own feature specifications, a repository constitution, broader engineering
 policy, and the delivery workflow. Contract Graph supplies the structural graph, the recursive
-mapping (`hierarchy.kinds` and the `graph` walk: node, recurse, selfSufficient, surface, decide, compose, stop, forbid, adapters),
-and the `A` rules that keep an authored graph valid.
-When both are installed, replacing `workflow.md` does not replace `.agents/cg/principles/architecture.yaml`.
+mapping (`hierarchy.kinds` and the `graph` walk: node, recurse, selfSufficient, surface, decide,
+compose, stop, forbid, adapters), and the `A` rules that keep an authored graph valid. When both
+are installed, replacing `workflow.md` does not replace `.agents/cg/principles/architecture.yaml`.
 
 Non-binding does not mean permanent. An `E` practice may be promoted when structural impact,
 deterministic measurement, blocking enforcement, and a negative fixture all exist. Core promotion
 is delivered in the codebase that owns the installed verifier: it registers the detector, assigns
-the next permanent `A` ID, and removes the D copy in the same change. An adopting repository
+the next permanent `A` ID, and removes the `E` copy in the same change. An adopting repository
 cannot turn prose into a built-in detector merely by editing YAML; until its verifier supports the
-rule, keep it as D guidance, adopt a product-specific version as `P`, or propose the generic
+rule, keep it as `E` guidance, adopt a product-specific version as `P`, or propose the generic
 binding to Contract Graph.
 
 ## What works today
@@ -190,6 +191,29 @@ Install Contract Graph globally so the `cg` command remains available to later A
 ```bash
 npm i -g contract-graph
 ```
+
+### Install from source
+
+To build and install the same package artifact from a source checkout:
+
+```bash
+git clone https://github.com/sarada-io/contract-graph.git
+cd contract-graph
+npm ci
+npm test
+npm run pack
+VERSION=$(node -p "require('./package.json').version")
+npm i -g "./contract-graph-${VERSION}.tgz"
+cg --version
+```
+
+Check out a release tag before `npm ci` when you want a reproducible release rather than the
+current `main` branch. `npm run pack` builds the verified `build/` target and produces the tarball
+that npm installs. Do not install the GitHub URL directly: `build/` is generated and intentionally
+not stored in Git.
+
+For development, run `npm link` in the checkout after `npm ci` to link the global `cg` command to
+the working source instead. Run `npm run build` when validating the distributable package.
 
 `cg init` installs the scaffold, discovery files, **and** the `/cg-*` skills. Editors load skills
 when a session starts, so **restart the IDE** (or reload the window) before the first `/cg-warmup`
@@ -225,6 +249,32 @@ connects contracts for the unmapped roots `modules` reported.
 
 Brownfield initialization deliberately does not invent a `src/` module. Until warmup finishes,
 `cg verify: OK` means the scaffold is well-formed, not that this repository is governed.
+
+### Existing agent instructions and editor discovery
+
+`cg init` keeps repository-authored root instructions. Contract Graph stores its full shared entry
+point in `.agents/cg/AGENTS.md`; `cg sync` prepends one discovery line to each root file selected by
+the editor profiles and leaves the existing body intact. In particular:
+
+- root `AGENTS.md` points to `.agents/cg/AGENTS.md` on its first line;
+- root `CLAUDE.md` imports that canonical file with Claude Code's `@` syntax; and
+- `.github/copilot-instructions.md` points to the same file without replacing existing Copilot
+  instructions.
+
+The canonical lifecycle skills remain under `.agents/skills/`. Official support for this shared
+layout differs by agent host:
+
+| Host | `AGENTS.md` | `.agents/skills/` | Contract Graph adapter |
+|---|---|---|---|
+| [Codex](https://learn.chatgpt.com/docs/agent-configuration/agents-md) | Native | [Native](https://learn.chatgpt.com/docs/build-skills) | None |
+| [Cursor](https://cursor.com/docs/rules) | Native | [Native](https://cursor.com/docs/skills) | None |
+| [GitHub Copilot](https://docs.github.com/en/copilot/reference/custom-instructions-support) | Native in supported agent surfaces | [Native](https://docs.github.com/en/copilot/concepts/agents/about-agent-skills) | The Copilot profile also points its repository instructions at the canonical entry |
+| [Claude Code](https://code.claude.com/docs/en/memory#agents-md) | Not read directly | Project skills use [`.claude/skills/`](https://code.claude.com/docs/en/skills#where-skills-live) | `CLAUDE.md` import plus generated `.claude/skills/` wrappers |
+| [Google Antigravity](https://antigravity.google/docs/skills) | Uses its own workspace rules | Native | `.agents/rules/cg.md` |
+
+For GitHub Copilot, agent skills are documented for the cloud agent, code review, CLI, GitHub app,
+and agent mode in Visual Studio Code and JetBrains IDEs. Support varies for other Copilot surfaces,
+so the dedicated `.github/copilot-instructions.md` pointer remains part of that profile.
 
 ## Bundled skills
 
@@ -268,8 +318,8 @@ Run `cg --help` for flags and exit behavior.
 
 ## Building the package
 
-Structural bindings are authored in `src/cg/principles/architecture.yaml`. Architecture and product
-principles are authored YAML at `src/cg/principles/architecture.yaml` and
+Architecture principles are authored YAML at `src/cg/principles/architecture.yaml`. Engineering
+and product guidelines are authored YAML at `src/cg/guidelines/engineering.yaml` and
 `src/cg/guidelines/product.yaml`. Never maintain a catalog in two formats by hand.
 From a source checkout, run:
 
@@ -300,13 +350,12 @@ build/                            package target; the only input to npm pack
   script/*.js
 ```
 
-There are three policy surfaces. `src/cg/principles/architecture.yaml` is executable structural authority: every
-`A` rule includes a deterministic measure, registered detector, and negative fixture.
-`src/cg/guidelines/engineering.yaml` contains the non-binding `E` engineering catalog. Each entry is `id`,
-`rule`, and `reason`: the practice, and why it exists. A preference may also carry `cost`.
-`src/cg/guidelines/product.yaml` contains repository-owned
-`P` guidelines and starts empty. Repeating the build with unchanged sources produces identical
-bytes.
+There are three policy surfaces. `src/cg/principles/architecture.yaml` is executable structural
+authority: every `A` rule includes a deterministic measure, registered detector, and negative
+fixture. `src/cg/guidelines/engineering.yaml` contains the non-binding `E` engineering catalog.
+Each entry is `id`, `rule`, and `reason`: the practice, and why it exists. A preference may also
+carry `cost`. `src/cg/guidelines/product.yaml` contains repository-owned `P` guidelines and starts
+empty. Repeating the build with unchanged sources produces identical bytes.
 
 Engineering guidelines are authored YAML, analogous to the enforcement map:
 
@@ -342,16 +391,16 @@ productVersion: "1.0"
 principles: []
 ```
 
-A preference may carry `cost`. IDs, family ownership, duplicates, and malformed entries are
-rejected before any target file is replaced. `A` rules are authored directly in the YAML architecture-principles catalog.
+IDs, family ownership, duplicates, and malformed entries are rejected before any target file is
+replaced. `A` rules are authored directly in the YAML architecture-principles catalog.
 
 Run `npm run build:check` to verify the complete `build/` directory without rewriting it.
 
 `npm run pack` rebuilds and passes only this target directory to npm; the tarball lands at the
-repository root. The tarball receives `agent/cg/principles/architecture.yaml` and
-`agent/cg/guidelines/engineering.yaml` plus `agent/cg/guidelines/product.yaml`. Markdown remains only where it is the runtime instruction
-format—principally `workflow.md`, `SKILL.md`, and scaffold templates. npm does not gather additional
-files from the working tree.
+repository root. It contains `agent/cg/principles/architecture.yaml`,
+`agent/cg/guidelines/engineering.yaml`, and `agent/cg/guidelines/product.yaml`. Markdown remains
+only where it is the runtime instruction format — principally `workflow.md`, `SKILL.md`, and
+scaffold templates. npm does not gather additional files from the working tree.
 
 ## Structure first; the contract graph keeps it true
 
@@ -407,8 +456,8 @@ parallel execution safe until that proof and write confinement exist.
 
 Node.js 18.17 or newer. The package includes its YAML parser dependency.
 
-## Licence 
+## Licence
+
+Copyright 2026 [Sarada.io](https://sarada.io).
 
 Licensed under Apache-2.0.
-
-Created by [Sarada.io](https://sarada.io).
