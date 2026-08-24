@@ -4,6 +4,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 
 import { init } from "../src/scripts/init.js";
 import { loadBindingPrinciples } from "../src/scripts/model.js";
@@ -25,7 +26,8 @@ import {
   stringifyContractYaml,
 } from "../src/scripts/contracts.js";
 
-const REPO = path.resolve(import.meta.dirname, "..");
+const TEST_DIR = path.dirname(fileURLToPath(import.meta.url));
+const REPO = path.resolve(TEST_DIR, "..");
 const ROOT = ".agents/cg/contract.yaml";
 const MODULE = "src/.agents/cg/contract.yaml";
 

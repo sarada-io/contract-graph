@@ -5,22 +5,26 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
-        node: ["18.x", "20.x", "22.x"]
+        node: ["18.17.0", "20.x", "22.x", "24.x"]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: ${{ matrix.node }}
       - name: Install dependencies
         run: npm ci
       - name: Test
         run: npm test
-      - name: Source install — the packaged command must verify a scaffolded repository
+      - name: Packed install — the published command must verify a scaffolded repository
         run: |
           npm run pack
           VERSION="$(node -p "require('./package.json').version")"

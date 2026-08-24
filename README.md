@@ -481,6 +481,4 @@ Node.js 18.17 or newer. The package includes its YAML parser dependency.
 
 ## Licence
 
-Copyright 2026 [Sarada.io](https://sarada.io).
-
-Licensed under Apache-2.0.
+Licensed under the [Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0).

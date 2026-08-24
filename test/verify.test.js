@@ -15,6 +15,7 @@ import os from "node:os";
 import path from "node:path";
 import { PassThrough } from "node:stream";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 
 import { init, PACKAGE_VERSION, SCAFFOLD_MAPPING, SOURCE_ROOT } from "../src/scripts/init.js";
 import {
@@ -59,6 +60,9 @@ import {
   stringifyContractYaml,
   validateContract,
 } from "../src/scripts/contracts.js";
+
+const TEST_DIR = path.dirname(fileURLToPath(import.meta.url));
+const REPO = path.resolve(TEST_DIR, "..");
 
 /** A green repository: core template plus the named domain packs, synced. */
 function makeRepo() {
@@ -690,7 +694,7 @@ test("an unregistered binding detector fails verification", () => {
 
 test("every registered binding detector names a real negative fixture", () => {
   const fixtureSources = ["contracts.test.js", "verify.test.js"]
-    .map((filename) => fs.readFileSync(path.join(import.meta.dirname, filename), "utf8"))
+    .map((filename) => fs.readFileSync(path.join(TEST_DIR, filename), "utf8"))
     .join("\n");
   for (const [, fixture] of Object.values(BUILT_IN_DETECTORS)) {
     assert.ok(
@@ -2685,7 +2689,6 @@ test("no shipped file references a pre-rename governance path", () => {
     /verify_decision_[h]arvest/,
     /(?:^|[^\w])compiled\//,
   ];
-  const repo = path.resolve(import.meta.dirname, "..");
   // `.github` is walked because CI is the first thing a rename breaks and the last place
   // anyone looks — a stale flag there fails on push rather than in review.
   const roots = [
@@ -2712,12 +2715,12 @@ test("no shipped file references a pre-rename governance path", () => {
       for (const pattern of STALE) {
         // This test names the stale paths, so it must not flag its own list.
         if (pattern.test(line) && !line.includes("/\\.agents\\/cg\\/")) {
-          hits.push(`${path.relative(repo, target)}:${index + 1}: ${line.trim()}`);
+          hits.push(`${path.relative(REPO, target)}:${index + 1}: ${line.trim()}`);
         }
       }
     });
   };
-  for (const root of roots) walk(path.join(repo, root));
+  for (const root of roots) walk(path.join(REPO, root));
 
   assert.deepEqual(hits, [], `stale governance paths still referenced:\n${hits.join("\n")}`);
 });
@@ -2727,12 +2730,12 @@ test("no shipped file references a pre-rename governance path", () => {
 /** The tarball is assembled from one closed target, not collected from authoring directories. */
 test("the published tarball ships consumer sources and no maintainer tooling", () => {
   const npm = process.platform === "win32" ? "npm.cmd" : "npm";
-  execFileSync(process.execPath, [path.join(path.resolve(import.meta.dirname, ".."), "bin", "cg.js"), "build"], {
-    cwd: path.resolve(import.meta.dirname, ".."),
+  execFileSync(process.execPath, [path.join(REPO, "bin", "cg.js"), "build"], {
+    cwd: REPO,
     stdio: "ignore",
   });
   const output = execFileSync(npm, ["pack", "./build", "--ignore-scripts", "--dry-run", "--json"], {
-    cwd: path.resolve(import.meta.dirname, ".."),
+    cwd: REPO,
     encoding: "utf8",
     env: { ...process.env, npm_config_cache: path.join(os.tmpdir(), "cg-npm-cache") },
     stdio: ["ignore", "pipe", "ignore"],
@@ -2740,7 +2743,7 @@ test("the published tarball ships consumer sources and no maintainer tooling", (
   // The tarball is produced solely from the already verified build/ target.
   const shipped = JSON.parse(output.slice(output.indexOf("[")))[0].files.map((entry) => entry.path);
   const targetManifest = JSON.parse(
-    fs.readFileSync(path.join(path.resolve(import.meta.dirname, ".."), "build", "manifest.json"), "utf8"),
+    fs.readFileSync(path.join(REPO, "build", "manifest.json"), "utf8"),
   );
   const targetFiles = [...Object.keys(targetManifest.files), "manifest.json"].sort();
 

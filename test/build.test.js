@@ -5,6 +5,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 
 import {
   BUILD_DIRECTORY,
@@ -17,7 +18,8 @@ import {
   loadProductCatalog,
 } from "../src/scripts/model.js";
 
-const REPO = path.resolve(import.meta.dirname, "..");
+const TEST_DIR = path.dirname(fileURLToPath(import.meta.url));
+const REPO = path.resolve(TEST_DIR, "..");
 const CLI = path.join(REPO, "bin", "cg.js");
 const PACKAGE_DIRECTORIES = ["bin", "docs", "src"];
 const PACKAGE_FILES = ["LICENSE", "README.md", "package.json"];
