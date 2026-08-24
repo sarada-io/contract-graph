@@ -43,7 +43,12 @@ export function sync(repoRoot, { dryRun = false } = {}) {
   // Generate the same units in both modes; `apply` is the only place that suppresses writes for
   // a dry run, so `cg sync --check` reports exactly what a real sync would change.
   const projectName = path.basename(repoRoot);
-  apply(generateCgAgent(repoRoot), changed, dryRun);
+  const canonical = generateCgAgent(repoRoot);
+  apply(canonical, changed, dryRun);
+  if (canonical.legacyPath) {
+    if (!dryRun) fs.rmSync(canonical.legacyPath);
+    changed.push(canonical.legacyPath);
+  }
   for (const [relPath, prefix] of Object.entries(profile.rootPointers)) {
     apply(generateRoot(repoRoot, relPath, prefix, projectName), changed, dryRun);
   }

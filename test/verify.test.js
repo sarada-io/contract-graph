@@ -515,7 +515,7 @@ test("[1] a pointer without the principles reference fails", () => {
 
 test("[8] a stale canonical principle index fails", () => {
   const dir = makeRepo();
-  edit(dir, ".agents/cg/AGENTS.md", (t) => t.replace(/\(\d+ rules\)/, "(999 rules)"));
+  edit(dir, ".agents/cg/contract-graph-agent.md", (t) => t.replace(/\(\d+ rules\)/, "(999 rules)"));
   assertFails(dir, 8, "stale generated principle index");
 });
 
@@ -731,7 +731,7 @@ test("loadBindingPrinciples includes ambient A rules without copying them into c
   assert.ok(!loadPrinciples(dir).has("A01"));
   assert.ok(!readObject(dir, CONTRACT).rules.includes("A01"));
   assert.ok(!readObject(dir, ROOT_CONTRACT).rules.includes("A01"));
-  assert.match(read(dir, ".agents/cg/AGENTS.md"), /\*\*A\*\* Structural integrity/);
+  assert.match(read(dir, ".agents/cg/contract-graph-agent.md"), /\*\*A\*\* Structural integrity/);
 });
 
 test("deleting architecture.yaml cannot silently remove the non-binding decision catalog", () => {
@@ -1101,10 +1101,10 @@ test("sync preserves a hand-written root file and prepends its canonical pointer
 
   sync(dir);
   const after = read(dir, "CLAUDE.md");
-  assert.equal(after.split("\n")[0], "@.agents/cg/AGENTS.md");
+  assert.equal(after.split("\n")[0], "@.agents/cg/contract-graph-agent.md");
   assert.match(after, /# Our house rules/);
   assert.match(after, /make lint/, "hand-written guidance must survive");
-  assert.match(read(dir, ".agents/cg/AGENTS.md"), /BEGIN PRINCIPLES INDEX/);
+  assert.match(read(dir, ".agents/cg/contract-graph-agent.md"), /BEGIN PRINCIPLES INDEX/);
   assert.deepEqual(verify(dir).failures, []);
   assert.deepEqual(sync(dir).changed, [], "a second sync must rewrite nothing");
 });
@@ -1120,13 +1120,35 @@ test("sync preserves existing AGENTS, CLAUDE, and Copilot instructions", () => {
   sync(dir);
 
   assert.equal(read(dir, "AGENTS.md").split("\n")[0],
-    "Read [`.agents/cg/AGENTS.md`](.agents/cg/AGENTS.md) before planning or changing code.");
-  assert.equal(read(dir, "CLAUDE.md").split("\n")[0], "@.agents/cg/AGENTS.md");
+    "Read [`.agents/cg/contract-graph-agent.md`](.agents/cg/contract-graph-agent.md) before planning or changing code.");
+  assert.equal(read(dir, "CLAUDE.md").split("\n")[0], "@.agents/cg/contract-graph-agent.md");
   assert.equal(read(dir, ".github/copilot-instructions.md").split("\n")[0],
-    "Read [`../.agents/cg/AGENTS.md`](../.agents/cg/AGENTS.md) before planning or changing code.");
+    "Read [`../.agents/cg/contract-graph-agent.md`](../.agents/cg/contract-graph-agent.md) before planning or changing code.");
   assert.match(read(dir, "AGENTS.md"), /Keep agent guidance/);
   assert.match(read(dir, "CLAUDE.md"), /Keep Claude guidance/);
   assert.match(read(dir, ".github/copilot-instructions.md"), /Keep Copilot guidance/);
+  assert.deepEqual(verify(dir).failures, []);
+});
+
+test("sync migrates the legacy canonical AGENTS.md name without losing authored content", () => {
+  const dir = makeRepo();
+  const currentEntry = ".agents/cg/contract-graph-agent.md";
+  const legacyEntry = ".agents/cg/AGENTS.md";
+  edit(dir, currentEntry, (text) => `${text}\n## Repository note\n\nPreserve this note.\n`);
+  fs.renameSync(path.join(dir, currentEntry), path.join(dir, legacyEntry));
+
+  for (const rootFile of ["AGENTS.md", "CLAUDE.md", ".github/copilot-instructions.md"]) {
+    edit(dir, rootFile, (text) => text.replaceAll("contract-graph-agent.md", "AGENTS.md"));
+  }
+
+  const { changed } = sync(dir);
+  assert.ok(changed.includes(path.join(dir, currentEntry)));
+  assert.ok(changed.includes(path.join(dir, legacyEntry)));
+  assert.ok(!fs.existsSync(path.join(dir, legacyEntry)));
+  assert.match(read(dir, currentEntry), /Preserve this note\./);
+  assert.match(read(dir, "AGENTS.md").split("\n")[0], /contract-graph-agent\.md/);
+  assert.ok(!read(dir, "AGENTS.md").includes("cg/AGENTS.md"));
+  assert.equal(read(dir, "CLAUDE.md").split("\n")[0], "@.agents/cg/contract-graph-agent.md");
   assert.deepEqual(verify(dir).failures, []);
 });
 
@@ -1135,7 +1157,7 @@ test("sync preserves a root file with no H1 because the pointer needs no anchor"
   init(dir, {});
   write(dir, "CLAUDE.md", "just some prose with no heading at all\n");
   sync(dir);
-  assert.equal(read(dir, "CLAUDE.md").split("\n")[0], "@.agents/cg/AGENTS.md");
+  assert.equal(read(dir, "CLAUDE.md").split("\n")[0], "@.agents/cg/contract-graph-agent.md");
   assert.match(read(dir, "CLAUDE.md"), /just some prose/, "repository guidance must survive");
   assert.deepEqual(verify(dir).failures, []);
 });
@@ -1263,9 +1285,9 @@ test("CLI init highlights existing AGENTS.md and CLAUDE.md before preserving the
   assert.match(output, /existing agent instruction file\(s\)/);
   assert.match(output, /AGENTS\.md — existing content will be preserved/);
   assert.match(output, /CLAUDE\.md — existing content will be preserved/);
-  assert.match(read(dir, "AGENTS.md"), /^Read .*\.agents\/cg\/AGENTS\.md.*\n\n# Existing agent guidance/m);
+  assert.match(read(dir, "AGENTS.md"), /^Read .*\.agents\/cg\/contract-graph-agent\.md.*\n\n# Existing agent guidance/m);
   assert.match(read(dir, "AGENTS.md"), /Keep this\./);
-  assert.match(read(dir, "CLAUDE.md"), /^@\.agents\/cg\/AGENTS\.md\n\n# Existing Claude guidance/m);
+  assert.match(read(dir, "CLAUDE.md"), /^@\.agents\/cg\/contract-graph-agent\.md\n\n# Existing Claude guidance/m);
   assert.match(read(dir, "CLAUDE.md"), /Keep this too\./);
 });
 

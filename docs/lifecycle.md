@@ -24,8 +24,8 @@ Every stage keeps the same precedence and does not infer authority from forceful
    measurable violations.
 2. Resolve inherited and local `P` IDs from the selected contract path; these are the adopting
    repository's scoped product bindings.
-3. Apply the repository's specifications, constitution, and accepted decisions. SpecKit or another
-   specification framework may own this layer without replacing Contract Graph's structural layer.
+3. Apply the repository's specifications, constitution, and accepted decisions without replacing
+   Contract Graph's structural layer.
 4. Consult `E` engineering entries when judgement remains.
    They may influence a choice, but an `E` disagreement is not a compliance failure.
 
@@ -40,10 +40,10 @@ contract IDs land together.
 
 ## The graph walk
 
-`.agents/cg/principles/architecture.yaml` `graph` is what writes and extends the graph. SpecKit or another
-framework may replace `workflow.md`; it must not replace this section. The schema requires every
-key so an installed catalog cannot drop a step. JSON Schema does not execute the order; the YAML
-order is the walk an agent applies at every candidate.
+`.agents/cg/principles/architecture.yaml` `graph` is what writes and extends the graph. Workflow
+changes must not replace this section. The schema requires every key so an installed catalog cannot
+drop a step. JSON Schema does not execute the order; the YAML order is the walk an agent applies at
+every candidate.
 
 Stay, add-child, and elsewhere remain the only three outcomes. The keys before `decide` say
 whether a unit deserves a node and how it is entered. The keys after it say how children relate,

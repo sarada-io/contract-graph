@@ -104,7 +104,8 @@ export const ROOT_POINTERS = {
 };
 
 /** Canonical Contract Graph instructions shared by every editor-specific root pointer. */
-export const CG_AGENT_ENTRY = ".agents/cg/AGENTS.md";
+export const CG_AGENT_ENTRY = ".agents/cg/contract-graph-agent.md";
+export const LEGACY_CG_AGENT_ENTRY = ".agents/cg/AGENTS.md";
 
 
 /** Default root for the three scaffolded document trees. Overridable at `cg init`. */
@@ -988,7 +989,7 @@ function loadPrincipleRules(repoRoot, selection) {
 /**
  * Return [{id, title, count}] in document order.
  *
- * Drives the generated index in `.agents/cg/AGENTS.md`. Editor-specific root files point there
+ * Drives the generated index in `.agents/cg/contract-graph-agent.md`. Editor-specific root files point there
  * without copying the index into repository-owned instructions.
  */
 export function parsePrincipleIndex(file, { allowEmpty = false, families = RULE_FAMILIES } = {}) {
@@ -1061,7 +1062,7 @@ export function renderRootIndex(repoRoot, prefix, { local = false } = {}) {
     `**You MUST read [\`${bindingTarget}\`](${bindingHref}) before planning any change.** It is binding: where ` +
       "your code and the architecture catalog disagree, **the catalog wins and the code is wrong.** Its `graph` " +
       "section is the recursive mapping: kinds, self-sufficiency, stay, add-child, or elsewhere; " +
-      "a SpecKit or other delivery workflow does not replace that decision. The index " +
+      "the delivery workflow does not replace that decision. The index " +
       `below lists the binding context (${total} rules) — the index is not the rule; cite rules by ID ` +
       "(`A01`), never by position.",
   ];
@@ -1118,13 +1119,17 @@ export function renderCgAgent(repoRoot) {
 export function generateCgAgent(repoRoot) {
   const file = path.join(repoRoot, CG_AGENT_ENTRY);
   const current = readIfPresent(file);
+  const legacyFile = path.join(repoRoot, LEGACY_CG_AGENT_ENTRY);
+  const legacyPath = !current && exists(legacyFile) ? legacyFile : null;
+  const source = legacyPath ? read(legacyFile) : current;
 
-  if (current.includes(ROOT_BEGIN_MARKER)) {
+  if (source.includes(ROOT_BEGIN_MARKER)) {
     return {
       path: file,
       current,
+      legacyPath,
       desired: applyBlock(
-        current,
+        source,
         renderRootIndex(repoRoot, "", { local: true }),
         file,
         ROOT_BEGIN_MARKER,
@@ -1133,8 +1138,8 @@ export function generateCgAgent(repoRoot) {
     };
   }
 
-  if (current.trim()) {
-    if (!splitLines(current).some((line) => line.startsWith("# "))) {
+  if (source.trim()) {
+    if (!splitLines(source).some((line) => line.startsWith("# "))) {
       throw new ContractError(
         `${CG_AGENT_ENTRY}: existing file has no H1 to anchor the generated principle index. ` +
           "Add a top-level heading, or move this file aside and re-run `cg sync`.",
@@ -1143,8 +1148,9 @@ export function generateCgAgent(repoRoot) {
     return {
       path: file,
       current,
+      legacyPath,
       desired: applyBlock(
-        current,
+        source,
         renderRootIndex(repoRoot, "", { local: true }),
         file,
         ROOT_BEGIN_MARKER,
@@ -1153,7 +1159,7 @@ export function generateCgAgent(repoRoot) {
     };
   }
 
-  return { path: file, current, desired: renderCgAgent(repoRoot) };
+  return { path: file, current, legacyPath, desired: renderCgAgent(repoRoot) };
 }
 
 /** Render a complete root entry file: static preamble plus the generated index. */
@@ -1191,9 +1197,9 @@ export function renderRootPointer(repoRoot, prefix, projectName) {
 }
 
 /** The one-line discovery pointer each supported root file carries before repository guidance. */
-export function renderRootReference(relPath, prefix) {
-  if (relPath === "CLAUDE.md") return `@${prefix}${CG_AGENT_ENTRY}`;
-  return `Read [\`${prefix}${CG_AGENT_ENTRY}\`](${prefix}${CG_AGENT_ENTRY}) before planning or changing code.`;
+export function renderRootReference(relPath, prefix, entry = CG_AGENT_ENTRY) {
+  if (relPath === "CLAUDE.md") return `@${prefix}${entry}`;
+  return `Read [\`${prefix}${entry}\`](${prefix}${entry}) before planning or changing code.`;
 }
 
 /** Remove a legacy generated index while retaining repository-authored text around it. */
@@ -1219,6 +1225,7 @@ export function generateRoot(repoRoot, relPath, prefix, projectName) {
   const file = path.join(repoRoot, relPath);
   const current = readIfPresent(file);
   const reference = renderRootReference(relPath, prefix);
+  const legacyReference = renderRootReference(relPath, prefix, LEGACY_CG_AGENT_ENTRY);
   let remainder = current;
 
   // A pristine legacy entry file contains no repository content to retain.
@@ -1227,7 +1234,9 @@ export function generateRoot(repoRoot, relPath, prefix, projectName) {
     remainder = removeRootIndex(current, file);
   }
 
-  const lines = splitLines(remainder).filter((line) => line.trim() !== reference);
+  const lines = splitLines(remainder).filter(
+    (line) => line.trim() !== reference && line.trim() !== legacyReference,
+  );
   const body = lines.join("\n").replace(/^\n+|\n+$/g, "");
   const desired = `${reference}${body ? `\n\n${body}` : ""}\n`;
   return { path: file, current, desired };

@@ -14,6 +14,20 @@ then descends to the smallest relevant implementation instead of searching the w
 Contract Graph grew from six months of ground-up use across several products. It is an extraction
 from repeated delivery and maintenance work, not a framework designed only on paper.
 
+## Install
+
+Contract Graph requires Node.js 18.17 or newer. Install the published npm package globally so the
+`cg` command remains available to later agent sessions:
+
+```bash
+npm install --global contract-graph
+cg --version
+```
+
+The npm package installs the CLI, its YAML parser dependency, the Contract Graph scaffold, and all
+seven lifecycle skills. It does not modify a repository until you run `cg init` inside that
+repository.
+
 ## The problem contracts solve
 
 Faster code generation increases four pressures at once:
@@ -121,7 +135,8 @@ the order; the YAML order is the protocol:
 `surface` is core encapsulation, so it sits before `decide`. `adapters` is last because it is not
 a fourth decide id; it overrides `forbid` for optional Mongo/PostgreSQL-style splits. Skills apply
 that protocol; there is no import scanner, so `cg verify` still only proves declared paths exist.
-The [lifecycle](docs/lifecycle.md) spells the same walk for every stage.
+The [lifecycle](https://github.com/sarada-io/contract-graph/blob/main/docs/lifecycle.md) spells the
+same walk for every stage.
 
 A useful contract answers:
 
@@ -138,7 +153,7 @@ change.
 ## What Contract Graph binds
 
 Contract Graph is opinionated about software structure, not every software-design choice. Its
-authority has four explicit lanes:
+authority has three explicit lanes:
 
 | Family | Authority | Source | Loading |
 |---|---|---|---|
@@ -149,13 +164,6 @@ authority has four explicit lanes:
 An `A` entry is binding only because it states one structural invariant, one deterministic
 measure, a registered blocking detector, and a negative fixture proving the detector fails on
 demand. If any of those is missing, the statement remains guidance.
-
-This boundary makes Contract Graph complementary to SpecKit and similar specification frameworks.
-Those tools can own feature specifications, a repository constitution, broader engineering
-policy, and the delivery workflow. Contract Graph supplies the structural graph, the recursive
-mapping (`hierarchy.kinds` and the `graph` walk: node, recurse, selfSufficient, surface, decide,
-compose, stop, forbid, adapters), and the `A` rules that keep an authored graph valid. When both
-are installed, replacing `workflow.md` does not replace `.agents/cg/principles/architecture.yaml`.
 
 Non-binding does not mean permanent. An `E` practice may be promoted when structural impact,
 deterministic measurement, blocking enforcement, and a negative fixture all exist. Core promotion
@@ -184,36 +192,7 @@ binding to Contract Graph.
 Everything is plain Markdown, YAML, JSON, and JavaScript. The package installation includes its
 YAML parser dependency. The contract engine is exported for other Node.js tools to use directly.
 
-## Quick start
-
-Install Contract Graph globally so the `cg` command remains available to later AI chats:
-
-```bash
-npm i -g contract-graph
-```
-
-### Install from source
-
-To build and install the same package artifact from a source checkout:
-
-```bash
-git clone https://github.com/sarada-io/contract-graph.git
-cd contract-graph
-npm ci
-npm test
-npm run pack
-VERSION=$(node -p "require('./package.json').version")
-npm i -g "./contract-graph-${VERSION}.tgz"
-cg --version
-```
-
-Check out a release tag before `npm ci` when you want a reproducible release rather than the
-current `main` branch. `npm run pack` builds the verified `build/` target and produces the tarball
-that npm installs. Do not install the GitHub URL directly: `build/` is generated and intentionally
-not stored in Git.
-
-For development, run `npm link` in the checkout after `npm ci` to link the global `cg` command to
-the working source instead. Run `npm run build` when validating the distributable package.
+## Initialize a repository
 
 `cg init` installs the scaffold, discovery files, **and** the `/cg-*` skills. Editors load skills
 when a session starts, so **restart the IDE** (or reload the window) before the first `/cg-warmup`
@@ -264,11 +243,11 @@ Brownfield initialization deliberately does not invent a `src/` module. Until wa
 ### Existing agent instructions and editor discovery
 
 `cg init` keeps repository-authored root instructions. Contract Graph stores its full shared entry
-point in `.agents/cg/AGENTS.md`; `cg sync` prepends one discovery line to each root file selected by
+point in `.agents/cg/contract-graph-agent.md`; `cg sync` prepends one discovery line to each root file selected by
 the editor profiles and leaves the existing body intact. Before doing so, `init` highlights any
 existing instruction file that will receive the entry. In particular:
 
-- root `AGENTS.md` points to `.agents/cg/AGENTS.md` on its first line;
+- root `AGENTS.md` points to `.agents/cg/contract-graph-agent.md` on its first line;
 - root `CLAUDE.md` imports that canonical file with Claude Code's `@` syntax; and
 - `.github/copilot-instructions.md` points to the same file without replacing existing Copilot
   instructions.
@@ -291,6 +270,31 @@ so the dedicated `.github/copilot-instructions.md` pointer remains part of that 
 Antigravity therefore uses the canonical root `AGENTS.md` and `.agents/skills/`; it no longer
 depends on the legacy rules pointer.
 
+### Develop from source
+
+To build and install the same package artifact from a source checkout:
+
+```bash
+git clone https://github.com/sarada-io/contract-graph.git
+cd contract-graph
+npm ci
+npm test
+npm run pack
+VERSION=$(node -p "require('./package.json').version")
+npm install --global "./contract-graph-${VERSION}.tgz"
+cg --version
+```
+
+Check out a release tag before `npm ci` when you want a reproducible release rather than the
+current `main` branch. `npm run pack` builds the verified `build/` target and produces the tarball
+that npm installs. Do not install the GitHub URL directly: `build/` is generated and intentionally
+not stored in Git.
+
+For development, run `npm link` in the checkout after `npm ci` to link the global `cg` command to
+the working source instead. Run `npm run build` when validating the distributable package. The
+complete build, test, tarball, and publication process is in
+[CONTRIBUTING.md](https://github.com/sarada-io/contract-graph/blob/main/CONTRIBUTING.md#building-and-inspecting-the-npm-package).
+
 ## Bundled skills
 
 After `init`, day-to-day work is the `/cg-*` skills, not the CLI. An agent reads the matching
@@ -307,7 +311,8 @@ do not plan, produce, or write contracts.
 | `/cg-unblock` | Record a fork, assumption, or blocked Step so independent work can continue. |
 | `/cg-auto-run` | Opt-in. Drive later stages unattended within a granted authority. Never auto-runs warmup or unblock. |
 
-The [lifecycle](docs/lifecycle.md) is the full walk and the order those skills hand off.
+The [lifecycle](https://github.com/sarada-io/contract-graph/blob/main/docs/lifecycle.md) is the full
+walk and the order those skills hand off.
 
 ## Main commands
 
@@ -348,6 +353,8 @@ The build validates authored YAML catalogs, then assembles the complete package 
 build/                            package target; the only input to npm pack
   package.json
   manifest.json                   hashes every other target file
+  README.md                       the README rendered on npm
+  LICENSE
   agent/
     cg/
       contract.yaml
@@ -412,7 +419,8 @@ replaced. `A` rules are authored directly in the YAML architecture-principles ca
 Run `npm run build:check` to verify the complete `build/` directory without rewriting it.
 
 `npm run pack` rebuilds and passes only this target directory to npm; the tarball lands at the
-repository root. It contains `agent/cg/principles/architecture.yaml`,
+repository root. It contains this README, the executable under `script/`, and the installable
+assets under `agent/`, including `agent/cg/principles/architecture.yaml`,
 `agent/cg/guidelines/engineering.yaml`, and `agent/cg/guidelines/product.yaml`. Markdown remains
 only where it is the runtime instruction format — principally `workflow.md`, `SKILL.md`, and
 scaffold templates. npm does not gather additional files from the working tree.
@@ -462,10 +470,10 @@ parallel execution safe until that proof and write confinement exist.
 
 ## Read next
 
-- [Vision](docs/vision.md) — the complete concept, origin, causal model, and next structural work.
-- [Contracts](docs/contracts.md) — the YAML node format, JSON Schema, graph invariants, CLI/library views, and current limits.
-- [Lifecycle](docs/lifecycle.md) — the graph walk that decides a node, and how the seven skills move work through the graph.
-- [Contributing](CONTRIBUTING.md) — tests and contribution expectations.
+- [Vision](https://github.com/sarada-io/contract-graph/blob/main/docs/vision.md) — the complete concept, origin, causal model, and next structural work.
+- [Contracts](https://github.com/sarada-io/contract-graph/blob/main/docs/contracts.md) — the YAML node format, JSON Schema, graph invariants, CLI/library views, and current limits.
+- [Lifecycle](https://github.com/sarada-io/contract-graph/blob/main/docs/lifecycle.md) — the graph walk that decides a node, and how the seven skills move work through the graph.
+- [Contributing](https://github.com/sarada-io/contract-graph/blob/main/CONTRIBUTING.md) — tests and contribution expectations.
 
 ## Requirements
 

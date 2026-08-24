@@ -1,10 +1,10 @@
 # Repository Agent Workflow
 
 This is the default delivery workflow installed by Contract Graph. It is repository-owned and
-preserved by later `cg init` runs, so an adopting repository may keep it, amend it, or integrate it
-with a workflow supplied by SpecKit or another framework. While retained, its sequence governs
-repository code tasks. The separate `.agents/cg/principles/architecture.yaml` remains the machine-enforced
-source for Contract Graph structural integrity.
+preserved by later `cg init` runs, so an adopting repository may keep or amend it. While retained,
+its sequence governs repository code tasks. The separate
+`.agents/cg/principles/architecture.yaml` remains the machine-enforced source for Contract Graph
+structural integrity.
 
 ## Development Principles
 
@@ -35,7 +35,7 @@ reason, and its stated cost into the assumption or decision. `E` practices are
 decision inputs, never inherited ambient rules and never compliance findings. The recursive
 mapping and node decision — kinds, self-sufficiency, stay, add a child, or route elsewhere —
 live in `.agents/cg/principles/architecture.yaml` `hierarchy` and `graph`, not in
-this workflow, so a SpecKit (or other) delivery workflow cannot drop them by replacing this file.
+this workflow, so editing the delivery sequence cannot drop them.
 During harvest, use `cg-unblock` D-5a: route a recurring decision once to a contract invariant, an
 `E` guideline, an A promotion candidate, a scoped P binding, or drop.
 

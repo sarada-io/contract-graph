@@ -187,9 +187,9 @@ through change. A broader application-architecture preference remains guidance u
 repository adopts a product-specific form as `P` or the verifier owner promotes a generic
 structural invariant through the structural gate.
 
-A repository constitution supplied by SpecKit or another specification framework may govern the
-broader product and engineering choices. It complements rather than replaces these structural
-bindings: constitutions express repository policy, while A detectors protect graph integrity.
+A repository constitution may govern broader product and engineering choices. It complements
+rather than replaces these structural bindings: repository policy guides product decisions, while
+A detectors protect graph integrity.
 
 ### Architecture principles and guideline catalogs
 

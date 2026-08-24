@@ -1,144 +1,148 @@
 # Contributing
 
-## Setup
+Contract Graph is a contract-first project. A contribution is complete when the implementation,
+tests, user documentation, and affected YAML contracts tell the same story.
+
+## Before opening a pull request
+
+Discuss a large change in an issue before implementing it. This is especially important for a new
+editor profile, contract-schema change, lifecycle change, package-layout change, or globally
+binding `A` rule. Small fixes, documentation corrections, and focused negative fixtures can go
+straight to a pull request.
+
+Keep each pull request focused. A behavior change must update its tests and user-facing
+documentation in the same change. If the change alters a governed responsibility, public surface,
+invariant, dependency, or route, update the responsible `contract.yaml` too.
+
+Useful contribution areas include:
+
+- contract traversal, routing, graph projections, and verifier diagnostics in `src/scripts/`;
+- greenfield and brownfield initialization, editor discovery, and upgrade safety;
+- lifecycle skills under `src/skills/`;
+- schemas, structural detectors, and fail-on-demand fixtures;
+- clearer examples and documentation that keep the npm installation path accurate; and
+- manual discovery evidence from the real agent hosts Contract Graph supports.
+
+## Setup and first checks
+
+Contract Graph requires Node.js 18.17 or newer.
 
 ```bash
-node --test "test/**/*.test.js"
-```
-
-Node 18.17+. Run `npm install` once; the package deliberately keeps its runtime surface to the YAML
-parser it bundles for canonical contract and binding files. A PR adding another runtime dependency
-needs to argue for it because every dependency is supply-chain surface on a verifier.
-
-## Building the package
-
-Files under `src/cg/principles/` are the human-edited architecture principles catalog
-(`architecture.yaml`). Engineering and product guidelines are YAML under `src/cg/guidelines/`
-(`engineering.yaml`, `product.yaml`). After changing either, run:
-
-```bash
-npm run build
-npm run build:check
-```
-
-The first command replaces the root-level `build/` package target; the second proves every file
-and mode in that target matches its package source without writing. Never edit `build/` directly.
-It is gitignored, as is `tmp/` from `npm run try`. `npm run clean` deletes both. `npm run pack`
-rebuilds `build/` and writes `contract-graph-<version>.tgz` at the repository root (`*.tgz` is
-gitignored). Architecture YAML is copied into `build/agent/cg/principles/` and engineering and
-product YAML into `build/agent/cg/guidelines/` in the checkout (`agent/cg/principles/` and
-`agent/cg/guidelines/` inside the tarball). The packaged `bin` is `script/cli.js`, not
-the checkout's `bin/cg.js`.
-
-Product entries are short YAML sentences: `id` plus `text`, under a `Pnn` heading. The catalog
-ships with `principles: []`. Engineering entries are `id`, `rule`, and `reason`. The rule is the
-practice; the reason is why it exists. A preference may also carry `cost`. `E` never appears in
-`enforcement.yaml`.
-
-## Publishing
-
-`package.json` `version` is the source of truth. The git tag and the npm version follow it.
-
-The registry artifact is the tarball from `npm run pack`, not the git checkout and not the
-`build/` directory. `npm publish ./build` packs that folder again at publish time; `npm publish`
-from the repo root would ship `src/` and `bin/cg.js`. Publish the file you just packed:
-
-```bash
-git status --short          # must be empty — pack reads the working tree
+npm ci
 npm test
-npm run pack
-npm login
-npm publish contract-graph-<version>.tgz --access public
+node bin/cg.js --help
 ```
 
-Smoke-test the extracted tarball (after `npm install --omit=dev` in the extract, so `yaml`
-resolves) before publishing: greenfield `cg init` keeps the starter `src` module; brownfield with
-a build manifest does not invent one, reports `UNMAPPED`, and still reaches `cg verify: OK`.
+The runtime dependency surface is deliberately limited to the YAML parser used for canonical
+contracts and rule catalogs. A pull request adding another runtime dependency must explain why the
+benefit justifies adding supply-chain surface to a verifier.
 
-Do not publish from a dirty tree. `npm pack` reads files on disk, so uncommitted edits ship and
-committed-but-unbuilt catalog changes do not.
+Before reading implementation, start with `docs/vision.md`, `docs/contracts.md`, and the relevant
+contract route. Use `cg contract route --task "<request>"` when the authored routes cover the
+request, then descend to the smallest responsible boundary.
 
-## Trying a scaffold locally
+## Choose validation from the change surface
+
+Run focused tests while iterating, then the complete relevant checks before opening the pull
+request. Use this table as the minimum:
+
+| Changed area | Required validation |
+|---|---|
+| Documentation only | Check commands, links, filenames, and claims against the current CLI and package behavior. |
+| Runtime scripts, init, sync, profiles, templates, or skills | Focused test file(s), then `npm test`; manually exercise any changed user workflow. |
+| `src/cg/principles/`, `src/cg/guidelines/`, or `src/cg/schema/` | `npm run build`, `npm run build:check`, then `npm test`. |
+| Package metadata or build assembly | `npm test`, `npm run pack`, inspect the tarball, and smoke-test the extracted package. |
+| Editor discovery behavior | All automated checks plus `npm run try -- <host>` and a check in the real editor or agent host. |
+
+Report the exact checks and outcomes in the pull request. “Tests pass” is not enough when the
+change affects interactive initialization or editor discovery.
+
+## Installation scenarios
+
+Initialization changes must cover all four scenarios below. Use throwaway repositories; never run
+destructive test helpers against a working project.
+
+| Scenario | Expected result |
+|---|---|
+| Greenfield | `cg init` installs the starter `src` contract, selected discovery adapters, docs trees, skills, and versioned profile metadata; `cg verify` passes. |
+| Brownfield | Existing source is preserved. A repository without `src/` does not gain an invented one, detected module roots are reported as unmapped, and `/cg-warmup` is the next adoption step. |
+| Existing instructions | Existing `AGENTS.md`, `CLAUDE.md`, and `.github/copilot-instructions.md` content survives. The user is warned before the selected files receive a generated first-line pointer. |
+| Existing docs folder | Interactive init asks whether to reuse `docs/`; non-interactive init requires an explicit `--docs docs` or another single-directory root. Existing files are preserved. |
+
+For host-specific discovery, run:
 
 ```bash
 npm run try -- claude
 ```
 
-Scaffolds a throwaway repository in `tmp/<target>`, runs `init` → `sync` → `verify`, and reports
-which artifacts the named editor actually reads. `tmp/` is gitignored and safe to delete.
+Valid targets are `antigravity`, `claude`, `codex`, `copilot`, and `cursor`. The helper recreates
+`tmp/<target>`, runs `init` → `sync` → `verify`, and reports the artifacts that host is expected to
+read. It is repository-only tooling and is excluded from the npm package.
 
-`cg verify` proves a scaffold is well-formed; `npm run try` is how you check an editor finds it. The
-second is not something the verifier can close on its own.
+The shared `agents` installation profile covers Antigravity, Codex, and Cursor because they consume
+the same root `AGENTS.md` and `.agents/skills/` layout. The host names remain accepted by the CLI as
+compatibility aliases and by the manual helper as distinct real-editor test targets. Claude Code
+and GitHub Copilot for VS Code have their own adapters.
 
-The helper is `src/scripts/dev.js`, and it is **excluded from the package target**. It is
-repository tooling: it writes to `tmp/`, it is reached only through `npm run try`, and it does not
-ship. A test asserts the exclusion and exact target-to-tarball correspondence.
+Include the host, version, operating system, terminal, selections made, generated files inspected,
+and result in the pull-request report. A repository fixture proves what Contract Graph wrote; only
+the real host proves that the host discovered it.
 
 ## Source layout
 
 ```text
-src/scripts/    engine — CLI, verifier, and contract graph
+src/scripts/    engine — CLI, verifier, build, and contract graph queries
 src/skills/     lifecycle skills → .agents/skills/
-src/cg/         authored contract-graph core → .agents/cg/
-src/install/    init extras: hooks, rules, profiles, and templates
+src/cg/         authored Contract Graph core → .agents/cg/
+src/install/    hooks, rules, profiles, and preserved templates used by init
+test/           behavior, negative fixtures, package, and scaffold coverage
 ```
 
-`src/cg/` mirrors the installed graph: `contract.yaml`, `workflow.md`, `phases.json`,
-`enforcement.yaml`, `binding/`, `principles/`, and `schema/`. `src/install/templates/` holds the
-starter module and the `docs/{plans,design,guides}` trees. Profile configs live in
-`src/install/profiles/` and are never copied into an adopting repo.
+`src/cg/` contains `contract.yaml`, `workflow.md`, `phases.json`, `enforcement.yaml`,
+`principles/`, `guidelines/`, and `schema/`. `src/install/templates/` holds the starter module and
+the `docs/{plans,decisions,guides}` trees. Profile configurations live in
+`src/install/profiles/` and are packaged for the CLI, but are not copied into an adopting
+repository.
 
 ## Changing the scaffold
 
 `SCAFFOLD_MAPPING` in `src/scripts/init.js` is the executable source of truth for what `cg init`
-writes. Its rules are directory-level: every consumer-facing file under `src/`, except runtime
-scripts and profile configuration, must match exactly one rule.
+writes. Every consumer-facing source must match exactly one mapping rule.
 
 Each rule has an ownership policy:
 
-- `replace` is framework-owned. `cg init` updates it from the installed package.
-- `preserve` is repository-owned context. `cg init` writes it only when it is absent.
+- `replace` is framework-owned and may be updated by a later `cg init`;
+- `preserve` becomes repository-owned after installation and is written only when absent; and
+- generated discovery artifacts are regenerated by `cg sync` from the selected profiles.
 
-The test suite checks the mapping in both directions. Coverage rejects an unmapped file or one
-claimed by overlapping rules. A round-trip test scaffolds a temporary repository and compares the
-result with an independently encoded source-to-target map. When changing the mapping, first make
-the relevant detector fail with one deliberate mutation, then restore it and run `npm test`.
+The test suite checks the mapping in both directions and round-trips a temporary scaffold against
+an independently encoded target map. When changing a detector, first prove the intended negative
+fixture fails, then restore the valid state and run the complete suite.
 
-Editor profiles live in `src/install/profiles/` and may add discovery artifacts only; they may not
-change the universal contract or governance tree. To add one:
+Editor profiles may add discovery artifacts only; they may not change the universal contract or
+governance tree. To add or change one:
 
-1. Confirm the paths the real editor reads using its installed application and a scratch
-   repository. A string found in an application bundle proves presence, not absence.
-2. Add `<name>.scaffolding.conf.json` with its lowercase name, display name, root pointers,
+1. Confirm the official paths and then test them in the real host with a scratch repository.
+2. Update `<name>.scaffolding.conf.json` with its lowercase name, display name, root pointers,
    optional skill wrappers, and inheritance.
-3. Add tests for its exact artifacts, missing selected artifacts, absent unselected artifacts,
-   malformed configuration, and profile neutrality.
-4. Run `npm test`, then `npm run try -- <name>` and inspect `tmp/<name>` in the real editor.
+3. Add tests for exact artifacts, missing selected artifacts, absent unselected artifacts,
+   malformed configuration, incremental re-init, and profile neutrality.
+4. Run `npm test`, `npm run try -- <host>`, and inspect the result in the real host.
 
-A profile may be a named no-op when the universal scaffold already supplies everything its editor
-discovers. Do not invent a redundant file merely to give the profile a visible artifact. Cursor is
-this case: it reads `AGENTS.md` and `.agents/skills/`, so its profile extends `codex` and adds no
-unique path.
+Do not invent a redundant file to make a profile appear distinct. When hosts consume the same
+standard, they should share one installation profile and retain host-specific names only where
+they help compatibility or testing.
 
-## The rule that applies to this repository too
+## Bindings and fail-on-demand tests
 
-**A binding and its enforcing test land in the same commit.** A PR that adds a check to `verify.js`
-without a fail-on-demand test in `test/` will be asked for the test. A PR that adds an `E`
-preference with an empty `cost` will be asked to fill it or omit the field.
+**A binding and its enforcing test land in the same commit.** A verifier check without a negative
+fixture is incomplete, as is binding prose without a registered detector.
 
-### Fail-on-demand, specifically
+Every check needs a test that mutates one fact in an otherwise-green repository and asserts that
+specific detector fires. `test/verify.test.js` shows the pattern: `makeRepo()` builds a green
+fixture, `edit()` breaks one fact, and `assertFails(dir, code, note)` confirms the intended failure.
 
-Every check needs a test that mutates one thing in an otherwise-green repository and asserts *that
-specific check* fires. A test that only proves the green path passes is indistinguishable from a
-check that does nothing.
-
-`test/verify.test.js` shows the shape: `makeRepo()` builds a green fixture, `edit()` breaks exactly
-one thing, `assertFails(dir, code, note)` asserts the right code fires and prints every actual
-failure when it does not.
-
-## Engineering guideline entries
-
-Architecture entries are advisory. The usual shape is:
+An engineering guideline is advisory:
 
 ```yaml
 - id: E01-01
@@ -146,7 +150,7 @@ Architecture entries are advisory. The usual shape is:
   reason: <why this practice exists>
 ```
 
-A preference between workable designs may also carry `cost`:
+A preference may also name its tradeoff:
 
 ```yaml
 - id: E12-01
@@ -155,49 +159,73 @@ A preference between workable designs may also carry `cost`:
   cost: <what choosing this makes harder, slower, or unavailable>
 ```
 
-Neither form may have an enforcement-map row. A practice that should bind belongs in `P` or,
-when it meets the structural promotion gate, in `A`.
-
-## Promoting an engineering guideline to structural binding
-
-In this verifier-owning repository, an `E` practice may move to
-`src/cg/principles/architecture.yaml` only when all four facts are present:
+`E` entries never appear in `enforcement.yaml`. Product-specific binding belongs in `P`. A generic
+practice may move from `E` to `src/cg/principles/architecture.yaml` only when all four facts land
+together:
 
 1. violating it would damage graph routing, ownership, boundary structure, or structural truth;
 2. one deterministic measurement states pass versus fail;
-3. a blocking detector is registered by the installed verifier; and
-4. a negative fixture proves that detector fires.
+3. the installed verifier registers a blocking detector; and
+4. a negative fixture proves the detector fires.
 
-Implement and register the detector, assign the next permanent `A` ID, and remove the
-overlapping `E` practice in the same change. Every architecture-principle entry carries `rule`,
-`measure`, and `enforcedBy`; every detector entry carries its registered implementation and exact
-negative-fixture name. Binding prose without all of this does not merge. An initialized consumer
-repository cannot add a built-in detector by changing its preserved YAML alone; product-specific
-enforcement belongs in `P`, while a generic structural proposal belongs here.
+Assign the next permanent `A` ID and remove the overlapping `E` entry in that same change. Never
+renumber or reuse a rule ID. Set names may be renamed, split, or merged because they are routing
+labels rather than identities.
 
-**Rule IDs are never renumbered.** Append within a guideline or the architecture-principles
-catalog; redefine in place; never reuse. Set *names* may be renamed, split, or merged — they are
-routing labels, not identities.
+Imported guidance must include the case for using it here, its local cost, and a license check.
+Prefer a paraphrase with project-specific reasoning over copied prose.
 
-## Adding an engineering guideline
+## Building and inspecting the npm package
 
-Add it to `src/cg/guidelines/engineering.yaml` under the next unused `Enn` heading, or append
-inside an existing heading. Do not renumber. Product-specific bindings belong in `product.yaml`
-as `P`, not here.
+Never edit `build/` directly. It is a generated, gitignored package target. Build and verify it
+with:
 
-The verifier checks that every entry sits under its owning principle and retains its stable ID.
-A new family prefix is a verifier change, not a YAML addition.
+```bash
+npm run build
+npm run build:check
+npm run pack
+```
 
-## Imported rules
+`npm run pack` creates `contract-graph-<version>.tgz` from `build/`. The package contains the CLI
+under `script/`, the installable assets under `agent/`, `package.json`, `LICENSE`, and this exact
+`README.md`; npm therefore renders the same README that is reviewed in the repository. The
+checkout's `bin/cg.js`, authoring `src/` tree, tests, docs tree, and developer helper are not part
+of the published artifact.
 
-If a rule comes from somewhere else, it arrives with the rule but without the case behind it or its
-cost. Before it lands, state what it costs **here**. If that cannot be stated, the rule is being
-adopted on reputation rather than reasoning, and it should be dropped. Check the source's licence
-before copying text; a paraphrase carrying your own cost clause is usually the better artifact
-anyway.
+Before publishing, extract the tarball, run `npm install --omit=dev` in the extract so `yaml` is
+available, then smoke-test `cg --version`, greenfield init, brownfield init, incremental profile
+addition, existing instructions, an existing docs root, and `cg verify`.
 
-## Commit expectations
+## Publishing
 
-- One change per commit where practical.
-- A behaviour change updates its documentation in the same commit.
-- Say what the change **costs** in the message when it costs something.
+`package.json` `version` is the source of truth; the git tag and npm version follow it. Publish the
+tarball produced by `npm run pack`, not the repository root or `build/` directory:
+
+```bash
+git status --short
+npm test
+npm run pack
+npm login
+npm publish contract-graph-<version>.tgz --access public
+```
+
+The working tree must be clean because packing reads files from disk. `npm publish ./build` repacks
+the directory, while publishing from the repository root would select the wrong package layout.
+
+## Pull-request evidence and commit expectations
+
+The pull-request description should include:
+
+- the problem and bounded solution;
+- affected contracts and user workflows;
+- automated commands and outcomes;
+- manual scenarios, host and environment details where relevant;
+- screenshots or concise transcripts for interactive behavior when they aid review; and
+- material AI assistance, including what the agent produced and what the human contributor
+  inspected, understood, and tested.
+
+The human contributor remains responsible for the design and evidence. Agent output without
+end-to-end review is not validation.
+
+Keep one change per commit where practical. State meaningful costs or tradeoffs in the commit
+message, and keep behavior, tests, documentation, and structural truth together.

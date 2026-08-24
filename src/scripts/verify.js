@@ -55,6 +55,8 @@ import {
   productHasHarvestedRules,
   ENGINEERING_FILENAME,
   governanceContractPath,
+  CG_AGENT_ENTRY,
+  LEGACY_CG_AGENT_ENTRY,
 } from "./model.js";
 import { moduleCoverage, openDescent } from "./modules.js";
 import { ProfileError, resolveProfileSelection } from "./profiles.js";
@@ -710,7 +712,11 @@ export function verify(repoRoot) {
     if (!exists(file)) continue;
     const contents = read(file);
     const firstLine = splitLines(contents)[0]?.trim();
-    if (!contents.includes(ROOT_BEGIN_MARKER) && firstLine !== renderRootReference(relPath, prefix)) {
+    const knownReferences = [
+      renderRootReference(relPath, prefix),
+      renderRootReference(relPath, prefix, LEGACY_CG_AGENT_ENTRY),
+    ];
+    if (!contents.includes(ROOT_BEGIN_MARKER) && !knownReferences.includes(firstLine)) {
       continue;
     }
     fail(
@@ -720,13 +726,19 @@ export function verify(repoRoot) {
   }
 
   const projectName = path.basename(repoRoot);
+  const legacyAgentEntry = path.join(repoRoot, LEGACY_CG_AGENT_ENTRY);
+  if (exists(legacyAgentEntry)) {
+    fail(
+      `[8] ${LEGACY_CG_AGENT_ENTRY}: legacy canonical agent entry remains. Run \`cg sync\` to migrate it to ${CG_AGENT_ENTRY}.`,
+    );
+  }
   try {
     const generated = generateCgAgent(repoRoot);
     if (generated.current !== generated.desired) {
-      fail(`[8] .agents/cg/AGENTS.md: principle index is missing, stale, or hand-edited. Run \`cg sync\`.`);
+      fail(`[8] ${CG_AGENT_ENTRY}: principle index is missing, stale, or hand-edited. Run \`cg sync\`.`);
     }
   } catch (error) {
-    fail(`[8] .agents/cg/AGENTS.md: ${error.message}`);
+    fail(`[8] ${CG_AGENT_ENTRY}: ${error.message}`);
   }
   for (const [relPath, prefix] of Object.entries(profile.rootPointers)) {
     let generated;

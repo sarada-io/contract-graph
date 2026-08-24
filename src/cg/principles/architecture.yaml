@@ -22,9 +22,9 @@ hierarchy:
     component: [component, library]
     library: []
 
-# Recursive mapping and node decision. SpecKit or another framework may replace workflow.md;
-# it must not replace this. A rules check a graph that already exists. This section is
-# what writes and extends the graph. The key order is the walk: node, recurse, selfSufficient,
+# Recursive mapping and node decision. Workflow changes must not replace this section. A rules
+# check a graph that already exists. This section is what writes and extends the graph.
+# The key order is the walk: node, recurse, selfSufficient,
 # surface, decide, compose, stop, forbid, adapters. Stay / add-child / elsewhere remain the only outcomes.
 # Inside surface the walk is enter, service, promise, encapsulate, bypass. Service is the first
 # way to declare entry: named operations that encapsulate the implementation contract.yaml points at.
