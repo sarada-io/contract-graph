@@ -25,7 +25,7 @@ import {
 } from "../src/scripts/binding.js";
 import { checkHarvest } from "../src/scripts/harvest.js";
 import { detectModuleRoots, moduleCoverage, subBoundaryCount } from "../src/scripts/modules.js";
-import { renderAgentRule, renderModulePointer } from "../src/scripts/model.js";
+import { renderModulePointer } from "../src/scripts/model.js";
 import { next, permits } from "../src/scripts/next.js";
 import { multiSelect, updatePickerState } from "../src/scripts/picker.js";
 import { residue } from "../src/scripts/residue.js";
@@ -1111,6 +1111,20 @@ test("sync preserves a hand-written root file and prepends its canonical pointer
   assert.match(read(dir, ".agents/cg/contract-graph-agent.md"), /BEGIN PRINCIPLES INDEX/);
   assert.deepEqual(verify(dir).failures, []);
   assert.deepEqual(sync(dir).changed, [], "a second sync must rewrite nothing");
+});
+
+test("sync composes the canonical agent entry from its Markdown template", () => {
+  const dir = makeRepo();
+  const template = read(SOURCE_ROOT, "cg/contract-graph-agent.md");
+  const installed = read(dir, ".agents/cg/contract-graph-agent.md");
+  const withoutGeneratedIndex = (text) => text.replace(
+    /<!-- BEGIN PRINCIPLES INDEX[\s\S]*?<!-- END PRINCIPLES INDEX -->/,
+    "<!-- GENERATED PRINCIPLES INDEX -->",
+  );
+
+  assert.equal(withoutGeneratedIndex(installed), withoutGeneratedIndex(template));
+  assert.notEqual(installed, template, "sync must inject the repository's calculated rule index");
+  assert.match(installed, /\*\*A\*\* Structural integrity/);
 });
 
 test("sync preserves existing AGENTS, CLAUDE, and Copilot instructions", () => {
@@ -2506,8 +2520,13 @@ function ruleMatchesSource(rule, relative) {
 }
 
 test("scaffold mapping covers every eligible src file exactly once", () => {
+  // The canonical entry template ships in the npm package but is consumed by `cg sync`, not
+  // copied by `init`; its generated target therefore stays out of the installation manifest.
   const eligible = filesUnder(SOURCE_ROOT).filter(
-    (file) => !file.startsWith("scripts/") && !file.startsWith("install/profiles/"),
+    (file) =>
+      !file.startsWith("scripts/") &&
+      !file.startsWith("install/profiles/") &&
+      file !== "cg/contract-graph-agent.md",
   );
   const uncovered = [];
   const overlapping = [];
@@ -2539,7 +2558,6 @@ test("init round trip writes exactly the canonical mapped file set", () => {
     { source: "cg/enforcement.yaml", target: ".agents/cg/enforcement.yaml", mode: "always", select: "file" },
     { source: "cg/schema", target: ".agents/cg/schema", mode: "always", select: "tree" },
     { source: "skills", target: ".agents/skills", mode: "always", select: "tree" },
-    { source: "install/rules", target: ".agents/rules", mode: "always", select: "tree" },
     { source: "install/hooks", target: ".agents/hooks", mode: "always", select: "tree" },
     { source: "install/templates/module", target: "src", mode: "always", select: "tree" },
     { source: "install/templates/docs", target: "docs", mode: "always", select: "tree" },
@@ -2756,6 +2774,7 @@ test("the published tarball ships consumer sources and no maintainer tooling", (
     "script/contracts.js",
     "script/picker.js",
     "agent/cg/contract.yaml",
+    "agent/cg/contract-graph-agent.md",
     "agent/cg/principles/architecture.yaml",
     "agent/cg/workflow.md",
     "agent/cg/enforcement.yaml",
@@ -2852,15 +2871,6 @@ test("the manifest keeps the original baseline for preserved context", () => {
     JSON.parse(read(dir, MANIFEST)).files[seed].sha256,
     before,
     "a preserved file's baseline is evidence of what shipped, and must not drift",
-  );
-});
-
-test("the shipped rule pointer matches what cg sync generates", () => {
-  // They drifted once. Nothing caught it, because sync overwrites the file on the first run
-  // and the stale template was only ever read by someone opening the package.
-  assert.equal(
-    fs.readFileSync(path.join(SOURCE_ROOT, "install/rules/cg.md"), "utf8"),
-    renderAgentRule(),
   );
 });
 

@@ -261,7 +261,7 @@ layout differs by agent host:
 | [Cursor](https://cursor.com/docs/rules) | Native | [Native](https://cursor.com/docs/skills) | None |
 | [GitHub Copilot for VS Code](https://docs.github.com/en/copilot/reference/custom-instructions-support) | Support varies by Copilot surface | [Native in agent mode](https://docs.github.com/en/copilot/concepts/agents/about-agent-skills) | The tested VS Code-extension profile points its repository instructions at the canonical entry |
 | [Claude Code](https://code.claude.com/docs/en/memory#agents-md) | Not read directly | Project skills use [`.claude/skills/`](https://code.claude.com/docs/en/skills#where-skills-live) | `CLAUDE.md` import plus generated `.claude/skills/` wrappers |
-| [Google Antigravity](https://antigravity.google/docs/cli/gcli-migration/) | Native at the workspace root (alongside legacy `GEMINI.md`) | Native at `.agents/skills/` | The profile uses the root entry; the older shared `.agents/rules/cg.md` pointer remains bundled for compatibility |
+| [Google Antigravity](https://antigravity.google/docs/cli/gcli-migration/) | Native at the workspace root (alongside legacy `GEMINI.md`) | Native at `.agents/skills/` | The profile uses the root entry |
 
 For GitHub Copilot, agent skills are documented for the cloud agent, code review, CLI, GitHub app,
 and agent mode in Visual Studio Code and JetBrains IDEs. Support varies for other Copilot surfaces,

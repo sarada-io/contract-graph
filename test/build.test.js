@@ -44,6 +44,11 @@ test("cg build copies architecture and product YAML catalogs", () => {
 
   const architectureFile = path.join(dir, BUILD_DIRECTORY, "agent/cg/principles/architecture.yaml");
   assert.ok(fs.existsSync(architectureFile));
+  assert.equal(
+    fs.readFileSync(path.join(dir, BUILD_DIRECTORY, "agent/cg/contract-graph-agent.md"), "utf8"),
+    fs.readFileSync(path.join(dir, "src/cg/contract-graph-agent.md"), "utf8"),
+    "the reviewable agent prompt must ship byte-for-byte",
+  );
   const engineeringFile = path.join(dir, BUILD_DIRECTORY, "agent/cg/guidelines/engineering.yaml");
   assert.ok(fs.existsSync(engineeringFile));
   assert.ok(!fs.existsSync(path.join(dir, BUILD_DIRECTORY, "agent", "cg", "guidelines", "engineering.json")));

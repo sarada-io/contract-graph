@@ -76,10 +76,6 @@ export const SCAFFOLD_MAPPING = Object.freeze([
   { source: "cg/schema", packageSource: "agent/cg/schema", target: ".agents/cg/schema", mode: "always", select: "tree", install: "replace" },
   { source: "skills", packageSource: "agent/skills", target: ".agents/skills", mode: "always", select: "tree", install: "replace" },
   { source: "install/hooks", packageSource: "agent/hooks", target: ".agents/hooks", mode: "always", select: "tree", install: "replace" },
-  // Shipped so the file exists on a first install; its *content* belongs to `cg sync`, which
-  // regenerates it unconditionally. Marking it `replace` would make every clean re-run report a
-  // pending change to a file the next command rewrites anyway.
-  { source: "install/rules", packageSource: "agent/rules", target: ".agents/rules", mode: "always", select: "tree", install: "preserve" },
   // `starter` rather than `always`: the module tree is an example contract for a repository
   // that has no modules yet. Writing it into a brownfield repo invents a module that does not
   // exist — see `shouldScaffoldModule`.

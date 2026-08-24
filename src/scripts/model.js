@@ -6,6 +6,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { BINDING_FILENAME, loadCoreBindingRules } from "./binding.js";
 import { parseContractYaml } from "./contracts.js";
@@ -107,6 +108,16 @@ export const ROOT_POINTERS = {
 export const CG_AGENT_ENTRY = ".agents/cg/contract-graph-agent.md";
 export const LEGACY_CG_AGENT_ENTRY = ".agents/cg/AGENTS.md";
 
+const RUNTIME_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const PACKAGED_CG_AGENT_TEMPLATE = path.join(
+  RUNTIME_ROOT,
+  "agent",
+  "cg",
+  "contract-graph-agent.md",
+);
+const CG_AGENT_TEMPLATE = fs.existsSync(PACKAGED_CG_AGENT_TEMPLATE)
+  ? PACKAGED_CG_AGENT_TEMPLATE
+  : path.join(RUNTIME_ROOT, "cg", "contract-graph-agent.md");
 
 /** Default root for the three scaffolded document trees. Overridable at `cg init`. */
 export const DEFAULT_DOCS_ROOT = "docs";
@@ -1083,45 +1094,13 @@ export function renderRootIndex(repoRoot, prefix, { local = false } = {}) {
   return lines.join("\n");
 }
 
-/** Render the canonical shared instructions stored inside `.agents/cg/`. */
-export function renderCgAgent(repoRoot) {
-  return [
-    "# Contract Graph — agent entry point",
-    "",
-    "**Start here: [`.agents/cg/contract.yaml`](contract.yaml)** — the root of the project's context graph. " +
-      "It explains the system, sets the reading order, and routes work into module and sub-module " +
-      "contracts before implementation code is read.",
-    "",
-    "`.agents/cg/` is a dot-directory. If your tool's indexer skips hidden paths, open " +
-      "these files by exact path rather than relying on search.",
-    "",
-    renderRootIndex(repoRoot, "", { local: true }),
-    "",
-    "## Required reading order",
-    "",
-    "1. [`.agents/cg/contract.yaml`](contract.yaml) — repository contract and graph root.",
-    `2. [\`${BINDING_FILENAME}\`](principles/architecture.yaml) — architecture principles: \`hierarchy.kinds\` and \`graph\` (recurse, selfSufficient, stay / add-child / elsewhere), then A detectors.`,
-    "3. [`.agents/cg/guidelines/`](guidelines/) — non-binding engineering guidelines and repository-owned product guidelines.",
-    "4. [`.agents/cg/workflow.md`](workflow.md) — the repository-owned agent workflow.",
-    "5. Run `cg contract route --task \"<request>\"` — resolve the first task-to-contract edge " +
-      "from routes owned by contracts.",
-    "6. `<module>/.agents/cg/contract.yaml`, then its relevant child contracts — traverse until " +
-      "the responsible boundary is clear; only then read implementation. Use `cg contract context` " +
-      "to resolve the rules that bind the selected boundary.",
-    "",
-    "The principle index in this file is generated. Keep repository-specific instructions in the " +
-      "root entry files or other repository-owned context. Regenerate with `cg sync`.",
-    "",
-  ].join("\n");
-}
-
 /** Return {path, current, desired} for the canonical shared instructions. */
 export function generateCgAgent(repoRoot) {
   const file = path.join(repoRoot, CG_AGENT_ENTRY);
   const current = readIfPresent(file);
   const legacyFile = path.join(repoRoot, LEGACY_CG_AGENT_ENTRY);
   const legacyPath = !current && exists(legacyFile) ? legacyFile : null;
-  const source = legacyPath ? read(legacyFile) : current;
+  const source = legacyPath ? read(legacyFile) : current || read(CG_AGENT_TEMPLATE);
 
   if (source.includes(ROOT_BEGIN_MARKER)) {
     return {
@@ -1158,8 +1137,9 @@ export function generateCgAgent(repoRoot) {
       ),
     };
   }
-
-  return { path: file, current, legacyPath, desired: renderCgAgent(repoRoot) };
+  throw new ContractError(
+    `${CG_AGENT_TEMPLATE}: canonical agent template is empty`,
+  );
 }
 
 /** Render a complete root entry file: static preamble plus the generated index. */
@@ -1360,28 +1340,6 @@ export function generateClaudeSkillWrapper(repoRoot, canonicalSkill) {
     current: readIfPresent(wrapper),
     desired: renderClaudeSkillWrapper(canonicalSkill, wrapper),
   };
-}
-
-/** Render the concise shared-agent Contract Graph rule pointer. */
-export function renderAgentRule() {
-  return [
-    "# Contract Graph",
-    "",
-    "Before planning or changing code, read",
-    "[`../cg/contract.yaml`](../cg/contract.yaml) and traverse its context graph from repository to",
-    "module to relevant sub-module before reading implementation code.",
-    "Read [`../cg/principles/architecture.yaml`](../cg/principles/architecture.yaml) for the recursive mapping and enforced architecture principles.",
-    "Use the matching [`../skills/cg-*/SKILL.md`](../skills/) for non-trivial lifecycle work.",
-    "Optional engineering guidance lives under `.agents/cg/guidelines/`; canonical skills live under",
-    "`.agents/skills/`.",
-    "",
-  ].join("\n");
-}
-
-/** Return {path, current, desired} for the shared-agent rule pointer. */
-export function generateAgentRule(repoRoot) {
-  const file = path.join(repoRoot, ".agents", "rules", "cg.md");
-  return { path: file, current: readIfPresent(file), desired: renderAgentRule() };
 }
 
 /** Return Markdown with one generated discovery block replaced or inserted after the H1. */

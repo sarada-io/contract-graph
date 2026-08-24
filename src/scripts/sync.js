@@ -1,6 +1,6 @@
 /**
  * Regenerate every derived artifact: the canonical agent entry, root discovery pointers, module
- * workspace-root pointers, the shared-agent rule pointer, and the Claude discovery wrappers.
+ * workspace-root pointers, and the Claude discovery wrappers.
  * Contracts themselves are authored YAML and are never rewritten by sync.
  *
  * Idempotent. Running it twice writes nothing the second time, which is exactly what
@@ -11,7 +11,6 @@ import fs from "node:fs";
 import path from "node:path";
 
 import {
-  generateAgentRule,
   generateCgAgent,
   generateClaudeSkillWrapper,
   generateModulePointer,
@@ -59,8 +58,6 @@ export function sync(repoRoot, { dryRun = false } = {}) {
       apply(generateModulePointer(repoRoot, record.contract, pointer), changed, dryRun);
     }
   }
-
-  apply(generateAgentRule(repoRoot), changed, dryRun);
 
   const skills = skillsRoot(repoRoot);
   let wrapperCount = 0;

@@ -32,7 +32,6 @@ import {
   splitLines,
   planPathPattern,
   PLAN_TICKET,
-  generateAgentRule,
   generateCgAgent,
   generateClaudeSkillWrapper,
   generateRoot,
@@ -333,15 +332,6 @@ export function checkSkills(
   }
 
   return skillNames.length;
-}
-
-export function checkAgentRule(fail, repoRoot) {
-  const { path: file, current, desired } = generateAgentRule(repoRoot);
-  if (current !== desired) {
-    fail(
-      `[9] ${rel(repoRoot, file)}: shared-agent Contract Graph rule is missing, stale, or hand-edited; run \`cg sync\``,
-    );
-  }
 }
 
 /**
@@ -695,7 +685,6 @@ export function verify(repoRoot) {
     );
   }
 
-  checkAgentRule(fail, repoRoot);
   checkPhases(fail, repoRoot);
   const skillCount = checkSkills(fail, repoRoot, CORE_CG_SKILLS, profile);
   const enforcementIds = enforcementRuleIds(fail, repoRoot);

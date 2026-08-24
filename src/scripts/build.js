@@ -29,7 +29,6 @@ const PACKAGE_TREE_MAPPINGS = Object.freeze([
   ["src/cg/schema", "agent/cg/schema"],
   ["src/skills", "agent/skills"],
   ["src/install/hooks", "agent/hooks"],
-  ["src/install/rules", "agent/rules"],
   ["src/install/profiles", "agent/profiles"],
   ["src/install/templates/module", "agent/templates/module"],
   ["src/install/templates/docs", "agent/templates/docs"],
@@ -38,6 +37,7 @@ const PACKAGE_TREE_MAPPINGS = Object.freeze([
 const PACKAGE_FILE_MAPPINGS = Object.freeze([
   ["LICENSE", "LICENSE"],
   ["README.md", "README.md"],
+  ["src/cg/contract-graph-agent.md", "agent/cg/contract-graph-agent.md"],
   ["src/cg/contract.yaml", "agent/cg/contract.yaml"],
   ["src/cg/workflow.md", "agent/cg/workflow.md"],
   ["src/cg/phases.json", "agent/cg/phases.json"],
