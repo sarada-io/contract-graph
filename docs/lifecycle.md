@@ -144,9 +144,10 @@ work.
 ## Queue state is on disk
 
 Each programme keeps `roadmap.md` and one `<phase>_detailed_preparation.md` queue under
-`docs/plans/<programme>/`. `cg next` selects the owning stage from the queue's `## Step <n>`
-sections; `cg residue` reports planning artifacts no roadmap claims. See the root README for the
-complete layout.
+`docs/plans/<programme>/` by default. `cg init --docs` records a different root in
+`.agents/cg/profile.json`; `cg residue` prints that `<docs>/plans/`. `cg next` selects the owning
+stage from the queue's `## Step <n>` sections; `cg residue` reports planning artifacts no roadmap
+claims. See the root README for the complete layout.
 
 ## Stage boundaries are explicit
 

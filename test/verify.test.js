@@ -940,6 +940,22 @@ test("harvest rejects the retired hyphenated decision grammar", () => {
   );
 });
 
+test("cg-unblock resolves the docs root and loads E from engineering.yaml", () => {
+  const skill = fs.readFileSync(
+    path.join(SOURCE_ROOT, "skills", "cg-unblock", "SKILL.md"),
+    "utf8",
+  );
+  assert.match(skill, /\.agents\/cg\/profile\.json/);
+  assert.match(skill, /<docs>\/plans\/decision-log\.md/);
+  assert.match(skill, /\.agents\/cg\/guidelines\/engineering\.yaml/);
+  assert.match(skill, /E16-01/);
+  assert.match(skill, /E12-01/);
+  assert.match(skill, /Do not copy this section/);
+  assert.match(skill, /Do not invoke the next skill yourself/);
+  assert.doesNotMatch(skill, /architecture catalog under/);
+  assert.doesNotMatch(skill, /^## Completion check$/m);
+});
+
 test("the decision log is a ledger; the entry template lives with cg-unblock", () => {
   const log = fs.readFileSync(
     path.join(SOURCE_ROOT, "install/templates/docs/plans/decision-log.md"),
@@ -956,6 +972,7 @@ test("the decision log is a ledger; the entry template lives with cg-unblock", (
   assert.match(template, /\*\*Unblocks when:\*\*/);
   assert.match(template, /### DU-NN/);
   assert.match(template, /### DA-NN/);
+  assert.match(template, /<docs>\/plans\/decision-log\.md/);
 });
 
 test("the prepared drain route must carry the accepted digest and every drain id", () => {

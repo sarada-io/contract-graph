@@ -23,10 +23,11 @@ structural integrity.
 6. **Decide, don't ask live.** Unspecified detail is resolved from the principles, the existing
    code, or the owner's recorded priors — and logged as an assumption — not escalated. Stopping
    mid-task costs the slice; a wrong reversible decision costs one edit. Follow
-   `.agents/skills/cg-unblock/SKILL.md`: it is binding for every non-trivial task. Its Rule D-4
-   requires every surviving question to be enumerated at plan time; Rule D-5 requires it be
-   **logged as a `DU-NN` entry in `docs/plans/decision-log.md`**, not asked in chat, unless the
-   entire remaining task is blocked with nothing else to work on.
+   `.agents/skills/cg-unblock/SKILL.md`: it is binding for every non-trivial task. Resolve `<docs>`
+   from `.agents/cg/profile.json` `docs` (default `docs`). Rule D-4 requires every surviving
+   question to be enumerated at plan time; Rule D-5 requires it be **logged as a `DU-NN` entry in
+   `<docs>/plans/decision-log.md`**, not asked in chat, unless the entire remaining task is blocked
+   with nothing else to work on.
 
 After structural bindings, scoped product rules, the repository constitution, contracts, accepted
 decisions, durable requirements, and existing green patterns have been applied, load only the
@@ -186,7 +187,7 @@ Contracts must survive plan deletion. When writing or updating a contract:
 
 ## Plan Harvest Step (before archiving a plan)
 
-Before a completed plan moves to `docs/plans/archive/` (and eventually gets
+Before a completed plan moves to `<docs>/plans/archive/` (and eventually gets
 deleted), follow `.agents/skills/cg-sign-off/SKILL.md`. In short:
 
 1. If the roadmap declares a decision harvest, classify one declared producer-phase cohort. The
@@ -194,7 +195,7 @@ deleted), follow `.agents/skills/cg-sign-off/SKILL.md`. In short:
    equal the eligible decision IDs. Other resolved decisions and every pending decision remain in
    the log for their own cohort or answer. Validate the transient manifest before any later gate:
    `cg harvest <decision-harvest.json>
-   --decision-log docs/plans/decision-log.md`.
+   --decision-log <docs>/plans/decision-log.md`.
 2. For a non-empty cohort, obtain one batch acceptance and route it through `cg-prepare`. The
    first prepared harvest Step carries the accepted classification digest, and its drain IDs
    exactly equal the eligible decision IDs. It remains blocked on source-phase completion while
