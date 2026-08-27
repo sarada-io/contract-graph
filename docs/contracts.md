@@ -295,6 +295,9 @@ Commands read one or more connected YAML files; no executable JavaScript is supp
 repository being inspected. Repository data stays declarative, while the installed, versioned
 library owns parsing, traversal, rendering, and verification.
 
+The loop that consumes those contracts — plan, queue, Step, and the disk baseline a later
+session is supposed to trust — is [workflow](workflow.md).
+
 ## Authoring rule
 
 Contracts are written from the code and architectural intent one boundary at a time. Generating

@@ -599,6 +599,18 @@ test("the public lifecycle guide documents the graph walk", () => {
   }
 });
 
+test("the public workflow guide names decomposition and the disk baseline", () => {
+  const workflow = fs.readFileSync(
+    path.join(SOURCE_ROOT, "..", "docs", "workflow.md"),
+    "utf8",
+  );
+  assert.match(workflow, /## The decomposition stack/);
+  assert.match(workflow, /cg next/);
+  assert.match(workflow, /<phase>_detailed_preparation\.md/);
+  assert.match(workflow, /cites a plan path or ticket id/);
+  assert.match(workflow, /Chat history is not one of them/);
+});
+
 // ----------------------------------------------------- architecture principles
 
 test("a rule filed under the wrong principle heading fails", () => {

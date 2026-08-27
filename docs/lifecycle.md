@@ -9,6 +9,10 @@ working code; it is working code whose current structure is still traversable fr
 contract. Every pass routes through the graph, changes the smallest responsible boundary, updates
 the affected graph facts, verifies both, and leaves that improved context for the next pass.
 
+How a programme is decomposed into phases and Steps, how those artifacts execute, and which disk
+files become the next session's baseline is [workflow](workflow.md). This page stays the skill
+catalog and the `graph` walk.
+
 The structural binding catalog governs this loop. Its `A` rules protect responsibility,
 hierarchy, graph closure, surfaces, dependencies, and verification reciprocity on every pass.
 Repository-owned `P` rules bind only the contracts that list them. `E` engineering practices
@@ -88,7 +92,7 @@ under explicit authority, and `cg-warmup` is run once at brownfield adoption.
 | `cg-produce` | Run the earliest ready Step; deliver implementation, tests, YAML contract updates, and detectors as one independently valid structural change; recalculate the queue; continue serially. |
 | `cg-sign-off` | Verify every prepared Step completed through a dependency-safe history and that the resulting graph still describes and routes through the implemented system; drive current-phase defects through corrective Steps; harvest decisions; close only on a green gate. Owns the durable record too — design records, product and operator guidance, and diagrams — and is entered standalone when only documentation is needed. Never repairs contract correctness as detached cleanup. |
 | `cg-unblock` | Govern forks across the lifecycle: apply contract-backed or reversible defaults, record assumptions, log blocked Steps, keep independent work moving. |
-| `cg-auto-run` | **Opt-in.** Dispatch one stage at a time, follow its `Next action` only while measured state advances within the granted authority, and stop on blockers, `cg-unblock`, failed gates, or the dispatch budget. It performs no lifecycle stage itself. |
+| `cg-auto-run` | **Opt-in.** Dispatch one stage at a time, follow its `Next action` only while measured state advances within the granted authority, and stop on blockers, `cg-unblock`, failed gates, three closed phases, or its twelve-dispatch budget. It performs no lifecycle stage itself. |
 | `cg-warmup` | **Once, at adoption.** Discover an existing repository's real boundaries, write and connect their YAML contracts, add contract-owned routes, verify every applicable structural binding, and harvest product bindings or non-binding engineering guidelines. Raises what it cannot settle as `DU-NN` entries in the decision log rather than asking in chat. Never scores, never edits behaviour. |
 
 ```mermaid

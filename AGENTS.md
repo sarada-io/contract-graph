@@ -54,8 +54,10 @@ Before changing this repository, read in order:
 
 1. `[docs/vision.md](docs/vision.md)` — the project intention and causal model.
 2. `[docs/contracts.md](docs/contracts.md)` — the recursive contract structure and current limits.
-3. `[README.md](README.md)` — shipped behavior and user-facing workflow.
-4. The relevant files under `src/scripts/`, plus `test/verify.test.js`, for implementation work.
+3. `[docs/lifecycle.md](docs/lifecycle.md)` — the graph walk and the seven skills.
+4. `[docs/workflow.md](docs/workflow.md)` — how programmes decompose, execute, and leave a baseline.
+5. `[README.md](README.md)` — shipped behavior and user-facing workflow.
+6. The relevant files under `src/scripts/`, plus `test/verify.test.js`, for implementation work.
 
 Keep claims honest. Schema-backed contracts, contract-owned task routes, and machine verification
 of the authored graph's reciprocity, acyclicity, and root reachability are built. Correspondence

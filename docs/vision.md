@@ -241,6 +241,9 @@ route through the contract graph
   → leave a truthful graph for the next loop
 ```
 
+How that loop is split into a transient plan, a Step queue, and a permanent graph is
+[workflow](workflow.md).
+
 A loop is not structurally complete when the code works but the graph describes the previous
 system. Conversely, updating contracts without checking the implementation produces a tidy graph
 that cannot be trusted. Code and graph truth close together.
