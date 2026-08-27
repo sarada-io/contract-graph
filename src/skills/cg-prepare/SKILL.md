@@ -30,6 +30,10 @@ Finish with all twelve true:
     immutable classification digest and drain IDs exactly equal the eligible decision IDs.
 12. The response ends with the `Next action` block in §9.
 
+These twelve are this skill's disk facts, not a score. Item 11 is true when no harvest cohort is
+in scope. Once the queue file has a `Ready` Step, emit §9 so `cg-auto-run` can dispatch
+`cg-produce`. Do not hold the hop to re-score the list.
+
 ## 1. Admit one phase
 
 Preparation starts only when `cg-plan` has selected one phase whose outcome, scope, and acceptance
@@ -41,7 +45,9 @@ execution branch or worktree policy is known. If the outcome or gate must change
    assigning any path.
 2. Load the selected phase from the roadmap. Run `cg contract route --task "<phase outcome>"`.
    Load only the matched contracts and their named children; then scoped `P` rules, then the
-   repository constitution and specifications. Consult `E` only for a remaining design fork.
+   repository constitution and specifications. Consult `E` only for a remaining design fork. A
+   practice already cited on the selected phase is not remaining. An `E` disagreement is not
+   `Blocked by` and not `$cg-unblock`.
 3. Resolve `<docs>` from `.agents/cg/profile.json` `docs` (default `docs`). Confirm with
    `cg residue`. The queue file is `<docs>/plans/<programme>/<phase>_detailed_preparation.md`.
 4. Inspect source, tests, resources, and the worktree inside the selected units only.
@@ -92,8 +98,10 @@ Blocked`. No later Step may be `Ready`, `In progress`, or `Complete` before the 
 Before assigning paths, apply `.agents/cg/principles/architecture.yaml` `graph`: recurse until the
 smallest node, then stay, add-child, or elsewhere. Size, reuse, or a new dependency is not a new
 node. `graph.surface` is declared entry; a new entry point is a surface amendment or `add-child`.
-`graph.adapters`: a second optional vendor client is `add-child` behind a parent-owned port. A
-Step whose editable paths sit on the wrong domain is a preparation defect.
+`graph.adapters`: a second optional vendor client is `add-child` behind a parent-owned port. If
+the phase already names an add-child, elsewhere, service, or adapter target, assign paths to
+deliver it. Mixed code that matches that target is the work, not a return to `$cg-plan`. A Step
+whose editable paths sit on the wrong domain is a preparation defect.
 
 Inventory every affected item:
 

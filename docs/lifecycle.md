@@ -181,9 +181,10 @@ allow the dispatch, so confirm `cg --version` in the hook environment before rel
 ## Unattended traversal is bounded
 
 `cg-auto-run` is opt-in. It defaults to fully planned roadmap authority, checkpoints before every
-dispatch, and stops on blockers, `cg-unblock`, failed gates, or its twenty-four-dispatch budget.
-The skill itself defines the narrower `queue` and `phase` authorities and the wider `programme`
-authority; the README gives the user-facing summary.
+dispatch, and stops on blockers, `cg-unblock`, failed gates, three closed phases, or its
+twelve-dispatch budget. Remaining planned phases are a fresh run. The skill itself defines the
+narrower `queue` and `phase` authorities and the wider `programme` authority; the README gives the
+user-facing summary.
 
 ## Contract updates belong to execution
 

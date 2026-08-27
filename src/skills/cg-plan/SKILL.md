@@ -33,7 +33,9 @@ Before writing or revising the roadmap:
    matched contracts and their named children; then scoped `P` rules on those contracts, then the
    repository constitution and specifications. Consult `E` only for a remaining design fork; it is
    not a compliance list and does not replace `graph`. Run `cg graph show` if composition is still
-   unclear.
+   unclear. If `<docs>/plans/warmup-corrective-set.md` is Unconsumed, that file is the restructure
+   input: keep each row's Architecture target and Engineering guidance; do not invent phases from
+   uncited `E` entries, and do not drop cited ones.
 3. Resolve `<docs>` from `.agents/cg/profile.json` `docs` (default `docs`). Confirm with
    `cg residue`, which prints `<docs>/plans/`. Find the active roadmap by `Status: Proposed` or
    `Status: Active` under `<docs>/plans/*/roadmap.md`, not by filename.

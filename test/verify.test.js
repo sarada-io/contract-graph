@@ -1646,6 +1646,65 @@ test("cg-warmup states a resumable per-unit loop, not one linear pass", () => {
 });
 
 /**
+ * Membership is architecture.yaml `graph`. The programme the owner validates is shaped by both
+ * catalogs: A for the target node, E for remaining design judgement. E must not add rows.
+ */
+test("cg-warmup uses both catalogs for a restructure proposal, not for membership", () => {
+  const skill = fs.readFileSync(
+    path.join(SOURCE_ROOT, "skills", "cg-warmup", "SKILL.md"),
+    "utf8",
+  );
+  assert.match(
+    skill,
+    /Do not consult[\s\S]*engineering\.yaml[\s\S]*whether a folder is a contract/,
+    "E does not decide nodes or invent findings",
+  );
+  assert.match(skill, /\*\*Restructure proposal\.\*\*/);
+  assert.match(skill, /\*\*Architecture target:\*\*/);
+  assert.match(skill, /\*\*Engineering guidance:\*\*/);
+  assert.match(skill, /E` does not override `graph/);
+});
+
+/**
+ * Auto-run is an adapter. If produce bounces a planned split because the code is still mixed,
+ * or treats an E disagreement as Blocked by / $cg-unblock, a default `roadmap` run either
+ * loops prepare↔produce or stops as if the owner had a decision to make.
+ */
+test("cg-auto-run stays an adapter, and produce executes a prepared split", () => {
+  const skill = (name) =>
+    fs.readFileSync(path.join(SOURCE_ROOT, "skills", name, "SKILL.md"), "utf8");
+
+  const autoRun = skill("cg-auto-run");
+  assert.match(autoRun, /never auto-invokes cg-unblock or cg-warmup/);
+  assert.match(autoRun, /adds no graph rules and no `E` rules/);
+  assert.match(autoRun, /does not rewrite a `Next input`/);
+  assert.match(autoRun, /\.agents\/cg\/profile\.json/);
+  assert.match(autoRun, /<docs>\/plans\/auto-run\//);
+  assert.match(autoRun, /twelve dispatches per run/);
+  assert.match(autoRun, /Third `Phase complete` heading this run/);
+  assert.match(autoRun, /A few phases is the window/);
+  assert.doesNotMatch(autoRun, /twenty-four/);
+  assert.doesNotMatch(autoRun, /six dispatches per run/);
+  assert.doesNotMatch(
+    autoRun,
+    /Next input: \$cg-warmup/,
+    "warmup is never a successor this adapter may follow",
+  );
+
+  const produce = skill("cg-produce");
+  assert.match(produce, /still-mixed code is the starting state, not a reason to stop/);
+  assert.match(produce, /do not\nemit `\$cg-plan`/);
+  assert.match(produce, /An `E` disagreement is not `Blocked by` and not `\$cg-unblock`/);
+
+  const prepare = skill("cg-prepare");
+  assert.match(prepare, /Mixed code that matches that target is the work, not a return to `\$cg-plan`/);
+  assert.match(
+    prepare,
+    /An `E` disagreement is not[\s\S]{0,20}`Blocked by` and not `\$cg-unblock`/,
+  );
+});
+
+/**
  * A graph that was generated rather than written.
  *
  * Measured on a real adoption run: the agent judged ten contracts to be mechanical work, wrote

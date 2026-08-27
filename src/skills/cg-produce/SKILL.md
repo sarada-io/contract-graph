@@ -36,7 +36,8 @@ state, editable paths, required contract changes, work, handoff, or `Done when`.
    selfSufficient, surface, adapters, stay, add-child, or elsewhere.
 2. Load the contracts named by the brief. Run `cg contract route --task "<Step goal>"` if
    placement is still unclear. Then scoped `P` rules, then the repository constitution and
-   specifications. Consult `E` only for a remaining design fork.
+   specifications. Consult `E` only for a remaining design fork. A practice already cited on the
+   phase or brief is not remaining. An `E` disagreement is not `Blocked by` and not `$cg-unblock`.
 3. Resolve `<docs>` from `.agents/cg/profile.json` `docs` (default `docs`). Confirm with
    `cg residue`. Read `<docs>/plans/decision-log.md`: *Resolved* entries are authority; *Pending
    your review* entries are not, and a Step blocked on one stays blocked.
@@ -46,11 +47,18 @@ state, editable paths, required contract changes, work, handoff, or `Done when`.
 7. Inspect the worktree and preserve pre-existing unrelated changes.
 8. Run `cg verify` and the narrowest useful baseline. Record existing failures as facts.
 
-If `graph` decides `add-child` or `elsewhere`, stop with `$cg-prepare` (or `$cg-plan` when the
-remaining order must change). Do not add the behavior to the current boundary because its files
-were already in the brief. A new undeclared entry, internals on the surface, or a bypass of the
-declared service is not stay. `graph.adapters.mix` is `add-child`: do not land a second optional
-vendor client on the open node.
+If `graph` decides `add-child` or `elsewhere`, compare it to the Step brief. If the brief already
+names that split, new child, service set, or vendor adapter as this Step's work, execute it:
+still-mixed code is the starting state, not a reason to stop. If the brief adds new behavior to
+the still-mixed node, or needs an undeclared path, stop with `$cg-prepare`. Do not add the
+behavior to the current boundary because its files were already in the brief. If the phase
+outcome or remaining order must change, stop with `$cg-prepare` carrying that finding — do not
+emit `$cg-plan`; preparation returns to planning when the outcome moved.
+
+A new undeclared entry, internals on the surface, or a bypass of the declared service is not
+stay unless this Step's work is to declare or split that surface. `graph.adapters.mix` is
+`add-child`: do not land a second optional vendor client on the open node unless the brief is
+that split.
 
 If the Step needs an undeclared path or a missing contract change, return to `cg-prepare`. Do not
 edit first and hope completion repairs it.
@@ -130,7 +138,8 @@ its removal condition.
 ## 5. Handle unexpected scope
 
 - Edit only paths declared by the Step brief.
-- Stop with `$cg-unblock` when new evidence creates a protected design choice.
+- Stop with `$cg-unblock` when new evidence creates a protected design choice. An `E`
+  disagreement is not that evidence.
 - Continue work that remains inside the Step and can still produce one coherent verified handoff.
 - Stop with `$cg-prepare` when a new path, dependency, contract, or ordering change is required.
 - If the Step cannot finish, leave the repository at its last contract-complete verified handoff,
