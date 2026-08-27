@@ -1539,8 +1539,9 @@ test("every governance path a skill names is a file init installs", () => {
   for (const file of fs.readdirSync(path.join(SOURCE_ROOT, "cg"))) {
     if (/\.(?:md|json|yaml)$/.test(file)) installed.add(`.agents/cg/${file}`);
   }
-  // Written by init into the docs root, not shipped under src/cg.
+  // Written by init, not shipped under src/cg.
   installed.add("docs/plans/decision-log.md");
+  installed.add(".agents/cg/profile.json");
   installed.add(".agents/cg/principles/architecture.yaml");
 
   const skills = path.join(SOURCE_ROOT, "skills");

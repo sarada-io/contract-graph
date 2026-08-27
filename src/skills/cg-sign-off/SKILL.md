@@ -7,7 +7,10 @@ description: Close one selected Contract Graph phase and own the durable record 
 
 Own closure and the record it leaves behind. Verify the accumulated repository, repair failures,
 keep the phase active until it is green or honestly blocked, and write the durable knowledge that
-must survive the plan. Read `cg-unblock` for any fork encountered on the way.
+must survive the plan.
+
+Read `.agents/skills/cg-unblock/SKILL.md` only when a fork fails D-1: unresolvable from contracts
+and accepted decisions, material, costly to reverse, and nothing else can proceed.
 
 ## Two entry paths
 
@@ -16,8 +19,7 @@ must survive the plan. Read `cg-unblock` for any fork encountered on the way.
 | a prepared phase queue has drained, or composition exposed a defect | §1–§10, then §11 |
 | durable rationale or product/operator guidance must be written, with no phase closing | §8 alone, then §11 |
 
-The standalone path is a first-class entry, not a shortcut through closure. It never marks a phase
-Complete and never edits `.agents/cg/`.
+The standalone path never marks a phase Complete and never edits `.agents/cg/`.
 
 ## Required outcome
 
@@ -37,26 +39,25 @@ Close the phase only when all thirteen are true. On the standalone path, only 10
 10. Durable rationale and product/operator guidance are harvested, written, and validated.
 11. The phase status and roadmap reflect reality before archival.
 12. No required contract update was displaced from `cg-produce` into a documentation edit.
-13. The user-facing response names the next action, next skill, input artifact, and readiness
-    condition.
+13. The response ends with the `Next action` block in §11.
 
 If a protected decision, unavailable prerequisite, or roadmap correction prevents these outcomes,
-finish this attempt with the explicit Incomplete or Blocked continuation state from §9 and §10.
-That state is actionable but is not phase completion.
+finish with Incomplete or Blocked from §9 and §10. That is actionable; it is not phase completion.
 
 ## 1. Admit the accumulated phase
 
-Do not begin closure until:
+1. Apply `.agents/cg/principles/architecture.yaml` `graph` when judging whether the graph still
+   describes the code.
+2. Resolve `<docs>` from `.agents/cg/profile.json` `docs` (default `docs`). Confirm with
+   `cg residue`.
+3. Run `cg next`. Closure starts only when every prepared Step is `Complete`.
+4. Run `cg verify` and the full build-and-contract gate named in the preparation record.
 
-- every prepared Step is accounted for;
-- every prepared Step is `Complete`, with no `Waiting`, `Ready`, `Blocked`, or `In progress`
-  residue;
-- each Step's `Done when` evidence comes from its final accumulated state;
-- the current branch or worktree descends from the preparation baseline through every Step handoff;
-- the full build-and-contract gate is green;
-- every behavior, boundary, or invariant change includes its contract and detector;
-- detectors have non-vacuous fail-on-demand evidence; and
-- assumptions, decisions, residue, and rollback information are recorded.
+Do not begin closure until every prepared Step is accounted for and `Complete`; each `Done when`
+comes from the final accumulated state; the branch or worktree descends from the preparation
+baseline through every Step handoff; every behavior, boundary, or invariant change includes its
+contract and detector; detectors have fail-on-demand evidence; and assumptions, decisions,
+residue, and rollback information are recorded.
 
 An admission failure starts the repair loop in §2; it is not a terminal rejection report.
 
@@ -69,15 +70,14 @@ Classify every admission, test, contract, or acceptance finding:
 | phase-level composition test or close record | fix directly in closure-owned paths and re-run affected gates |
 | defect within an already prepared Step's paths | write a corrective Step brief and stop with Next action `$cg-produce` |
 | defect requiring new paths or a changed remaining order | stop with Next action `$cg-prepare` carrying the finding |
-| competing design or protected decision | stop with Next action `$cg-unblock`; keep the phase Blocked while independent verification continues |
+| competing design or protected decision | stop with Next action `$cg-unblock`; keep the phase Blocked |
 | genuinely out-of-phase work | stop with Next action `$cg-plan`, or `$cg-prepare` only when a matching future phase already exists |
-| missing prerequisite or outcome error | stop with Next action `$cg-plan`, mark the phase Incomplete or Blocked, and resume after correction |
+| missing prerequisite or outcome error | stop with Next action `$cg-plan`, mark the phase Incomplete or Blocked |
 
 Closure-owned fixes are limited to paths reserved by `cg-prepare`: emergent composition tests and
 phase-close records. If a repair changes production behavior, a boundary, an invariant, an entry
 point, a contract, or a detector, write a corrective Step brief and yield. Do not invoke
-`cg-produce` or `cg-prepare` from this skill. The Next action block names the hop; the user or
-`cg-auto-run` takes it. Sign-off resumes as a new invocation after that handoff is green.
+`cg-produce` or `cg-prepare` from this skill.
 
 Use this corrective brief:
 
@@ -107,15 +107,9 @@ Source: cg-sign-off
 <state sign-off must re-admit>
 ```
 
-When a corrective Step returns and sign-off is resumed:
-
-1. confirm the corrective handoff matches the current execution context;
-2. repeat admission;
-3. re-run the full phase gate and every original Step gate; and
-4. continue until green or blocked by a recorded decision or unavailable prerequisite.
-
-Do not leave a current-phase rejection as prose. Sign-off owns classifying the defect and emitting
-the exact Next action that continues the loop.
+When a corrective Step returns and sign-off is resumed: confirm the handoff matches the execution
+context, repeat admission, re-run the full phase gate and every original Step gate, and continue
+until green or blocked.
 
 ## 3. Verify the continuous sequential history
 
@@ -136,7 +130,7 @@ Walk the actual Step execution history:
     unaccounted residue.
 
 Then run the repository full gate in the final accumulated state. There is no branch merge,
-per-Step rebase, or conflict-resolution phase in the sequential model.
+per-Step rebase, or conflict-resolution phase.
 
 ## 4. Resolve accumulated contradictions
 
@@ -149,21 +143,11 @@ per-Step rebase, or conflict-resolution phase in the sequential model.
 
 ## 5. Write emergent verification
 
-Write only in closure-owned test paths reserved by `cg-prepare`.
+Write only in closure-owned test paths reserved by `cg-prepare`. Emergent tests prove phase
+composition. They never compensate for a missing Step-owned contract, detector, or functional test.
 
-Typical assertions:
-
-| Accumulated shape | Assertion |
-|---|---|
-| surface moved through several Steps | route/resource resolves in exactly one final binary |
-| published contract plus consumers | detector evaluates all consumers and fails on demand |
-| roles redistributed | complete role-by-route matrix permits only intended roles |
-| shared record evolved | exactly one final writer per field |
-| module registration changed | authored contracts still describe the implemented units and launch targets |
-| read/write paths compose | security domains remain isolated with correct fallback |
-
-Emergent tests prove phase composition. They never compensate for a missing Step-owned contract,
-detector, or functional test.
+Write the assertions the phase acceptance gate and the contracts actually require. Do not invent
+role-by-route or isolation matrices unless those contracts or the gate name them.
 
 ## 6. Confirm the phase
 
@@ -175,79 +159,61 @@ detector, or functional test.
 6. Confirm no unexpected worktree residue remains.
 
 If an applicable P binding is absent from a contract, or an A detector fails, write a corrective
-Step brief and stop with Next action `$cg-produce`. Do not repair it as isolated closure cleanup.
-If `.agents/cg/principles/architecture.yaml` `graph.recurse` would add a child for a self-sufficient unit
-that has no contract, that is the same produce defect.
+Step brief and stop with `$cg-produce`. If `.agents/cg/principles/architecture.yaml` `graph.recurse`
+would add a child for a self-sufficient unit that has no contract, that is the same produce defect.
 
 ## 7. Harvest decisions
 
 ### 7.1 Classify one declared producer-phase cohort
 
-When the active roadmap and preparation declare a decision-harvest cohort, sign-off triages only
-that cohort. It must not default to every resolved decision in the shared decision log.
+When the active roadmap and preparation declare a decision-harvest cohort, classify only that
+cohort. Do not default to every resolved decision in the log.
 
 1. Create one versioned JSON manifest in the closure-owned phase-close path reserved by
    `cg-prepare`.
 2. Copy the cohort's stable ID and exact eligible decision IDs from the accepted roadmap scope.
-   Roadmap review owns producer provenance; the manifest makes membership executable.
-3. Require that classification IDs exactly equal the eligible decision IDs: no omission,
-   duplicate, or extra ID is valid.
-4. Confirm each eligible ID is in the log's `Resolved` section. A pending or unknown ID is never
-   eligible. Other resolved decisions and every pending decision remain in the log for their own
-   cohort or answer.
+3. Classification IDs must exactly equal the eligible decision IDs.
+4. Each eligible ID must be in the log's `Resolved` section. A pending or unknown ID is never
+   eligible.
 5. Classify each eligible decision once through `cg-unblock` D-5a: module contract, architecture
-   principle, engineering guideline, product guideline, or drop. A `drop` carries one line saying why:
-   the entry was binding authority under D-2 until this moment, and the manifest is the archived
-   record that it existed and stopped.
-6. State each proposed permanent rule and delivery obligation without citing its source decision,
-   a plan ticket, or a `docs/plans/` path. Binding and invariant destinations name their detector
-   and enforcement treatment; an A promotion also names its deterministic measure and negative
-   fixture, while an `E` preference names its reason and optional cost and no detector/map row.
-   An `A` destination is valid only when the destination phase changes the verifier that registers
-   its detector. Otherwise retain
-   it as `E`, adopt it as repository-specific `P`, or record it as an upstream A proposal.
-7. Run the shipped detector. It checks cohort membership in both directions, that every
-   promotion owes what its destination owes, that no promoted rule cites its own decision or a
-   transient path, and that every dropped decision carries its reason:
+   principle, engineering guideline, product guideline, or drop. A `drop` carries one line saying
+   why.
+6. State each proposed permanent rule without citing its source decision, a plan ticket, or a
+   `<docs>/plans/` path. Binding and invariant destinations name their detector. An `A` destination
+   is valid only when the destination phase changes the verifier that registers its detector;
+   otherwise retain it as `E`, adopt it as `P`, or record an upstream A proposal.
+7. Run:
 
 ```bash
-cg harvest <decision-harvest.json> --decision-log docs/plans/decision-log.md
+cg harvest <decision-harvest.json> --decision-log <docs>/plans/decision-log.md
 ```
 
-The manifest is transient execution state, not authority. Sign-off proposes classifications; it
-does not write promoted rules or detectors outside an execution Step. Do not proceed to later
-harvest lifecycle gates until this classification detector passes.
+The manifest is transient. Sign-off proposes classifications; it does not write promoted rules or
+detectors outside an execution Step. Do not proceed until this detector passes.
 
 ### 7.2 Obtain one batch acceptance and validate the drain route
 
-After the classification detector passes, obtain one batch acceptance for the complete cohort.
-Acceptance approves the proposed permanent-rule promotions as a batch; it does not answer or
-reopen the underlying decisions.
+After classification passes, obtain one batch acceptance for the complete cohort. Acceptance
+approves the proposed promotions; it does not reopen the underlying decisions.
 
-1. Record `acceptance.status` as `accepted`, the accepting owner in `acceptedBy`, an unambiguous UTC
-   instant in `acceptedAt`, and `acceptedDecisionIds` exactly equal to the eligible decision IDs.
-   Partial acceptance, pending acceptance, omission, and extra IDs are invalid.
+1. Record `acceptance.status` as `accepted`, the owner in `acceptedBy`, an unambiguous UTC instant
+   in `acceptedAt`, and `acceptedDecisionIds` exactly equal to the eligible decision IDs.
 2. Route a non-empty accepted cohort to the next already-planned destination phase through
-   `cg-prepare`. If no matching phase exists, return the proposed work to `cg-plan` first.
-3. Require the first prepared harvest Step to name the exact source manifest, cohort ID,
-   classification digest, and drain IDs exactly equal the eligible decision IDs. That Step stays
-   `Blocked` on completion of the source phase; all later Steps stay `Waiting` behind it.
-4. Validate acceptance and the prepared route before closing the source phase:
+   `cg-prepare`. If no matching phase exists, return the work to `cg-plan` first.
+3. The first prepared harvest Step must name the exact source manifest, cohort ID, classification
+   digest, and drain IDs exactly equal the eligible decision IDs. That Step stays `Blocked` on
+   source-phase completion; later Steps stay `Waiting` behind it.
+4. Validate before closing the source:
 
 ```bash
-cg harvest <decision-harvest.json> --decision-log docs/plans/decision-log.md \
+cg harvest <decision-harvest.json> --decision-log <docs>/plans/decision-log.md \
   --stage close --preparation <destination-preparation.md>
 ```
 
-The route's stored classification digest makes the accepted classification set immutable across
-the handoff. Its drain IDs make cohort membership explicit. A source phase cannot close until this
-gate passes; no permanent rule or detector is edited during acceptance or routing. Once the source
-phase closes, its prepared harvest Step may become `Ready` and normal sequential execution begins.
-A valid empty cohort closes without acceptance or a route.
+A source phase cannot close until this gate passes. No permanent rule or detector is edited during
+acceptance or routing. A valid empty cohort closes without acceptance or a route.
 
 ### 7.3 Classify other durable knowledge
-
-Classify phase content:
 
 - **Missing binding rule:** use the §2 repair loop (yield to `$cg-produce`).
 - **Durable rationale or threat model:** write it as a design record under §8.
@@ -258,8 +224,9 @@ Permanent documents must not depend on a transient phase path or ticket ID as th
 
 ## 8. Write the durable record
 
-Write durable non-contract documentation that stays useful to humans and agents. Read contracts as
-evidence; never replace or defer them.
+Write durable non-contract documentation. Read contracts as evidence; never replace or defer them.
+Design records live under `<docs>/decisions/`. Product and operator guides live under
+`<docs>/guides/`. Both survive plan deletion. The roadmap is transient.
 
 ### 8.1 Respect lifecycle ownership
 
@@ -271,99 +238,52 @@ evidence; never replace or defer them.
 | Step implementation and contract co-delivery | `cg-produce` |
 | integration evidence, phase closure, durable rationale, product and operator guidance, Mermaid | `cg-sign-off` |
 
-Do not edit `.agents/cg/` as a documentation cleanup detached from implementation. A missing or
-stale contract returns to its owning execution Step through `cg-produce`.
+Do not edit `.agents/cg/` as documentation cleanup. A missing or stale contract returns to
+`cg-produce`.
 
 ### 8.2 Inspect evidence
 
-Before editing:
+Read relevant contracts and source. Identify audience. Decide whether the artifact is current truth
+or a dated historical record. Search existing terminology and diagrams. Verify paths, routes,
+modules, and commands. Preserve historical bodies; add a dated supersession banner rather than
+rewriting history to look current.
 
-1. Read relevant contracts and source.
-2. Identify audience and lifecycle tier.
-3. Determine whether the artifact is current truth or a dated historical record.
-4. Search existing terminology, diagrams, and neighboring explanations.
-5. Verify paths, routes, modules, roles, stores, and commands.
+### 8.3 Design records and guides
 
-Preserve historical bodies. Add a dated measurement or supersession banner rather than rewriting
-history to look current.
+Design records (`<docs>/decisions/`): alternatives, accepted trade-offs, threat or failure model,
+architecture consequences, supersession. Do not promote task logs or sequencing. Supersede a dated
+record rather than silently changing it.
 
-### 8.3 Write for humans and agents
+Guides (`<docs>/guides/`): current supported product — audience, happy path, authorization and
+safety boundary, observable failure, recovery, and a runnable smoke test. Remove retired stores,
+modules, routes, and deployment paths.
 
-For human readers, include what the product or subsystem does, why the boundary exists, who owns or
-operates it, and the failure, security, cost, and recovery consequences.
+Name owner, forbidden owner, contract IDs, entry points, verification commands, and current paths
+so a later session can route without chat history.
 
-For agent readers, include the exact owner and forbidden owner, stable contract or requirement IDs,
-entry points and trust boundaries, allowed and forbidden dependency directions, verification
-commands, and current names and paths.
+### 8.4 Mermaid diagrams
 
-Use plain language first, then precise identifiers. Avoid prose that requires chat history.
+Create the smallest diagram that clarifies a relationship. Validate syntax. Never claim a preview
+that did not occur. Read [the VS Code Mermaid Chart reference](references/vscode-mermaid-chart.md)
+when extension commands, AI repair, or cloud sync is relevant. Warn before credit-consuming AI
+repair.
 
-### 8.4 Design records
+### 8.5 Validate the documentation set
 
-Use design records for durable reasoning: alternatives considered, accepted trade-offs, threat or
-failure model, architecture consequences, and supersession relationships.
-
-Do not promote task logs, branch names, or temporary sequencing. A dated design record is historical
-evidence; supersede it rather than silently changing its decision.
-
-### 8.5 Product and operator guides
-
-Guides describe the current supported product: audience and prerequisites, happy path, authorization
-and safety boundary, observable failure, recovery and rollback, and a smoke test or verification.
-
-Commands must be runnable. Remove retired stores, modules, routes, and deployment paths instead of
-leaving contradictory operating stories.
-
-### 8.6 Mermaid diagrams
-
-Create the smallest diagram that materially clarifies a relationship.
-
-1. Inspect source, contracts, and existing diagrams.
-2. Check for Mermaid Chart frontmatter or managed synchronization.
-3. Choose the semantic type: flowchart, sequence, state, class/ER, C4, journey, timeline, or Git.
-4. Preserve repository artifact style.
-5. Validate syntax and render or preview when tooling exists.
-6. Inspect clipping, density, crossings, abstraction level, and legends.
-7. Update surrounding prose and references.
-
-Syntax rules: start with the exact diagram keyword; use stable IDs and quote punctuation-heavy
-labels; keep one abstraction level; use subgraphs only for real ownership or deployment boundaries;
-label ambiguous edges; avoid color-only meaning; split unreadable diagrams.
-
-Validation order:
-
-1. Mermaid extension validator and preview, if callable.
-2. Mermaid CLI render to a temporary SVG or PNG, then inspect.
-3. Static validation of keywords, delimiters, IDs, arrows, and `subgraph`/`end`.
-
-State the validation method. Never claim a preview that did not occur.
-
-Read [the VS Code Mermaid Chart reference](references/vscode-mermaid-chart.md) when extension
-commands, AI repair, cloud synchronization, or sync review is relevant. Warn before credit-consuming
-AI repair.
-
-### 8.7 Validate the documentation set
-
-- Check changed relative links.
-- Search live documents for retired names and ambiguous terminology.
-- Validate every changed Mermaid diagram.
-- Confirm durable documents do not cite transient plans as authority.
-- Run documented commands or state why they could not run.
-- Confirm a human understands the outcome and an agent can find owner, boundary, and gate.
+Check changed relative links. Search live documents for retired names. Validate every changed
+Mermaid diagram. Confirm durable documents do not cite transient plans as authority. Run
+documented commands or state why they could not run.
 
 ## 9. Hand over out-of-phase work or roadmap corrections
 
-Create a planning handover when either:
+Create a planning handover when the finding is genuinely outside the selected phase, or when it
+exposes a missing prerequisite or outcome error that requires `cg-plan` to correct the roadmap.
 
-- the finding is genuinely outside the selected phase; or
-- it exposes a missing prerequisite or outcome error that requires `cg-plan` to correct the
-  roadmap before the phase can continue.
+Carrying work forward while closing is valid only in the first case and only when the phase
+acceptance gate passes. In the second case, the phase remains Incomplete or Blocked.
 
-Carrying work forward while closing is valid only in the first case and only when the original
-phase acceptance gate passes. In the second case, the phase remains Incomplete or Blocked.
-
-Persist the input in the active roadmap's `Sign-off handovers` register, or the repository's
-equivalent named planning intake; a chat summary alone is not a handover.
+Persist the input in the active roadmap's completion-handovers register. A chat summary is not a
+handover.
 
 ```markdown
 # Sign-off handover: <finding>
@@ -393,12 +313,12 @@ Disposition: future phase | blocked prerequisite | roadmap correction
 <scope or prerequisite proof>
 ```
 
-`cg-plan` converts a roadmap-level handover into a phase or revises an existing future phase.
-`cg-prepare` may consume it directly only when an already-planned phase outcome and acceptance
-gate remain unchanged. Mark it Consumed only after the receiving phase or preparation is named.
+`cg-plan` converts a roadmap-level handover into a phase. `cg-prepare` may consume it directly
+only when an already-planned phase outcome and gate remain unchanged. Mark it Consumed only after
+the receiving phase or preparation is named.
 
-A handover is not a waiver. If the phase gate fails, mark the phase Incomplete or Blocked, link the
-handover or decision that unblocks it, and do not archive it as Complete.
+A handover is not a waiver. If the phase gate fails, mark Incomplete or Blocked, link the handover
+or decision that unblocks it, and do not archive it as Complete.
 
 ## 10. Close and archive
 
@@ -408,38 +328,29 @@ handover or decision that unblocks it, and do not archive it as Complete.
 4. Replace forward-looking instructions with measured results.
 5. Add valid out-of-phase handovers to the roadmap or named future phase.
 6. Update roadmap and current-state tables.
-7. Archive the completed phase and preparation records where repository convention requires it.
+7. Archive the completed phase and preparation records under `<docs>/plans/archive/`.
 8. Update links to archived paths.
-9. Re-run permanent-reference sweeps and full verification.
+9. Re-run `cg verify` and a sweep that durable documents do not cite `<docs>/plans/` paths.
 
-If the gate cannot become green, stop at Incomplete or Blocked with corrective and handover records
-ready for continuation. Do not perform archival steps.
+If the gate cannot become green, stop at Incomplete or Blocked. Do not archive.
 
 ## Stage boundary — yield here
 
-**Finish your stage, then return to the user.** Do not invoke the next skill yourself, however
-obvious the route is. The `Next action` block names the successor so a person can choose it and so
-`cg-auto-run` can follow it under a granted authority — naming it is not permission to take it.
-
-Crossing a stage boundary unasked removes the review the boundary exists for. Someone who runs this
-skill to read what it produced, and gets back a closed phase instead, cannot act on the thing they
-asked for: the decision point is gone and the work is already downstream of it.
-
-Continuing *within* your own stage is different and expected — `cg-produce` drains its queue, and a
-resumed Step is the same stage, not a new one. The rule is one stage per invocation, not one unit
-of work per invocation.
-
-The single exception is a dispatch from `cg-auto-run`, which holds an explicit authority level, a
-stage budget, and a ledger. If you were not dispatched by it, you are the last stage of this turn.
+Finish closure-owned work in this invocation: admission, history, harvest classification, durable
+record, and archival. Do not invoke the next skill yourself, however obvious the route is. If the
+repair loop names `$cg-produce`, `$cg-prepare`, `$cg-plan`, or `$cg-unblock`, stop and emit Next
+action — that hop is a new stage. The `Next action` block names the successor so a person can
+choose it and so `cg-auto-run` can follow it under a granted authority — naming it is not
+permission to take it. The single exception is a dispatch from `cg-auto-run`. If you were not
+dispatched by it, you are the last stage of this turn.
 
 ## 11. Sign-off report and next action
 
-Report the execution baseline, queue-state transitions, and actual Step history; final gate results;
-defects found, their classification, corrective Steps, and closed-loop evidence; emergent tests
-added; the phase acceptance result; contracts and detectors verified; durable documents and diagrams
-updated with their validation method; out-of-phase handovers, blocked work, and the archive location
-when eligible; and the exact final commands. On the standalone path, report only the artifacts
-written, their evidence, and their validation.
+Report the execution baseline, queue-state history, final gates, defects and dispositions,
+emergent tests, phase acceptance result, contracts and detectors verified, durable documents and
+their validation method, out-of-phase handovers, archive location when eligible, and the exact
+final commands. On the standalone path, report only the artifacts written, their evidence, and
+their validation.
 
 Choose exactly one immediate route:
 
@@ -470,24 +381,5 @@ End the user-facing response with:
 - **Blocked by:** <exact decision, prerequisite, or failing gate>   <!-- omit unless the status is non-advancing -->
 ```
 
-Name the next selected phase and skill, or state explicitly that no next skill remains. Do not
-invent a lifecycle transition for a standalone documentation task.
-
-## Sign-off check
-
-- [ ] Every Step report matches the continuous sequential history.
-- [ ] Every prepared Step is `Complete`; no blocked or waiting residue remains.
-- [ ] Every Step and corrective gate passes in the final state.
-- [ ] Every current-phase defect completed the repair loop.
-- [ ] Emergent tests pass.
-- [ ] The phase acceptance gate passes.
-- [ ] Contract-affecting repairs ran through `cg-produce`.
-- [ ] Every carried-forward item has a complete planning handover.
-- [ ] Durable knowledge survives plan deletion.
-- [ ] Artifact tier and owner are correct; historical records remain historical.
-- [ ] Product and operator procedures are runnable; diagrams validate and match source.
-- [ ] Links and terminology are clean.
-- [ ] Roadmap and phase status are current.
-- [ ] No failing phase was marked or archived Complete.
-- [ ] Final repository verification is green.
-- [ ] The response ends with one exact next action and skill.
+Name the next selected phase and skill, or state that no next skill remains. Do not invent a
+lifecycle transition for a standalone documentation task.
