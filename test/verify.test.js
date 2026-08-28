@@ -1302,6 +1302,24 @@ test("the CLI refuses an unknown option instead of ignoring it", () => {
   assert.equal(run(["init", target]).code, 0);
 });
 
+test("CLI init with no directory confirms the current working directory", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-cli-cwd-init-"));
+  const cli = path.join(SOURCE_ROOT, "..", "bin", "cg.js");
+  const options = { cwd: dir, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] };
+
+  const named = execFileSync(process.execPath, [cli, "init", ".", "--profile", "agents"], options);
+  assert.doesNotMatch(named, /about to install at/);
+  assert.ok(fs.existsSync(path.join(dir, ".agents", "cg", "contract.yaml")));
+
+  fs.rmSync(dir, { recursive: true, force: true });
+  fs.mkdirSync(dir);
+
+  const implied = execFileSync(process.execPath, [cli, "init", "--profile", "agents"], options);
+  assert.match(implied, /about to install at/);
+  assert.ok(implied.includes(`  ${fs.realpathSync(dir)}\n`));
+  assert.ok(fs.existsSync(path.join(dir, ".agents", "cg", "contract.yaml")));
+});
+
 test("re-running CLI init adds profiles and retains the recorded Contract Graph version", () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-cli-additive-profiles-"));
   const cli = path.join(SOURCE_ROOT, "..", "bin", "cg.js");

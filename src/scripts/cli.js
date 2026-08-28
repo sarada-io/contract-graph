@@ -48,7 +48,7 @@ const USAGE = `cg — Contract Graph
 
 Usage:
   cg build [dir] [--check]                         assemble the package target under build/
-  cg init [dir] [--profile a,b] [--docs dir]       scaffold governance
+  cg init [--profile a,b] [--docs dir]             scaffold governance
   cg next [dir] [--json] [--for skill]            what runs next, computed from the Step queue
   cg residue [dir] [--json]                       plan documents nothing points at any more
   cg sync [dir] [--check]                         regenerate derived artifacts
@@ -187,6 +187,28 @@ function prompter() {
     },
     close: () => rl.close(),
   };
+}
+
+/**
+ * `cg init` with no directory means the current working directory. Confirm that path so a
+ * missed `.` in a README cannot silently scaffold the wrong tree. `cg init .` and any other
+ * named path skip this prompt: the location was already chosen.
+ */
+async function confirmInitLocation(repoRoot, namedDirectory, flags) {
+  if (namedDirectory) return true;
+
+  process.stdout.write(`cg init: about to install at\n  ${repoRoot}\n`);
+  if (flags.yes || flags.check || !process.stdin.isTTY) return true;
+
+  const rl = prompter();
+  try {
+    const answer = (await rl.ask("  Continue? [Y/n] ")).toLowerCase();
+    if (answer === "" || answer === "y" || answer === "yes") return true;
+    process.stdout.write("cg init: cancelled, nothing was written\n");
+    return false;
+  } finally {
+    rl.close();
+  }
 }
 
 const isUsableRootName = (name) =>
@@ -545,6 +567,7 @@ async function main(argv) {
   }
 
   if (command === "init") {
+    if (!(await confirmInitLocation(repoRoot, positional[0] !== undefined, flags))) return 1;
     const profiles = await chooseProfiles(repoRoot, flags);
     const docs = await chooseDocsRoot(repoRoot, flags);
 

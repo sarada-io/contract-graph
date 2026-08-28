@@ -14,9 +14,9 @@ then descends to the smallest relevant implementation instead of searching the w
 Contract Graph grew from six months of ground-up use across several products. It is an extraction
 from repeated delivery and maintenance work, not a framework designed only on paper.
 
-The [4-minute overview](https://sarada.io/cg/) is the public page for why it was needed and what
-it is. The [documentation](docs/README.md) in this repository is the written guide for people. The
-`/cg-*` skills are the procedure an agent follows on a turn.
+The [quick introduction](https://sarada.io/cg/) is the public page. The [documentation](docs/README.md)
+in this repository is the written guide for people. The `/cg-*` skills are the procedure an agent
+follows on a turn.
 
 ## Install
 
@@ -145,8 +145,8 @@ the same walk in the human documentation.
 ## How you use it
 
 After `cg init`, you agree an observable outcome as ordered phases, turn one phase into steps, and
-change code and contracts together. Watch [sarada.io/cg](https://sarada.io/cg/) for the why and
-what. The [documentation](https://github.com/sarada-io/contract-graph/blob/main/docs/README.md)
+change code and contracts together. Watch [sarada.io/cg](https://sarada.io/cg/) for the
+quick introduction. The [documentation](https://github.com/sarada-io/contract-graph/blob/main/docs/README.md)
 is the written guide: what you are agreeing to, what should appear on disk, and what remains after
 a plan is deleted. The `/cg-*` skills are the procedure an agent follows on a turn.
 
@@ -213,13 +213,14 @@ or `/cg-plan`. Until then those commands will not be offered.
 ### New repository
 
 ```bash
-cg init .
+cg init
 ```
 
-In an interactive terminal, `init` opens a keyboard checklist: use Up/Down to move, Space to
-select, and Enter to continue. For automation or a non-interactive terminal, pass a comma-separated
-selection explicitly, for example `cg init . --profile agents,claude`. A non-interactive first run
-without `--profile` installs all supported profiles.
+In an interactive terminal, `init` first confirms the current directory, then opens a keyboard
+checklist: use Up/Down to move, Space to select, and Enter to continue. For automation or a
+non-interactive terminal, pass a comma-separated selection explicitly, for example
+`cg init --profile agents,claude`. A non-interactive first run without `--profile` installs all
+supported profiles.
 
 Antigravity, Codex, and Cursor share the `agents` profile because all three use the same root
 `AGENTS.md` and `.agents/skills/` layout. The former `antigravity`, `codex`, and `cursor` profile
@@ -237,7 +238,7 @@ on a re-run as well. The concrete selection and installed Contract Graph version
 1. Install the scaffold:
 
 ```bash
-cg init .
+cg init
 cg modules
 ```
 
@@ -330,7 +331,7 @@ what those stages are for. The skills themselves are the procedure an agent foll
 
 | Command | Purpose |
 |---|---|
-| `cg init [dir]` | Select and add IDE/harness support, install or upgrade the scaffold, generate derived artifacts, verify, and print the next action. |
+| `cg init` | Select and add IDE/harness support, install or upgrade the scaffold, generate derived artifacts, verify, and print the next action. |
 | `cg build [dir] [--check]` | Assemble or verify the complete package target under `build/`. |
 | `cg verify [dir]` | Verify architecture principles, contracts, graph closure, product-rule enforcement, guideline grammar, skills, and generated state. |
 | `cg contract show/context/children/parents/surface` | Query one contract and its resolved context. |
@@ -482,7 +483,7 @@ parallel execution safe until that proof and write confinement exist.
 
 ## Read next
 
-- [Overview](https://sarada.io/cg/) — the 4-minute video, why Contract Graph was needed, and what it is.
+- [Quick introduction](https://sarada.io/cg/) — the video on the public page.
 - [Documentation](https://github.com/sarada-io/contract-graph/blob/main/docs/README.md) — human reading order for vision, contracts, workflow, and lifecycle.
 - [Vision](https://github.com/sarada-io/contract-graph/blob/main/docs/vision.md) — the complete concept, origin, causal model, and next structural work.
 - [Contracts](https://github.com/sarada-io/contract-graph/blob/main/docs/contracts.md) — the YAML node format, JSON Schema, graph invariants, CLI/library views, and current limits.
