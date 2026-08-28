@@ -59,7 +59,7 @@ Before changing this repository, read in order:
 1. `[docs/vision.md](docs/vision.md)` — the project intention and causal model.
 2. `[docs/contracts.md](docs/contracts.md)` — the recursive contract structure and current limits.
 3. `[docs/README.md](docs/README.md)` — human documentation index, then workflow and lifecycle as needed.
-4. `[README.md](README.md)` — shipped behavior and user-facing workflow.
+4. `[README.md](README.md)` — the npm and GitHub landing page for people installing the package.
 5. The relevant skill under `src/skills/` and `[src/cg/workflow.md](src/cg/workflow.md)` when the change is agent procedure.
 6. The relevant files under `src/scripts/`, plus `test/verify.test.js`, for implementation work.
 

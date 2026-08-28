@@ -1,6 +1,6 @@
 # Documentation
 
-Start with the [quick introduction](https://sarada.io/cg/). This directory is the written guide
+Start with the [Quick Introduction Video](https://sarada.io/cg/#watch). This directory is the written guide
 that follows that page.
 
 These pages are for people adopting or reviewing Contract Graph: what a contract is, how a
@@ -13,12 +13,12 @@ supposed to remain after a plan is deleted.
 
 | Read | What it answers |
 |---|---|
-| [Quick introduction](https://sarada.io/cg/) | Video on the public page |
+| [Quick Introduction Video](https://sarada.io/cg/#watch) | Plays on the public page |
 | [Vision](vision.md) | Why contracts, and what problem they are for |
 | [Contracts](contracts.md) | What one YAML node is, and what verification currently proves |
 | [Workflow](workflow.md) | How an outcome becomes phases, steps, and a lasting graph |
 | [Lifecycle](lifecycle.md) | The stages you run, and the structural walk they share |
 
-Watch the [quick introduction](https://sarada.io/cg/) first. Start with vision if you are deciding
+Watch the [Quick Introduction Video](https://sarada.io/cg/#watch) first. Start with vision if you are deciding
 whether to adopt. Start with workflow if you already installed and want to see how work is
 supposed to move. Use the skills when you are *doing* the work with an agent.

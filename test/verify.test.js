@@ -613,11 +613,29 @@ test("the public workflow guide names decomposition and the disk baseline", () =
   assert.doesNotMatch(workflow, /src\/scripts\/next\.js/);
 });
 
+test("the published README is a human landing page", () => {
+  const readme = fs.readFileSync(path.join(SOURCE_ROOT, "..", "README.md"), "utf8");
+  const pkg = JSON.parse(
+    fs.readFileSync(path.join(SOURCE_ROOT, "..", "package.json"), "utf8"),
+  );
+  assert.equal(pkg.homepage, "https://sarada.io/cg/");
+  assert.match(readme, /\[Quick Introduction Video\]\(https:\/\/sarada\.io\/cg\/#watch\)/);
+  assert.match(readme, /https:\/\/sarada\.io\/community\/contract-graph\/vision\//);
+  assert.match(readme, /https:\/\/sarada\.io\/community\/contract-graph\/workflow\//);
+  assert.match(readme, /https:\/\/sarada\.io\/contract-graph\/schema\//);
+  assert.match(readme, /## Learn more/);
+  assert.match(readme, /cd your-repository/);
+  assert.doesNotMatch(readme, /```mermaid/);
+  assert.doesNotMatch(readme, /## How an agent uses it/);
+  assert.doesNotMatch(readme, /## Building the package/);
+});
+
 test("the public docs stay human-facing", () => {
   const docsDir = path.join(SOURCE_ROOT, "..", "docs");
   const index = fs.readFileSync(path.join(docsDir, "README.md"), "utf8");
   const lifecycle = fs.readFileSync(path.join(docsDir, "lifecycle.md"), "utf8");
   assert.match(index, /They are not the agent procedure/);
+  assert.match(index, /\[Quick Introduction Video\]\(https:\/\/sarada\.io\/cg\/#watch\)/);
   assert.doesNotMatch(lifecycle, /## Next action/);
   assert.doesNotMatch(lifecycle, /Enabling the Claude Code gate/);
   assert.doesNotMatch(lifecycle, /\$cg-/);
