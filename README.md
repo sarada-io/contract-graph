@@ -14,6 +14,10 @@ then descends to the smallest relevant implementation instead of searching the w
 Contract Graph grew from six months of ground-up use across several products. It is an extraction
 from repeated delivery and maintenance work, not a framework designed only on paper.
 
+The [4-minute overview](https://sarada.io/cg/) is the public page for why it was needed and what
+it is. The [documentation](docs/README.md) in this repository is the written guide for people. The
+`/cg-*` skills are the procedure an agent follows on a turn.
+
 ## Install
 
 Contract Graph requires Node.js 18.17 or newer. Install the published npm package globally so the
@@ -141,8 +145,9 @@ the same walk in the human documentation.
 ## How you use it
 
 After `cg init`, you agree an observable outcome as ordered phases, turn one phase into steps, and
-change code and contracts together. The [documentation](https://github.com/sarada-io/contract-graph/blob/main/docs/README.md)
-is written for people: what you are agreeing to, what should appear on disk, and what remains after
+change code and contracts together. Watch [sarada.io/cg](https://sarada.io/cg/) for the why and
+what. The [documentation](https://github.com/sarada-io/contract-graph/blob/main/docs/README.md)
+is the written guide: what you are agreeing to, what should appear on disk, and what remains after
 a plan is deleted. The `/cg-*` skills are the procedure an agent follows on a turn.
 
 A useful contract answers:
@@ -477,6 +482,7 @@ parallel execution safe until that proof and write confinement exist.
 
 ## Read next
 
+- [Overview](https://sarada.io/cg/) — the 4-minute video, why Contract Graph was needed, and what it is.
 - [Documentation](https://github.com/sarada-io/contract-graph/blob/main/docs/README.md) — human reading order for vision, contracts, workflow, and lifecycle.
 - [Vision](https://github.com/sarada-io/contract-graph/blob/main/docs/vision.md) — the complete concept, origin, causal model, and next structural work.
 - [Contracts](https://github.com/sarada-io/contract-graph/blob/main/docs/contracts.md) — the YAML node format, JSON Schema, graph invariants, CLI/library views, and current limits.
