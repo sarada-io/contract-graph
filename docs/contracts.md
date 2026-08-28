@@ -1,8 +1,8 @@
 # Contracts
 
 Contract Graph represents a repository as connected, machine-readable contracts. A contract is
-the durable promise for one owned software boundary and the routing node that leads an agent to
-the next smaller boundary.
+the durable promise for one owned software boundary and the routing node that leads to the next
+smaller boundary.
 
 ## One artifact per boundary
 

@@ -37,9 +37,13 @@ The runtime dependency surface is deliberately limited to the YAML parser used f
 contracts and rule catalogs. A pull request adding another runtime dependency must explain why the
 benefit justifies adding supply-chain surface to a verifier.
 
-Before reading implementation, start with `docs/vision.md`, `docs/contracts.md`, and the relevant
-contract route. Use `cg contract route --task "<request>"` when the authored routes cover the
-request, then descend to the smallest responsible boundary.
+`docs/` is written for people. Start with `docs/README.md`, then vision and contracts, then the
+relevant contract route. Use `cg contract route --task "<request>"` when the authored routes cover
+the request, then descend to the smallest responsible boundary.
+
+Agent procedure lives in `src/skills/` and `src/cg/workflow.md` (installed as
+`.agents/cg/workflow.md`). Do not put turn-by-turn skill protocol, `$cg-` hop tokens, or
+host-specific hook JSON in `docs/`.
 
 ## Choose validation from the change surface
 
@@ -87,6 +91,30 @@ and GitHub Copilot for VS Code have their own adapters.
 Include the host, version, operating system, terminal, selections made, generated files inspected,
 and result in the pull-request report. A repository fixture proves what Contract Graph wrote; only
 the real host proves that the host discovered it.
+
+### Claude Code gate (optional)
+
+`cg init` ships `.agents/hooks/cg-gate.mjs` but does not edit user-owned hook settings. The gate
+compares a requested skill with `cg next --for <skill>`. Merge this registration into
+`.claude/settings.json` only if you use Claude Code and want that check:
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [{
+      "matcher": "Skill",
+      "hooks": [{ "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.agents/hooks/cg-gate.mjs\"" }]
+    }],
+    "UserPromptSubmit": [{
+      "hooks": [{ "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.agents/hooks/cg-gate.mjs\"" }]
+    }]
+  }
+}
+```
+
+The hook resolves `node_modules/.bin/cg`, then `cg` on `PATH`, or `CG_BIN`. Resolution failures
+allow the dispatch, so confirm `cg --version` in the hook environment before relying on it. Other
+hosts do not use this file.
 
 ## Source layout
 

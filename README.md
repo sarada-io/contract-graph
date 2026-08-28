@@ -135,8 +135,15 @@ the order; the YAML order is the protocol:
 `surface` is core encapsulation, so it sits before `decide`. `adapters` is last because it is not
 a fourth decide id; it overrides `forbid` for optional Mongo/PostgreSQL-style splits. Skills apply
 that protocol; there is no import scanner, so `cg verify` still only proves declared paths exist.
-The [lifecycle](https://github.com/sarada-io/contract-graph/blob/main/docs/lifecycle.md) spells the
-same walk for every stage.
+The [lifecycle](https://github.com/sarada-io/contract-graph/blob/main/docs/lifecycle.md) explains
+the same walk in the human documentation.
+
+## How you use it
+
+After `cg init`, you agree an observable outcome as ordered phases, turn one phase into steps, and
+change code and contracts together. The [documentation](https://github.com/sarada-io/contract-graph/blob/main/docs/README.md)
+is written for people: what you are agreeing to, what should appear on disk, and what remains after
+a plan is deleted. The `/cg-*` skills are the procedure an agent follows on a turn.
 
 A useful contract answers:
 
@@ -311,8 +318,8 @@ do not plan, produce, or write contracts.
 | `/cg-unblock` | Record a fork, assumption, or blocked Step so independent work can continue. |
 | `/cg-auto-run` | Opt-in. Drive later stages unattended within a granted authority. Never auto-runs warmup or unblock. |
 
-The [lifecycle](https://github.com/sarada-io/contract-graph/blob/main/docs/lifecycle.md) is the full
-walk and the order those skills hand off.
+The [lifecycle](https://github.com/sarada-io/contract-graph/blob/main/docs/lifecycle.md) explains
+what those stages are for. The skills themselves are the procedure an agent follows.
 
 ## Main commands
 
@@ -470,10 +477,11 @@ parallel execution safe until that proof and write confinement exist.
 
 ## Read next
 
+- [Documentation](https://github.com/sarada-io/contract-graph/blob/main/docs/README.md) — human reading order for vision, contracts, workflow, and lifecycle.
 - [Vision](https://github.com/sarada-io/contract-graph/blob/main/docs/vision.md) — the complete concept, origin, causal model, and next structural work.
 - [Contracts](https://github.com/sarada-io/contract-graph/blob/main/docs/contracts.md) — the YAML node format, JSON Schema, graph invariants, CLI/library views, and current limits.
-- [Lifecycle](https://github.com/sarada-io/contract-graph/blob/main/docs/lifecycle.md) — the graph walk that decides a node, and how the seven skills move work through the graph.
-- [Workflow](https://github.com/sarada-io/contract-graph/blob/main/docs/workflow.md) — how programmes decompose into phases and Steps, how they execute, and what on disk is the next baseline.
+- [Workflow](https://github.com/sarada-io/contract-graph/blob/main/docs/workflow.md) — how a programme of work is split, run, and left on disk.
+- [Lifecycle](https://github.com/sarada-io/contract-graph/blob/main/docs/lifecycle.md) — the stages you run, and the structural walk they share.
 - [Contributing](https://github.com/sarada-io/contract-graph/blob/main/CONTRIBUTING.md) — tests and contribution expectations.
 
 ## Requirements

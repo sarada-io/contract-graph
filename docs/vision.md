@@ -1,7 +1,7 @@
 # Vision
 
-Contract Graph exists so a coding agent can understand where a change belongs before it reads the
-implementation.
+Contract Graph exists so a person or a coding agent can understand where a change belongs before
+reading the implementation.
 
 Coding models have changed the economics of development. Producing code is dramatically faster;
 understanding, integrating, and maintaining the accumulated result is not. Without stronger

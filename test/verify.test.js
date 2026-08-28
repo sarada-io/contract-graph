@@ -608,7 +608,19 @@ test("the public workflow guide names decomposition and the disk baseline", () =
   assert.match(workflow, /cg next/);
   assert.match(workflow, /<phase>_detailed_preparation\.md/);
   assert.match(workflow, /cites a plan path or ticket id/);
-  assert.match(workflow, /Chat history is not one of them/);
+  assert.match(workflow, /later session should not need the previous chat/);
+  assert.doesNotMatch(workflow, /## Under the hood/);
+  assert.doesNotMatch(workflow, /src\/scripts\/next\.js/);
+});
+
+test("the public docs stay human-facing", () => {
+  const docsDir = path.join(SOURCE_ROOT, "..", "docs");
+  const index = fs.readFileSync(path.join(docsDir, "README.md"), "utf8");
+  const lifecycle = fs.readFileSync(path.join(docsDir, "lifecycle.md"), "utf8");
+  assert.match(index, /They are not the agent procedure/);
+  assert.doesNotMatch(lifecycle, /## Next action/);
+  assert.doesNotMatch(lifecycle, /Enabling the Claude Code gate/);
+  assert.doesNotMatch(lifecycle, /\$cg-/);
 });
 
 // ----------------------------------------------------- architecture principles
