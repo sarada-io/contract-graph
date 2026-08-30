@@ -1,0 +1,8 @@
+{
+  "name": "agents",
+  "displayName": "AGENTS.md agents (Antigravity, Codex, Cursor)",
+  "rootPointers": {
+    "AGENTS.md": ""
+  },
+  "extends": []
+}

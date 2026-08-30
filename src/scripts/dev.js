@@ -37,9 +37,9 @@ const TARGETS = {
     open: "claude, then run /cg-plan — every cg-* skill should be offered",
   },
   antigravity: {
-    label: "Antigravity IDE",
-    reads: [".agents/rules/cg.md"],
-    open: "Antigravity — the workspace rule from .agents/rules/ should be listed",
+    label: "Antigravity",
+    reads: ["AGENTS.md", ".agents/skills/cg-*/SKILL.md"],
+    open: "Antigravity — AGENTS.md should be project context and /cg-plan should be offered",
   },
   codex: {
     label: "Codex",
@@ -52,7 +52,7 @@ const TARGETS = {
     open: "Cursor — AGENTS.md should appear as project rules, and /cg-plan should be offered as a skill",
   },
   copilot: {
-    label: "GitHub Copilot",
+    label: "GitHub Copilot (VS Code extension)",
     reads: [".github/copilot-instructions.md"],
     open: "VS Code — Copilot should cite the repository instructions",
   },

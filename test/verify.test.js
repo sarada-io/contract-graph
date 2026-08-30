@@ -13,9 +13,11 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { PassThrough } from "node:stream";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 
-import { init, SCAFFOLD_MAPPING, SOURCE_ROOT } from "../src/scripts/init.js";
+import { init, PACKAGE_VERSION, SCAFFOLD_MAPPING, SOURCE_ROOT } from "../src/scripts/init.js";
 import {
   BINDING_FILENAME,
   BUILT_IN_DETECTORS,
@@ -23,8 +25,9 @@ import {
 } from "../src/scripts/binding.js";
 import { checkHarvest } from "../src/scripts/harvest.js";
 import { detectModuleRoots, moduleCoverage, subBoundaryCount } from "../src/scripts/modules.js";
-import { renderAgentRule, renderModulePointer } from "../src/scripts/model.js";
+import { renderModulePointer } from "../src/scripts/model.js";
 import { next, permits } from "../src/scripts/next.js";
+import { multiSelect, updatePickerState } from "../src/scripts/picker.js";
 import { residue } from "../src/scripts/residue.js";
 import { sync } from "../src/scripts/sync.js";
 import { CORE_CG_SKILLS, verify } from "../src/scripts/verify.js";
@@ -39,6 +42,7 @@ import {
   ProfileError,
   availableProfiles,
   loadProfileConfig,
+  profileChoices,
   resolveProfiles,
 } from "../src/scripts/profiles.js";
 import {
@@ -56,6 +60,9 @@ import {
   stringifyContractYaml,
   validateContract,
 } from "../src/scripts/contracts.js";
+
+const TEST_DIR = path.dirname(fileURLToPath(import.meta.url));
+const REPO = path.resolve(TEST_DIR, "..");
 
 /** A green repository: core template plus the named domain packs, synced. */
 function makeRepo() {
@@ -132,7 +139,9 @@ function addRootChildren(dir, names, mutate = () => {}) {
     fs.mkdirSync(path.join(dir, name, ".agents", "cg"), { recursive: true });
     write(dir, `${name}/.agents/cg/contract.yaml`, stringifyContractYaml(contract));
     for (const pointer of ["CLAUDE.md", "AGENTS.md"]) {
-      fs.copyFileSync(path.join(dir, "src", pointer), path.join(dir, name, pointer));
+      const from = path.join(dir, "src", pointer);
+      if (!fs.existsSync(from)) continue;
+      fs.copyFileSync(from, path.join(dir, name, pointer));
     }
     root.relations.children.push({
       contract: `${name}/.agents/cg/contract.yaml`,
@@ -169,10 +178,14 @@ test("init never overwrites an existing file", () => {
   assert.equal(read(dir, CONTRACT), sentinel);
 });
 
-test("init persists the selected profiles and domain packs", () => {
+test("init persists its version and the selected profiles", () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-profile-record-"));
   init(dir, { profiles: ["claude"] });
-  assert.deepEqual(JSON.parse(read(dir, PROFILE)), { profiles: ["claude"], docs: "docs" });
+  assert.deepEqual(JSON.parse(read(dir, PROFILE)), {
+    cgVersion: PACKAGE_VERSION,
+    profiles: ["claude"],
+    docs: "docs",
+  });
 });
 
 test("a Claude-only selection syncs and verifies without other root pointers", () => {
@@ -182,6 +195,8 @@ test("a Claude-only selection syncs and verifies without other root pointers", (
   assert.ok(fs.existsSync(path.join(dir, "CLAUDE.md")));
   assert.ok(!fs.existsSync(path.join(dir, "AGENTS.md")));
   assert.ok(!fs.existsSync(path.join(dir, ".github", "copilot-instructions.md")));
+  assert.ok(fs.existsSync(path.join(dir, "src", "CLAUDE.md")));
+  assert.ok(!fs.existsSync(path.join(dir, "src", "AGENTS.md")));
   const result = verify(dir);
   assert.deepEqual(result.failures, []);
   assert.equal(result.counts.roots, 1);
@@ -194,19 +209,38 @@ test("a missing scaffold profile record fails verification", () => {
 });
 
 test("shipped profile configs validate and all resolves to their union", () => {
-  assert.deepEqual(availableProfiles(), ["all", "antigravity", "claude", "codex", "copilot", "cursor"]);
+  assert.deepEqual(availableProfiles(), [
+    "agents",
+    "all",
+    "claude",
+    "copilot",
+  ]);
   const all = resolveProfiles(["all"]);
   assert.deepEqual(all.rootPointers, {
     "CLAUDE.md": "",
     "AGENTS.md": "",
     ".github/copilot-instructions.md": "../",
   });
+  assert.deepEqual(resolveProfiles(["agents"]).rootPointers, { "AGENTS.md": "" });
   assert.deepEqual(resolveProfiles(["cursor"]).rootPointers, { "AGENTS.md": "" });
-  assert.equal(resolveProfiles(["cursor"]).skillWrappers, null);
+  assert.deepEqual(resolveProfiles(["antigravity"]).rootPointers, { "AGENTS.md": "" });
+  assert.deepEqual(resolveProfiles(["codex"]).rootPointers, { "AGENTS.md": "" });
+  assert.equal(resolveProfiles(["agents"]).skillWrappers, null);
   assert.deepEqual(all.skillWrappers, {
     dir: ".claude/skills",
     template: "claude-wrapper",
   });
+});
+
+test("installer profile choices are alphabetical by their displayed names", () => {
+  assert.deepEqual(
+    profileChoices().map(({ label }) => label),
+    [
+      "AGENTS.md agents (Antigravity, Codex, Cursor)",
+      "Claude Code",
+      "GitHub Copilot (VS Code extension)",
+    ],
+  );
 });
 
 test("a malformed profile config fails with its filename and field", () => {
@@ -244,21 +278,28 @@ const PROFILE_ARTIFACTS = {
     ".github/copilot-instructions.md",
     "AGENTS.md",
     "CLAUDE.md",
+    "src/AGENTS.md",
+    "src/CLAUDE.md",
     ...CORE_CG_SKILLS.map((name) => `.claude/skills/${name}/SKILL.md`),
   ],
-  antigravity: [],
+  agents: ["AGENTS.md", "src/AGENTS.md"],
   claude: [
     "CLAUDE.md",
+    "src/CLAUDE.md",
     ...CORE_CG_SKILLS.map((name) => `.claude/skills/${name}/SKILL.md`),
   ],
-  codex: ["AGENTS.md"],
   copilot: [".github/copilot-instructions.md"],
-  cursor: ["AGENTS.md"],
 };
 
-const isDiscoveryArtifact = (file) =>
-  ["AGENTS.md", "CLAUDE.md", ".github/copilot-instructions.md"].includes(file) ||
-  file.startsWith(".claude/skills/");
+const isDiscoveryArtifact = (file) => {
+  const name = file.split("/").pop();
+  return (
+    name === "AGENTS.md" ||
+    name === "CLAUDE.md" ||
+    file === ".github/copilot-instructions.md" ||
+    file.startsWith(".claude/skills/")
+  );
+};
 
 function discoveryArtifacts(dir) {
   return filesUnder(dir).filter(isDiscoveryArtifact);
@@ -277,7 +318,7 @@ for (const [profile, expected] of Object.entries(PROFILE_ARTIFACTS)) {
 /**
  * The harness-neutral claim, asserted rather than assumed. A profile selects a discovery
  * surface and nothing else: governance under `.agents/` is byte-identical for every editor,
- * with `profile.json` the one file that records the selection and so must differ.
+ * with `profile.json` and `manifest.json` the files that record the selection and so must differ.
  *
  * Without this, a profile that started writing its own governance would pass every other
  * test — each profile's own artifacts would still be exactly what it declares — while the
@@ -290,7 +331,10 @@ test("every profile scaffolds byte-identical universal governance", () => {
     sync(dir);
     return filesUnder(dir)
       .filter((file) => !isDiscoveryArtifact(file))
-      .map((file) => [file, file === PROFILE ? "<records the selection>" : read(dir, file)]);
+      .map((file) => [
+        file,
+        file === PROFILE || file === MANIFEST ? "<records the selection>" : read(dir, file),
+      ]);
   };
 
   const baseline = universal("all");
@@ -316,7 +360,7 @@ test("a selected Claude profile fails when its wrappers are deleted", () => {
 
 test("a profile that never selected Claude is green without wrappers", () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-no-claude-wrapper-"));
-  init(dir, { profiles: ["codex"] });
+  init(dir, { profiles: ["agents"] });
   sync(dir);
   assert.ok(!fs.existsSync(path.join(dir, ".claude")));
   assert.deepEqual(verify(dir).failures, []);
@@ -326,27 +370,90 @@ test("an unknown profile fails by name and lists valid profiles", () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-unknown-profile-"));
   assert.throws(
     () => init(dir, { profiles: ["unknown-editor"] }),
-    /unknown profile\(s\): unknown-editor\. Available: all, antigravity, claude, codex, copilot, cursor/,
+    /unknown profile\(s\): unknown-editor\. Available: agents, all, claude, copilot/,
   );
   assert.deepEqual(filesUnder(dir), []);
 });
 
 /**
- * Cursor reads AGENTS.md and `.agents/skills/` natively. The profile is therefore a named
- * alias of Codex's pointer: it must not invent `.cursor/rules` or `.cursor/skills` copies.
+ * Legacy tool-specific names migrate to the shared AGENTS.md profile. They remain accepted so
+ * existing scripts and profile metadata do not break when upgrading.
  */
-test("a Cursor-only selection reuses AGENTS.md and does not create a .cursor/ surface", () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-cursor-only-"));
-  init(dir, { profiles: ["cursor"] });
+test("legacy Codex, Cursor, and Antigravity selections collapse to the shared agents profile", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-agents-aliases-"));
+  init(dir, { profiles: ["cursor", "codex", "antigravity"] });
   sync(dir);
+  assert.deepEqual(JSON.parse(read(dir, PROFILE)).profiles, ["agents"]);
   assert.ok(fs.existsSync(path.join(dir, "AGENTS.md")));
   assert.ok(!fs.existsSync(path.join(dir, "CLAUDE.md")));
+  assert.ok(!fs.existsSync(path.join(dir, "src", "CLAUDE.md")));
   assert.ok(!fs.existsSync(path.join(dir, ".claude")));
   assert.ok(!fs.existsSync(path.join(dir, ".cursor")));
   assert.ok(fs.existsSync(path.join(dir, ".agents", "skills", "cg-plan", "SKILL.md")));
   const result = verify(dir);
   assert.deepEqual(result.failures, []);
   assert.equal(result.counts.roots, 1);
+});
+
+test("legacy profile metadata migrates to agents on the next init", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-agents-metadata-migration-"));
+  fs.mkdirSync(path.join(dir, ".agents", "cg"), { recursive: true });
+  write(
+    dir,
+    PROFILE,
+    `${JSON.stringify({
+      cgVersion: PACKAGE_VERSION,
+      profiles: ["codex", "cursor", "antigravity"],
+      docs: "docs",
+    }, null, 2)}\n`,
+  );
+
+  init(dir, {});
+  assert.deepEqual(JSON.parse(read(dir, PROFILE)).profiles, ["agents"]);
+});
+
+test("the keyboard picker moves, toggles, and keeps installed profiles locked", () => {
+  const original = {
+    cursor: 0,
+    selected: new Set([0]),
+    locked: new Set([0]),
+  };
+  const locked = updatePickerState(original, "space", 3);
+  assert.equal(locked, original, "Space cannot remove an already-installed profile");
+
+  const moved = updatePickerState(original, "down", 3);
+  assert.equal(moved.cursor, 1);
+  const selected = updatePickerState(moved, "space", 3);
+  assert.deepEqual([...selected.selected], [0, 1]);
+  assert.equal(updatePickerState(selected, "up", 3).cursor, 0);
+  assert.equal(updatePickerState(original, "up", 3).cursor, 2, "navigation wraps");
+});
+
+test("the interactive picker accepts arrow, Space, and Enter key input", async () => {
+  const input = new PassThrough();
+  input.isTTY = true;
+  input.isRaw = false;
+  input.setRawMode = (value) => {
+    input.isRaw = value;
+    return input;
+  };
+  const output = new PassThrough();
+  output.isTTY = true;
+
+  const selection = multiSelect(
+    [
+      { value: "agents", label: "AGENTS.md agents" },
+      { value: "claude", label: "Claude Code" },
+    ],
+    { input, output },
+  );
+  input.write(" ");
+  input.write("\x1b[B");
+  input.write(" ");
+  input.write("\r");
+
+  assert.deepEqual(await selection, ["agents", "claude"]);
+  assert.equal(input.isRaw, false, "the picker restores the terminal mode");
 });
 
 // ---------------------------------------------------------- structured contracts
@@ -363,7 +470,7 @@ test("a contract stored outside its declared unit fails", () => {
   assertFails(dir, 2, "unit and canonical file disagree");
 });
 
-test("[6] a contract PP rule id absent from product principles fails", () => {
+test("[6] a contract P rule id absent from product guidelines fails", () => {
   const dir = makeRepo();
   editObject(dir, CONTRACT, (contract) => { contract.rules.push("P99-99"); });
   assertFails(dir, 6, "dangling rule reference");
@@ -419,6 +526,15 @@ test("[1] a module folder missing CLAUDE.md fails", () => {
   assertFails(dir, 1, "module not openable as a workspace root");
 });
 
+test("[1] an agents-only module is openable without CLAUDE.md", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-agents-module-pointer-"));
+  init(dir, { profiles: ["agents"] });
+  sync(dir);
+  assert.ok(fs.existsSync(path.join(dir, "src", "AGENTS.md")));
+  assert.ok(!fs.existsSync(path.join(dir, "src", "CLAUDE.md")));
+  assert.deepEqual(verify(dir).failures, []);
+});
+
 test("[1] a pointer without the principles reference fails", () => {
   const dir = makeRepo();
   edit(dir, "src/AGENTS.md", (t) => t.replace("../.agents/cg/guidelines/", "somewhere"));
@@ -427,10 +543,16 @@ test("[1] a pointer without the principles reference fails", () => {
 
 // ---------------------------------------------------------- root indexes
 
-test("[8] a stale root principle index fails", () => {
+test("[8] a stale canonical principle index fails", () => {
   const dir = makeRepo();
-  edit(dir, "AGENTS.md", (t) => t.replace(/\(\d+ rules\)/, "(999 rules)"));
+  edit(dir, ".agents/cg/contract-graph-agent.md", (t) => t.replace(/\(\d+ rules\)/, "(999 rules)"));
   assertFails(dir, 8, "stale generated principle index");
+});
+
+test("[8] a selected root file must point to the canonical instructions on its first line", () => {
+  const dir = makeRepo();
+  edit(dir, "AGENTS.md", (t) => `# moved the pointer\n\n${t}`);
+  assertFails(dir, 8, "root pointer moved below repository-authored content");
 });
 
 // --------------------------------------------------------------- skills
@@ -503,6 +625,48 @@ test("the public lifecycle guide documents the graph walk", () => {
   }
 });
 
+test("the public workflow guide names decomposition and the disk baseline", () => {
+  const workflow = fs.readFileSync(
+    path.join(SOURCE_ROOT, "..", "docs", "workflow.md"),
+    "utf8",
+  );
+  assert.match(workflow, /## The decomposition stack/);
+  assert.match(workflow, /cg next/);
+  assert.match(workflow, /<phase>_detailed_preparation\.md/);
+  assert.match(workflow, /cites a plan path or ticket id/);
+  assert.match(workflow, /later session should not need the previous chat/);
+  assert.doesNotMatch(workflow, /## Under the hood/);
+  assert.doesNotMatch(workflow, /src\/scripts\/next\.js/);
+});
+
+test("the published README is a human landing page", () => {
+  const readme = fs.readFileSync(path.join(SOURCE_ROOT, "..", "README.md"), "utf8");
+  const pkg = JSON.parse(
+    fs.readFileSync(path.join(SOURCE_ROOT, "..", "package.json"), "utf8"),
+  );
+  assert.equal(pkg.homepage, "https://sarada.io/cg/");
+  assert.match(readme, /\[Quick Introduction Video\]\(https:\/\/sarada\.io\/cg\/#watch\)/);
+  assert.match(readme, /https:\/\/sarada\.io\/community\/contract-graph\/vision\//);
+  assert.match(readme, /https:\/\/sarada\.io\/community\/contract-graph\/workflow\//);
+  assert.match(readme, /https:\/\/sarada\.io\/contract-graph\/schema\//);
+  assert.match(readme, /## Learn more/);
+  assert.match(readme, /cd your-repository/);
+  assert.doesNotMatch(readme, /```mermaid/);
+  assert.doesNotMatch(readme, /## How an agent uses it/);
+  assert.doesNotMatch(readme, /## Building the package/);
+});
+
+test("the public docs stay human-facing", () => {
+  const docsDir = path.join(SOURCE_ROOT, "..", "docs");
+  const index = fs.readFileSync(path.join(docsDir, "README.md"), "utf8");
+  const lifecycle = fs.readFileSync(path.join(docsDir, "lifecycle.md"), "utf8");
+  assert.match(index, /They are not the agent procedure/);
+  assert.match(index, /\[Quick Introduction Video\]\(https:\/\/sarada\.io\/cg\/#watch\)/);
+  assert.doesNotMatch(lifecycle, /## Next action/);
+  assert.doesNotMatch(lifecycle, /Enabling the Claude Code gate/);
+  assert.doesNotMatch(lifecycle, /\$cg-/);
+});
+
 // ----------------------------------------------------- architecture principles
 
 test("a rule filed under the wrong principle heading fails", () => {
@@ -520,7 +684,7 @@ test("[10] an empty cost clause fails", () => {
   assertFails(dir, 10, "cost: expected a non-empty string");
 });
 
-test("[2] an architecture practice cannot become a binding contract rule", () => {
+test("[2] an engineering guideline cannot become a binding contract rule", () => {
   const dir = makeRepo();
   editObject(dir, CONTRACT, (contract) => { contract.rules[0] = "E12-01"; });
   assertFails(dir, 2, "invalid binding rule ID");
@@ -529,7 +693,7 @@ test("[2] an architecture practice cannot become a binding contract rule", () =>
 test("[2] a contract cannot repeat an ambient structural binding", () => {
   const dir = makeRepo();
   editObject(dir, CONTRACT, (contract) => { contract.rules[0] = "A01"; });
-  assertFails(dir, 2, "CB rules apply globally and never need copying into a contract");
+  assertFails(dir, 2, "A rules apply globally and never need copying into a contract");
 });
 
 test("[10] the structural binding catalog is required", () => {
@@ -598,7 +762,7 @@ test("an unregistered binding detector fails verification", () => {
 
 test("every registered binding detector names a real negative fixture", () => {
   const fixtureSources = ["contracts.test.js", "verify.test.js"]
-    .map((filename) => fs.readFileSync(path.join(import.meta.dirname, filename), "utf8"))
+    .map((filename) => fs.readFileSync(path.join(TEST_DIR, filename), "utf8"))
     .join("\n");
   for (const [, fixture] of Object.values(BUILT_IN_DETECTORS)) {
     assert.ok(
@@ -616,13 +780,13 @@ test("[10] an enforcement row for an unknown product id fails", () => {
 
 // ------------------------------------------- architecture principle coverage
 
-test("[10] a non-binding architecture practice cannot carry an enforcement-map row", () => {
+test("[10] a non-binding engineering guideline cannot carry an enforcement-map row", () => {
   const dir = makeRepo();
   addEnforcement(dir, "E01-01", "a detector would imply binding authority");
-  assertFails(dir, 10, "AP remains advice until deliberately promoted to CB");
+  assertFails(dir, 10, "E remains advice until deliberately promoted to A");
 });
 
-test("a new architecture practice remains non-binding without a detector", () => {
+test("a new engineering guideline remains non-binding without a detector", () => {
   const dir = makeRepo();
   edit(dir, ENGINEERING, (t) =>
     t.replace(
@@ -633,13 +797,13 @@ test("a new architecture practice remains non-binding without a detector", () =>
   assert.deepEqual(verify(dir).failures, []);
 });
 
-test("loadBindingPrinciples includes ambient CB rules without copying them into contracts", () => {
+test("loadBindingPrinciples includes ambient A rules without copying them into contracts", () => {
   const dir = makeRepo();
   assert.ok(loadBindingPrinciples(dir).has("A01"));
   assert.ok(!loadPrinciples(dir).has("A01"));
   assert.ok(!readObject(dir, CONTRACT).rules.includes("A01"));
   assert.ok(!readObject(dir, ROOT_CONTRACT).rules.includes("A01"));
-  assert.match(read(dir, "AGENTS.md"), /\*\*A\*\* Structural integrity/);
+  assert.match(read(dir, ".agents/cg/contract-graph-agent.md"), /\*\*A\*\* Structural integrity/);
 });
 
 test("deleting architecture.yaml cannot silently remove the non-binding decision catalog", () => {
@@ -782,7 +946,7 @@ test("a promotion owes what its destination owes", () => {
   );
   assert.match(
     harvestFailures((m) => {
-      m.classifications[0].destination = "DP";
+      m.classifications[0].destination = "Z";
     }),
     /expected one of/,
   );
@@ -844,6 +1008,22 @@ test("harvest rejects the retired hyphenated decision grammar", () => {
   );
 });
 
+test("cg-unblock resolves the docs root and loads E from engineering.yaml", () => {
+  const skill = fs.readFileSync(
+    path.join(SOURCE_ROOT, "skills", "cg-unblock", "SKILL.md"),
+    "utf8",
+  );
+  assert.match(skill, /\.agents\/cg\/profile\.json/);
+  assert.match(skill, /<docs>\/plans\/decision-log\.md/);
+  assert.match(skill, /\.agents\/cg\/guidelines\/engineering\.yaml/);
+  assert.match(skill, /E16-01/);
+  assert.match(skill, /E12-01/);
+  assert.match(skill, /Do not copy this section/);
+  assert.match(skill, /Do not invoke the next skill yourself/);
+  assert.doesNotMatch(skill, /architecture catalog under/);
+  assert.doesNotMatch(skill, /^## Completion check$/m);
+});
+
 test("the decision log is a ledger; the entry template lives with cg-unblock", () => {
   const log = fs.readFileSync(
     path.join(SOURCE_ROOT, "install/templates/docs/plans/decision-log.md"),
@@ -860,6 +1040,7 @@ test("the decision log is a ledger; the entry template lives with cg-unblock", (
   assert.match(template, /\*\*Unblocks when:\*\*/);
   assert.match(template, /### DU-NN/);
   assert.match(template, /### DA-NN/);
+  assert.match(template, /<docs>\/plans\/decision-log\.md/);
 });
 
 test("the prepared drain route must carry the accepted digest and every drain id", () => {
@@ -1001,7 +1182,7 @@ test("a repository holding only README, LICENSE and git metadata still counts as
  * wholesale destroys hand-written instructions with no recovery but git — and `sync` is the
  * very next command `init` tells you to run.
  */
-test("sync preserves a hand-written root pointer and adds its block under the H1", () => {
+test("sync preserves a hand-written root file and prepends its canonical pointer", () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-brownfield-"));
   init(dir, {});
   const mine = "# Our house rules\n\nAlways run `make lint` before pushing.\n";
@@ -1009,19 +1190,79 @@ test("sync preserves a hand-written root pointer and adds its block under the H1
 
   sync(dir);
   const after = read(dir, "CLAUDE.md");
+  assert.equal(after.split("\n")[0], "@.agents/cg/contract-graph-agent.md");
   assert.match(after, /# Our house rules/);
   assert.match(after, /make lint/, "hand-written guidance must survive");
-  assert.match(after, /BEGIN PRINCIPLES INDEX/);
+  assert.match(read(dir, ".agents/cg/contract-graph-agent.md"), /BEGIN PRINCIPLES INDEX/);
   assert.deepEqual(verify(dir).failures, []);
   assert.deepEqual(sync(dir).changed, [], "a second sync must rewrite nothing");
 });
 
-test("sync refuses a root pointer with content but no H1 to anchor the block", () => {
+test("sync composes the canonical agent entry from its Markdown template", () => {
+  const dir = makeRepo();
+  const template = read(SOURCE_ROOT, "cg/contract-graph-agent.md");
+  const installed = read(dir, ".agents/cg/contract-graph-agent.md");
+  const withoutGeneratedIndex = (text) => text.replace(
+    /<!-- BEGIN PRINCIPLES INDEX[\s\S]*?<!-- END PRINCIPLES INDEX -->/,
+    "<!-- GENERATED PRINCIPLES INDEX -->",
+  );
+
+  assert.equal(withoutGeneratedIndex(installed), withoutGeneratedIndex(template));
+  assert.notEqual(installed, template, "sync must inject the repository's calculated rule index");
+  assert.match(installed, /\*\*A\*\* Structural integrity/);
+});
+
+test("sync preserves existing AGENTS, CLAUDE, and Copilot instructions", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-existing-agent-files-"));
+  fs.mkdirSync(path.join(dir, ".github"));
+  write(dir, "AGENTS.md", "# Existing AGENTS\n\nKeep agent guidance.\n");
+  write(dir, "CLAUDE.md", "# Existing CLAUDE\n\nKeep Claude guidance.\n");
+  write(dir, ".github/copilot-instructions.md", "# Existing Copilot\n\nKeep Copilot guidance.\n");
+
+  init(dir, {});
+  sync(dir);
+
+  assert.equal(read(dir, "AGENTS.md").split("\n")[0],
+    "Read [`.agents/cg/contract-graph-agent.md`](.agents/cg/contract-graph-agent.md) before planning or changing code.");
+  assert.equal(read(dir, "CLAUDE.md").split("\n")[0], "@.agents/cg/contract-graph-agent.md");
+  assert.equal(read(dir, ".github/copilot-instructions.md").split("\n")[0],
+    "Read [`../.agents/cg/contract-graph-agent.md`](../.agents/cg/contract-graph-agent.md) before planning or changing code.");
+  assert.match(read(dir, "AGENTS.md"), /Keep agent guidance/);
+  assert.match(read(dir, "CLAUDE.md"), /Keep Claude guidance/);
+  assert.match(read(dir, ".github/copilot-instructions.md"), /Keep Copilot guidance/);
+  assert.deepEqual(verify(dir).failures, []);
+});
+
+test("sync migrates the legacy canonical AGENTS.md name without losing authored content", () => {
+  const dir = makeRepo();
+  const currentEntry = ".agents/cg/contract-graph-agent.md";
+  const legacyEntry = ".agents/cg/AGENTS.md";
+  edit(dir, currentEntry, (text) => `${text}\n## Repository note\n\nPreserve this note.\n`);
+  fs.renameSync(path.join(dir, currentEntry), path.join(dir, legacyEntry));
+
+  for (const rootFile of ["AGENTS.md", "CLAUDE.md", ".github/copilot-instructions.md"]) {
+    edit(dir, rootFile, (text) => text.replaceAll("contract-graph-agent.md", "AGENTS.md"));
+  }
+
+  const { changed } = sync(dir);
+  assert.ok(changed.includes(path.join(dir, currentEntry)));
+  assert.ok(changed.includes(path.join(dir, legacyEntry)));
+  assert.ok(!fs.existsSync(path.join(dir, legacyEntry)));
+  assert.match(read(dir, currentEntry), /Preserve this note\./);
+  assert.match(read(dir, "AGENTS.md").split("\n")[0], /contract-graph-agent\.md/);
+  assert.ok(!read(dir, "AGENTS.md").includes("cg/AGENTS.md"));
+  assert.equal(read(dir, "CLAUDE.md").split("\n")[0], "@.agents/cg/contract-graph-agent.md");
+  assert.deepEqual(verify(dir).failures, []);
+});
+
+test("sync preserves a root file with no H1 because the pointer needs no anchor", () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-brownfield-noh1-"));
   init(dir, {});
   write(dir, "CLAUDE.md", "just some prose with no heading at all\n");
-  assert.throws(() => sync(dir), /no H1 to anchor/);
-  assert.match(read(dir, "CLAUDE.md"), /just some prose/, "the file must be left alone");
+  sync(dir);
+  assert.equal(read(dir, "CLAUDE.md").split("\n")[0], "@.agents/cg/contract-graph-agent.md");
+  assert.match(read(dir, "CLAUDE.md"), /just some prose/, "repository guidance must survive");
+  assert.deepEqual(verify(dir).failures, []);
 });
 
 // -------------------------------------------------- narrowing a selection
@@ -1048,6 +1289,43 @@ test("[8] a root pointer left by a deselected profile fails", () => {
   sync(dir);
   assert.ok(fs.existsSync(path.join(dir, "AGENTS.md")), "the leftover is still there");
   assertFails(dir, 8, "a generated entry point no profile writes");
+});
+
+test("[8] a module pointer left by a deselected profile fails", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-module-pointer-leftover-"));
+  init(dir, { profiles: ["agents"] });
+  sync(dir);
+  fs.copyFileSync(path.join(dir, "src", "AGENTS.md"), path.join(dir, "src", "CLAUDE.md"));
+  assertFails(dir, 8, "a generated module pointer no profile writes");
+});
+
+test("[8] a generated pointer on a leaf unit fails", () => {
+  const dir = makeRepo();
+  const child = structuredClone(readObject(dir, CONTRACT));
+  child.id = "src-core";
+  child.name = "src core";
+  child.kind = "component";
+  child.unit = "src/lib/core";
+  child.summary = "The core package inside the starter module.";
+  child.purpose = "The starter module delegates core types here.";
+  child.responsibilities.owns = ["Starter core types used by the other lib packages."];
+  child.relations.parent = {
+    contract: "src/.agents/cg/contract.yaml",
+    uses: "Delegates the core package.",
+  };
+  child.relations.composition = "leaf";
+  child.relations.children = [];
+  fs.mkdirSync(path.join(dir, "src", "lib", "core", ".agents", "cg"), { recursive: true });
+  write(dir, "src/lib/core/.agents/cg/contract.yaml", stringifyContractYaml(child));
+  editObject(dir, CONTRACT, (contract) => {
+    contract.relations.composition = "composed";
+    contract.relations.children = [{
+      contract: "src/lib/core/.agents/cg/contract.yaml",
+      uses: "Delegates the core package.",
+    }];
+  });
+  fs.copyFileSync(path.join(dir, "src", "AGENTS.md"), path.join(dir, "src", "lib", "core", "AGENTS.md"));
+  assertFails(dir, 8, "a generated pointer on a leaf");
 });
 
 test("a hand-written root file with no generated block is not an orphan", () => {
@@ -1103,6 +1381,72 @@ test("the CLI refuses an unknown option instead of ignoring it", () => {
   assert.ok(!fs.existsSync(target), "a refused invocation must scaffold nothing");
 
   assert.equal(run(["init", target]).code, 0);
+});
+
+test("CLI init with no directory confirms the current working directory", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-cli-cwd-init-"));
+  const cli = path.join(SOURCE_ROOT, "..", "bin", "cg.js");
+  const options = { cwd: dir, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] };
+
+  const named = execFileSync(process.execPath, [cli, "init", ".", "--profile", "agents"], options);
+  assert.doesNotMatch(named, /about to install at/);
+  assert.ok(fs.existsSync(path.join(dir, ".agents", "cg", "contract.yaml")));
+
+  fs.rmSync(dir, { recursive: true, force: true });
+  fs.mkdirSync(dir);
+
+  const implied = execFileSync(process.execPath, [cli, "init", "--profile", "agents"], options);
+  assert.match(implied, /about to install at/);
+  assert.ok(implied.includes(`  ${fs.realpathSync(dir)}\n`));
+  assert.ok(fs.existsSync(path.join(dir, ".agents", "cg", "contract.yaml")));
+});
+
+test("re-running CLI init adds profiles and retains the recorded Contract Graph version", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-cli-additive-profiles-"));
+  const cli = path.join(SOURCE_ROOT, "..", "bin", "cg.js");
+  const options = { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] };
+
+  execFileSync(process.execPath, [cli, "init", dir, "--profile", "codex"], options);
+  const output = execFileSync(
+    process.execPath,
+    [cli, "init", dir, "--profile", "claude"],
+    options,
+  );
+
+  assert.deepEqual(JSON.parse(read(dir, PROFILE)), {
+    cgVersion: PACKAGE_VERSION,
+    profiles: ["agents", "claude"],
+    docs: "docs",
+  });
+  assert.match(output, new RegExp(`cg ${PACKAGE_VERSION.replaceAll(".", "\\.")}`));
+  assert.ok(fs.existsSync(path.join(dir, "AGENTS.md")));
+  assert.ok(fs.existsSync(path.join(dir, "CLAUDE.md")));
+});
+
+test("CLI init highlights existing AGENTS.md and CLAUDE.md before preserving their content", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-cli-existing-instructions-"));
+  fs.writeFileSync(path.join(dir, "AGENTS.md"), "# Existing agent guidance\n\nKeep this.\n");
+  fs.writeFileSync(path.join(dir, "CLAUDE.md"), "# Existing Claude guidance\n\nKeep this too.\n");
+
+  const output = execFileSync(
+    process.execPath,
+    [
+      path.join(SOURCE_ROOT, "..", "bin", "cg.js"),
+      "init",
+      dir,
+      "--profile",
+      "agents,claude",
+    ],
+    { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] },
+  );
+
+  assert.match(output, /existing agent instruction file\(s\)/);
+  assert.match(output, /AGENTS\.md — existing content will be preserved/);
+  assert.match(output, /CLAUDE\.md — existing content will be preserved/);
+  assert.match(read(dir, "AGENTS.md"), /^Read .*\.agents\/cg\/contract-graph-agent\.md.*\n\n# Existing agent guidance/m);
+  assert.match(read(dir, "AGENTS.md"), /Keep this\./);
+  assert.match(read(dir, "CLAUDE.md"), /^@\.agents\/cg\/contract-graph-agent\.md\n\n# Existing Claude guidance/m);
+  assert.match(read(dir, "CLAUDE.md"), /Keep this too\./);
 });
 
 /**
@@ -1208,6 +1552,16 @@ test("cg-warmup searches for a predecessor framework before authoring anything",
     /cg sync/,
     "a newly written module contract is not openable until sync writes its pointers",
   );
+  assert.match(
+    skill,
+    /only the filenames the\s+selected profiles own/,
+    "warmup must not write CLAUDE.md when the install selected only AGENTS.md",
+  );
+  assert.match(
+    skill,
+    /do not copy either file onto a leaf/,
+    "leaf and component units are not workspace roots",
+  );
 
   // Same run: eleven passing tenant-isolation tests kept passing while the rule IDs behind
   // them stopped resolving. A green test bound to nothing is deletable by the next agent.
@@ -1259,11 +1613,16 @@ test("cg-warmup harvests enforced code rules into the correct authority", () => 
   // Family placement is the whole difficulty. A product rule filed as `E` loses its binding
   // authority; a testable rule filed as a `guide` buys silence for the price of the detector.
   assert.match(skill, /Do not file a product rule as an engineering guideline/);
-  assert.match(skill, /Do not promote a D practice to A on wording alone/);
+  assert.match(skill, /Do not promote an `E` practice to A on wording alone/);
 
-  // PP bindings owe a repository detector row. A generic CB candidate owes the complete built-in
-  // measurement and negative-fixture package and must go to the verifier owner; AP remains advice.
+  // P bindings owe a repository detector row. A generic A candidate owes the complete built-in
+  // measurement and negative-fixture package and must go to the verifier owner; E remains advice.
   assert.match(skill, /Every `P` rule needs exactly one repository `.agents\/cg\/enforcement\.yaml`/);
+  assert.match(
+    skill,
+    /Do not skip the catalog because the repository has no architecture-test\s+suite/,
+    "code-backed product constraints still land in product.yaml when no detector exists",
+  );
   assert.match(skill, /Every `A` candidate[\s\S]*deterministic measure[\s\S]*negative fixture/);
   assert.match(skill, /route it to the verifier-owning repository; do not assign a local ID/);
   assert.match(skill, /affected contracts' `rules` arrays/, "a harvested rule bound to nothing governs nothing");
@@ -1275,6 +1634,53 @@ test("cg-warmup harvests enforced code rules into the correct authority", () => 
   // remain explicitly non-binding until verifier delivery.
   assert.match(skill, /^## Harvested rules and structural candidates — please confirm$/m);
   assert.match(skill, /Never describe a candidate as binding before its detector is registered/);
+});
+
+test("cg-warmup loads a code-inspection catalog distinct from engineering.yaml", () => {
+  const skill = fs.readFileSync(
+    path.join(SOURCE_ROOT, "skills", "cg-warmup", "SKILL.md"),
+    "utf8",
+  );
+  const catalog = fs.readFileSync(
+    path.join(SOURCE_ROOT, "skills", "cg-warmup", "assets", "warmup.yaml"),
+    "utf8",
+  );
+  assert.match(skill, /assets\/warmup\.yaml/, "warmup must load the inspection catalog");
+  assert.match(catalog, /family: harvest/);
+  assert.match(catalog, /family: descent/);
+  assert.match(catalog, /family: bind/);
+  assert.match(
+    catalog,
+    /architecture tests/i,
+    "the catalog must tell warmup to enumerate detectors, not sample them",
+  );
+  assert.match(
+    catalog,
+    /Absence of a test is not absence of the constraint/,
+    "traditional brownfields have no architecture-test suite; implementation still constrains",
+  );
+  assert.match(
+    catalog,
+    /types, records, or DTOs/,
+    "a types folder beside its ports is graph.stop, not a library node",
+  );
+  assert.match(
+    catalog,
+    /empty `routes` is a routing miss/,
+    "task language must load child contracts, not only the module",
+  );
+  assert.match(
+    catalog,
+    /2,000–5,000 line reading range/,
+    "oversized leaves are a prompt to look again, not a split rule",
+  );
+  assert.match(catalog, /graph\.forbid/, "size must not override the forbid that size is not a node");
+  assert.doesNotMatch(
+    catalog,
+    /mandala/i,
+    "inspection cues are product-neutral; Mandala P belongs in the adopting catalog",
+  );
+  assert.doesNotMatch(catalog, /^E\d{2}/m, "W cues must not be filed as engineering guidelines");
 });
 
 /**
@@ -1335,8 +1741,9 @@ test("every governance path a skill names is a file init installs", () => {
   for (const file of fs.readdirSync(path.join(SOURCE_ROOT, "cg"))) {
     if (/\.(?:md|json|yaml)$/.test(file)) installed.add(`.agents/cg/${file}`);
   }
-  // Written by init into the docs root, not shipped under src/cg.
+  // Written by init, not shipped under src/cg.
   installed.add("docs/plans/decision-log.md");
+  installed.add(".agents/cg/profile.json");
   installed.add(".agents/cg/principles/architecture.yaml");
 
   const skills = path.join(SOURCE_ROOT, "skills");
@@ -1401,12 +1808,16 @@ test("cg-warmup states a resumable per-unit loop, not one linear pass", () => {
   const file = path.join(SOURCE_ROOT, "skills", "cg-warmup", "SKILL.md");
   const skill = fs.readFileSync(file, "utf8");
 
-  for (const phase of ["# Phase B — repeat", "# Phase C — once"]) {
+  for (const phase of ["# Phase B — repeat", "# Phase D — once", "# Phase C — once"]) {
     assert.ok(skill.includes(`\n${phase}`), `warmup must mark \`${phase}…\``);
   }
   assert.ok(
-    skill.indexOf("\n# Phase B") < skill.indexOf("\n# Phase C"),
-    "the loop must precede the consolidation that reads its output",
+    skill.indexOf("\n# Phase B") < skill.indexOf("\n# Phase D"),
+    "the loop must precede the leaf audit",
+  );
+  assert.ok(
+    skill.indexOf("\n# Phase D") < skill.indexOf("\n# Phase C"),
+    "the leaf audit must precede harvest so new children are present to bind",
   );
 
   // The resume path: a context break mid-warmup must not restart the whole thing.
@@ -1430,6 +1841,25 @@ test("cg-warmup states a resumable per-unit loop, not one linear pass", () => {
   );
   assert.match(skill, /warmup-findings\.md/, "the findings file is the durable working state");
 
+  assert.match(skill, /# Phase D — once/, "missing component contracts are a dedicated pass, not a hope in Phase B");
+  assert.match(skill, /2,000–5,000 lines is a reading budget, not a split rule/);
+  assert.match(skill, /Corrective \(convoluted split\)/);
+  assert.match(
+    skill,
+    /types-only package whose callers enter through\s+parent ports is `graph\.stop`/,
+    "library kind is not a node per types folder",
+  );
+  assert.match(
+    skill,
+    /Empty `routes` on a composed\s+node with named inbound children is a miss/,
+    "root sketches are rewritten onto children",
+  );
+  assert.match(
+    skill,
+    /write the child contract now/,
+    "a component the code already has is written in warmup, not deferred to plan",
+  );
+
   // Consolidation exists precisely because one rule surfaces in many units.
   assert.match(skill, /Consolidate before you write/);
 
@@ -1437,6 +1867,65 @@ test("cg-warmup states a resumable per-unit loop, not one linear pass", () => {
   assert.ok(
     skill.split("\n").length <= 1000,
     "cg-warmup exceeds its 1000-line budget",
+  );
+});
+
+/**
+ * Membership is architecture.yaml `graph`. The programme the owner validates is shaped by both
+ * catalogs: A for the target node, E for remaining design judgement. E must not add rows.
+ */
+test("cg-warmup uses both catalogs for a restructure proposal, not for membership", () => {
+  const skill = fs.readFileSync(
+    path.join(SOURCE_ROOT, "skills", "cg-warmup", "SKILL.md"),
+    "utf8",
+  );
+  assert.match(
+    skill,
+    /Do not consult[\s\S]*engineering\.yaml[\s\S]*whether a folder is a contract/,
+    "E does not decide nodes or invent findings",
+  );
+  assert.match(skill, /\*\*Restructure proposal\.\*\*/);
+  assert.match(skill, /\*\*Architecture target:\*\*/);
+  assert.match(skill, /\*\*Engineering guidance:\*\*/);
+  assert.match(skill, /E` does not override `graph/);
+});
+
+/**
+ * Auto-run is an adapter. If produce bounces a planned split because the code is still mixed,
+ * or treats an E disagreement as Blocked by / $cg-unblock, a default `roadmap` run either
+ * loops prepare↔produce or stops as if the owner had a decision to make.
+ */
+test("cg-auto-run stays an adapter, and produce executes a prepared split", () => {
+  const skill = (name) =>
+    fs.readFileSync(path.join(SOURCE_ROOT, "skills", name, "SKILL.md"), "utf8");
+
+  const autoRun = skill("cg-auto-run");
+  assert.match(autoRun, /never auto-invokes cg-unblock or cg-warmup/);
+  assert.match(autoRun, /adds no graph rules and no `E` rules/);
+  assert.match(autoRun, /does not rewrite a `Next input`/);
+  assert.match(autoRun, /\.agents\/cg\/profile\.json/);
+  assert.match(autoRun, /<docs>\/plans\/auto-run\//);
+  assert.match(autoRun, /twelve dispatches per run/);
+  assert.match(autoRun, /Third `Phase complete` heading this run/);
+  assert.match(autoRun, /A few phases is the window/);
+  assert.doesNotMatch(autoRun, /twenty-four/);
+  assert.doesNotMatch(autoRun, /six dispatches per run/);
+  assert.doesNotMatch(
+    autoRun,
+    /Next input: \$cg-warmup/,
+    "warmup is never a successor this adapter may follow",
+  );
+
+  const produce = skill("cg-produce");
+  assert.match(produce, /still-mixed code is the starting state, not a reason to stop/);
+  assert.match(produce, /do not\nemit `\$cg-plan`/);
+  assert.match(produce, /An `E` disagreement is not `Blocked by` and not `\$cg-unblock`/);
+
+  const prepare = skill("cg-prepare");
+  assert.match(prepare, /Mixed code that matches that target is the work, not a return to `\$cg-plan`/);
+  assert.match(
+    prepare,
+    /An `E` disagreement is not[\s\S]{0,20}`Blocked by` and not `\$cg-unblock`/,
   );
 });
 
@@ -2157,7 +2646,7 @@ test("[11] a phase naming the same token twice fails", () => {
 test("[11] every phase always loads structural bindings", () => {
   const dir = makeRepo();
   edit(dir, PHASES, (t) => t.replace('"always": ["A", "P"]', '"always": ["P"]'));
-  assertFails(dir, 11, "CB is ambient binding for every phase");
+  assertFails(dir, 11, "A is ambient binding for every phase");
 });
 
 // ---------------------------------------------------------------- model
@@ -2316,8 +2805,13 @@ function ruleMatchesSource(rule, relative) {
 }
 
 test("scaffold mapping covers every eligible src file exactly once", () => {
+  // The canonical entry template ships in the npm package but is consumed by `cg sync`, not
+  // copied by `init`; its generated target therefore stays out of the installation manifest.
   const eligible = filesUnder(SOURCE_ROOT).filter(
-    (file) => !file.startsWith("scripts/") && !file.startsWith("install/profiles/"),
+    (file) =>
+      !file.startsWith("scripts/") &&
+      !file.startsWith("install/profiles/") &&
+      file !== "cg/contract-graph-agent.md",
   );
   const uncovered = [];
   const overlapping = [];
@@ -2349,7 +2843,6 @@ test("init round trip writes exactly the canonical mapped file set", () => {
     { source: "cg/enforcement.yaml", target: ".agents/cg/enforcement.yaml", mode: "always", select: "file" },
     { source: "cg/schema", target: ".agents/cg/schema", mode: "always", select: "tree" },
     { source: "skills", target: ".agents/skills", mode: "always", select: "tree" },
-    { source: "install/rules", target: ".agents/rules", mode: "always", select: "tree" },
     { source: "install/hooks", target: ".agents/hooks", mode: "always", select: "tree" },
     { source: "install/templates/module", target: "src", mode: "always", select: "tree" },
     { source: "install/templates/docs", target: "docs", mode: "always", select: "tree" },
@@ -2499,7 +2992,6 @@ test("no shipped file references a pre-rename governance path", () => {
     /verify_decision_[h]arvest/,
     /(?:^|[^\w])compiled\//,
   ];
-  const repo = path.resolve(import.meta.dirname, "..");
   // `.github` is walked because CI is the first thing a rename breaks and the last place
   // anyone looks — a stale flag there fails on push rather than in review.
   const roots = [
@@ -2526,12 +3018,12 @@ test("no shipped file references a pre-rename governance path", () => {
       for (const pattern of STALE) {
         // This test names the stale paths, so it must not flag its own list.
         if (pattern.test(line) && !line.includes("/\\.agents\\/cg\\/")) {
-          hits.push(`${path.relative(repo, target)}:${index + 1}: ${line.trim()}`);
+          hits.push(`${path.relative(REPO, target)}:${index + 1}: ${line.trim()}`);
         }
       }
     });
   };
-  for (const root of roots) walk(path.join(repo, root));
+  for (const root of roots) walk(path.join(REPO, root));
 
   assert.deepEqual(hits, [], `stale governance paths still referenced:\n${hits.join("\n")}`);
 });
@@ -2541,12 +3033,12 @@ test("no shipped file references a pre-rename governance path", () => {
 /** The tarball is assembled from one closed target, not collected from authoring directories. */
 test("the published tarball ships consumer sources and no maintainer tooling", () => {
   const npm = process.platform === "win32" ? "npm.cmd" : "npm";
-  execFileSync(process.execPath, [path.join(path.resolve(import.meta.dirname, ".."), "bin", "cg.js"), "build"], {
-    cwd: path.resolve(import.meta.dirname, ".."),
+  execFileSync(process.execPath, [path.join(REPO, "bin", "cg.js"), "build"], {
+    cwd: REPO,
     stdio: "ignore",
   });
   const output = execFileSync(npm, ["pack", "./build", "--ignore-scripts", "--dry-run", "--json"], {
-    cwd: path.resolve(import.meta.dirname, ".."),
+    cwd: REPO,
     encoding: "utf8",
     env: { ...process.env, npm_config_cache: path.join(os.tmpdir(), "cg-npm-cache") },
     stdio: ["ignore", "pipe", "ignore"],
@@ -2554,7 +3046,7 @@ test("the published tarball ships consumer sources and no maintainer tooling", (
   // The tarball is produced solely from the already verified build/ target.
   const shipped = JSON.parse(output.slice(output.indexOf("[")))[0].files.map((entry) => entry.path);
   const targetManifest = JSON.parse(
-    fs.readFileSync(path.join(path.resolve(import.meta.dirname, ".."), "build", "manifest.json"), "utf8"),
+    fs.readFileSync(path.join(REPO, "build", "manifest.json"), "utf8"),
   );
   const targetFiles = [...Object.keys(targetManifest.files), "manifest.json"].sort();
 
@@ -2565,7 +3057,9 @@ test("the published tarball ships consumer sources and no maintainer tooling", (
   for (const required of [
     "script/cli.js",
     "script/contracts.js",
+    "script/picker.js",
     "agent/cg/contract.yaml",
+    "agent/cg/contract-graph-agent.md",
     "agent/cg/principles/architecture.yaml",
     "agent/cg/workflow.md",
     "agent/cg/enforcement.yaml",
@@ -2577,7 +3071,7 @@ test("the published tarball ships consumer sources and no maintainer tooling", (
     "agent/cg/schema/engineering.schema.json",
     "agent/cg/schema/product.schema.json",
     "agent/profiles/all.scaffolding.conf.json",
-    "agent/profiles/cursor.scaffolding.conf.json",
+    "agent/profiles/agents.scaffolding.conf.json",
     "agent/templates/module/CLAUDE.md",
     "agent/skills/cg-plan/SKILL.md",
   ]) {
@@ -2665,15 +3159,6 @@ test("the manifest keeps the original baseline for preserved context", () => {
   );
 });
 
-test("the shipped rule pointer matches what cg sync generates", () => {
-  // They drifted once. Nothing caught it, because sync overwrites the file on the first run
-  // and the stale template was only ever read by someone opening the package.
-  assert.equal(
-    fs.readFileSync(path.join(SOURCE_ROOT, "install/rules/cg.md"), "utf8"),
-    renderAgentRule(),
-  );
-});
-
 test("the shipped module pointer matches what cg sync generates", () => {
   const expected = renderModulePointer("src", "src");
   assert.equal(
@@ -2698,6 +3183,54 @@ test("sync rewrites a module pointer that still names contract.md", () => {
   assert.match(read(dir, "billing/AGENTS.md"), /\.agents\/cg\/contract\.yaml/);
   assert.match(read(dir, "billing/AGENTS.md"), /principles\/architecture\.yaml/);
   assert.doesNotMatch(read(dir, "billing/AGENTS.md"), /contract\.md/);
+  assert.deepEqual(verify(dir).failures, []);
+});
+
+test("adding a profile copies the existing module pointer to the new filename", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-copy-module-pointer-"));
+  init(dir, { profiles: ["agents"] });
+  sync(dir);
+  addRootChildren(dir, ["billing"], (contract) => {
+    contract.responsibilities.owns = ["Customer billing lifecycle."];
+  });
+  assert.ok(!fs.existsSync(path.join(dir, "billing", "CLAUDE.md")));
+  init(dir, { profiles: ["agents", "claude"] });
+  sync(dir);
+  assert.equal(read(dir, "billing/CLAUDE.md"), read(dir, "billing/AGENTS.md"));
+  assert.equal(read(dir, "src/CLAUDE.md"), read(dir, "src/AGENTS.md"));
+  assert.deepEqual(verify(dir).failures, []);
+});
+
+test("sync does not write workspace-root pointers onto a component", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-no-leaf-pointer-"));
+  init(dir, { profiles: ["agents"] });
+  sync(dir);
+  const child = structuredClone(readObject(dir, CONTRACT));
+  child.id = "src-core";
+  child.name = "src core";
+  child.kind = "component";
+  child.unit = "src/lib/core";
+  child.summary = "The core package inside the starter module.";
+  child.purpose = "The starter module delegates core types here.";
+  child.responsibilities.owns = ["Starter core types used by the other lib packages."];
+  child.relations.parent = {
+    contract: "src/.agents/cg/contract.yaml",
+    uses: "Delegates the core package.",
+  };
+  child.relations.composition = "leaf";
+  child.relations.children = [];
+  fs.mkdirSync(path.join(dir, "src", "lib", "core", ".agents", "cg"), { recursive: true });
+  write(dir, "src/lib/core/.agents/cg/contract.yaml", stringifyContractYaml(child));
+  editObject(dir, CONTRACT, (contract) => {
+    contract.relations.composition = "composed";
+    contract.relations.children = [{
+      contract: "src/lib/core/.agents/cg/contract.yaml",
+      uses: "Delegates the core package.",
+    }];
+  });
+  sync(dir);
+  assert.ok(!fs.existsSync(path.join(dir, "src", "lib", "core", "AGENTS.md")));
+  assert.ok(!fs.existsSync(path.join(dir, "src", "lib", "core", "CLAUDE.md")));
   assert.deepEqual(verify(dir).failures, []);
 });
 
@@ -2817,6 +3350,19 @@ test("init ignores the auto-run ledger without disturbing an existing .gitignore
   );
 });
 
+test("appending ledger ignores is not a framework replace", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-ignore-replace-"));
+  fs.writeFileSync(path.join(dir, ".gitignore"), "node_modules/\n", "utf8");
+  fs.writeFileSync(path.join(dir, "README.md"), "x\n", "utf8");
+  fs.mkdirSync(path.join(dir, "lib"));
+  const plan = init(dir, { dryRun: true });
+  assert.ok(
+    !plan.replaced.some((file) => path.basename(file) === ".gitignore"),
+    "an append-only .gitignore patch must not trigger Replace them? [y/N]",
+  );
+  assert.ok(plan.written.some((file) => path.basename(file) === ".gitignore"));
+});
+
 test("a finished warmup is advised to remove its resume log", () => {
   const dir = makeRepo();
   const findings = path.join(dir, "docs", "plans", "warmup-findings.md");
@@ -2826,7 +3372,7 @@ test("a finished warmup is advised to remove its resume log", () => {
   // Not yet finished: product rules are unharvested, so the log still has a job.
   assert.ok(!verify(dir).advisories.some((m) => m.includes("survives a finished warmup")));
 
-  // Harvested as a real PP entry. The shipped catalog's only PP example is a YAML comment.
+  // Harvested as a real P entry. The shipped catalog's only P example is a YAML comment.
   setProductEntries(dir, "P09", "Harvested", [
     { id: "P09-01", text: "a harvested rule." },
   ]);

@@ -1,7 +1,7 @@
 {
   "name": "contract-graph",
-  "version": "0.3.0",
-  "description": "A traversable software context graph for coding agents: route from repository to module to sub-module before reading code.",
+  "version": "0.4.0",
+  "description": "Record a repository as a traversable contract graph so people and coding agents can find where a change belongs before reading code.",
   "type": "module",
   "bin": {
     "cg": "bin/cg.js"
@@ -30,7 +30,7 @@
     "node": ">=18.17"
   },
   "scripts": {
-    "test": "node --test \"test/**/*.test.js\"",
+    "test": "node --test",
     "try": "node src/scripts/dev.js",
     "build": "node bin/cg.js build",
     "build:check": "node bin/cg.js build --check",
@@ -59,7 +59,7 @@
     "type": "git",
     "url": "git+https://github.com/sarada-io/contract-graph.git"
   },
-  "homepage": "https://github.com/sarada-io/contract-graph#readme",
+  "homepage": "https://sarada.io/cg/",
   "bugs": {
     "url": "https://github.com/sarada-io/contract-graph/issues"
   },

@@ -1,7 +1,7 @@
 $schema: https://sarada.io/contract-graph/schema/enforcement-v1.schema.json
 enforcementVersion: "1.0"
 
-# P detector rows only. A lives in principles/architecture.yaml. D never appears.
+# P detector rows only. A lives in principles/architecture.yaml. E never appears.
 # A row is an obligation until the named detector exists, blocks integration, and has a
 # fail-on-demand fixture.
 entries: []

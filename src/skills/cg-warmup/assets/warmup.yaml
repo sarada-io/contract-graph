@@ -1,0 +1,64 @@
+# Code-inspection catalog for cg-warmup. Not E, not P, not A.
+#
+# Warmup reads this file before Phase B and again at harvest. Each cue says what
+# to look for in the working tree and what to do when it is found, so descent,
+# harvest, and bind do not stop at a convenient sample. Never copy a W id into
+# contract `rules`, product.yaml, or engineering.yaml.
+
+warmupVersion: "1.0"
+
+cues:
+  - id: W01-01
+    family: harvest
+    look: Architecture tests, ArchUnit suites, import-boundary tests, classpath probes, confinement tests, and named `verify*` / `check*` tasks on the build.
+    then: Enumerate every one. Each detector that already fails a violation is one harvested P (or E if it is a preference). One distinct constraint per detector. A detector that still runs in `check` with no P row is a harvest miss, not a leftover predecessor.
+  - id: W01-02
+    family: harvest
+    look: A root verify task that enumerates modules, deployables, example apps, or permitted stores.
+    then: That count or allowlist is a product-graph P on the repository contract, with that task as the enforcement row. Do not leave it as prose in `forbids` only.
+  - id: W01-03
+    family: harvest
+    look: The packages, ports, or deployables the constraint actually governs.
+    then: Bind it there. Put the P id in `rules` whether the enforcement row is a detector or `unproven`. Repeat it in `invariants` and `forbids`. Do not bind only on the module that owns a test file.
+  - id: W01-04
+    family: harvest
+    look: An ID you are about to assign.
+    then: One constraint, one id. Do not reuse an id for a different family of constraint (billing vs classpath, tenancy vs economics).
+  - id: W01-05
+    family: harvest
+    look: A constraint you believe from docs, comments, or vision prose, with no implementing code that already refuses the violation.
+    then: It is not P and not a contract invariant. Record it as unproven, an E preference, or a `DU-NN`. Warmup does not invent product law from prose.
+  - id: W01-06
+    family: harvest
+    look: A named ceiling, single-seam type, startup validator, throwing constructor, config default, or scheduled job that already refuses a violation, with or without a test.
+    then: Write it as P in product.yaml and on every contract it governs. Name the detector in enforcement.yaml when one already fails a violation. Otherwise the enforcement row is `unproven` plus that violation. Repeat the constraint in `invariants` and `forbids`. Absence of a test is not absence of the constraint.
+
+  - id: W02-01
+    family: descent
+    look: A named inbound surface inside a module — a distinct HTTP or RPC realm, websocket or SSE transport, CLI, or worker entry — that changes for its own reasons (`graph.selfSufficient.change`).
+    then: `graph.recurse` `add-child` unless Leaf rationale names those packages and says why they never change independently. "One process" is not stop when two named inbound surfaces exist. A test file is a hint, not the membership test.
+  - id: W02-02
+    family: descent
+    look: Persistence or capability slices that have their own ports or types but share one path, schema, or codec seam.
+    then: Keep the seam on the parent. Recurse into a slice that is self-sufficient. Leaf rationale is for slices that cannot move without copying the seam.
+  - id: W02-03
+    family: descent
+    look: A package of types, records, or DTOs whose callers enter through ports or services on the parent.
+    then: `graph.stop` on the parent. Kind `library` is a reusable capability understood without naming a consumer. A types folder beside its ports is not add-child. `graph.forbid` — a node per directory.
+  - id: W02-04
+    family: descent
+    look: A leaf whose implementation (excluding tests, generated, and vendored trees) sits outside a 2,000–5,000 line reading range, or that still has undeclared self-sufficient packages.
+    then: Re-apply graph.recurse. Size is a prompt to look again, not evidence a node is required (`graph.forbid`). If add-child and a separable directory or package already exists, write the child contract now. If add-child would move code or invent types, a corrective-set row. If stop, Leaf rationale names the packages and why they are inseparable.
+  - id: W02-05
+    family: descent
+    look: A child contract just written.
+    then: Apply the descent cues to that child. Depth is not capped. Stop at graph.stop, not at "this folder already has a module contract". Rewrite the parent and root `routes` so task phrases that name this surface list this child.
+
+  - id: W03-01
+    family: bind
+    look: A harvested constraint a later session would need in order to change this boundary safely.
+    then: Put the P id in `rules` of every boundary it governs, including when the enforcement row is unproven. Repeat the constraint in `invariants` and `forbids`. A catalog entry that no contract lists is invisible to `cg contract context`.
+  - id: W03-02
+    family: bind
+    look: A parent that just gained children, or a root or parent route whose `when` phrases name a child surface.
+    then: List the child contract on that route. A composed node with named inbound children and empty `routes` is a routing miss. Task language must load the smallest responsible contract, not only the module.

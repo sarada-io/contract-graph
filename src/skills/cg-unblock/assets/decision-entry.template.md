@@ -1,6 +1,7 @@
 # Decision entry template
 
-Copy one filled heading into `docs/plans/decision-log.md`. Do not keep this instructional prose
+Copy one filled heading into `<docs>/plans/decision-log.md`. Resolve `<docs>` from
+`.agents/cg/profile.json` `docs` (default `docs`). Do not keep this instructional prose
 in the ledger.
 
 Numbering is per family and never reused: `DU-01`, `DU-02`, … for owner review; `DA-01`, `DA-02`, …

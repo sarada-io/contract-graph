@@ -10,6 +10,11 @@ export const PROFILE_CONFIG_ROOT = fs.existsSync(path.join(RUNTIME_ROOT, "agent"
   ? path.join(RUNTIME_ROOT, "agent", "profiles")
   : path.join(RUNTIME_ROOT, "install", "profiles");
 const CONFIG_SUFFIX = ".scaffolding.conf.json";
+const LEGACY_PROFILE_ALIASES = Object.freeze({
+  antigravity: "agents",
+  codex: "agents",
+  cursor: "agents",
+});
 const CONFIG_FIELDS = new Set([
   "name",
   "displayName",
@@ -33,6 +38,32 @@ export function availableProfiles(root = PROFILE_CONFIG_ROOT) {
     .filter((name) => name.endsWith(CONFIG_SUFFIX))
     .map((name) => name.slice(0, -CONFIG_SUFFIX.length))
     .sort();
+}
+
+/** Concrete choices shown by `cg init`; `all` remains a backwards-compatible CLI alias. */
+export function selectableProfiles(root = PROFILE_CONFIG_ROOT) {
+  return availableProfiles(root)
+    .filter((name) => name !== "all")
+    .sort((left, right) => {
+      const a = loadProfileConfig(left, { root }).displayName.toLowerCase();
+      const b = loadProfileConfig(right, { root }).displayName.toLowerCase();
+      return a < b ? -1 : a > b ? 1 : left.localeCompare(right);
+    });
+}
+
+/** Expand the legacy `all` alias so metadata can record the actual installed harnesses. */
+export function expandProfileAliases(profiles, { root = PROFILE_CONFIG_ROOT } = {}) {
+  const normalized = normalizeProfiles(profiles, { root });
+  if (!normalized.includes("all")) return normalized;
+  return [...new Set([...selectableProfiles(root), ...normalized.filter((name) => name !== "all")])];
+}
+
+/** Display metadata for the concrete interactive choices. */
+export function profileChoices(root = PROFILE_CONFIG_ROOT) {
+  return selectableProfiles(root).map((name) => {
+    const config = loadProfileConfig(name, { root });
+    return { value: name, label: config.displayName };
+  });
 }
 
 export const profilePath = (repoRoot) =>
@@ -108,7 +139,7 @@ export function normalizeProfiles(profiles, { root = PROFILE_CONFIG_ROOT } = {})
   if (!Array.isArray(profiles) || profiles.length === 0 || profiles.some((name) => !name)) {
     throw new ProfileError("profiles must be a non-empty array of names");
   }
-  const normalized = [...new Set(profiles)];
+  const normalized = [...new Set(profiles.map((name) => LEGACY_PROFILE_ALIASES[name] ?? name))];
   const available = availableProfiles(root);
   const unknown = normalized.filter((name) => !available.includes(name));
   if (unknown.length) {
@@ -174,13 +205,17 @@ export function loadProfileSelection(repoRoot, { allowMissing = false } = {}) {
     throw new ProfileError(`${file}: expected a JSON object`);
   }
   const profiles = normalizeProfiles(parsed.profiles);
+  const cgVersion = parsed.cgVersion ?? null;
+  if (cgVersion !== null && (typeof cgVersion !== "string" || !cgVersion.trim())) {
+    throw new ProfileError(`${file}: cgVersion must be a non-empty string`);
+  }
   // `docs` is optional on read so a repository scaffolded before it existed still loads;
   // `cg init` writes it, so it becomes present on the next run.
   const docs = parsed.docs ?? DEFAULT_DOCS_ROOT;
   if (!safeRelativePath(docs) || docs.split(/[\\/]/).length !== 1) {
     throw new ProfileError(`${file}: docs must be a single safe directory name`);
   }
-  return { profiles, docs };
+  return { profiles, docs, cgVersion };
 }
 
 export function resolveProfileSelection(repoRoot) {

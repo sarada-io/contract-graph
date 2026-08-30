@@ -17,14 +17,17 @@ import {
   DOCS_TREES,
   governanceContractPath,
   manifestPath,
+  MODULE_POINTERS,
   phasesPath,
+  selectedModulePointers,
 } from "./model.js";
 import { loadContract, stringifyContractYaml } from "./contracts.js";
 import {
+  expandProfileAliases,
   loadProfileSelection,
-  normalizeProfiles,
   profilePath,
   resolveProfiles,
+  selectableProfiles,
 } from "./profiles.js";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -75,10 +78,6 @@ export const SCAFFOLD_MAPPING = Object.freeze([
   { source: "cg/schema", packageSource: "agent/cg/schema", target: ".agents/cg/schema", mode: "always", select: "tree", install: "replace" },
   { source: "skills", packageSource: "agent/skills", target: ".agents/skills", mode: "always", select: "tree", install: "replace" },
   { source: "install/hooks", packageSource: "agent/hooks", target: ".agents/hooks", mode: "always", select: "tree", install: "replace" },
-  // Shipped so the file exists on a first install; its *content* belongs to `cg sync`, which
-  // regenerates it unconditionally. Marking it `replace` would make every clean re-run report a
-  // pending change to a file the next command rewrites anyway.
-  { source: "install/rules", packageSource: "agent/rules", target: ".agents/rules", mode: "always", select: "tree", install: "preserve" },
   // `starter` rather than `always`: the module tree is an example contract for a repository
   // that has no modules yet. Writing it into a brownfield repo invents a module that does not
   // exist — see `shouldScaffoldModule`.
@@ -119,11 +118,22 @@ export function resolveTarget(rule, docsRoot = DEFAULT_DOCS_ROOT) {
   return [docsRoot, ...rest].join("/");
 }
 
-function applyMappingRule(rule, repoRoot, out, docsRoot, dryRun) {
+function applyMappingRule(rule, repoRoot, out, docsRoot, dryRun, modulePointers) {
   if (rule.mode === "never") return;
   for (const { source, target } of enumerateRule(rule, repoRoot, docsRoot)) {
+    if (skipUnselectedStarterPointer(rule, target, modulePointers)) continue;
     copyFile(source, target, rule, out, dryRun);
   }
+}
+
+/**
+ * The starter module ships both pointer filenames as identical templates. Only the selected
+ * profiles' files are copied; `cg sync` creates the other later by copying a sibling.
+ */
+function skipUnselectedStarterPointer(rule, target, modulePointers) {
+  if (rule.mode !== "starter") return false;
+  const name = path.basename(target);
+  return MODULE_POINTERS.includes(name) && !modulePointers.includes(name);
 }
 
 /** Walk one source tree, yielding every {source, target, rule} file pair it would install. */
@@ -260,7 +270,10 @@ export function ensureLedgerIgnored(repoRoot, out, dryRun) {
     `${current && !current.endsWith("\n") ? "\n" : ""}` +
     "\n# Contract Graph: cg-auto-run ledgers are live state for one run, never history.\n" +
     `${missing.join("\n")}\n`;
-  (current ? out.replaced : out.written).push(file);
+  // Always `written`, never `replaced`. The CLI treats `replaced` as “overwrite a
+  // framework file, default No” — a prompt that cancelled a first brownfield init
+  // when the only change was these two append-only ignore lines.
+  out.written.push(file);
   if (dryRun) return;
   fs.writeFileSync(file, current + block, "utf8");
 }
@@ -311,8 +324,10 @@ export function init(repoRoot, { profiles, docs, dryRun = false } = {}) {
   const { written, skipped } = out;
 
   const previous = loadProfileSelection(repoRoot, { allowMissing: true });
-  const selectedProfiles = normalizeProfiles(profiles ?? previous?.profiles ?? ["all"]);
-  resolveProfiles(selectedProfiles);
+  const selectedProfiles = expandProfileAliases(
+    profiles ?? previous?.profiles ?? selectableProfiles(),
+  );
+  const modulePointers = selectedModulePointers(resolveProfiles(selectedProfiles).rootPointers);
   // A repository never silently changes its docs root: once recorded, the record wins
   // unless this run passes an explicit one.
   const docsRoot = docs ?? previous?.docs ?? DEFAULT_DOCS_ROOT;
@@ -329,7 +344,7 @@ export function init(repoRoot, { profiles, docs, dryRun = false } = {}) {
   for (const rule of SCAFFOLD_MAPPING.filter(
     (entry) => entry.mode === "always" || (entry.mode === "starter" && !brownfield),
   )) {
-    applyMappingRule(rule, repoRoot, out, docsRoot, dryRun);
+    applyMappingRule(rule, repoRoot, out, docsRoot, dryRun, modulePointers);
   }
 
 
@@ -340,7 +355,13 @@ export function init(repoRoot, { profiles, docs, dryRun = false } = {}) {
   ensureLedgerIgnored(repoRoot, out, dryRun);
 
   if (dryRun) {
-    return { ...out, profiles: selectedProfiles, docs: docsRoot, brownfield };
+    return {
+      ...out,
+      profiles: selectedProfiles,
+      docs: docsRoot,
+      cgVersion: PACKAGE_VERSION,
+      brownfield,
+    };
   }
 
   clearStarterComposition(repoRoot, brownfield, written);
@@ -348,7 +369,11 @@ export function init(repoRoot, { profiles, docs, dryRun = false } = {}) {
   writeManifest(repoRoot, PACKAGE_VERSION, out, docsRoot);
 
   const record = profilePath(repoRoot);
-  const desired = `${JSON.stringify({ profiles: selectedProfiles, docs: docsRoot }, null, 2)}\n`;
+  const desired = `${JSON.stringify(
+    { cgVersion: PACKAGE_VERSION, profiles: selectedProfiles, docs: docsRoot },
+    null,
+    2,
+  )}\n`;
   const current = fs.existsSync(record) ? fs.readFileSync(record, "utf8") : null;
   if (current === desired) {
     skipped.push(record);
@@ -358,5 +383,11 @@ export function init(repoRoot, { profiles, docs, dryRun = false } = {}) {
     written.push(record);
   }
 
-  return { ...out, profiles: selectedProfiles, docs: docsRoot, brownfield };
+  return {
+    ...out,
+    profiles: selectedProfiles,
+    docs: docsRoot,
+    cgVersion: PACKAGE_VERSION,
+    brownfield,
+  };
 }

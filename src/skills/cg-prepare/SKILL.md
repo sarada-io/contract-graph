@@ -6,7 +6,10 @@ description: Prepare one selected Contract Graph phase as a prioritized queue of
 # CG Prepare
 
 Turn one accepted phase into one ordered execution queue. Do not implement the phase or edit
-permanent contracts here. Read `cg-unblock` while preparing.
+permanent contracts here.
+
+Read `.agents/skills/cg-unblock/SKILL.md` only when a fork fails D-1: unresolvable from contracts
+and accepted decisions, material, costly to reverse, and nothing else can proceed.
 
 ## Required outcome
 
@@ -23,35 +26,45 @@ Finish with all twelve true:
 8. One execution branch or worktree and one measured baseline are named for the whole phase.
 9. No parallel track, per-Step branch, merge order, rebase plan, or concurrent handoff is emitted.
 10. Every Step has one cold-start brief and one runnable `Done when` gate.
-11. An accepted decision-harvest cohort reserves the first prepared harvest Step, with an immutable
-    classification digest and drain IDs exactly equal the eligible decision IDs.
-12. The user-facing response names the next action, next skill, earliest ready Step brief, and readiness
-    condition.
+11. If an accepted decision-harvest cohort is in scope, the first prepared harvest Step carries an
+    immutable classification digest and drain IDs exactly equal the eligible decision IDs.
+12. The response ends with the `Next action` block in §9.
+
+These twelve are this skill's disk facts, not a score. Item 11 is true when no harvest cohort is
+in scope. Once the queue file has a `Ready` Step, emit §9 so `cg-auto-run` can dispatch
+`cg-produce`. Do not hold the hop to re-score the list.
 
 ## 1. Admit one phase
 
-Preparation starts only when:
+Preparation starts only when `cg-plan` has selected one phase whose outcome, scope, and acceptance
+gate are stable, its prerequisites are satisfied or explicitly blocked, and the repository's
+execution branch or worktree policy is known. If the outcome or gate must change, stop with
+`$cg-plan`.
 
-- `cg-plan` identifies one selected phase;
-- its prerequisites are satisfied or explicitly blocked;
-- its outcome, scope, and phase acceptance gate are stable; and
-- the repository's execution branch or worktree policy is known.
-
-If preparation reveals that the outcome or acceptance gate must change, return to `cg-plan`.
+1. Load `.agents/cg/principles/architecture.yaml`. Apply `hierarchy.kinds` and `graph` before
+   assigning any path.
+2. Load the selected phase from the roadmap. Run `cg contract route --task "<phase outcome>"`.
+   Load only the matched contracts and their named children; then scoped `P` rules, then the
+   repository constitution and specifications. Consult `E` only for a remaining design fork. A
+   practice already cited on the selected phase is not remaining. An `E` disagreement is not
+   `Blocked by` and not `$cg-unblock`.
+3. Resolve `<docs>` from `.agents/cg/profile.json` `docs` (default `docs`). Confirm with
+   `cg residue`. The queue file is `<docs>/plans/<programme>/<phase>_detailed_preparation.md`.
+4. Inspect source, tests, resources, and the worktree inside the selected units only.
+5. Run `cg verify` and the narrowest useful baseline. Record existing failures as facts.
 
 When `cg-sign-off` returns corrective work, preserve its reproduction, expected and actual result,
-affected paths, contract and detector impact, dependencies, and `Done when` evidence. Re-prepare the
-remaining Step sequence only when the current phase outcome and gate remain unchanged. A
-successor-planning handover first goes through `cg-plan`.
+affected paths, contract and detector impact, dependencies, and `Done when` evidence. Re-prepare
+the remaining sequence only when the phase outcome and gate are unchanged. A successor-planning
+handover first goes through `cg-plan`.
 
-After one batch acceptance, an accepted non-empty decision-harvest cohort may be prepared for its already-planned destination
-phase while the source phase is still completing. Reserve the first prepared harvest Step for that
-cohort, set it `Blocked` on source-phase completion, and make every later Step remain Waiting behind
-the harvest Step. Its cold-start brief must carry the exact source manifest path, cohort ID,
-classification digest, and drain IDs exactly equal the eligible decision IDs. After writing the
-route, resume `cg-sign-off` for the source phase; do not begin destination execution yet.
+After one batch acceptance, an accepted non-empty decision-harvest cohort may be prepared for its
+already-planned destination phase while the source phase is still completing. Reserve the first
+prepared harvest Step for that cohort, set it `Blocked` on source-phase completion, and keep every
+later Step `Waiting` behind it. After writing the route, resume `cg-sign-off` for the source phase;
+do not begin destination execution yet.
 
-Run the narrowest useful baseline plus the repository contract gate and record existing failures.
+The roadmap is transient. Do not cite a plan path as the source of a rule.
 
 ## 2. Define Steps
 
@@ -65,15 +78,10 @@ Write numbered Steps `1…N`. Each Step contains:
 - dependencies and decisions that block it; and
 - the verified repository state and prerequisite handoffs it expects when selected.
 
-Use only:
+Use only **Phase** (roadmap unit) and **Step** (executable vertical slice). Do not introduce
+another unit between them.
 
-- **Phase:** one roadmap delivery unit.
-- **Step:** one ordered, executable vertical slice inside the selected phase.
-
-Track is retired for new preparation records. Do not introduce another unit between Phase and Step.
-
-For an accepted harvest route, place these machine-readable markers in the first Step immediately
-after its heading:
+For an accepted harvest route, place these markers in the first Step immediately after its heading:
 
 ```markdown
 Source harvest manifest: `<path>`
@@ -87,14 +95,13 @@ Blocked`. No later Step may be `Ready`, `In progress`, or `Complete` before the 
 
 ## 3. Build the Step ledger
 
-Before assigning paths, apply `.agents/cg/principles/architecture.yaml` `hierarchy.kinds` and `graph` to
-every behavior the phase adds: recurse until the smallest node, then stay, add-child, or elsewhere.
-Size, reuse, or a new dependency is not a new node. `graph.surface` is declared entry and
-encapsulation: `graph.surface.service` lists the named operations callers use; a new entry point is
-a surface amendment or `add-child`, and internals on the surface are not stay. `graph.adapters` is
-the vendor case: a second optional vendor client is
-`add-child` behind a parent-owned port. A Step whose editable paths sit
-on the wrong domain is a preparation defect.
+Before assigning paths, apply `.agents/cg/principles/architecture.yaml` `graph`: recurse until the
+smallest node, then stay, add-child, or elsewhere. Size, reuse, or a new dependency is not a new
+node. `graph.surface` is declared entry; a new entry point is a surface amendment or `add-child`.
+`graph.adapters`: a second optional vendor client is `add-child` behind a parent-owned port. If
+the phase already names an add-child, elsewhere, service, or adapter target, assign paths to
+deliver it. Mixed code that matches that target is the work, not a return to `$cg-plan`. A Step
+whose editable paths sit on the wrong domain is a preparation defect.
 
 Inventory every affected item:
 
@@ -118,25 +125,23 @@ atomic move in the same Step.
 
 ## 4. Preserve contract co-delivery
 
-Apply these rules to every Step:
-
 - A behavior, boundary, invariant, entry point, or operational-assumption change owns the matching
   contract and detector update.
 - A Step that introduces a self-sufficient unit — `graph.selfSufficient` in
-  `.agents/cg/principles/architecture.yaml` — owns that unit's `contract.yaml`, its applicable `P` rules,
-  and reciprocal parent/child edges. `cg verify` rejects a structurally incomplete graph, so this
-  cannot be deferred to a later Step.
+  `.agents/cg/principles/architecture.yaml` — owns that unit's `contract.yaml`, its applicable `P`
+  rules, and reciprocal parent/child edges. `cg verify` rejects a structurally incomplete graph, so
+  this cannot be deferred to a later Step.
 - A new or changed rule and its detector land with the implementation.
-- No Step depends on `cg-sign-off` or a later cleanup Step to make its contract
-  truthful.
+- No Step depends on `cg-sign-off` or a later cleanup Step to make its contract truthful.
 - If a contract change is too wide for one Step, split the behavior before execution; never split
   contract truth from that behavior.
 
-Every completed Step must leave the repository contract-complete.
+Every completed Step must leave the repository contract-complete. Closure owns only emergent
+composition tests and phase-close records.
 
 ## 5. Build one continuous sequential queue
 
-Assign stable priority numbers using this default order:
+Assign stable priority numbers in this default order:
 
 1. published interfaces and structural seams;
 2. consumers and migrations;
@@ -144,8 +149,8 @@ Assign stable priority numbers using this default order:
 4. durable documentation describing the implemented result;
 5. environment or production measurement.
 
-Do not optimize for equal size or theoretical concurrency. A priority number is a deterministic
-selection preference, not an undeclared dependency. Record every real dependency explicitly.
+A priority number is a selection preference, not an undeclared dependency. Record every real
+dependency explicitly. Do not optimize for equal size or theoretical concurrency.
 
 Each Step carries:
 
@@ -162,84 +167,50 @@ Set state deterministically:
 - `Ready`: all dependencies are `Complete`, no blocker remains, and the current verified state
   satisfies the brief;
 - `Blocked`: dependencies permit work but an exact decision or external prerequisite does not;
-- `In progress`: the one Step currently executing; and
+- `In progress`: the one Step currently executing;
 - `Complete`: the Step gate passed and its handoff is recorded.
 
-At most one Step is `In progress`. Select the lowest-numbered `Ready` Step. When a Step becomes
-blocked, record its blocker and leave it in the queue; then select the next `Ready` Step whose
-dependencies and paths are independent. A blocked Step is deferred, never skipped or waived.
-Recalculate every state after each verified handoff and after each decision answer.
+At most one Step is `In progress`. Select the lowest-numbered `Ready` Step. A blocked Step is
+deferred, never skipped or waived. Every repeated path creates a dependency on the earlier writer.
+A later Step that consumes, overwrites, removes, or verifies a blocked Step's output stays
+`Waiting`. When no `Ready` Step remains, present one consolidated blocker set.
 
-For a decision-harvest route, the source phase's successful close is the state transition that
-removes the first Step's blocker. Recalculate it to `Ready` only then; later Steps remain governed
-by their declared dependencies.
-
-Every repeated path creates a dependency on the earlier writer. A later Step that consumes,
-overwrites, removes, or verifies a blocked Step's output is not independent and stays `Waiting`.
-When no `Ready` Step remains, present one consolidated blocker set instead of interrupting the user
-for each blocked Step separately.
+For a decision-harvest route, the source phase's successful close is what removes the first Step's
+blocker. Recalculate it to `Ready` only then.
 
 ## 6. Use one execution context
 
-Record:
-
-- the single integration branch or current worktree used for all Steps;
-- the measured baseline commit;
-- the clean-state preflight;
-- whether the repository requires a coherent commit after each Step; and
-- the exact evidence each dependent Step consumes.
+Record the single integration branch or current worktree, the measured baseline commit, the
+clean-state preflight, whether the repository requires a coherent commit after each Step, and the
+exact evidence each dependent Step consumes.
 
 Do not allocate a branch or worktree per Step. Do not emit a merge order, rebase points, or
-cross-branch handoffs. Every selected Step starts from the latest verified phase state plus all
-declared prerequisite handoffs in the same execution context.
+cross-branch handoffs. Prepare sequential Steps only.
 
-## 7. Keep future root-scoped parallelism out of core preparation
+## 7. Define verification
 
-Independently enforced module roots may later become low-context parallel
-execution boundaries. Do not emit that mode until the repository can enforce all of these:
+Every Step has one runnable `Done when` command. It includes Step-specific positive and negative
+tests, `cg verify`, residue or ownership checks for moves, the full build when the repository
+requires it, and a clean or explicitly accounted-for worktree.
 
-- each worker is write-confined to one declared root;
-- workers perform no Git staging, commits, rebases, or merges;
-- no shared root contract, build file, generated file, or cross-root seam is writable in parallel;
-- a coordinator serializes repository-wide verification and commits; and
-- a detector proves the root allocations are disjoint.
+In the phase preamble, name checks that only make sense after the full sequence: composition,
+residue, and the phase acceptance gate. Do not put those in a Step `Done when`. Emergent checks
+prove composition; they do not repair an incomplete Step.
 
-Until those controls exist, prepare sequential Steps only.
+## 8. Write cold-start Step briefs
 
-## 8. Define verification
+Write one document per phase, beside the roadmap that owns it, and link it from the roadmap:
 
-Every Step has one runnable `Done when` command. It includes:
+```
+<docs>/plans/<programme>/<phase>_detailed_preparation.md
+```
 
-- Step-specific positive and negative tests;
-- the repository contract gate;
-- residue or ownership checks for moves;
-- the full build when the repository requires it; and
-- a clean or explicitly accounted-for worktree result.
+Do not split Steps into separate files. `cg next` reads every `## Step <n>` section in that file.
+Put the phase context — outcome, acceptance gate, execution branch, ledger of affected items —
+above the first `## Step` heading. Each Step must be readable cold: a section that leans on a
+neighbouring Step is a diff, not a brief.
 
-Separately list `cg-sign-off` checks that only make sense after the full sequence:
-
-- authored contracts still describe and route through the implemented composition;
-- exactly one final owner, writer, route, or resource;
-- full role-by-route matrix;
-- composed isolation across security domains; and
-- every Step gate remains green in the accumulated result.
-
-Emergent checks prove composition; they do not repair an incomplete Step.
-
-## 9. Write cold-start Step briefs
-
-Write **one document per phase**: `docs/plans/<programme>/<phase>_detailed_preparation.md`, beside
-the roadmap that owns it. Every Step is a section inside it. Link it from the roadmap.
-
-One file, not a directory of briefs, because the queue is read far more often than any single Step:
-`cg next`, `cg-produce`, and a resuming session all want the whole queue at once, and a directory
-makes them open ten files to see one ordering. It also removes the failure the split shape kept
-producing — a Step marked `Complete` in its own file while the preparation record still calls it
-`Ready`, with nothing able to say which is true.
-
-Each Step is a `## Step <n>` section whose first lines are its header block. The header must stay
-machine-readable: `cg next` parses exactly these keys to compute the queue, and the gate that
-enforces `cg-auto-run` refuses to advance when it cannot.
+Each Step's first lines are its header block. `cg next` parses exactly these keys:
 
 ````markdown
 ## Step <number>: <name>
@@ -279,52 +250,21 @@ Status: <Waiting | Ready | Blocked>
 <evidence, repository state, queue-state update, and dependent Steps this unblocks>
 ````
 
-The phase's own context — outcome, acceptance gate, execution branch, ledger of affected items —
-goes above the first `## Step` heading in the same file. A Step brief still has to be readable
-cold: a section that leans on what a neighbouring Step said is not a brief, it is a diff.
-
-## Preparation-completeness gate
-
-- [ ] The phase outcome and acceptance gate are unchanged.
-- [ ] Every affected item appears in the Step ledger.
-- [ ] `.agents/cg/principles/architecture.yaml` `graph` placed each new behavior (recurse, selfSufficient, surface, adapters, stay, add-child, or elsewhere).
-- [ ] Steps have one stable priority order and explicit dependency edges.
-- [ ] Every Step has a valid initial queue state and exact blocker references.
-- [ ] Every Step owns its contract and detector changes.
-- [ ] Every Step creating a self-sufficient unit owns its `contract.yaml` and reciprocal
-      `relations.children` / `relations.parent` edges.
-- [ ] Every atomic move stays inside one Step.
-- [ ] Every repeated path has an explicit before/after handoff.
-- [ ] One execution context and baseline are named.
-- [ ] No parallel track or per-Step branch is allocated.
-- [ ] Completion owns only emergent integrated tests and phase-close records.
-- [ ] Every Step has a cold-start section and one `Done when`.
-- [ ] The phase is one document, and `cg next` parses every Step header in it.
-
-Do not hand the earliest `Ready` Step to `cg-produce` until this gate passes.
+After writing, run `cg next`. If it reports `unreadable`, fix the headers before handing off.
 
 ## Stage boundary — yield here
 
 **Finish your stage, then return to the user.** Do not invoke the next skill yourself, however
 obvious the route is. The `Next action` block names the successor so a person can choose it and so
 `cg-auto-run` can follow it under a granted authority — naming it is not permission to take it.
+The single exception is a dispatch from `cg-auto-run`. If you were not dispatched by it, you are
+the last stage of this turn.
 
-Crossing a stage boundary unasked removes the review the boundary exists for. Someone who runs this
-skill to read what it produced, and gets back a closed phase instead, cannot act on the thing they
-asked for: the decision point is gone and the work is already downstream of it.
-
-Continuing *within* your own stage is different and expected — `cg-produce` drains its queue, and a
-resumed Step is the same stage, not a new one. The rule is one stage per invocation, not one unit
-of work per invocation.
-
-The single exception is a dispatch from `cg-auto-run`, which holds an explicit authority level, a
-stage budget, and a ledger. If you were not dispatched by it, you are the last stage of this turn.
-
-## 10. Next-action response
+## 9. Next-action response
 
 Choose exactly one immediate route:
 
-- gate passed and a Step is ready: use `cg-produce` with the earliest `Ready` Step brief;
+- gate passed and a Step is ready: use `cg-produce` with the earliest `Ready` Step;
 - accepted harvest route prepared before its source closes: resume `cg-sign-off` with the source
   phase, accepted manifest, and destination preparation;
 - phase outcome or acceptance changed: use `cg-plan` with the preparation finding;
@@ -336,14 +276,9 @@ End the user-facing response with:
 ```markdown
 ## Next action — <Ready | Blocked | Returned to planning>
 - **User action:** <one concrete action>
-- **Next input:** <$cg-produce | $cg-plan | $cg-unblock | None — waiting on prerequisite> — <exact preparation record and earliest Ready Step brief, finding, or blocker set>
+- **Next input:** <$cg-produce | $cg-sign-off | $cg-plan | $cg-unblock | None — waiting on prerequisite> — <exact preparation record and earliest Ready Step brief, finding, or blocker set>
 - **Blocked by:** <exact decision, prerequisite, or failing gate>   <!-- omit unless the status is non-advancing -->
 ```
 
 Do not make the user choose among Steps. Name exactly the earliest `Ready` Step, or the consolidated
 blocker set when none is ready.
-
-## Completion check
-
-- [ ] The preparation-completeness gate passes.
-- [ ] The response ends with one exact next action and skill.

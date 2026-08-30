@@ -1,7 +1,7 @@
 # Vision
 
-Contract Graph exists so a coding agent can understand where a change belongs before it reads the
-implementation.
+Contract Graph exists so a person or a coding agent can understand where a change belongs before
+reading the implementation.
 
 Coding models have changed the economics of development. Producing code is dramatically faster;
 understanding, integrating, and maintaining the accumulated result is not. Without stronger
@@ -89,26 +89,22 @@ install, and may bind selected contracts.
 
 Contract Graph does not need to own every rule that guides a repository. Its non-negotiable value
 is the recursive structure and the truthful graph that represents it. Product requirements,
-delivery conventions, security posture, technology choices, and other broader policies may come
-from the repository itself or from a specification framework.
-
-This makes Contract Graph complementary to SpecKit and similar systems rather than a competing
-replacement. A specification framework can own feature specifications and its constitution;
-Contract Graph owns structural routing and structural integrity. In a repository using both:
+delivery conventions, security posture, technology choices, and other broader policies remain
+repository-owned. Contract Graph owns structural routing and structural integrity:
 
 - `A` rules protect the contract graph automatically, and the same catalog's `hierarchy.kinds`
   and `graph` sections are the recursive mapping and node decision (the `graph` walk, including
   surface service entry, encapsulation, and adapters)
-  so a SpecKit delivery workflow cannot drop them;
-- the external constitution governs its chosen product and engineering policy;
+  so delivery-workflow edits cannot drop them;
+- the repository governs its chosen product and engineering policy;
 - optional repository-specific constraints may be expressed as scoped `P` bindings when they
   need to resolve through contract context; and
 - `E` remains advice unless a product-specific constraint is adopted as
   `P` or a generic structural invariant is promoted by the verifier owner.
 
-The separation prevents two failure modes. Contract Graph does not impose unrelated application
-preferences merely because they are good practice, and an external constitution does not need to
-restate the graph protocol to keep the structural layer enforceable.
+The separation prevents Contract Graph from imposing unrelated application preferences merely
+because they are good practice. Repository policy does not need to restate the graph protocol to
+keep the structural layer enforceable.
 
 This hierarchy is a test for every shipped rule. If violating a rule would make the graph unable to
 locate ownership, express a boundary, route a task, confine a change, or verify structural truth,
@@ -213,7 +209,7 @@ The foundational enforcement rule is:
 
 Guidance that cannot be mechanically rejected remains explicitly non-binding instead of pretending
 to be an invariant. A practice may be promoted only when it has structural impact, a deterministic
-measure, a blocking detector, and a negative fixture; promotion removes the D copy as it assigns
+measure, a blocking detector, and a negative fixture; promotion removes the `E` copy as it assigns
 the permanent A identity. Because `A` is enforced by installed verifier code, that promotion is
 implemented by the verifier owner rather than asserted by an adopting repository's YAML alone. An
 adopter may retain the practice, adopt a product-scoped `P` rule, or propose a generic A change
@@ -244,6 +240,9 @@ route through the contract graph
   → run boundary verification and graph verification
   → leave a truthful graph for the next loop
 ```
+
+How that loop is split into a transient plan, a Step queue, and a permanent graph is
+[workflow](workflow.md).
 
 A loop is not structurally complete when the code works but the graph describes the previous
 system. Conversely, updating contracts without checking the implementation produces a tidy graph

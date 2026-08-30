@@ -1,7 +1,7 @@
 /**
- * Regenerate every derived artifact: root principle indexes, module workspace-root pointers,
- * the shared-agent rule pointer, and the Claude discovery wrappers. Contracts themselves are
- * authored YAML and are never rewritten by sync.
+ * Regenerate every derived artifact: the canonical agent entry, root discovery pointers, module
+ * workspace-root pointers, and the Claude discovery wrappers.
+ * Contracts themselves are authored YAML and are never rewritten by sync.
  *
  * Idempotent. Running it twice writes nothing the second time, which is exactly what
  * `cg verify`'s drift check depends on.
@@ -11,11 +11,12 @@ import fs from "node:fs";
 import path from "node:path";
 
 import {
-  generateAgentRule,
+  generateCgAgent,
   generateClaudeSkillWrapper,
   generateModulePointer,
   generateRoot,
   MODULE_POINTERS,
+  selectedModulePointers,
   skillsRoot,
 } from "./model.js";
 import { loadContractGraph } from "./contracts.js";
@@ -42,18 +43,34 @@ export function sync(repoRoot, { dryRun = false } = {}) {
   // Generate the same units in both modes; `apply` is the only place that suppresses writes for
   // a dry run, so `cg sync --check` reports exactly what a real sync would change.
   const projectName = path.basename(repoRoot);
+  const canonical = generateCgAgent(repoRoot);
+  apply(canonical, changed, dryRun);
+  if (canonical.legacyPath) {
+    if (!dryRun) fs.rmSync(canonical.legacyPath);
+    changed.push(canonical.legacyPath);
+  }
   for (const [relPath, prefix] of Object.entries(profile.rootPointers)) {
     apply(generateRoot(repoRoot, relPath, prefix, projectName), changed, dryRun);
   }
 
+  const modulePointers = selectedModulePointers(profile.rootPointers);
   for (const record of graph.records) {
     if (record.contract.kind !== "module") continue;
-    for (const pointer of MODULE_POINTERS) {
+    const unit = record.contract.unit;
+    const existing = [];
+    const missing = [];
+    for (const pointer of modulePointers) {
+      (fs.existsSync(path.join(repoRoot, unit, pointer)) ? existing : missing).push(pointer);
+    }
+    // Repair drift on files already present, then create any new name by copying a sibling
+    // so adding a profile does not invent a second body for the same pointer.
+    for (const pointer of existing) {
       apply(generateModulePointer(repoRoot, record.contract, pointer), changed, dryRun);
     }
+    for (const pointer of missing) {
+      apply(newModulePointer(repoRoot, record.contract, pointer), changed, dryRun);
+    }
   }
-
-  apply(generateAgentRule(repoRoot), changed, dryRun);
 
   const skills = skillsRoot(repoRoot);
   let wrapperCount = 0;
@@ -74,4 +91,20 @@ export function sync(repoRoot, { dryRun = false } = {}) {
       wrappers: wrapperCount,
     },
   };
+}
+
+/**
+ * A newly selected pointer filename starts as a copy of a sibling that already exists in the
+ * module folder (any `MODULE_POINTERS` name, including one left by a previous selection).
+ * Generate only when this module has none yet.
+ */
+function newModulePointer(repoRoot, contract, relPath) {
+  const generated = generateModulePointer(repoRoot, contract, relPath);
+  for (const sibling of MODULE_POINTERS) {
+    if (sibling === relPath) continue;
+    const file = path.join(repoRoot, contract.unit, sibling);
+    if (!fs.existsSync(file)) continue;
+    return { ...generated, desired: fs.readFileSync(file, "utf8") };
+  }
+  return generated;
 }

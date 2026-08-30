@@ -50,12 +50,18 @@ Keep the rule families distinct: `A` is the global architecture-principles catal
 the adopting product, or `A` when it satisfies the complete structural promotion gate in the
 verifier-owning codebase.
 
+`docs/` is written for people adopting or reviewing the product. Agents may read it; it is not
+the turn-by-turn procedure. After `cg init`, that lives in the `/cg-*` skills and
+`.agents/cg/workflow.md`.
+
 Before changing this repository, read in order:
 
 1. `[docs/vision.md](docs/vision.md)` — the project intention and causal model.
 2. `[docs/contracts.md](docs/contracts.md)` — the recursive contract structure and current limits.
-3. `[README.md](README.md)` — shipped behavior and user-facing workflow.
-4. The relevant files under `src/scripts/`, plus `test/verify.test.js`, for implementation work.
+3. `[docs/README.md](docs/README.md)` — human documentation index, then workflow and lifecycle as needed.
+4. `[README.md](README.md)` — the npm and GitHub landing page for people installing the package.
+5. The relevant skill under `src/skills/` and `[src/cg/workflow.md](src/cg/workflow.md)` when the change is agent procedure.
+6. The relevant files under `src/scripts/`, plus `test/verify.test.js`, for implementation work.
 
 Keep claims honest. Schema-backed contracts, contract-owned task routes, and machine verification
 of the authored graph's reciprocity, acyclicity, and root reachability are built. Correspondence

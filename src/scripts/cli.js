@@ -7,7 +7,7 @@ import process from "node:process";
 import readline from "node:readline";
 
 import { BINDING_FILENAME, loadBindingCatalog } from "./binding.js";
-import { DEFAULT_DOCS_ROOT, loadBindingPrinciples } from "./model.js";
+import { DEFAULT_DOCS_ROOT, loadBindingPrinciples, renderRootReference } from "./model.js";
 import {
   contractContext,
   findContract,
@@ -26,7 +26,14 @@ import { HarvestError, checkHarvest } from "./harvest.js";
 import { moduleCoverage, openDescent } from "./modules.js";
 import { next, permits } from "./next.js";
 import { residue } from "./residue.js";
-import { availableProfiles, loadProfileSelection } from "./profiles.js";
+import { multiSelect } from "./picker.js";
+import {
+  expandProfileAliases,
+  loadProfileSelection,
+  profileChoices,
+  resolveProfiles,
+  selectableProfiles,
+} from "./profiles.js";
 import { sync } from "./sync.js";
 import { verify } from "./verify.js";
 
@@ -41,7 +48,7 @@ const USAGE = `cg — Contract Graph
 
 Usage:
   cg build [dir] [--check]                         assemble the package target under build/
-  cg init [dir] [--profile a,b] [--docs dir]       scaffold governance
+  cg init [--profile a,b] [--docs dir]             scaffold governance
   cg next [dir] [--json] [--for skill]            what runs next, computed from the Step queue
   cg residue [dir] [--json]                       plan documents nothing points at any more
   cg sync [dir] [--check]                         regenerate derived artifacts
@@ -60,7 +67,7 @@ Usage:
   cg profiles                                     list editor profiles
 
 Options:
-  --profile <list>  comma-separated editor profiles to install (init only; default: all)
+  --profile <list>  add comma-separated editor profiles without the interactive picker (init only)
   --docs <dir>      directory to hold plans/, decisions/, and guides/ (init only; default: docs)
   --stage <name>    harvest stage: classify (default) or close
   --decision-log <path>  decision log to check cohort eligibility against (harvest only)
@@ -182,6 +189,28 @@ function prompter() {
   };
 }
 
+/**
+ * `cg init` with no directory means the current working directory. Confirm that path so a
+ * missed `.` in a README cannot silently scaffold the wrong tree. `cg init .` and any other
+ * named path skip this prompt: the location was already chosen.
+ */
+async function confirmInitLocation(repoRoot, namedDirectory, flags) {
+  if (namedDirectory) return true;
+
+  process.stdout.write(`cg init: about to install at\n  ${repoRoot}\n`);
+  if (flags.yes || flags.check || !process.stdin.isTTY) return true;
+
+  const rl = prompter();
+  try {
+    const answer = (await rl.ask("  Continue? [Y/n] ")).toLowerCase();
+    if (answer === "" || answer === "y" || answer === "yes") return true;
+    process.stdout.write("cg init: cancelled, nothing was written\n");
+    return false;
+  } finally {
+    rl.close();
+  }
+}
+
 const isUsableRootName = (name) =>
   Boolean(name) && !name.startsWith(".") && name.split(/[\\/]/).length === 1;
 
@@ -281,6 +310,46 @@ async function chooseDocsRoot(repoRoot, flags) {
   } finally {
     prompt.close();
   }
+}
+
+/**
+ * Pick concrete harnesses and preserve every recorded selection. Re-running init is additive:
+ * removing a profile would leave discovery files whose ownership is ambiguous, so that remains
+ * a deliberate repository edit rather than a side effect of revisiting the installer.
+ */
+async function chooseProfiles(repoRoot, flags) {
+  const recorded = loadProfileSelection(repoRoot, { allowMissing: true });
+  const installed = recorded ? expandProfileAliases(recorded.profiles) : [];
+
+  if (flags.profile !== undefined) {
+    const requested = flags.profile.split(",").map((name) => name.trim()).filter(Boolean);
+    const additions = expandProfileAliases(requested);
+    return [...new Set([...installed, ...additions])];
+  }
+
+  if (process.stdin.isTTY && process.stdout.isTTY) {
+    return multiSelect(profileChoices(), {
+      selectedValues: installed,
+      lockedValues: installed,
+      title: installed.length
+        ? "Add IDEs and agent harnesses (installed selections stay enabled)"
+        : "Select IDEs and agent harnesses for Contract Graph",
+    });
+  }
+
+  return installed.length ? installed : selectableProfiles();
+}
+
+/** Existing root guidance is never overwritten, but adding its first-line entry is visible. */
+function rootInstructionNotices(repoRoot, profiles) {
+  const { rootPointers } = resolveProfiles(profiles);
+  return Object.entries(rootPointers).flatMap(([relative, prefix]) => {
+    const file = path.join(repoRoot, relative);
+    if (!fs.existsSync(file)) return [];
+    const current = fs.readFileSync(file, "utf8");
+    const firstLine = current.split(/\r?\n/, 1)[0];
+    return firstLine === renderRootReference(relative, prefix) ? [] : [relative];
+  });
 }
 
 async function main(argv) {
@@ -488,16 +557,29 @@ async function main(argv) {
   }
 
   if (command === "profiles") {
-    const profiles = availableProfiles();
-    process.stdout.write(profiles.length ? `${profiles.join("\n")}\n` : "no editor profiles bundled\n");
+    const profiles = profileChoices();
+    process.stdout.write(
+      profiles.length
+        ? `${profiles.map(({ value, label }) => `${value}\t${label}`).join("\n")}\n`
+        : "no editor profiles bundled\n",
+    );
     return 0;
   }
 
   if (command === "init") {
-    const profiles = flags.profile
-      ? flags.profile.split(",").map((s) => s.trim()).filter(Boolean)
-      : undefined;
+    if (!(await confirmInitLocation(repoRoot, positional[0] !== undefined, flags))) return 1;
+    const profiles = await chooseProfiles(repoRoot, flags);
     const docs = await chooseDocsRoot(repoRoot, flags);
+
+    const instructionNotices = rootInstructionNotices(repoRoot, profiles);
+    if (instructionNotices.length) {
+      process.stdout.write(
+        "cg init: existing agent instruction file(s) will receive a first-line Contract Graph entry\n",
+      );
+      for (const relative of instructionNotices) {
+        process.stdout.write(`  ${relative} — existing content will be preserved\n`);
+      }
+    }
 
     // One command, whatever the repository. Copying without generating leaves a scaffold
     // that fails its own verifier — no root pointers, no wrappers, and no graph validation —
@@ -549,7 +631,7 @@ async function main(argv) {
         (result.replaced.length ? `, ${result.replaced.length} replaced` : "") +
         (result.skipped.length ? `, ${result.skipped.length} already present` : "") +
         `, ${changed.length} generated` +
-        `\n  profiles: ${result.profiles.join(", ")} · docs: ${result.docs}/\n`,
+        `\n  profiles: ${result.profiles.join(", ")} · cg ${result.cgVersion} · docs: ${result.docs}/\n`,
     );
 
     for (const message of advisories) process.stdout.write(`  ${message}\n`);

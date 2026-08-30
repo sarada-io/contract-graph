@@ -1,6 +1,0 @@
-{
-  "name": "cursor",
-  "displayName": "Cursor",
-  "rootPointers": {},
-  "extends": ["codex"]
-}

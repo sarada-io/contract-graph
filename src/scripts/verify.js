@@ -2,16 +2,17 @@
  * Verify the structured contract graph, structural bindings, principles, lifecycle, and discovery.
  *
  * Checks:
- *   1. Every module contract has `CLAUDE.md` and `AGENTS.md` pointers.
+ *   1. Every module contract has the workspace-root pointers the selected profiles install.
  *   2. Contract YAML shape, references, reciprocity, cycles, and root reachability are valid.
  *   5. No permanent contract cites a transient plan path or ticket ID.
  *   6. Every contract rule ID exists under the product bindings.
- *   8. Every root entry file carries a current principle index.
+ *   8. The canonical agent entry carries a current principle index and every selected root
+ *      discovery file points to it on the first line.
  *   9. Every canonical skill uses the cg- namespace, valid frontmatter, UI metadata,
  *      a catalog entry, and an exact generated Claude discovery wrapper.
  *  11. The phase map names only real rule families, and every family that ships is
  *      reachable from at least one phase.
- *  10. Structural bindings name registered enforcement; non-binding architecture practices
+ *  10. Structural bindings name registered enforcement; non-binding engineering guidelines
  *      have valid grammar; and every product binding carries exactly one enforcement-map row.
  */
 
@@ -31,12 +32,16 @@ import {
   splitLines,
   planPathPattern,
   PLAN_TICKET,
-  generateAgentRule,
+  generateCgAgent,
   generateClaudeSkillWrapper,
   generateRoot,
+  renderRootReference,
   loadBindingPrinciples,
   loadPhases,
   ROOT_POINTERS,
+  MODULE_POINTERS,
+  selectedModulePointers,
+  isGeneratedModulePointer,
   ROOT_BEGIN_MARKER,
   CORE_BINDING_FAMILIES,
   BEST_PRACTICE_FAMILIES,
@@ -52,11 +57,12 @@ import {
   productHasHarvestedRules,
   ENGINEERING_FILENAME,
   governanceContractPath,
+  CG_AGENT_ENTRY,
+  LEGACY_CG_AGENT_ENTRY,
 } from "./model.js";
 import { moduleCoverage, openDescent } from "./modules.js";
 import { ProfileError, resolveProfileSelection } from "./profiles.js";
 
-const POINTERS = ["CLAUDE.md", "AGENTS.md"];
 const SKILL_NAME = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const SKILL_FRONTMATTER_KEYS = ["name", "description"];
 const SKILL_INTERFACE_KEYS = ["display_name", "short_description", "default_prompt"];
@@ -328,15 +334,6 @@ export function checkSkills(
   }
 
   return skillNames.length;
-}
-
-export function checkAgentRule(fail, repoRoot) {
-  const { path: file, current, desired } = generateAgentRule(repoRoot);
-  if (current !== desired) {
-    fail(
-      `[9] ${rel(repoRoot, file)}: shared-agent Contract Graph rule is missing, stale, or hand-edited; run \`cg sync\``,
-    );
-  }
 }
 
 /**
@@ -660,7 +657,7 @@ export function verify(repoRoot) {
     });
 
     if (contract.kind === "module") {
-      for (const pointer of POINTERS) {
+      for (const pointer of selectedModulePointers(profile.rootPointers)) {
         const file = path.join(repoRoot, contract.unit, pointer);
         if (!exists(file)) {
           fail(`[1] ${contract.unit}: missing ${pointer} — module is not openable as a workspace root`);
@@ -670,6 +667,21 @@ export function verify(repoRoot) {
         if (!text.includes(".agents/cg/contract.yaml")) fail(`[1] ${contract.unit}/${pointer}: missing canonical module contract pointer`);
         if (!text.includes(".agents/cg/principles/architecture.yaml")) fail(`[1] ${contract.unit}/${pointer}: missing structural binding pointer`);
         if (!text.includes(".agents/cg/guidelines/")) fail(`[1] ${contract.unit}/${pointer}: missing canonical repository guidelines pointer`);
+      }
+    }
+
+    if (contract.unit !== ".") {
+      const selected =
+        contract.kind === "module" ? selectedModulePointers(profile.rootPointers) : [];
+      for (const pointer of MODULE_POINTERS) {
+        if (selected.includes(pointer)) continue;
+        const file = path.join(repoRoot, contract.unit, pointer);
+        if (!exists(file)) continue;
+        if (!isGeneratedModulePointer(read(file))) continue;
+        fail(
+          `[8] ${contract.unit}/${pointer}: carries a Contract Graph pointer but no selected profile writes it at this unit — ` +
+            "delete it, or re-select the profile that owns it",
+        );
       }
     }
 
@@ -690,7 +702,6 @@ export function verify(repoRoot) {
     );
   }
 
-  checkAgentRule(fail, repoRoot);
   checkPhases(fail, repoRoot);
   const skillCount = checkSkills(fail, repoRoot, CORE_CG_SKILLS, profile);
   const enforcementIds = enforcementRuleIds(fail, repoRoot);
@@ -698,21 +709,43 @@ export function verify(repoRoot) {
   checkPrincipleEnforcement(fail, repoRoot, bindingRules, enforcementIds);
   adviseUnarchivedClosures((message) => advisories.push(message), repoRoot, profile.docs);
 
-  // Same shape as the orphan wrapper check: narrowing the profile selection used to leave a
-  // fully generated entry point behind, silently. A file carrying the generated index whose
-  // profile is no longer selected is stale; one without it is the repository's own file and
-  // is none of our business.
-  for (const relPath of Object.keys(ROOT_POINTERS)) {
+  // Same shape as the orphan wrapper check: narrowing the profile selection must not leave a
+  // generated discovery pointer behind. Files without Contract Graph's marker or exact pointer
+  // remain the repository's own concern.
+  for (const [relPath, prefix] of Object.entries(ROOT_POINTERS)) {
     if (relPath in profile.rootPointers) continue;
     const file = path.join(repoRoot, relPath);
-    if (!exists(file) || !read(file).includes(ROOT_BEGIN_MARKER)) continue;
+    if (!exists(file)) continue;
+    const contents = read(file);
+    const firstLine = splitLines(contents)[0]?.trim();
+    const knownReferences = [
+      renderRootReference(relPath, prefix),
+      renderRootReference(relPath, prefix, LEGACY_CG_AGENT_ENTRY),
+    ];
+    if (!contents.includes(ROOT_BEGIN_MARKER) && !knownReferences.includes(firstLine)) {
+      continue;
+    }
     fail(
-      `[8] ${relPath}: carries a generated principle index but no selected profile writes it — ` +
+      `[8] ${relPath}: carries a Contract Graph pointer but no selected profile writes it — ` +
         "delete it, or re-select the profile that owns it",
     );
   }
 
   const projectName = path.basename(repoRoot);
+  const legacyAgentEntry = path.join(repoRoot, LEGACY_CG_AGENT_ENTRY);
+  if (exists(legacyAgentEntry)) {
+    fail(
+      `[8] ${LEGACY_CG_AGENT_ENTRY}: legacy canonical agent entry remains. Run \`cg sync\` to migrate it to ${CG_AGENT_ENTRY}.`,
+    );
+  }
+  try {
+    const generated = generateCgAgent(repoRoot);
+    if (generated.current !== generated.desired) {
+      fail(`[8] ${CG_AGENT_ENTRY}: principle index is missing, stale, or hand-edited. Run \`cg sync\`.`);
+    }
+  } catch (error) {
+    fail(`[8] ${CG_AGENT_ENTRY}: ${error.message}`);
+  }
   for (const [relPath, prefix] of Object.entries(profile.rootPointers)) {
     let generated;
     try {
@@ -722,7 +755,7 @@ export function verify(repoRoot) {
       continue;
     }
     if (generated.current !== generated.desired) {
-      fail(`[8] ${relPath}: principle index is missing, stale, or hand-edited. Run \`cg sync\`.`);
+      fail(`[8] ${relPath}: Contract Graph pointer is missing, stale, or not the first line. Run \`cg sync\`.`);
     }
   }
 

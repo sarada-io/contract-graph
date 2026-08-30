@@ -1,10 +1,10 @@
 # Repository Agent Workflow
 
 This is the default delivery workflow installed by Contract Graph. It is repository-owned and
-preserved by later `cg init` runs, so an adopting repository may keep it, amend it, or integrate it
-with a workflow supplied by SpecKit or another framework. While retained, its sequence governs
-repository code tasks. The separate `.agents/cg/principles/architecture.yaml` remains the machine-enforced
-source for Contract Graph structural integrity.
+preserved by later `cg init` runs, so an adopting repository may keep or amend it. While retained,
+its sequence governs repository code tasks. The separate
+`.agents/cg/principles/architecture.yaml` remains the machine-enforced source for Contract Graph
+structural integrity.
 
 ## Development Principles
 
@@ -23,10 +23,11 @@ source for Contract Graph structural integrity.
 6. **Decide, don't ask live.** Unspecified detail is resolved from the principles, the existing
    code, or the owner's recorded priors — and logged as an assumption — not escalated. Stopping
    mid-task costs the slice; a wrong reversible decision costs one edit. Follow
-   `.agents/skills/cg-unblock/SKILL.md`: it is binding for every non-trivial task. Its Rule D-4
-   requires every surviving question to be enumerated at plan time; Rule D-5 requires it be
-   **logged as a `DU-NN` entry in `docs/plans/decision-log.md`**, not asked in chat, unless the
-   entire remaining task is blocked with nothing else to work on.
+   `.agents/skills/cg-unblock/SKILL.md`: it is binding for every non-trivial task. Resolve `<docs>`
+   from `.agents/cg/profile.json` `docs` (default `docs`). Rule D-4 requires every surviving
+   question to be enumerated at plan time; Rule D-5 requires it be **logged as a `DU-NN` entry in
+   `<docs>/plans/decision-log.md`**, not asked in chat, unless the entire remaining task is blocked
+   with nothing else to work on.
 
 After structural bindings, scoped product rules, the repository constitution, contracts, accepted
 decisions, durable requirements, and existing green patterns have been applied, load only the
@@ -35,9 +36,9 @@ reason, and its stated cost into the assumption or decision. `E` practices are
 decision inputs, never inherited ambient rules and never compliance findings. The recursive
 mapping and node decision — kinds, self-sufficiency, stay, add a child, or route elsewhere —
 live in `.agents/cg/principles/architecture.yaml` `hierarchy` and `graph`, not in
-this workflow, so a SpecKit (or other) delivery workflow cannot drop them by replacing this file.
-During harvest, use `cg-unblock` D-5a: route a recurring decision once to a contract invariant, a
-D guideline, an A promotion candidate, a scoped P binding, or drop.
+this workflow, so editing the delivery sequence cannot drop them.
+During harvest, use `cg-unblock` D-5a: route a recurring decision once to a contract invariant, an
+`E` guideline, an A promotion candidate, a scoped P binding, or drop.
 
 ## Required Sequence
 
@@ -45,7 +46,7 @@ D guideline, an A promotion candidate, a scoped P binding, or drop.
 2. Read `.agents/cg/principles/architecture.yaml`; its `hierarchy.kinds` and `graph` sections are the
    recursive mapping and node decision, and its A rules bind every governed boundary.
 3. Read the repository's specification or constitution and resolve applicable P IDs from the
-   selected contracts. Consult D only when it is relevant to a decision.
+   selected contracts. Consult `E` only when it is relevant to a decision.
 4. Identify impacted boundaries with `cg contract route --task "<request>"` and contract-owned routes.
 5. Load those module contracts, then traverse their child-contract links until the smallest
    responsible boundary is clear. Before reading or editing implementation, apply
@@ -186,7 +187,7 @@ Contracts must survive plan deletion. When writing or updating a contract:
 
 ## Plan Harvest Step (before archiving a plan)
 
-Before a completed plan moves to `docs/plans/archive/` (and eventually gets
+Before a completed plan moves to `<docs>/plans/archive/` (and eventually gets
 deleted), follow `.agents/skills/cg-sign-off/SKILL.md`. In short:
 
 1. If the roadmap declares a decision harvest, classify one declared producer-phase cohort. The
@@ -194,7 +195,7 @@ deleted), follow `.agents/skills/cg-sign-off/SKILL.md`. In short:
    equal the eligible decision IDs. Other resolved decisions and every pending decision remain in
    the log for their own cohort or answer. Validate the transient manifest before any later gate:
    `cg harvest <decision-harvest.json>
-   --decision-log docs/plans/decision-log.md`.
+   --decision-log <docs>/plans/decision-log.md`.
 2. For a non-empty cohort, obtain one batch acceptance and route it through `cg-prepare`. The
    first prepared harvest Step carries the accepted classification digest, and its drain IDs
    exactly equal the eligible decision IDs. It remains blocked on source-phase completion while

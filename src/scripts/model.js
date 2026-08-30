@@ -6,6 +6,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { BINDING_FILENAME, loadCoreBindingRules } from "./binding.js";
 import { parseContractYaml } from "./contracts.js";
@@ -103,6 +104,20 @@ export const ROOT_POINTERS = {
   ".github/copilot-instructions.md": "../",
 };
 
+/** Canonical Contract Graph instructions shared by every editor-specific root pointer. */
+export const CG_AGENT_ENTRY = ".agents/cg/contract-graph-agent.md";
+export const LEGACY_CG_AGENT_ENTRY = ".agents/cg/AGENTS.md";
+
+const RUNTIME_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const PACKAGED_CG_AGENT_TEMPLATE = path.join(
+  RUNTIME_ROOT,
+  "agent",
+  "cg",
+  "contract-graph-agent.md",
+);
+const CG_AGENT_TEMPLATE = fs.existsSync(PACKAGED_CG_AGENT_TEMPLATE)
+  ? PACKAGED_CG_AGENT_TEMPLATE
+  : path.join(RUNTIME_ROOT, "cg", "contract-graph-agent.md");
 
 /** Default root for the three scaffolded document trees. Overridable at `cg init`. */
 export const DEFAULT_DOCS_ROOT = "docs";
@@ -985,8 +1000,8 @@ function loadPrincipleRules(repoRoot, selection) {
 /**
  * Return [{id, title, count}] in document order.
  *
- * Drives the generated index in every root entry file, so a harness that reads only
- * `AGENTS.md` still learns that the principles exist and what each one covers.
+ * Drives the generated index in `.agents/cg/contract-graph-agent.md`. Editor-specific root files point there
+ * without copying the index into repository-owned instructions.
  */
 export function parsePrincipleIndex(file, { allowEmpty = false, families = RULE_FAMILIES } = {}) {
   if (!exists(file)) throw new ContractError(`missing principles file: ${file}`);
@@ -1042,32 +1057,34 @@ export function loadPrincipleIndex(repoRoot) {
 }
 
 /** Render the principle index for a root entry file, without trailing newline. */
-export function renderRootIndex(repoRoot, prefix) {
+export function renderRootIndex(repoRoot, prefix, { local = false } = {}) {
   const principles = loadPrincipleIndex(repoRoot);
   const core = loadCoreBindingRules(repoRoot);
   const total = core.size + principles.reduce((sum, e) => sum + e.count, 0);
   const target = `${prefix}.agents/cg/guidelines/`;
   const bindingTarget = `${prefix}${BINDING_FILENAME}`;
+  const targetHref = local ? "guidelines/" : target;
+  const bindingHref = local ? "principles/architecture.yaml" : bindingTarget;
 
   const lines = [
     ROOT_BEGIN_LINE,
     "## Binding rules — index",
     "",
-    `**You MUST read [\`${bindingTarget}\`](${bindingTarget}) before planning any change.** It is binding: where ` +
+    `**You MUST read [\`${bindingTarget}\`](${bindingHref}) before planning any change.** It is binding: where ` +
       "your code and the architecture catalog disagree, **the catalog wins and the code is wrong.** Its `graph` " +
       "section is the recursive mapping: kinds, self-sufficiency, stay, add-child, or elsewhere; " +
-      "a SpecKit or other delivery workflow does not replace that decision. The index " +
+      "the delivery workflow does not replace that decision. The index " +
       `below lists the binding context (${total} rules) — the index is not the rule; cite rules by ID ` +
       "(`A01`), never by position.",
   ];
   lines.push("", `**${FAMILY_BLURB.A}**`, "");
-  lines.push(`- [**A** Structural integrity](${bindingTarget}) — ${core.size} rules`);
+  lines.push(`- [**A** Structural integrity](${bindingHref}) — ${core.size} rules`);
   for (const family of RULE_FAMILIES) {
     const rows = principles.filter((e) => familyOf(e.id) === family);
     if (!rows.length) continue;
     lines.push("", `**${FAMILY_BLURB[family]}**`, "");
     for (const { id, title, count, filename } of rows) {
-      const file = `${target}${filename}`;
+      const file = `${targetHref}${filename}`;
       lines.push(
         `- [**${id}** ${title}](${file}) — ${count} rule${count === 1 ? "" : "s"}`,
       );
@@ -1075,6 +1092,54 @@ export function renderRootIndex(repoRoot, prefix) {
   }
   lines.push(ROOT_END_MARKER);
   return lines.join("\n");
+}
+
+/** Return {path, current, desired} for the canonical shared instructions. */
+export function generateCgAgent(repoRoot) {
+  const file = path.join(repoRoot, CG_AGENT_ENTRY);
+  const current = readIfPresent(file);
+  const legacyFile = path.join(repoRoot, LEGACY_CG_AGENT_ENTRY);
+  const legacyPath = !current && exists(legacyFile) ? legacyFile : null;
+  const source = legacyPath ? read(legacyFile) : current || read(CG_AGENT_TEMPLATE);
+
+  if (source.includes(ROOT_BEGIN_MARKER)) {
+    return {
+      path: file,
+      current,
+      legacyPath,
+      desired: applyBlock(
+        source,
+        renderRootIndex(repoRoot, "", { local: true }),
+        file,
+        ROOT_BEGIN_MARKER,
+        ROOT_END_MARKER,
+      ),
+    };
+  }
+
+  if (source.trim()) {
+    if (!splitLines(source).some((line) => line.startsWith("# "))) {
+      throw new ContractError(
+        `${CG_AGENT_ENTRY}: existing file has no H1 to anchor the generated principle index. ` +
+          "Add a top-level heading, or move this file aside and re-run `cg sync`.",
+      );
+    }
+    return {
+      path: file,
+      current,
+      legacyPath,
+      desired: applyBlock(
+        source,
+        renderRootIndex(repoRoot, "", { local: true }),
+        file,
+        ROOT_BEGIN_MARKER,
+        ROOT_END_MARKER,
+      ),
+    };
+  }
+  throw new ContractError(
+    `${CG_AGENT_TEMPLATE}: canonical agent template is empty`,
+  );
 }
 
 /** Render a complete root entry file: static preamble plus the generated index. */
@@ -1111,56 +1176,72 @@ export function renderRootPointer(repoRoot, prefix, projectName) {
   ].join("\n");
 }
 
-/** Return {path, current, desired} for one root entry file. */
+/** The one-line discovery pointer each supported root file carries before repository guidance. */
+export function renderRootReference(relPath, prefix, entry = CG_AGENT_ENTRY) {
+  if (relPath === "CLAUDE.md") return `@${prefix}${entry}`;
+  return `Read [\`${prefix}${entry}\`](${prefix}${entry}) before planning or changing code.`;
+}
+
+/** Remove a legacy generated index while retaining repository-authored text around it. */
+function removeRootIndex(text, file) {
+  const lines = splitLines(text);
+  const begin = lines.findIndex((line) => line.startsWith(ROOT_BEGIN_MARKER));
+  const end = lines.findIndex((line) => line.trim() === ROOT_END_MARKER);
+  if (begin < 0 && end < 0) return text;
+  if (begin < 0 || end < 0 || end < begin) {
+    throw new ContractError(`${file}: unbalanced or reversed PRINCIPLES INDEX markers`);
+  }
+  return [...lines.slice(0, begin), ...lines.slice(end + 1)].join("\n").replace(/^\n+|\n+$/g, "");
+}
+
 /**
- * The generated part of a root entry file, and nothing else.
+ * Return {path, current, desired} for one root discovery file.
  *
- * Three cases, and the middle one is the reason this is not a one-liner:
- *
- *   - the file already carries the markers → replace what is between them;
- *   - the file exists with content of its own → **keep it** and add the generated block
- *     under its H1. A repository adopting Contract Graph usually already has a `CLAUDE.md`,
- *     and replacing it wholesale destroys hand-written instructions with no way back but
- *     git. `sync` owns the region between the markers, never the whole file;
- *   - the file is absent or empty → write the full pointer.
+ * Existing content belongs to the repository. Contract Graph owns only the first line, which
+ * points at its canonical instructions. A legacy generated index is removed during migration;
+ * everything outside that marked block survives, including files with no H1.
  */
 export function generateRoot(repoRoot, relPath, prefix, projectName) {
   const file = path.join(repoRoot, relPath);
   const current = readIfPresent(file);
+  const reference = renderRootReference(relPath, prefix);
+  const legacyReference = renderRootReference(relPath, prefix, LEGACY_CG_AGENT_ENTRY);
+  let remainder = current;
 
-  if (current.includes(ROOT_BEGIN_MARKER)) {
-    const desired = applyBlock(
-      current,
-      renderRootIndex(repoRoot, prefix),
-      file,
-      ROOT_BEGIN_MARKER,
-      ROOT_END_MARKER,
-    );
-    return { path: file, current, desired };
+  // A pristine legacy entry file contains no repository content to retain.
+  if (current === renderRootPointer(repoRoot, prefix, projectName)) remainder = "";
+  else if (current.includes(ROOT_BEGIN_MARKER) || current.includes(ROOT_END_MARKER)) {
+    remainder = removeRootIndex(current, file);
   }
 
-  if (current.trim()) {
-    if (!splitLines(current).some((line) => line.startsWith("# "))) {
-      throw new ContractError(
-        `${relPath}: existing file has no H1 to anchor the generated principle index. ` +
-          "Add a top-level heading, or move this file aside and re-run `cg sync`.",
-      );
-    }
-    const desired = applyBlock(
-      current,
-      renderRootIndex(repoRoot, prefix),
-      file,
-      ROOT_BEGIN_MARKER,
-      ROOT_END_MARKER,
-    );
-    return { path: file, current, desired };
-  }
-
-  return { path: file, current, desired: renderRootPointer(repoRoot, prefix, projectName) };
+  const lines = splitLines(remainder).filter(
+    (line) => line.trim() !== reference && line.trim() !== legacyReference,
+  );
+  const body = lines.join("\n").replace(/^\n+|\n+$/g, "");
+  const desired = `${reference}${body ? `\n\n${body}` : ""}\n`;
+  return { path: file, current, desired };
 }
 
-/** Module workspace-root pointer files `cg verify` [1] requires. */
+/**
+ * Workspace-root pointer filenames a module may carry. Copilot's
+ * `.github/copilot-instructions.md` is repository-root only — opening a module folder as a
+ * workspace is an AGENTS.md / CLAUDE.md concern.
+ */
 export const MODULE_POINTERS = Object.freeze(["AGENTS.md", "CLAUDE.md"]);
+
+/** The subset of `MODULE_POINTERS` the selected profiles actually install. */
+export function selectedModulePointers(rootPointers) {
+  return MODULE_POINTERS.filter((name) => Object.hasOwn(rootPointers, name));
+}
+
+/** True when the file is a Contract Graph module pointer, not the repository's own notes. */
+export function isGeneratedModulePointer(text) {
+  return (
+    text.includes("This folder is openable as a workspace root on its own.") &&
+    text.includes(".agents/cg/contract.yaml") &&
+    text.includes("Do not put instructions in this file.")
+  );
+}
 
 /** Prefix from `<unit>/AGENTS.md` to the repository `.agents/cg/` tree. */
 export function modulePointerPrefix(unit) {
@@ -1277,28 +1358,6 @@ export function generateClaudeSkillWrapper(repoRoot, canonicalSkill) {
     current: readIfPresent(wrapper),
     desired: renderClaudeSkillWrapper(canonicalSkill, wrapper),
   };
-}
-
-/** Render the concise shared-agent Contract Graph rule pointer. */
-export function renderAgentRule() {
-  return [
-    "# Contract Graph",
-    "",
-    "Before planning or changing code, read",
-    "[`../cg/contract.yaml`](../cg/contract.yaml) and traverse its context graph from repository to",
-    "module to relevant sub-module before reading implementation code.",
-    "Read [`../cg/principles/architecture.yaml`](../cg/principles/architecture.yaml) for the recursive mapping and enforced architecture principles.",
-    "Use the matching [`../skills/cg-*/SKILL.md`](../skills/) for non-trivial lifecycle work.",
-    "Optional engineering guidance lives under `.agents/cg/guidelines/`; canonical skills live under",
-    "`.agents/skills/`.",
-    "",
-  ].join("\n");
-}
-
-/** Return {path, current, desired} for the shared-agent rule pointer. */
-export function generateAgentRule(repoRoot) {
-  const file = path.join(repoRoot, ".agents", "rules", "cg.md");
-  return { path: file, current: readIfPresent(file), desired: renderAgentRule() };
 }
 
 /** Return Markdown with one generated discovery block replaced or inserted after the H1. */

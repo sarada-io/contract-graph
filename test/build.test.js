@@ -5,6 +5,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 
 import {
   BUILD_DIRECTORY,
@@ -17,7 +18,8 @@ import {
   loadProductCatalog,
 } from "../src/scripts/model.js";
 
-const REPO = path.resolve(import.meta.dirname, "..");
+const TEST_DIR = path.dirname(fileURLToPath(import.meta.url));
+const REPO = path.resolve(TEST_DIR, "..");
 const CLI = path.join(REPO, "bin", "cg.js");
 const PACKAGE_DIRECTORIES = ["bin", "docs", "src"];
 const PACKAGE_FILES = ["LICENSE", "README.md", "package.json"];
@@ -42,6 +44,11 @@ test("cg build copies architecture and product YAML catalogs", () => {
 
   const architectureFile = path.join(dir, BUILD_DIRECTORY, "agent/cg/principles/architecture.yaml");
   assert.ok(fs.existsSync(architectureFile));
+  assert.equal(
+    fs.readFileSync(path.join(dir, BUILD_DIRECTORY, "agent/cg/contract-graph-agent.md"), "utf8"),
+    fs.readFileSync(path.join(dir, "src/cg/contract-graph-agent.md"), "utf8"),
+    "the reviewable agent prompt must ship byte-for-byte",
+  );
   const engineeringFile = path.join(dir, BUILD_DIRECTORY, "agent/cg/guidelines/engineering.yaml");
   assert.ok(fs.existsSync(engineeringFile));
   assert.ok(!fs.existsSync(path.join(dir, BUILD_DIRECTORY, "agent", "cg", "guidelines", "engineering.json")));
@@ -136,7 +143,7 @@ test("cg build --check detects drift without rewriting compiled output", () => {
   assert.equal(fs.readFileSync(output, "utf8"), before, "check mode must not rewrite output");
 });
 
-test("the product catalog rejects a non-PP rule", () => {
+test("the product catalog rejects a non-P rule", () => {
   const dir = fixture();
   fs.writeFileSync(
     path.join(dir, "src", "cg", "guidelines", "product.yaml"),
