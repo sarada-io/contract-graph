@@ -1,6 +1,6 @@
 ---
 name: cg-warmup
-description: Adopt Contract Graph into a repository that already has code. Run once, after cg init, before the lifecycle skills are useful. Runs as three phases — a whole-repository survey, then a resumable per-module loop that writes and connects each unit's contract.yaml before moving on, then one consolidation. Finds any predecessor governance framework and carries its rules forward rather than writing over them, discovers real module roots and self-sufficient components, builds the contract graph, verifies the structural binding, and harvests durable product rules or non-binding engineering guidelines so later sessions do not re-read the code to learn them. Resumes from cg modules after a context break rather than restarting. Never reports a compliance score, edits behaviour, deletes or runs the predecessor, or marks a rule enforced that no detector proves.
+description: Adopt Contract Graph into a repository that already has code. Run once, after cg init, before the lifecycle skills are useful. Runs as four phases — a whole-repository survey, a resumable per-module loop that writes and connects each unit's contract.yaml, a recursive leaf audit for component contracts, then one consolidation. Finds any predecessor governance framework and carries its rules forward rather than writing over them, discovers real module roots and self-sufficient components, builds the contract graph, verifies the structural binding, and harvests durable product rules or non-binding engineering guidelines so later sessions do not re-read the code to learn them. Resumes from cg modules after a context break rather than restarting. Never reports a compliance score, edits behaviour, deletes or runs the predecessor, or marks a rule enforced that no detector proves.
 ---
 
 # CG Warmup
@@ -33,12 +33,13 @@ and accepted decisions, material, costly to reverse, and nothing else can procee
 
 ## How this skill runs — read this before §1
 
-**This is not a linear procedure. It is a survey, a loop, and a consolidation.**
+**This is not a linear procedure. It is a survey, a loop, a leaf audit, and a consolidation.**
 
 ```text
 Phase A — once      §1–§3    predecessor · module roots · code-first context · root routes
 Phase B — per unit  §4–§6    ←──┐  contract · descend · connect · bind · record
                                └──┘  repeat until `cg modules` exits 0
+Phase D — once      §6a      recursive leaf audit · write existing components · else corrective
 Phase C — once      §7–§12   root contract · assess · harvest · decisions · report
 ```
 
@@ -65,20 +66,24 @@ packaged binding or confirm a deliberate amendment. Do not write nodes against a
 cannot recurse.
 
 Resolve `<docs>` from `.agents/cg/profile.json` `docs` (default `docs`). Confirm with `cg residue`.
+Read [the code-inspection catalog](assets/warmup.yaml) before Phase B and again at §9. Those cues
+are how harvest and descent inspect the tree. They are not E, not P, and not A.
 
-Phase C runs exactly once, when `cg modules` exits 0 (no UNMAPPED, no DESCEND). Harvesting cannot
-happen inside the loop: the same rule surfaces in several modules and must be written once.
+Phase C runs exactly once, after Phase D, when the leaf audit has either written existing
+children or recorded the convoluted splits. Harvesting cannot happen inside the loop: the same
+rule surfaces in several modules and must be written once.
 
 ## Required outcome
 
-Finish with all thirteen true:
+Finish with all fourteen true:
 
 1. Any predecessor governance framework is found, read, and carried forward or logged — never
    silently replaced.
 2. Every real module root is discovered and either mapped or explicitly excluded with a reason.
 3. Every governed boundary has exactly one `.agents/cg/contract.yaml` describing the code that is
    there — not an aspiration — and every non-leaf declares its children. `graph.recurse` has been
-   applied inside each module.
+   applied inside each module. Phase D re-walked every leaf: a component the code already has is
+   a child contract now; a component that would require a convoluted split is a corrective-set row.
 4. The global `A` catalog passes, and each contract's `rules` array names only additional
    repository-owned `P` bindings that apply to that boundary.
 5. Contract-owned `routes` match task language to the contracts a request must load.
@@ -189,7 +194,9 @@ more canonical contract paths under `contracts`.
 
 Write `when` phrases in the words a request arrives in — "checkout fails at payment", not
 "PaymentServiceImpl". Use `cg contract route --task "<request>"` to exercise them. Sketch now from
-the module list; correct a route in Phase B when a module shows it was wrong.
+the module list. When Phase B or D writes a child, rewrite the parent and any root route whose
+`when` names that surface so the child contract is on the route. Empty `routes` on a composed
+node with named inbound children is a miss.
 
 ---
 
@@ -197,7 +204,7 @@ the module list; correct a route in Phase B when a module shows it was wrong.
 
 Pick the first row `cg modules` still reports `UNMAPPED`, or if none, the first `DESCEND`. Run §4,
 §5, and §6 for **that unit only**, then run `cg modules` again and pick the next. Do not batch.
-When `cg modules` exits 0, go to Phase C.
+When `cg modules` exits 0, go to Phase D, not Phase C.
 
 **Binding authority.** Read `.agents/cg/principles/architecture.yaml` before writing a node.
 `hierarchy.kinds` is the recursive mapping. `graph` is the node decision (recurse, selfSufficient,
@@ -231,14 +238,19 @@ Four fields carry the routing weight:
 - **`relations.parent`** — the edge back up, including the delegated responsibility under `uses`.
 - **`relations.children`** — the edges down. A smallest owned boundary uses `composition: "leaf"`
   and an empty child array; a parent uses `"composed"` and at least one child.
+- **`routes`** — task phrases to the smallest contracts a request must load. After `add-child`,
+  rewrite this unit's routes and any root route whose `when` names the child.
 
 Then: `responsibilities.owns/allows/forbids`, a language-native `surface`, `invariants`,
-executable `verification`, and lateral `relations.dependencies`.
+executable `verification`, and lateral `relations.dependencies`. A constraint the
+implementation already refuses belongs in `invariants` and `forbids` even when no test
+exists; absence of a detector is not absence of the constraint.
 
 ### Descend with the binding graph
 
 Apply `.agents/cg/principles/architecture.yaml` `graph.recurse` and `graph.selfSufficient` to every
-candidate inside this unit. Cite those fields. `hierarchy.kinds` names the child's kind;
+candidate inside this unit. Walk the `family: descent` cues in
+[the code-inspection catalog](assets/warmup.yaml) before writing Leaf rationale. Cite those fields. `hierarchy.kinds` names the child's kind;
 `hierarchy.transitions` constrains it. `graph.stop` is when to become a leaf; `graph.forbid` is
 what never counts as a node. Depth is not capped: a two-level module leaf and a five-kind nest
 can coexist. Apply `selfSufficient` at this node.
@@ -293,6 +305,12 @@ copy rule text into the contract; `cg contract context --id <id>` resolves A and
 **When unsure whether a rule binds a module, include it.** `E` entries never appear in `rules`.
 
 Run `cg sync`, then `cg contract verify`, then `cg verify`, **before moving to the next unit**.
+`cg sync` writes workspace-root pointers only for `kind: module`, and only the filenames the
+selected profiles own (`AGENTS.md` and/or `CLAUDE.md`, matching `.agents/cg/profile.json`). Do
+not create the unselected name by hand, and do not copy either file onto a leaf, component, or
+submodule. If a later `cg init` adds a profile, `cg sync` copies an existing module pointer to
+the new filename.
+
 A verification command that only proves a path exists (`test -f`, `test -d`, `[ -f`) is not
 verification. Name the test or build that exercises the invariant. If the unit has no such
 command yet, that is a §8 finding.
@@ -316,11 +334,55 @@ Append one block to `<docs>/plans/warmup-findings.md`:
 ```
 
 Every field may be `none`. An empty block is still written. Then drop the unit's code from your
-working set and select the next one. Phase C reads this file, not your memory.
+working set and select the next one. Phase D then Phase C read this file, not your memory.
 
 ---
 
-# Phase C — once, after `cg modules` exits 0
+# Phase D — once, after modules are governed, before harvest
+
+A module contract is not the smallest change surface. The product is a later session locating
+one responsibility without opening the whole module. After `cg modules` exits 0, re-walk every
+leaf. Phase B's Leaf rationale does not skip this.
+
+If you are resuming and `cg modules` exits 0 but `<docs>/plans/warmup-findings.md` has no
+`### Phase D` block, you are here. Do not start Phase C.
+
+For each leaf, in unit-path order, then for each child you write, recursively:
+
+1. Count implementation lines under the unit. Skip test trees, generated output, and vendored
+   code. **2,000–5,000 lines is a reading budget, not a split rule.** `graph.forbid` says size
+   is not evidence a node is required. Below ~2,000, still apply the descent cues when a named
+   inbound surface exists. Above ~5,000, look harder — do not stop because Phase B already
+   called it a leaf.
+2. Walk the `family: descent` cues in [the code-inspection catalog](assets/warmup.yaml) and
+   `graph.selfSufficient` / `graph.stop`.
+3. Take exactly one outcome:
+
+| `graph` result | Code already has that shape | What Phase D does |
+|---|---|---|
+| `add-child` and a separable directory or package already exists | yes | write the child contract now; recurse into it |
+| `add-child` but fulfilling it would move code, invent types, or tangle the shared seam | no | keep the leaf; **Restructure:** finding in the corrective set |
+| `stay` / `graph.stop` | — | keep or tighten Leaf rationale; name the packages and why they are inseparable |
+
+More contracts help only when each owns one responsibility. A node per file, per controller, or
+per `utils` folder is still `graph.forbid`. A types-only package whose callers enter through
+parent ports is `graph.stop` on the parent, not `add-child`. After writing children, rewrite
+parent and root `routes` so `when` phrases load the child contracts.
+
+Run `cg sync`, then `cg verify`, after each newly written child. Re-run `cg modules`. Then append:
+
+```markdown
+### Phase D
+- **Audited leaves:** <unit paths>
+- **Children written now:** <unit paths or none>
+- **Corrective (convoluted split):** <unit paths or none>
+```
+
+Then go to Phase C.
+
+---
+
+# Phase C — once, after Phase D
 
 §7–§12 run one time over the whole repository. Their input is
 `<docs>/plans/warmup-findings.md` plus the connected contracts now on disk. **Read that file
@@ -391,7 +453,9 @@ delivery work for `cg-plan` → `cg-prepare` → `cg-produce` after the owner ac
 
 Phase B recorded *Rule candidates* for every unit. **Consolidate before you write.** Merge the
 same constraint into one rule at the scope that is actually true, and bind it to every unit it
-governs.
+governs. Walk the `family: harvest` and `family: bind` cues in
+[the code-inspection catalog](assets/warmup.yaml) before you close the catalog. A detector that
+still runs in the build with no P row is a miss.
 
 ### What qualifies
 
@@ -403,8 +467,18 @@ A candidate is a rule only when all four hold:
 3. **A violation would be a defect**, not a preference.
 4. **No existing rule already covers it.**
 
-The strongest source is a detector that enforces no rule. The line is the rule; write it down and
-bind them.
+The four tests qualify a **constraint**. They do not require a test file. Named ceilings,
+single-seam types, startup validators, throwing constructors, config defaults, and scheduled
+jobs count when you can name the implementing files. Vision prose with no implementing code
+does not.
+
+A product-specific constraint the code already obeys is **P**. Write it in
+`.agents/cg/guidelines/product.yaml` and list it on every contract it governs. The strongest
+source is a detector that enforces no rule — the line is the rule; write it down and bind
+them. A working detector is the enforcement row and the rule is enforced. Without a detector,
+the enforcement row is `unproven — <the observable violation>` and the rule is not enforced.
+Still write the P id. Do not skip the catalog because the repository has no architecture-test
+suite.
 
 ### Which family it goes in
 
@@ -540,7 +614,7 @@ Delete rather than archive when a file has no reader.
 
 ## Stage boundary — yield here
 
-Finish Phase A, loop Phase B until `cg modules` exits 0, then run Phase C. That is this skill.
+Finish Phase A, loop Phase B until `cg modules` exits 0, run Phase D, then Phase C. That is this skill.
 Then return to the user. Do not invoke the next skill yourself, however obvious the route is.
 The `Next action` block names the successor so a person can choose it and so `cg-auto-run` can
 follow it under a granted authority — naming it is not permission to take it. The single exception

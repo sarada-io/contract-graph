@@ -17,7 +17,9 @@ import {
   DOCS_TREES,
   governanceContractPath,
   manifestPath,
+  MODULE_POINTERS,
   phasesPath,
+  selectedModulePointers,
 } from "./model.js";
 import { loadContract, stringifyContractYaml } from "./contracts.js";
 import {
@@ -116,11 +118,22 @@ export function resolveTarget(rule, docsRoot = DEFAULT_DOCS_ROOT) {
   return [docsRoot, ...rest].join("/");
 }
 
-function applyMappingRule(rule, repoRoot, out, docsRoot, dryRun) {
+function applyMappingRule(rule, repoRoot, out, docsRoot, dryRun, modulePointers) {
   if (rule.mode === "never") return;
   for (const { source, target } of enumerateRule(rule, repoRoot, docsRoot)) {
+    if (skipUnselectedStarterPointer(rule, target, modulePointers)) continue;
     copyFile(source, target, rule, out, dryRun);
   }
+}
+
+/**
+ * The starter module ships both pointer filenames as identical templates. Only the selected
+ * profiles' files are copied; `cg sync` creates the other later by copying a sibling.
+ */
+function skipUnselectedStarterPointer(rule, target, modulePointers) {
+  if (rule.mode !== "starter") return false;
+  const name = path.basename(target);
+  return MODULE_POINTERS.includes(name) && !modulePointers.includes(name);
 }
 
 /** Walk one source tree, yielding every {source, target, rule} file pair it would install. */
@@ -257,7 +270,10 @@ export function ensureLedgerIgnored(repoRoot, out, dryRun) {
     `${current && !current.endsWith("\n") ? "\n" : ""}` +
     "\n# Contract Graph: cg-auto-run ledgers are live state for one run, never history.\n" +
     `${missing.join("\n")}\n`;
-  (current ? out.replaced : out.written).push(file);
+  // Always `written`, never `replaced`. The CLI treats `replaced` as “overwrite a
+  // framework file, default No” — a prompt that cancelled a first brownfield init
+  // when the only change was these two append-only ignore lines.
+  out.written.push(file);
   if (dryRun) return;
   fs.writeFileSync(file, current + block, "utf8");
 }
@@ -311,7 +327,7 @@ export function init(repoRoot, { profiles, docs, dryRun = false } = {}) {
   const selectedProfiles = expandProfileAliases(
     profiles ?? previous?.profiles ?? selectableProfiles(),
   );
-  resolveProfiles(selectedProfiles);
+  const modulePointers = selectedModulePointers(resolveProfiles(selectedProfiles).rootPointers);
   // A repository never silently changes its docs root: once recorded, the record wins
   // unless this run passes an explicit one.
   const docsRoot = docs ?? previous?.docs ?? DEFAULT_DOCS_ROOT;
@@ -328,7 +344,7 @@ export function init(repoRoot, { profiles, docs, dryRun = false } = {}) {
   for (const rule of SCAFFOLD_MAPPING.filter(
     (entry) => entry.mode === "always" || (entry.mode === "starter" && !brownfield),
   )) {
-    applyMappingRule(rule, repoRoot, out, docsRoot, dryRun);
+    applyMappingRule(rule, repoRoot, out, docsRoot, dryRun, modulePointers);
   }
 
 

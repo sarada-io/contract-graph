@@ -16,6 +16,7 @@ import {
   generateModulePointer,
   generateRoot,
   MODULE_POINTERS,
+  selectedModulePointers,
   skillsRoot,
 } from "./model.js";
 import { loadContractGraph } from "./contracts.js";
@@ -52,10 +53,22 @@ export function sync(repoRoot, { dryRun = false } = {}) {
     apply(generateRoot(repoRoot, relPath, prefix, projectName), changed, dryRun);
   }
 
+  const modulePointers = selectedModulePointers(profile.rootPointers);
   for (const record of graph.records) {
     if (record.contract.kind !== "module") continue;
-    for (const pointer of MODULE_POINTERS) {
+    const unit = record.contract.unit;
+    const existing = [];
+    const missing = [];
+    for (const pointer of modulePointers) {
+      (fs.existsSync(path.join(repoRoot, unit, pointer)) ? existing : missing).push(pointer);
+    }
+    // Repair drift on files already present, then create any new name by copying a sibling
+    // so adding a profile does not invent a second body for the same pointer.
+    for (const pointer of existing) {
       apply(generateModulePointer(repoRoot, record.contract, pointer), changed, dryRun);
+    }
+    for (const pointer of missing) {
+      apply(newModulePointer(repoRoot, record.contract, pointer), changed, dryRun);
     }
   }
 
@@ -78,4 +91,20 @@ export function sync(repoRoot, { dryRun = false } = {}) {
       wrappers: wrapperCount,
     },
   };
+}
+
+/**
+ * A newly selected pointer filename starts as a copy of a sibling that already exists in the
+ * module folder (any `MODULE_POINTERS` name, including one left by a previous selection).
+ * Generate only when this module has none yet.
+ */
+function newModulePointer(repoRoot, contract, relPath) {
+  const generated = generateModulePointer(repoRoot, contract, relPath);
+  for (const sibling of MODULE_POINTERS) {
+    if (sibling === relPath) continue;
+    const file = path.join(repoRoot, contract.unit, sibling);
+    if (!fs.existsSync(file)) continue;
+    return { ...generated, desired: fs.readFileSync(file, "utf8") };
+  }
+  return generated;
 }

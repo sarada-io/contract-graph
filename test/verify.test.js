@@ -139,7 +139,9 @@ function addRootChildren(dir, names, mutate = () => {}) {
     fs.mkdirSync(path.join(dir, name, ".agents", "cg"), { recursive: true });
     write(dir, `${name}/.agents/cg/contract.yaml`, stringifyContractYaml(contract));
     for (const pointer of ["CLAUDE.md", "AGENTS.md"]) {
-      fs.copyFileSync(path.join(dir, "src", pointer), path.join(dir, name, pointer));
+      const from = path.join(dir, "src", pointer);
+      if (!fs.existsSync(from)) continue;
+      fs.copyFileSync(from, path.join(dir, name, pointer));
     }
     root.relations.children.push({
       contract: `${name}/.agents/cg/contract.yaml`,
@@ -193,6 +195,8 @@ test("a Claude-only selection syncs and verifies without other root pointers", (
   assert.ok(fs.existsSync(path.join(dir, "CLAUDE.md")));
   assert.ok(!fs.existsSync(path.join(dir, "AGENTS.md")));
   assert.ok(!fs.existsSync(path.join(dir, ".github", "copilot-instructions.md")));
+  assert.ok(fs.existsSync(path.join(dir, "src", "CLAUDE.md")));
+  assert.ok(!fs.existsSync(path.join(dir, "src", "AGENTS.md")));
   const result = verify(dir);
   assert.deepEqual(result.failures, []);
   assert.equal(result.counts.roots, 1);
@@ -274,19 +278,28 @@ const PROFILE_ARTIFACTS = {
     ".github/copilot-instructions.md",
     "AGENTS.md",
     "CLAUDE.md",
+    "src/AGENTS.md",
+    "src/CLAUDE.md",
     ...CORE_CG_SKILLS.map((name) => `.claude/skills/${name}/SKILL.md`),
   ],
-  agents: ["AGENTS.md"],
+  agents: ["AGENTS.md", "src/AGENTS.md"],
   claude: [
     "CLAUDE.md",
+    "src/CLAUDE.md",
     ...CORE_CG_SKILLS.map((name) => `.claude/skills/${name}/SKILL.md`),
   ],
   copilot: [".github/copilot-instructions.md"],
 };
 
-const isDiscoveryArtifact = (file) =>
-  ["AGENTS.md", "CLAUDE.md", ".github/copilot-instructions.md"].includes(file) ||
-  file.startsWith(".claude/skills/");
+const isDiscoveryArtifact = (file) => {
+  const name = file.split("/").pop();
+  return (
+    name === "AGENTS.md" ||
+    name === "CLAUDE.md" ||
+    file === ".github/copilot-instructions.md" ||
+    file.startsWith(".claude/skills/")
+  );
+};
 
 function discoveryArtifacts(dir) {
   return filesUnder(dir).filter(isDiscoveryArtifact);
@@ -305,7 +318,7 @@ for (const [profile, expected] of Object.entries(PROFILE_ARTIFACTS)) {
 /**
  * The harness-neutral claim, asserted rather than assumed. A profile selects a discovery
  * surface and nothing else: governance under `.agents/` is byte-identical for every editor,
- * with `profile.json` the one file that records the selection and so must differ.
+ * with `profile.json` and `manifest.json` the files that record the selection and so must differ.
  *
  * Without this, a profile that started writing its own governance would pass every other
  * test — each profile's own artifacts would still be exactly what it declares — while the
@@ -318,7 +331,10 @@ test("every profile scaffolds byte-identical universal governance", () => {
     sync(dir);
     return filesUnder(dir)
       .filter((file) => !isDiscoveryArtifact(file))
-      .map((file) => [file, file === PROFILE ? "<records the selection>" : read(dir, file)]);
+      .map((file) => [
+        file,
+        file === PROFILE || file === MANIFEST ? "<records the selection>" : read(dir, file),
+      ]);
   };
 
   const baseline = universal("all");
@@ -370,6 +386,7 @@ test("legacy Codex, Cursor, and Antigravity selections collapse to the shared ag
   assert.deepEqual(JSON.parse(read(dir, PROFILE)).profiles, ["agents"]);
   assert.ok(fs.existsSync(path.join(dir, "AGENTS.md")));
   assert.ok(!fs.existsSync(path.join(dir, "CLAUDE.md")));
+  assert.ok(!fs.existsSync(path.join(dir, "src", "CLAUDE.md")));
   assert.ok(!fs.existsSync(path.join(dir, ".claude")));
   assert.ok(!fs.existsSync(path.join(dir, ".cursor")));
   assert.ok(fs.existsSync(path.join(dir, ".agents", "skills", "cg-plan", "SKILL.md")));
@@ -507,6 +524,15 @@ test("[1] a module folder missing CLAUDE.md fails", () => {
   const dir = makeRepo();
   fs.rmSync(path.join(dir, "src", "CLAUDE.md"));
   assertFails(dir, 1, "module not openable as a workspace root");
+});
+
+test("[1] an agents-only module is openable without CLAUDE.md", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-agents-module-pointer-"));
+  init(dir, { profiles: ["agents"] });
+  sync(dir);
+  assert.ok(fs.existsSync(path.join(dir, "src", "AGENTS.md")));
+  assert.ok(!fs.existsSync(path.join(dir, "src", "CLAUDE.md")));
+  assert.deepEqual(verify(dir).failures, []);
 });
 
 test("[1] a pointer without the principles reference fails", () => {
@@ -1265,6 +1291,43 @@ test("[8] a root pointer left by a deselected profile fails", () => {
   assertFails(dir, 8, "a generated entry point no profile writes");
 });
 
+test("[8] a module pointer left by a deselected profile fails", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-module-pointer-leftover-"));
+  init(dir, { profiles: ["agents"] });
+  sync(dir);
+  fs.copyFileSync(path.join(dir, "src", "AGENTS.md"), path.join(dir, "src", "CLAUDE.md"));
+  assertFails(dir, 8, "a generated module pointer no profile writes");
+});
+
+test("[8] a generated pointer on a leaf unit fails", () => {
+  const dir = makeRepo();
+  const child = structuredClone(readObject(dir, CONTRACT));
+  child.id = "src-core";
+  child.name = "src core";
+  child.kind = "component";
+  child.unit = "src/lib/core";
+  child.summary = "The core package inside the starter module.";
+  child.purpose = "The starter module delegates core types here.";
+  child.responsibilities.owns = ["Starter core types used by the other lib packages."];
+  child.relations.parent = {
+    contract: "src/.agents/cg/contract.yaml",
+    uses: "Delegates the core package.",
+  };
+  child.relations.composition = "leaf";
+  child.relations.children = [];
+  fs.mkdirSync(path.join(dir, "src", "lib", "core", ".agents", "cg"), { recursive: true });
+  write(dir, "src/lib/core/.agents/cg/contract.yaml", stringifyContractYaml(child));
+  editObject(dir, CONTRACT, (contract) => {
+    contract.relations.composition = "composed";
+    contract.relations.children = [{
+      contract: "src/lib/core/.agents/cg/contract.yaml",
+      uses: "Delegates the core package.",
+    }];
+  });
+  fs.copyFileSync(path.join(dir, "src", "AGENTS.md"), path.join(dir, "src", "lib", "core", "AGENTS.md"));
+  assertFails(dir, 8, "a generated pointer on a leaf");
+});
+
 test("a hand-written root file with no generated block is not an orphan", () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-own-file-"));
   fs.writeFileSync(path.join(dir, "AGENTS.md"), "# mine\n\nnotes.\n");
@@ -1489,6 +1552,16 @@ test("cg-warmup searches for a predecessor framework before authoring anything",
     /cg sync/,
     "a newly written module contract is not openable until sync writes its pointers",
   );
+  assert.match(
+    skill,
+    /only the filenames the\s+selected profiles own/,
+    "warmup must not write CLAUDE.md when the install selected only AGENTS.md",
+  );
+  assert.match(
+    skill,
+    /do not copy either file onto a leaf/,
+    "leaf and component units are not workspace roots",
+  );
 
   // Same run: eleven passing tenant-isolation tests kept passing while the rule IDs behind
   // them stopped resolving. A green test bound to nothing is deletable by the next agent.
@@ -1545,6 +1618,11 @@ test("cg-warmup harvests enforced code rules into the correct authority", () => 
   // P bindings owe a repository detector row. A generic A candidate owes the complete built-in
   // measurement and negative-fixture package and must go to the verifier owner; E remains advice.
   assert.match(skill, /Every `P` rule needs exactly one repository `.agents\/cg\/enforcement\.yaml`/);
+  assert.match(
+    skill,
+    /Do not skip the catalog because the repository has no architecture-test\s+suite/,
+    "code-backed product constraints still land in product.yaml when no detector exists",
+  );
   assert.match(skill, /Every `A` candidate[\s\S]*deterministic measure[\s\S]*negative fixture/);
   assert.match(skill, /route it to the verifier-owning repository; do not assign a local ID/);
   assert.match(skill, /affected contracts' `rules` arrays/, "a harvested rule bound to nothing governs nothing");
@@ -1556,6 +1634,53 @@ test("cg-warmup harvests enforced code rules into the correct authority", () => 
   // remain explicitly non-binding until verifier delivery.
   assert.match(skill, /^## Harvested rules and structural candidates — please confirm$/m);
   assert.match(skill, /Never describe a candidate as binding before its detector is registered/);
+});
+
+test("cg-warmup loads a code-inspection catalog distinct from engineering.yaml", () => {
+  const skill = fs.readFileSync(
+    path.join(SOURCE_ROOT, "skills", "cg-warmup", "SKILL.md"),
+    "utf8",
+  );
+  const catalog = fs.readFileSync(
+    path.join(SOURCE_ROOT, "skills", "cg-warmup", "assets", "warmup.yaml"),
+    "utf8",
+  );
+  assert.match(skill, /assets\/warmup\.yaml/, "warmup must load the inspection catalog");
+  assert.match(catalog, /family: harvest/);
+  assert.match(catalog, /family: descent/);
+  assert.match(catalog, /family: bind/);
+  assert.match(
+    catalog,
+    /architecture tests/i,
+    "the catalog must tell warmup to enumerate detectors, not sample them",
+  );
+  assert.match(
+    catalog,
+    /Absence of a test is not absence of the constraint/,
+    "traditional brownfields have no architecture-test suite; implementation still constrains",
+  );
+  assert.match(
+    catalog,
+    /types, records, or DTOs/,
+    "a types folder beside its ports is graph.stop, not a library node",
+  );
+  assert.match(
+    catalog,
+    /empty `routes` is a routing miss/,
+    "task language must load child contracts, not only the module",
+  );
+  assert.match(
+    catalog,
+    /2,000–5,000 line reading range/,
+    "oversized leaves are a prompt to look again, not a split rule",
+  );
+  assert.match(catalog, /graph\.forbid/, "size must not override the forbid that size is not a node");
+  assert.doesNotMatch(
+    catalog,
+    /mandala/i,
+    "inspection cues are product-neutral; Mandala P belongs in the adopting catalog",
+  );
+  assert.doesNotMatch(catalog, /^E\d{2}/m, "W cues must not be filed as engineering guidelines");
 });
 
 /**
@@ -1683,12 +1808,16 @@ test("cg-warmup states a resumable per-unit loop, not one linear pass", () => {
   const file = path.join(SOURCE_ROOT, "skills", "cg-warmup", "SKILL.md");
   const skill = fs.readFileSync(file, "utf8");
 
-  for (const phase of ["# Phase B — repeat", "# Phase C — once"]) {
+  for (const phase of ["# Phase B — repeat", "# Phase D — once", "# Phase C — once"]) {
     assert.ok(skill.includes(`\n${phase}`), `warmup must mark \`${phase}…\``);
   }
   assert.ok(
-    skill.indexOf("\n# Phase B") < skill.indexOf("\n# Phase C"),
-    "the loop must precede the consolidation that reads its output",
+    skill.indexOf("\n# Phase B") < skill.indexOf("\n# Phase D"),
+    "the loop must precede the leaf audit",
+  );
+  assert.ok(
+    skill.indexOf("\n# Phase D") < skill.indexOf("\n# Phase C"),
+    "the leaf audit must precede harvest so new children are present to bind",
   );
 
   // The resume path: a context break mid-warmup must not restart the whole thing.
@@ -1711,6 +1840,25 @@ test("cg-warmup states a resumable per-unit loop, not one linear pass", () => {
     "the write-down belongs inside the loop, not after it",
   );
   assert.match(skill, /warmup-findings\.md/, "the findings file is the durable working state");
+
+  assert.match(skill, /# Phase D — once/, "missing component contracts are a dedicated pass, not a hope in Phase B");
+  assert.match(skill, /2,000–5,000 lines is a reading budget, not a split rule/);
+  assert.match(skill, /Corrective \(convoluted split\)/);
+  assert.match(
+    skill,
+    /types-only package whose callers enter through\s+parent ports is `graph\.stop`/,
+    "library kind is not a node per types folder",
+  );
+  assert.match(
+    skill,
+    /Empty `routes` on a composed\s+node with named inbound children is a miss/,
+    "root sketches are rewritten onto children",
+  );
+  assert.match(
+    skill,
+    /write the child contract now/,
+    "a component the code already has is written in warmup, not deferred to plan",
+  );
 
   // Consolidation exists precisely because one rule surfaces in many units.
   assert.match(skill, /Consolidate before you write/);
@@ -3038,6 +3186,54 @@ test("sync rewrites a module pointer that still names contract.md", () => {
   assert.deepEqual(verify(dir).failures, []);
 });
 
+test("adding a profile copies the existing module pointer to the new filename", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-copy-module-pointer-"));
+  init(dir, { profiles: ["agents"] });
+  sync(dir);
+  addRootChildren(dir, ["billing"], (contract) => {
+    contract.responsibilities.owns = ["Customer billing lifecycle."];
+  });
+  assert.ok(!fs.existsSync(path.join(dir, "billing", "CLAUDE.md")));
+  init(dir, { profiles: ["agents", "claude"] });
+  sync(dir);
+  assert.equal(read(dir, "billing/CLAUDE.md"), read(dir, "billing/AGENTS.md"));
+  assert.equal(read(dir, "src/CLAUDE.md"), read(dir, "src/AGENTS.md"));
+  assert.deepEqual(verify(dir).failures, []);
+});
+
+test("sync does not write workspace-root pointers onto a component", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-no-leaf-pointer-"));
+  init(dir, { profiles: ["agents"] });
+  sync(dir);
+  const child = structuredClone(readObject(dir, CONTRACT));
+  child.id = "src-core";
+  child.name = "src core";
+  child.kind = "component";
+  child.unit = "src/lib/core";
+  child.summary = "The core package inside the starter module.";
+  child.purpose = "The starter module delegates core types here.";
+  child.responsibilities.owns = ["Starter core types used by the other lib packages."];
+  child.relations.parent = {
+    contract: "src/.agents/cg/contract.yaml",
+    uses: "Delegates the core package.",
+  };
+  child.relations.composition = "leaf";
+  child.relations.children = [];
+  fs.mkdirSync(path.join(dir, "src", "lib", "core", ".agents", "cg"), { recursive: true });
+  write(dir, "src/lib/core/.agents/cg/contract.yaml", stringifyContractYaml(child));
+  editObject(dir, CONTRACT, (contract) => {
+    contract.relations.composition = "composed";
+    contract.relations.children = [{
+      contract: "src/lib/core/.agents/cg/contract.yaml",
+      uses: "Delegates the core package.",
+    }];
+  });
+  sync(dir);
+  assert.ok(!fs.existsSync(path.join(dir, "src", "lib", "core", "AGENTS.md")));
+  assert.ok(!fs.existsSync(path.join(dir, "src", "lib", "core", "CLAUDE.md")));
+  assert.deepEqual(verify(dir).failures, []);
+});
+
 // ---------------------------------------------------------------------------
 // cg next — the independent answer that makes cg-auto-run enforceable
 // ---------------------------------------------------------------------------
@@ -3152,6 +3348,19 @@ test("init ignores the auto-run ledger without disturbing an existing .gitignore
     1,
     "re-running init must not append the rule twice",
   );
+});
+
+test("appending ledger ignores is not a framework replace", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-ignore-replace-"));
+  fs.writeFileSync(path.join(dir, ".gitignore"), "node_modules/\n", "utf8");
+  fs.writeFileSync(path.join(dir, "README.md"), "x\n", "utf8");
+  fs.mkdirSync(path.join(dir, "lib"));
+  const plan = init(dir, { dryRun: true });
+  assert.ok(
+    !plan.replaced.some((file) => path.basename(file) === ".gitignore"),
+    "an append-only .gitignore patch must not trigger Replace them? [y/N]",
+  );
+  assert.ok(plan.written.some((file) => path.basename(file) === ".gitignore"));
 });
 
 test("a finished warmup is advised to remove its resume log", () => {

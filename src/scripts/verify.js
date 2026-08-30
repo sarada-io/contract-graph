@@ -2,7 +2,7 @@
  * Verify the structured contract graph, structural bindings, principles, lifecycle, and discovery.
  *
  * Checks:
- *   1. Every module contract has `CLAUDE.md` and `AGENTS.md` pointers.
+ *   1. Every module contract has the workspace-root pointers the selected profiles install.
  *   2. Contract YAML shape, references, reciprocity, cycles, and root reachability are valid.
  *   5. No permanent contract cites a transient plan path or ticket ID.
  *   6. Every contract rule ID exists under the product bindings.
@@ -39,6 +39,9 @@ import {
   loadBindingPrinciples,
   loadPhases,
   ROOT_POINTERS,
+  MODULE_POINTERS,
+  selectedModulePointers,
+  isGeneratedModulePointer,
   ROOT_BEGIN_MARKER,
   CORE_BINDING_FAMILIES,
   BEST_PRACTICE_FAMILIES,
@@ -60,7 +63,6 @@ import {
 import { moduleCoverage, openDescent } from "./modules.js";
 import { ProfileError, resolveProfileSelection } from "./profiles.js";
 
-const POINTERS = ["CLAUDE.md", "AGENTS.md"];
 const SKILL_NAME = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const SKILL_FRONTMATTER_KEYS = ["name", "description"];
 const SKILL_INTERFACE_KEYS = ["display_name", "short_description", "default_prompt"];
@@ -655,7 +657,7 @@ export function verify(repoRoot) {
     });
 
     if (contract.kind === "module") {
-      for (const pointer of POINTERS) {
+      for (const pointer of selectedModulePointers(profile.rootPointers)) {
         const file = path.join(repoRoot, contract.unit, pointer);
         if (!exists(file)) {
           fail(`[1] ${contract.unit}: missing ${pointer} — module is not openable as a workspace root`);
@@ -665,6 +667,21 @@ export function verify(repoRoot) {
         if (!text.includes(".agents/cg/contract.yaml")) fail(`[1] ${contract.unit}/${pointer}: missing canonical module contract pointer`);
         if (!text.includes(".agents/cg/principles/architecture.yaml")) fail(`[1] ${contract.unit}/${pointer}: missing structural binding pointer`);
         if (!text.includes(".agents/cg/guidelines/")) fail(`[1] ${contract.unit}/${pointer}: missing canonical repository guidelines pointer`);
+      }
+    }
+
+    if (contract.unit !== ".") {
+      const selected =
+        contract.kind === "module" ? selectedModulePointers(profile.rootPointers) : [];
+      for (const pointer of MODULE_POINTERS) {
+        if (selected.includes(pointer)) continue;
+        const file = path.join(repoRoot, contract.unit, pointer);
+        if (!exists(file)) continue;
+        if (!isGeneratedModulePointer(read(file))) continue;
+        fail(
+          `[8] ${contract.unit}/${pointer}: carries a Contract Graph pointer but no selected profile writes it at this unit — ` +
+            "delete it, or re-select the profile that owns it",
+        );
       }
     }
 

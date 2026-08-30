@@ -1222,8 +1222,26 @@ export function generateRoot(repoRoot, relPath, prefix, projectName) {
   return { path: file, current, desired };
 }
 
-/** Module workspace-root pointer files `cg verify` [1] requires. */
+/**
+ * Workspace-root pointer filenames a module may carry. Copilot's
+ * `.github/copilot-instructions.md` is repository-root only — opening a module folder as a
+ * workspace is an AGENTS.md / CLAUDE.md concern.
+ */
 export const MODULE_POINTERS = Object.freeze(["AGENTS.md", "CLAUDE.md"]);
+
+/** The subset of `MODULE_POINTERS` the selected profiles actually install. */
+export function selectedModulePointers(rootPointers) {
+  return MODULE_POINTERS.filter((name) => Object.hasOwn(rootPointers, name));
+}
+
+/** True when the file is a Contract Graph module pointer, not the repository's own notes. */
+export function isGeneratedModulePointer(text) {
+  return (
+    text.includes("This folder is openable as a workspace root on its own.") &&
+    text.includes(".agents/cg/contract.yaml") &&
+    text.includes("Do not put instructions in this file.")
+  );
+}
 
 /** Prefix from `<unit>/AGENTS.md` to the repository `.agents/cg/` tree. */
 export function modulePointerPrefix(unit) {
