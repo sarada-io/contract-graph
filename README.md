@@ -44,12 +44,23 @@ Restart or reload the IDE so the `/cg-*` skills appear.
 **New repository.** Fill the root contract's purpose, boundaries, and routes, then start with
 `/cg-plan`.
 
-**Existing repository.** Run `cg modules` to see detected roots, then `/cg-warmup` once in a new
-chat. Warmup writes contracts for the code that exists. Until it finishes, `cg verify: OK` means
-the scaffold is well-formed, not that this repository is governed.
+**Existing repository.** Run `cg modules` to see detected roots, then `/cg-warmup` in a new
+chat. If roots are still unmapped, that is adoption: warmup writes contracts for the code that
+exists. If every root is already governed, that is reseed: warmup adds missing children, product
+rules, and route targets without rewriting existing purpose or P IDs. Until adoption finishes,
+`cg verify: OK` means the scaffold is well-formed, not that this repository is governed.
 
-Upgrade with `npm i -g contract-graph@latest`, then run `cg init` again. Framework files update;
-your contracts and guidelines stay yours.
+**Upgrade** from 0.3.0 or 0.4.0:
+
+```bash
+npm install --global contract-graph@0.5.0
+cd <repo>
+cg init --yes --docs docs
+cg verify
+```
+
+Then `/cg-warmup` in a new chat (adoption if `cg modules` still has gaps, reseed if the graph is
+already connected). Framework skills and schemas update; contracts and catalogs stay yours.
 
 Supported discovery: [Cursor](https://cursor.com/docs/skills),
 [Codex](https://learn.chatgpt.com/docs/build-skills),
@@ -65,7 +76,7 @@ write product code.
 
 | Skill | When |
 |---|---|
-| `/cg-warmup` | Once, on existing code: discover boundaries and write their contracts |
+| `/cg-warmup` | Adoption or additive reseed on existing code: discover boundaries, write or extend their contracts |
 | `/cg-plan` | Turn an outcome into ordered phases |
 | `/cg-prepare` | Turn one phase into a queue of steps |
 | `/cg-produce` | Run the next ready step: code, tests, and contracts together |

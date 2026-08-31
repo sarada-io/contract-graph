@@ -30,9 +30,11 @@ flowchart TB
   Close -->|"work that was never this phase"| Roadmap
 ```
 
-On a repository that already has code, **warmup** runs once *before* this stack. It writes
+On a repository that already has code, **warmup** runs *before* this stack. It writes
 contracts for the structure that exists, and records splits the code does not yet have. Those
-splits become a plan you validate. Warmup does not rewrite the product.
+splits become a plan you validate. After a later package upgrade, the same skill **reseeds**
+an already-governed graph additively: missing children, product rules, and route targets.
+It does not rewrite existing purpose or P IDs, and it does not rewrite the product.
 
 ## What you agree at each layer
 
@@ -84,7 +86,7 @@ decisions** as settled until they are promoted or dropped.
 |---|---|
 | `contract.yaml` nodes, edges, routes, invariants | Roadmaps and step queues |
 | Architecture bindings (`A`) and product rules (`P`) | Auto-run ledgers |
-| Durable records under `docs/decisions/` and `docs/guides/` | Warmup findings once adoption has finished |
+| Durable records under `docs/decisions/` and `docs/guides/` | Warmup findings once adoption has finished; a reseed delta after the owner has read it |
 | The decision log *file* (entries drain; the ledger remains) | A decision *id* as the source of a contract rule |
 
 If deleting `docs/plans/` would lose a rule, the rule was stored in the wrong place.

@@ -71,8 +71,8 @@ const SKILL_INTERFACE_KEYS = ["display_name", "short_description", "default_prom
  *
  * A lifecycle skill is loaded on every session that touches it, so its length is a tax paid
  * again and again — 500 lines is the point past which an agent starts skimming the thing that
- * governs it. `cg-warmup` is categorically different: it runs once in a repository's life, it
- * never runs again, and it is doing the hardest reading the framework asks for. Charging it the
+ * governs it. `cg-warmup` is categorically different: it is owner-invoked adoption or additive
+ * reseed, never auto-run, and it is doing the hardest reading the framework asks for. Charging it the
  * recurring-cost budget would buy nothing and would push it toward the abbreviation that makes a
  * weaker model guess. It still has a ceiling, because a procedure nobody finishes reading is
  * unbounded in a different way.
@@ -92,7 +92,8 @@ const EXISTENCE_ONLY = /^\s*(?:test\s+-[efd]\s+\S+|\[\s+-[efd]\s+\S+\s*\])\s*$/;
  *
  * `cg-auto-run` leads because it is an adapter over the lifecycle rather than a part of it. Then
  * the four lifecycle stages; `cg-unblock` follows because it is entered from any of them rather
- * than being a stage; `cg-warmup` is last because it is run once, at adoption, and never again.
+ * than being a stage; `cg-warmup` is last because it is owner-invoked at adoption or reseed,
+ * and never auto-run.
  */
 export const CORE_CG_SKILLS = [
   "cg-auto-run",
@@ -575,10 +576,11 @@ export function verify(repoRoot) {
   // governed", so it must not be silent either.
   const governedUnits = graph.records.map((record) => record.contract.unit);
   const coverage = moduleCoverage(repoRoot, governedUnits);
+  const descent = graph.failures.length ? [] : openDescent(repoRoot, graph.records);
   for (const module of coverage.unmapped) {
     advisories.push(
       `[0] ${module.path}/ looks like a module root (${module.manifest}) but no entry in ` +
-        "contract graph governs it — run the `cg-warmup` skill once to write and connect its contract, or record why it is excluded",
+        "contract graph governs it — run the `cg-warmup` skill to write and connect its contract, or record why it is excluded",
     );
   }
 
@@ -767,7 +769,11 @@ export function verify(repoRoot) {
       roots: Object.keys(profile.rootPointers).length,
       skills: skillCount,
       engineering: engineeringCount,
-      modules: { detected: coverage.detected.length, unmapped: coverage.unmapped.length },
+      modules: {
+        detected: coverage.detected.length,
+        unmapped: coverage.unmapped.length,
+        descent: descent.length,
+      },
     },
   };
 }

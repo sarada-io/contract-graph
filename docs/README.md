@@ -18,6 +18,7 @@ supposed to remain after a plan is deleted.
 | [Contracts](contracts.md) | What one YAML node is, and what verification currently proves |
 | [Workflow](workflow.md) | How an outcome becomes phases, steps, and a lasting graph |
 | [Lifecycle](lifecycle.md) | The stages you run, and the structural walk they share |
+| [Upgrade](upgrade.md) | 0.3.0 / 0.4.0 → 0.5.0: `cg init`, then adoption or reseed |
 
 Watch the [Quick Introduction Video](https://sarada.io/cg/#watch) first. Start with vision if you are deciding
 whether to adopt. Start with workflow if you already installed and want to see how work is

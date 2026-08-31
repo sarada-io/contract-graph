@@ -34,7 +34,9 @@ const WARMUP_FILES = new Set([
   "warmup-findings.md",
   "warmup-report.md",
   "warmup-corrective-set.md",
+  "warmup-reseed-delta.md",
 ]);
+const RESEED_DELTA = "warmup-reseed-delta.md";
 
 /**
  * Has warmup finished?
@@ -123,6 +125,7 @@ export function residue(repoRoot, { docs } = {}) {
 
     if (depth !== 0) return false;
     if (NAMED_ROOTS.has(name)) return true;
+    if (name === RESEED_DELTA) return true;
     return WARMUP_FILES.has(name) && !finished;
   });
 
@@ -148,7 +151,7 @@ export function residue(repoRoot, { docs } = {}) {
     .map((file) => ({
       path: rel(file),
       why:
-        WARMUP_FILES.has(path.basename(file)) && finished
+        WARMUP_FILES.has(path.basename(file)) && finished && path.basename(file) !== RESEED_DELTA
           ? "warmup finished; its working files have no reader left"
           : "not reachable by a link from any root",
     }));

@@ -59,9 +59,9 @@ across successive runs, for every phase in it, not just the first.
 `cg-unblock` is the other stop, for the same reason from the other end — see §5. A fork that
 reaches it is one the contracts could not settle, so it is the owner's to settle.
 
-`cg-warmup` is dispatchable at no level. It runs once, it rewrites the contract surface the other
-stages depend on, and its `Harvested rules and structural candidates — please confirm` register
-exists to be read by a person.
+`cg-warmup` is dispatchable at no level. It is owner-invoked adoption or additive reseed; it
+rewrites or extends the contract surface the other stages depend on, and its `Harvested rules
+and structural candidates — please confirm` register exists to be read by a person.
 
 ## 2. Measure state before the first dispatch
 
