@@ -663,6 +663,7 @@ test("the published README is a human landing page", () => {
   assert.match(readme, /\[Quick Introduction Video\]\(https:\/\/sarada\.io\/cg\/#watch\)/);
   assert.match(readme, /https:\/\/sarada\.io\/community\/contract-graph\/vision\//);
   assert.match(readme, /https:\/\/sarada\.io\/community\/contract-graph\/workflow\//);
+  assert.match(readme, /https:\/\/sarada\.io\/community\/contract-graph\/upgrade\//);
   assert.match(readme, /https:\/\/sarada\.io\/contract-graph\/schema\//);
   assert.match(readme, /## Learn more/);
   assert.match(readme, /cd your-repository/);
@@ -677,6 +678,7 @@ test("the public docs stay human-facing", () => {
   const lifecycle = fs.readFileSync(path.join(docsDir, "lifecycle.md"), "utf8");
   assert.match(index, /They are not the agent procedure/);
   assert.match(index, /\[Quick Introduction Video\]\(https:\/\/sarada\.io\/cg\/#watch\)/);
+  assert.match(index, /\[Upgrade\]\(upgrade\.md\)/);
   assert.doesNotMatch(lifecycle, /## Next action/);
   assert.doesNotMatch(lifecycle, /Enabling the Claude Code gate/);
   assert.doesNotMatch(lifecycle, /\$cg-/);

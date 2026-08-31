@@ -17,6 +17,7 @@ which contract to read next.
 | [Contracts](https://sarada.io/community/contract-graph/contracts/) | What one YAML node is, and what verification proves |
 | [Workflow](https://sarada.io/community/contract-graph/workflow/) | How work is split, run, and left on disk |
 | [Lifecycle](https://sarada.io/community/contract-graph/lifecycle/) | The stages you run after install |
+| [Upgrade](https://sarada.io/community/contract-graph/upgrade/) | 0.3.0 / 0.4.0 → 0.5.0: init, then adoption or reseed |
 | [Source](https://github.com/sarada-io/contract-graph) | CLI, schemas, skills, and issues |
 
 ## Install

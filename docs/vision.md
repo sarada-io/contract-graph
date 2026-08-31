@@ -120,7 +120,8 @@ repository: later `cg init` runs preserve them, and the owner may deliberately k
 replace, or retire a default within the enforcement semantics its installed verifier supports.
 New generic structural bindings are promoted through a verifier-owning change; product-specific
 authority can be adopted locally as `P`. Framework-owned schemas, tools, and skills may be
-upgraded; repository-owned architectural choices are not silently reset.
+upgraded; repository-owned architectural choices are not silently reset. See
+[upgrade](upgrade.md) for the 0.3.0 / 0.4.0 path.
 
 ## Route first; read code second
 

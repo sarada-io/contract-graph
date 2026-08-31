@@ -15,17 +15,52 @@ cg init --yes --docs docs
 cg verify
 ```
 
-Keep the same `--profile` set; add a profile only if you need a new harness. Then `/cg-warmup`
-in a new chat.
+Keep the same `--profile` set; add a profile only if you need a new harness. A stored `all`
+selection expands to `agents`, `claude`, and `copilot`. Non-interactive init needs `--docs docs`
+(or another single-directory root) when `docs/` already exists. Reload the IDE so the replaced
+`/cg-*` skills appear, then `/cg-warmup` in a new chat.
+
+`cg init` prints the next step: **adoption** while roots are unmapped or still need descent,
+**reseed** when `cg modules` exits 0. A 0.3.0 graph that is already connected takes reseed.
+After init, git should show skills, schemas, hooks, and first-line pointers changing;
+`architecture.yaml` and existing contracts stay clean until `/cg-warmup` runs.
+
+Adding a harness later is another `cg init --yes --profile claude` (keep `--docs`), not warmup.
+`cg sync` copies each module `AGENTS.md` to `CLAUDE.md`.
+
+## Adoption or reseed
 
 | `cg modules` | What warmup does |
 |---|---|
 | any `UNMAPPED` or `DESCEND` | **Adoption** (or resume): write missing contracts |
 | exit 0, all governed | **Reseed**: additive only |
 
+`cg modules` lists roots the language adapters detect. Directories that already have a
+`contract.yaml` but are not adapter roots do not appear as `UNMAPPED`. Exit 0 means those
+detected roots are governed; reseed still walks children from the graph and current cues.
+
+## What a non-empty reseed writes
+
+A connected 0.3.0 graph is the high-value case. Against current cues it may:
+
+- add a child `contract.yaml` for a separable package that already exists;
+- add the child edge on the parent, and the child path on existing routes whose `when`
+  already names that surface (phrases and existing contract paths stay);
+- move the child's services off the parent `surface` so they are not duplicated;
+- append the next unused `Pnn-nn` rows and `enforcement.yaml` detectors, citing a command
+  already on disk when one exists (`unproven — …` only when none does);
+- bind those new P IDs on the contracts they constrain.
+
+`purpose`, `forbids`, and existing P IDs stay. In-flight `cg-plan` trees and an older
+adoption corrective set are left in place. The delta is
+`<docs>/plans/warmup-reseed-delta.md` until the owner files it under decisions.
+
+## What init replaces
+
 `cg init` **replaces** skills, schemas, and hooks. It **preserves** contracts,
 `architecture.yaml`, `product.yaml`, `engineering.yaml`, `enforcement.yaml`, `workflow.md`,
-`phases.json`, and docs. There is no `cg upgrade` merge of catalogs.
+`phases.json`, and docs. It does not merge catalogs, and it does not delete leftover
+`.agents/rules` from older installs. There is no `cg upgrade` verb.
 
 ## 0.3.0 versus 0.4.0
 

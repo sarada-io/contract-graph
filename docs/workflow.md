@@ -114,3 +114,4 @@ directory that is actually in use.
 - [Vision](vision.md) — why the graph exists.
 - [Contracts](contracts.md) — node shape and what verification proves today.
 - [Lifecycle](lifecycle.md) — the stages and the structural walk they share.
+- [Upgrade](upgrade.md) — 0.3.0 / 0.4.0 → 0.5.0: `cg init`, then adoption or reseed.

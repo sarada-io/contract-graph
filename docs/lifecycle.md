@@ -164,5 +164,6 @@ gate stays Incomplete or Blocked and is never archived as Complete.
 ## Related
 
 - [Workflow](workflow.md) — how an outcome becomes phases, steps, and a lasting graph.
+- [Upgrade](upgrade.md) — 0.3.0 / 0.4.0 → 0.5.0: `cg init`, then adoption or reseed.
 - [Contracts](contracts.md) — node shape and what verification proves today.
 - [Vision](vision.md) — why the graph exists.

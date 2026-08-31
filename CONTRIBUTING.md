@@ -70,7 +70,7 @@ destructive test helpers against a working project.
 | Scenario | Expected result |
 |---|---|
 | Greenfield | `cg init` installs the starter `src` contract, selected discovery adapters, docs trees, skills, and versioned profile metadata; `cg verify` passes. |
-| Brownfield | Existing source is preserved. A repository without `src/` does not gain an invented one, detected module roots are reported as unmapped, and `/cg-warmup` is the next adoption step. |
+| Brownfield | Existing source is preserved. A repository without `src/` does not gain an invented one. Unmapped roots name `/cg-warmup` (adoption); an already-connected graph names `/cg-warmup` (reseed). |
 | Existing instructions | Existing `AGENTS.md`, `CLAUDE.md`, and `.github/copilot-instructions.md` content survives. The user is warned before the selected files receive a generated first-line pointer. |
 | Existing docs folder | Interactive init asks whether to reuse `docs/`; non-interactive init requires an explicit `--docs docs` or another single-directory root. Existing files are preserved. |
 
