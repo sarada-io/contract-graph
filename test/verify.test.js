@@ -188,6 +188,21 @@ test("init persists its version and the selected profiles", () => {
   });
 });
 
+test("init reports the previous Contract Graph version and still preserves catalogs", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-previous-version-"));
+  const first = init(dir, { profiles: ["agents"] });
+  assert.equal(first.previousCgVersion, null);
+  const sentinel = read(dir, BINDING);
+  editObject(dir, PROFILE, (profile) => {
+    profile.cgVersion = "0.3.0";
+  });
+  const second = init(dir, { profiles: ["agents"] });
+  assert.equal(second.previousCgVersion, "0.3.0");
+  assert.equal(second.cgVersion, PACKAGE_VERSION);
+  assert.equal(JSON.parse(read(dir, PROFILE)).cgVersion, PACKAGE_VERSION);
+  assert.equal(read(dir, BINDING), sentinel, "architecture.yaml must survive re-init");
+});
+
 test("a Claude-only selection syncs and verifies without other root pointers", () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-claude-only-"));
   init(dir, { profiles: ["claude"] });
@@ -648,6 +663,7 @@ test("the published README is a human landing page", () => {
   assert.match(readme, /\[Quick Introduction Video\]\(https:\/\/sarada\.io\/cg\/#watch\)/);
   assert.match(readme, /https:\/\/sarada\.io\/community\/contract-graph\/vision\//);
   assert.match(readme, /https:\/\/sarada\.io\/community\/contract-graph\/workflow\//);
+  assert.match(readme, /https:\/\/sarada\.io\/community\/contract-graph\/upgrade\//);
   assert.match(readme, /https:\/\/sarada\.io\/contract-graph\/schema\//);
   assert.match(readme, /## Learn more/);
   assert.match(readme, /cd your-repository/);
@@ -662,6 +678,7 @@ test("the public docs stay human-facing", () => {
   const lifecycle = fs.readFileSync(path.join(docsDir, "lifecycle.md"), "utf8");
   assert.match(index, /They are not the agent procedure/);
   assert.match(index, /\[Quick Introduction Video\]\(https:\/\/sarada\.io\/cg\/#watch\)/);
+  assert.match(index, /\[Upgrade\]\(upgrade\.md\)/);
   assert.doesNotMatch(lifecycle, /## Next action/);
   assert.doesNotMatch(lifecycle, /Enabling the Claude Code gate/);
   assert.doesNotMatch(lifecycle, /\$cg-/);
@@ -1423,6 +1440,70 @@ test("re-running CLI init adds profiles and retains the recorded Contract Graph 
   assert.ok(fs.existsSync(path.join(dir, "CLAUDE.md")));
 });
 
+test("CLI init on an unmapped brownfield names warmup adoption", () => {
+  const dir = brownfieldRepo({
+    "go.mod": "module example.com/app\n",
+    "api/handler.go": "package api\n",
+  });
+  const cli = path.join(SOURCE_ROOT, "..", "bin", "cg.js");
+  const output = execFileSync(
+    process.execPath,
+    [cli, "init", dir, "--profile", "agents", "--yes"],
+    { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] },
+  );
+  assert.match(output, /\/cg-warmup` \(adoption\)/);
+  assert.match(output, /not governed yet/);
+  assert.doesNotMatch(output, /reseed/);
+});
+
+test("CLI init on a governed brownfield names warmup reseed and the previous version", () => {
+  const dir = brownfieldRepo({
+    "web/package.json": "{\"name\":\"web\"}\n",
+    "web/index.js": "export {}\n",
+  });
+  const cli = path.join(SOURCE_ROOT, "..", "bin", "cg.js");
+  const options = { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] };
+  execFileSync(process.execPath, [cli, "init", dir, "--profile", "agents", "--yes"], options);
+
+  const child = loadContract(
+    path.join(SOURCE_ROOT, "install/templates/module/.agents/cg/contract.yaml"),
+    { repoRoot: dir, validate: false },
+  );
+  child.id = "web";
+  child.name = "web";
+  child.unit = "web";
+  child.purpose = "The repository delegates its web surface to this module.";
+  child.relations.parent.uses = "Delegates the web surface.";
+  child.assumptions = [
+    "Leaf rationale: the web package is one inbound surface with no separable child directory.",
+  ];
+  fs.mkdirSync(path.join(dir, "web", ".agents", "cg"), { recursive: true });
+  write(dir, "web/.agents/cg/contract.yaml", stringifyContractYaml(child));
+  editObject(dir, ROOT_CONTRACT, (root) => {
+    root.relations.composition = "composed";
+    root.relations.children = [
+      { contract: "web/.agents/cg/contract.yaml", uses: "Delegates the web surface." },
+    ];
+  });
+  sync(dir);
+  const covered = verify(dir);
+  assert.deepEqual(covered.failures, []);
+  assert.equal(covered.counts.modules.unmapped, 0);
+  assert.equal(covered.counts.modules.descent, 0);
+
+  editObject(dir, PROFILE, (profile) => {
+    profile.cgVersion = "0.3.0";
+  });
+  const output = execFileSync(
+    process.execPath,
+    [cli, "init", dir, "--profile", "agents", "--yes"],
+    options,
+  );
+  assert.match(output, /\/cg-warmup` \(reseed — additive; catalogs preserved\)/);
+  assert.match(output, /was 0\.3\.0/);
+  assert.doesNotMatch(output, /\(adoption\)/);
+});
+
 test("CLI init highlights existing AGENTS.md and CLAUDE.md before preserving their content", () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-cli-existing-instructions-"));
   fs.writeFileSync(path.join(dir, "AGENTS.md"), "# Existing agent guidance\n\nKeep this.\n");
@@ -1868,6 +1949,24 @@ test("cg-warmup states a resumable per-unit loop, not one linear pass", () => {
     skill.split("\n").length <= 1000,
     "cg-warmup exceeds its 1000-line budget",
   );
+});
+
+test("cg-warmup has an additive reseed entry distinct from adoption", () => {
+  const skill = fs.readFileSync(path.join(SOURCE_ROOT, "skills", "cg-warmup", "SKILL.md"), "utf8");
+  assert.match(skill, /## Which entry/);
+  assert.match(skill, /any \*\*UNMAPPED\*\* or \*\*DESCEND\*\*/);
+  assert.match(skill, /exit 0, all governed/);
+  assert.match(skill, /## Reseed — additive/);
+  assert.match(skill, /Do not copy a template onto an existing `contract\.yaml`/);
+  assert.match(skill, /only when this unit has no contract\.yaml/);
+  assert.match(skill, /Never\s+overwrite an existing file/);
+  assert.match(skill, /next unused `Pnn-nn`/);
+  assert.match(skill, /Never renumber P IDs/);
+  assert.match(skill, /warmup-reseed-delta\.md/);
+  assert.match(skill, /write no\s+file/);
+  assert.match(skill, /None — empty delta/);
+  assert.doesNotMatch(skill, /this skill is not run again/);
+  assert.doesNotMatch(skill, /\*\*Run this once\.\*\*/);
 });
 
 /**
@@ -3455,6 +3554,18 @@ test("warmup's files are live during warmup and residue after it", () => {
   const found = residue(dir).residue;
   assert.equal(found.length, 3);
   assert.match(found[0].why, /warmup finished/);
+});
+
+test("a reseed delta is live while it remains under plans", () => {
+  const dir = makeRepo();
+  plan(dir, "a-roadmap.md", "# Roadmap\n");
+  plan(dir, "warmup-reseed-delta.md", "# delta\n");
+  finishWarmup(dir);
+  assert.deepEqual(
+    residue(dir).residue.map((r) => r.path),
+    [],
+    "reseed working state is not litter while the delta is still in plans/",
+  );
 });
 
 test("the decision log and README are always claimed", () => {

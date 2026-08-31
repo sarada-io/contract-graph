@@ -360,6 +360,7 @@ export function init(repoRoot, { profiles, docs, dryRun = false } = {}) {
       profiles: selectedProfiles,
       docs: docsRoot,
       cgVersion: PACKAGE_VERSION,
+      previousCgVersion: previous?.cgVersion ?? null,
       brownfield,
     };
   }
@@ -388,6 +389,7 @@ export function init(repoRoot, { profiles, docs, dryRun = false } = {}) {
     profiles: selectedProfiles,
     docs: docsRoot,
     cgVersion: PACKAGE_VERSION,
+    previousCgVersion: previous?.cgVersion ?? null,
     brownfield,
   };
 }

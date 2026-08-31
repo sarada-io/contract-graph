@@ -1,4 +1,4 @@
 interface:
   display_name: "CG Warmup"
-  short_description: "One-time adoption for a repo with code"
-  default_prompt: "Use $cg-warmup once on this repository to discover its real module roots, write and connect one contract.yaml per real boundary from the code that is there, add contract-owned routes and applicable P rule IDs, verify the global A architecture principles, and route every binding failure to a detector repair, recorded exception, or corrective Step with no compliance score — then name the user's exact next action and skill."
+  short_description: "Adopt or reseed a repository that has code"
+  default_prompt: "Use $cg-warmup on this repository. If cg modules reports UNMAPPED or DESCEND, adopt: discover real module roots, write and connect one contract.yaml per real boundary, add routes and P IDs, verify A principles. If every root is governed, reseed additively: new child contracts, new P rows, route targets; never overwrite existing purpose or P IDs. Route every binding failure to a detector repair, recorded exception, or corrective Step with no compliance score — then name the user's exact next action and skill."

@@ -660,12 +660,28 @@ async function main(argv) {
     );
     if (result.brownfield) {
       const unmapped = counts.modules?.unmapped ?? 0;
-      process.stdout.write(
-        `\n  next: run the \`cg-warmup\` skill once` +
-          (unmapped ? ` — ${unmapped} module root(s) are not governed yet` : "") +
-          "\n        until then `cg verify: OK` means the scaffold is well-formed,\n" +
-          "        not that this repository is governed.\n",
-      );
+      const descentCount = counts.modules?.descent ?? 0;
+      const previous = result.previousCgVersion;
+      const versionNote =
+        previous && previous !== result.cgVersion
+          ? ` (was ${previous} → cg ${result.cgVersion})`
+          : "";
+      if (unmapped || descentCount) {
+        const gaps = [];
+        if (unmapped) gaps.push(`${unmapped} module root(s) are not governed yet`);
+        if (descentCount) gaps.push(`${descentCount} need descent`);
+        process.stdout.write(
+          `\n  next: run \`/cg-warmup\` (adoption)${versionNote}` +
+            ` — ${gaps.join(", ")}` +
+            "\n        until then `cg verify: OK` means the scaffold is well-formed,\n" +
+            "        not that this repository is governed.\n",
+        );
+      } else {
+        process.stdout.write(
+          `\n  next: run \`/cg-warmup\` (reseed — additive; catalogs preserved)${versionNote}\n` +
+            "        existing contracts and P IDs are not rewritten.\n",
+        );
+      }
     } else {
       process.stdout.write(
         "\n  next: fill in purpose and responsibilities in .agents/cg/contract.yaml, then start with `cg-plan`.\n",

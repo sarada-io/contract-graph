@@ -1,6 +1,6 @@
 ---
 name: cg-warmup
-description: Adopt Contract Graph into a repository that already has code. Run once, after cg init, before the lifecycle skills are useful. Runs as four phases — a whole-repository survey, a resumable per-module loop that writes and connects each unit's contract.yaml, a recursive leaf audit for component contracts, then one consolidation. Finds any predecessor governance framework and carries its rules forward rather than writing over them, discovers real module roots and self-sufficient components, builds the contract graph, verifies the structural binding, and harvests durable product rules or non-binding engineering guidelines so later sessions do not re-read the code to learn them. Resumes from cg modules after a context break rather than restarting. Never reports a compliance score, edits behaviour, deletes or runs the predecessor, or marks a rule enforced that no detector proves.
+description: Adopt Contract Graph into a repository that already has code, or reseed an existing graph after a package upgrade. After cg init. Adoption is four phases — a whole-repository survey, a resumable per-module loop that writes and connects each unit's contract.yaml, a recursive leaf audit for component contracts, then one consolidation. Reseed walks governed leaves additively — new child contracts, new P rows, route targets — and never overwrites existing purpose or P IDs. Finds any predecessor governance framework on adoption and carries its rules forward rather than writing over them. Resumes from cg modules after a context break rather than restarting. Never reports a compliance score, edits behaviour, deletes or runs the predecessor, or marks a rule enforced that no detector proves.
 ---
 
 # CG Warmup
@@ -8,13 +8,12 @@ description: Adopt Contract Graph into a repository that already has code. Run o
 A fresh `cg init` describes a repository that does not exist yet. Warmup replaces that
 description with the one you actually have. A brownfield typically has no existing Contract Graph contracts.
 Write the graph from the code and §2a. Predecessor markdown, if found, is a checklist against the
-tree — not a graph to copy.
+tree — not a graph to copy. After adoption, `cg-plan`, `cg-prepare`, `cg-produce`, and `cg-sign-off`
+have real contracts to work against. An already-governed tree uses **Reseed** instead: the graph
+on disk is the baseline, not a predecessor.
 
-**Run this once.** After it, `cg-plan`, `cg-prepare`, `cg-produce`, and `cg-sign-off` have real
-contracts to work against.
-
-**Never delete it.** `cg verify` requires all seven skills, and a later module tree still needs
-these instructions.
+**Never delete this skill.** `cg verify` requires all seven skills, and a later module tree still
+needs these instructions. Auto-run never dispatches it.
 
 Warmup declares and mechanically protects an existing cohesive declared surface before proposing
 restructuring. Protect the named surface first; propose a split or merge only once that surface is
@@ -31,7 +30,52 @@ introduce them. Folder wrappers to impose layout are forbidden.
 Read `.agents/skills/cg-unblock/SKILL.md` only when a fork fails D-1: unresolvable from contracts
 and accepted decisions, material, costly to reverse, and nothing else can proceed.
 
-## How this skill runs — read this before §1
+## Which entry — read this before §1
+
+**Confirm the installed binding can recurse.** Run `cg verify`. If it fails because
+`.agents/cg/principles/architecture.yaml` is missing `hierarchy.kinds` or `graph.recurse`, the
+catalog is older than this skill (`cg init` preserves catalogs). Stop. Ask the owner to copy the
+packaged binding or confirm a deliberate amendment. Do not write nodes against a catalog that
+cannot recurse.
+
+Resolve `<docs>` from `.agents/cg/profile.json` `docs` (default `docs`). Confirm with `cg residue`.
+Then run:
+
+```bash
+cg modules
+```
+
+| `cg modules` | Mode |
+|---|---|
+| any **UNMAPPED** or **DESCEND** | **Adoption / resume** — How this skill runs, then §1 |
+| exit 0, all governed | **Reseed** — additive; skip §1–§3 and template copy |
+
+The contracts already on disk are the baseline, not a predecessor. Predecessor search (§1) runs
+on adoption only; `cg-*` stays excluded. Consecutive reseed with unchanged cues is a no-op.
+
+## Reseed — additive, when every root is governed
+
+Skip Phase A. Do not copy a template onto an existing `contract.yaml`. Do not blank `purpose`,
+`forbids`, or existing P IDs. Walk the **installed** `graph.*` and
+[the code-inspection catalog](assets/warmup.yaml), not the packaged architecture catalog.
+
+1. Re-walk every leaf with the Phase D table. `add-child` and a separable package already exists:
+   write the child from the component template; recurse. Never overwrite an existing contract.
+2. `add-child` that would move code: append a **Restructure:** row to
+   `<docs>/plans/warmup-corrective-set.md`. Do not wipe an in-flight `cg-plan` tree.
+3. After each new child: `cg sync`, `cg verify`. Rewrite parent and root `routes` by **adding**
+   the child path to routes whose `when` already names that surface. Do not delete existing
+   `when` phrases or contract paths.
+4. Harvest with §9, additively. New product rules get the next unused `Pnn-nn` and an
+   `enforcement.yaml` row (`unproven — <violation>` when no detector). Skip when an existing P
+   already covers the constraint. Never renumber P IDs. Fill root `purpose` / `forbids` only if
+   they still contain `Replace this sentence`.
+5. Write `<docs>/plans/warmup-reseed-delta.md` listing added contracts, added P IDs, amended
+   routes, and skipped-because-already-covered items. If nothing is missing: say so, **write no
+   file**, stop.
+6. `cg verify`. End with §12a, naming the delta or that it was empty.
+
+## How this skill runs — adoption / resume
 
 **This is not a linear procedure. It is a survey, a loop, a leaf audit, and a consolidation.**
 
@@ -46,32 +90,23 @@ Phase C — once      §7–§12   root contract · assess · harvest · decisio
 Phase B is one unit at a time. Write its `contract.yaml`, reciprocal edges, applicable `P` rules,
 and one block in `<docs>/plans/warmup-findings.md`. Nothing is held between modules.
 
-**If you are resuming after a context break, you are not starting over.** Run:
-
-```bash
-cg modules
-```
+**If you are resuming after a context break, you are not starting over.** Run `cg modules`:
 
 - **UNMAPPED** — this unit has not been through Phase B. Enter §4 for it.
 - **DESCEND** — a contract exists, but `graph.recurse` is unfinished (undeclared packages, no
   `Leaf rationale`). Re-enter §4 at *Descend with the binding graph*.
-- **governed** with no DESCEND row — finished. Do not revisit it.
+- **governed** with no DESCEND row — finished for adoption. Do not revisit it on this entry.
+  Reseed is the other entry, when every row is already governed.
 
-Read the tail of `<docs>/plans/warmup-findings.md` for earlier notes. Phase A does not run again.
+Read the tail of `<docs>/plans/warmup-findings.md` for earlier notes. Phase A does not run again
+on resume.
 
-**Before Phase A, confirm the installed binding can recurse.** Run `cg verify`. If it fails because
-`.agents/cg/principles/architecture.yaml` is missing `hierarchy.kinds` or `graph.recurse`, the
-catalog is older than this skill (`cg init` preserves catalogs). Stop. Ask the owner to copy the
-packaged binding or confirm a deliberate amendment. Do not write nodes against a catalog that
-cannot recurse.
-
-Resolve `<docs>` from `.agents/cg/profile.json` `docs` (default `docs`). Confirm with `cg residue`.
 Read [the code-inspection catalog](assets/warmup.yaml) before Phase B and again at §9. Those cues
 are how harvest and descent inspect the tree. They are not E, not P, and not A.
 
-Phase C runs exactly once, after Phase D, when the leaf audit has either written existing
-children or recorded the convoluted splits. Harvesting cannot happen inside the loop: the same
-rule surfaces in several modules and must be written once.
+Phase C runs exactly once per adoption, after Phase D, when the leaf audit has either written
+existing children or recorded the convoluted splits. Harvesting cannot happen inside the loop:
+the same rule surfaces in several modules and must be written once.
 
 ## Required outcome
 
@@ -222,8 +257,9 @@ not appear in `rules`, and does not become a compliance row.
 ## 4. Write this unit's contract
 
 Copy [the YAML contract template](assets/contract.template.yaml) to
-`<unit>/.agents/cg/contract.yaml`. Keep the schema's field names and replace every instructional
-value. The YAML file is the contract. CommonMark is allowed inside descriptive string values.
+`<unit>/.agents/cg/contract.yaml` **only when this unit has no contract.yaml** (UNMAPPED). Never
+overwrite an existing file. Keep the schema's field names and replace every instructional value.
+The YAML file is the contract. CommonMark is allowed inside descriptive string values.
 
 Read this unit's code once, and write everything you learn from it before moving on.
 
@@ -609,12 +645,14 @@ Do this before the next-action response, and say what happened to each file. If 
 | `<docs>/plans/warmup-findings.md` | resume log | **Delete it** once every governed unit has a connected contract and the rules are harvested |
 | `<docs>/plans/warmup-corrective-set.md` | findings that must become work | **Consumed, then archived** under `<docs>/plans/archive/` when `cg-plan` gives every finding a phase |
 | `<docs>/plans/warmup-report.md` | what adoption found | **`<docs>/decisions/`**, or delete. Durable knowledge does not live under `<docs>/plans/` |
+| `<docs>/plans/warmup-reseed-delta.md` | reseed additions | **`<docs>/decisions/`**, or delete after the owner reads it. Never written when the delta is empty |
 
 Delete rather than archive when a file has no reader.
 
 ## Stage boundary — yield here
 
-Finish Phase A, loop Phase B until `cg modules` exits 0, run Phase D, then Phase C. That is this skill.
+Adoption: finish Phase A, loop Phase B until `cg modules` exits 0, run Phase D, then Phase C.
+Reseed: the additive walk above, then §12a. That is this skill.
 Then return to the user. Do not invoke the next skill yourself, however obvious the route is.
 The `Next action` block names the successor so a person can choose it and so `cg-auto-run` can
 follow it under a granted authority — naming it is not permission to take it. The single exception
@@ -631,14 +669,14 @@ Choose exactly one immediate route:
 - findings need delivery: use `cg-plan` with `<docs>/plans/warmup-corrective-set.md` so the owner
   can validate the restructure programme before any move;
 - no discoverable modules at all: stop and ask, naming what was searched for;
-- warmup is complete and no work is queued: name no next skill, and say the skill is not run
-  again.
+- reseed wrote nothing: name no next skill, and say the delta was empty;
+- warmup is complete and no work is queued: name no next skill.
 
 End the user-facing response with:
 
 ```markdown
-## Next action — <Warmup complete | Answers pending | Findings need delivery>
-- **User action:** <one concrete action — when answers are pending, "answer the N entries under *Pending your review*"; always say what happened to warmup-findings, warmup-corrective-set, and warmup-report>
-- **Next input:** <$cg-plan | $cg-unblock | None — warmup complete, this skill is not run again> — <exact decision-log entries, corrective set, or gate evidence>
+## Next action — <Warmup complete | Answers pending | Findings need delivery | Empty reseed>
+- **User action:** <one concrete action — when answers are pending, "answer the N entries under *Pending your review*"; always say what happened to warmup-findings, warmup-corrective-set, warmup-report, and warmup-reseed-delta>
+- **Next input:** <$cg-plan | $cg-unblock | None — warmup complete | None — empty delta> — <exact decision-log entries, corrective set, delta, or gate evidence>
 - **Blocked by:** <exact decision, prerequisite, or failing gate>   <!-- omit unless the status is non-advancing -->
 ```

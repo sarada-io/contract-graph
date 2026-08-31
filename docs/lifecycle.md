@@ -65,9 +65,11 @@ adopting repository whose installed catalog is missing a key is stale; copy the 
 
 ## The seven stages
 
-The delivery sequence is plan → prepare → produce → sign-off. Warmup runs once at adoption, before
-that sequence. Unblock is entered from any stage when a choice is expensive or protected. Auto-run
-is optional and follows an already-planned roadmap; it does not invent the plan.
+The delivery sequence is plan → prepare → produce → sign-off. Warmup runs at adoption before
+that sequence, and again as an additive reseed after a package upgrade when the graph already
+exists. Unblock is entered from any stage when a choice is expensive or protected. Auto-run
+is optional and follows an already-planned roadmap; it does not invent the plan, and it never
+dispatches warmup.
 
 | Skill | Responsibility |
 |---|---|
@@ -77,7 +79,7 @@ is optional and follows an already-planned roadmap; it does not invent the plan.
 | `cg-sign-off` | Verify every prepared step completed and that the resulting graph still describes the implemented system; drive current-phase defects through corrective steps; harvest decisions; close only on a green gate. Also owns the durable record — design records, product and operator guidance, and diagrams — and is entered standalone when only documentation is needed. Never repairs contract correctness as detached cleanup. |
 | `cg-unblock` | Govern forks across the lifecycle: apply contract-backed or reversible defaults, record assumptions, log blocked steps, keep independent work moving. |
 | `cg-auto-run` | **Opt-in.** Follow already-named next stages while measured state advances, then stop on blockers, owner decisions, failed gates, three closed phases, or its dispatch budget. It performs no lifecycle stage itself. |
-| `cg-warmup` | **Once, at adoption.** Discover an existing repository's real boundaries, write and connect their YAML contracts, add contract-owned routes, verify every applicable structural binding, and harvest product bindings or non-binding engineering guidelines. Raises what it cannot settle in the decision log rather than asking in chat. Never scores, never edits behaviour. |
+| `cg-warmup` | **Adoption, then additive reseed.** Discover an existing repository's real boundaries, write and connect their YAML contracts, add contract-owned routes, verify every applicable structural binding, and harvest product bindings or non-binding engineering guidelines. On a governed graph, reseed adds missing children, P rows, and route targets without rewriting existing purpose or P IDs. Raises what it cannot settle in the decision log rather than asking in chat. Never scores, never edits behaviour. |
 
 ```mermaid
 flowchart TD
@@ -162,5 +164,6 @@ gate stays Incomplete or Blocked and is never archived as Complete.
 ## Related
 
 - [Workflow](workflow.md) — how an outcome becomes phases, steps, and a lasting graph.
+- [Upgrade](upgrade.md) — 0.3.0 / 0.4.0 → 0.5.0: `cg init`, then adoption or reseed.
 - [Contracts](contracts.md) — node shape and what verification proves today.
 - [Vision](vision.md) — why the graph exists.
