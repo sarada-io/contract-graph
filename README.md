@@ -125,6 +125,7 @@ declared, or that two work areas are safe to edit in parallel. Those remain upco
 
 - [Public schemas](https://sarada.io/contract-graph/schema/) — JSON Schema identities used by Contract Graph files.
 - [Contributing](https://github.com/sarada-io/contract-graph/blob/main/CONTRIBUTING.md) — tests, packing, and publication.
+- Preprint: [doi:10.5281/zenodo.22301753](https://doi.org/10.5281/zenodo.22301753)
 
 ## Licence
 

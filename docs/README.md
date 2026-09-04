@@ -24,3 +24,5 @@ Watch the [Quick Introduction Video](https://sarada.io/cg/#watch) first. Start w
 whether to adopt. Start with [upgrade](upgrade.md) if you already have 0.3.0 or 0.4.0 installed.
 Start with workflow if you already installed 0.5.0 and want to see how work is supposed to move.
 Use the skills when you are *doing* the work with an agent.
+
+A dated technical note of the claim: [doi:10.5281/zenodo.22301753](https://doi.org/10.5281/zenodo.22301753).
