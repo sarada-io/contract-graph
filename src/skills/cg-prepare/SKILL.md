@@ -98,9 +98,10 @@ Blocked`. No later Step may be `Ready`, `In progress`, or `Complete` before the 
 Before assigning paths, apply `.agents/cg/principles/architecture.yaml` `graph`: recurse until the
 smallest node, then stay, add-child, or elsewhere. Size, reuse, or a new dependency is not a new
 node. `graph.surface` is declared entry; a new entry point is a surface amendment or `add-child`.
-`graph.adapters`: a second optional vendor client is `add-child` behind a parent-owned port. If
-the phase already names an add-child, elsewhere, service, or adapter target, assign paths to
-deliver it. Mixed code that matches that target is the work, not a return to `$cg-plan`. A Step
+`graph.adapters`: a second optional vendor client is `add-child` behind a parent-owned port.
+Consumer-specific behavior stays behind its adapter; do not modify or branch the core while the
+port can express the required product-neutral promise. If the phase already names an add-child,
+elsewhere, service, or adapter target, assign paths to deliver it. Mixed code that matches that target is the work, not a return to `$cg-plan`. A Step
 whose editable paths sit on the wrong domain is a preparation defect.
 
 Inventory every affected item:

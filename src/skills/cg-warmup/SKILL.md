@@ -19,9 +19,10 @@ Warmup declares and mechanically protects an existing cohesive declared surface 
 restructuring. Protect the named surface first; propose a split or merge only once that surface is
 named. It must not add wrapper types or move code solely to impose a source-layout convention.
 If the existing surface mixes distinct responsibilities, cannot be mechanically confined, exposes
-internals (`graph.surface.encapsulate`), mixes optional vendor clients (`graph.adapters`), or has
-no small inbound surface, that is a restructure finding: write it into the corrective set for
-`cg-plan`. The owner validates that programme. Warmup does not rewrite the code.
+internals (`graph.surface.encapsulate`), mixes optional vendor clients (`graph.adapters`), puts
+consumer-specific workflow into a generic core, or has no small inbound surface, that is a
+restructure finding: write it into the corrective set for `cg-plan`. The owner validates that
+programme. Warmup does not rewrite the code.
 
 `graph.surface.service` is the inbound categorisation: a small set of services, not a node per
 file. If the service types exist, declare them. If they do not, record a corrective Step to
@@ -303,18 +304,20 @@ If this unit is many functions across unmanaged files with no small inbound surf
 a node per file. Categorise the work into a small set of services. Declare them when the types
 exist; otherwise §8 a corrective Step to introduce them.
 
-`graph.adapters` is the vendor split of `graph.surface.encapsulate`. An optional external resource
-is a parent-owned port; each concrete option is `add-child`, not `stay`. Two vendor clients in one
-unit is a corrective Step.
+`graph.adapters` is the vendor and consumer-adapter split of `graph.surface.encapsulate`. An
+optional external resource or consumer-specific implementation is a parent-owned port; each
+concrete option is `add-child`, not `stay`. Adding a consumer does not modify or branch the core
+while the port can express the required product-neutral promise. Two vendor clients in one unit
+is a corrective Step.
 
 The corrective set is driven by that walk, not by `cg verify` and not by preference. For every
 candidate, take exactly one row:
 
 | `graph` result | Code already has that shape | What warmup does |
 |---|---|---|
-| `stay` — cohesive surface, services exist, one vendor (or none) | yes | write the contract; **Restructure:** none |
+| `stay` — cohesive surface, services exist, one vendor (or none), consumer-specific work behind adapters | yes | write the contract; **Restructure:** none |
 | `add-child` and the child unit already exists as a separable directory or package | yes | write the child contract now; **Restructure:** none |
-| `add-child`, `elsewhere`, introduce services, or split vendor adapters | no — fulfilling it would move or add code | write the contract for the mixed unit that exists; **Restructure:** finding |
+| `add-child`, `elsewhere`, introduce services, or split vendor or consumer adapters | no — fulfilling it would move or add code | write the contract for the mixed unit that exists; **Restructure:** finding |
 | a nicer folder layout, a new wrapper type, or `graph.forbid` | — | not a finding |
 
 A **Restructure:** finding is the only input to the corrective set. Phase C merges those rows; it

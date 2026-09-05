@@ -49,7 +49,8 @@ principles:
     title: Construction
     category: Structural Best Practices
     # How implementations are assembled. Parents call graph.surface.service, not these ports.
-    # What the surface hides is graph.surface.encapsulate. Optional vendor children are graph.adapters.
+    # What the surface hides is graph.surface.encapsulate. Optional vendor children and
+    # consumer-specific adapters are graph.adapters.
     # These entries do not decide nodes.
     entries:
       - id: E02-01

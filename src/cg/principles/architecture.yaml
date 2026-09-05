@@ -40,7 +40,7 @@ graph:
     enter: A node is entered only through the surface its contract declares. Declared to the graph is not language-public, HTTP-public, or customer-facing.
     service: The first way to declare that surface is a service — one or two named types whose operations take parameters, do the work, and return the completed result. contract.yaml surface lists those services and points at the implementation they encapsulate. Constructor-supplied ports assemble a service behind the call; they are not how a parent or sibling talks to this node. Many scattered functions across unmanaged files have no edge until a small set of services categorises that work; introducing those services is a corrective Step, not stay on the scatter.
     promise: That surface is the unit's promise to its parent and dependents. A new entry point is a surface amendment or add-child, not stay.
-    encapsulate: The surface exposes owned concepts and observable promises. It does not expose algorithms, construction details, mutable internal state, persistence representations, framework types, or vendor types. Encapsulation behind the contract is the boundary.
+    encapsulate: The surface exposes owned concepts and observable promises. It does not expose algorithms, construction details, mutable internal state, persistence representations, framework types, vendor types, or a consumer's product-specific workflow. When the current surface already expresses the required promise, consumer-specific behavior stays behind its adapter and does not modify or branch the core. Encapsulation behind the contract is the boundary.
     bypass: Reaching past the declared surface is a misplaced boundary, not a convenience. Corrective Step, not stay.
   decide:
     - id: stay
@@ -68,7 +68,7 @@ graph:
     - Do not park a distinct responsibility on an open node because its files were already in the edit set.
     - Names such as common, shared, utils, or helpers are not a responsibility.
   adapters:
-    port: An optional external resource is reached through one parent-owned port. Vendor types on that port are graph.surface.encapsulate; this field only names the split into child options.
+    port: An optional external resource or consumer-specific implementation is reached through one parent-owned port. The implementing adapter owns its product semantics, workflow, types, and transport; adding a consumer does not modify the core while the port can express the required product-neutral promise. If the promise is insufficient, amend the port only with an owned product-neutral concept and update every affected consumer. Vendor types on that port are graph.surface.encapsulate; this field only names the split into child options.
     option: Each concrete option is its own child node that implements that port. Two stores, two clouds, or two transports are two children, not two clients inside one unit.
     mix: Importing a second optional vendor client into a node that already has one is add-child, not stay. A shared database file is not evidence they belong together.
 

@@ -58,7 +58,8 @@ emit `$cg-plan`; preparation returns to planning when the outcome moved.
 A new undeclared entry, internals on the surface, or a bypass of the declared service is not
 stay unless this Step's work is to declare or split that surface. `graph.adapters.mix` is
 `add-child`: do not land a second optional vendor client on the open node unless the brief is
-that split.
+that split. Consumer-specific workflow is not stay on the core: keep it behind the adapter, or
+amend the port only with a product-neutral concept.
 
 If the Step needs an undeclared path or a missing contract change, return to `cg-prepare`. Do not
 edit first and hope completion repairs it.

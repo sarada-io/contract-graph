@@ -638,6 +638,8 @@ test("the public lifecycle guide documents the graph walk", () => {
   for (const key of ["node", "recurse", "selfSufficient", "surface", "decide", "compose", "stop", "forbid", "adapters"]) {
     assert.ok(lifecycle.includes(`| \`${key}\` |`), `graph walk must include ${key}`);
   }
+  assert.match(lifecycle, /consumer-specific implementation/);
+  assert.match(lifecycle, /does not modify or branch the core/);
 });
 
 test("the public workflow guide names decomposition and the disk baseline", () => {
@@ -2512,8 +2514,12 @@ test("architecture keeps design advice separate from enforced structural binding
   assert.match(binding.graph.selfSufficient.inbound, /graph.surface.service/);
   assert.match(binding.graph.surface.promise, /add-child, not stay/);
   assert.match(binding.graph.surface.encapsulate, /Encapsulation behind the contract/);
+  assert.match(binding.graph.surface.encapsulate, /product-specific workflow/);
+  assert.match(binding.graph.surface.encapsulate, /does not modify or branch the core/);
   assert.match(binding.graph.surface.bypass, /Corrective Step/);
   assert.match(binding.graph.adapters.port, /parent-owned port/);
+  assert.match(binding.graph.adapters.port, /consumer-specific implementation/);
+  assert.match(binding.graph.adapters.port, /product-neutral promise/);
   assert.match(binding.graph.adapters.port, /graph.surface.encapsulate/);
   assert.match(binding.graph.adapters.option, /child node/);
   assert.match(binding.graph.adapters.mix, /add-child/);
@@ -2543,7 +2549,7 @@ test("architecture keeps design advice separate from enforced structural binding
   assert.doesNotMatch(architecture, /migrations, and adapters remain internal/);
   assert.match(architecture, /E04-01[\s\S]*smallest command that exercises the invariant/);
   assert.match(architecture, /What the surface hides is graph.surface.encapsulate/);
-  assert.match(architecture, /Optional vendor children are graph.adapters/);
+  assert.match(architecture, /Optional vendor children and\n    # consumer-specific adapters are graph.adapters/);
   assert.match(architecture, /id: E12\n    title: Product shape/);
 });
 

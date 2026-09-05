@@ -89,8 +89,11 @@ declare entry is a **service** (`kind: service`): one or two named types whose o
 parameters, do the work, and return the completed result. `contract.yaml` `surface` lists those
 services and points at the implementation they encapsulate. Constructor ports assemble a service
 behind the call; they are not how a parent talks to the node. Encapsulate algorithms, construction,
-mutable internals, persistence, framework types, and vendor types behind the service. A new entry
-or a bypass is not stay. `graph.adapters.port` is the vendor case of that encapsulation.
+mutable internals, persistence, framework types, vendor types, and a consumer's product-specific
+workflow behind the service. A new entry or a bypass is not stay. When the current surface already
+expresses the required promise, consumer-specific behavior stays behind its adapter and does not
+modify or branch the core. `graph.adapters.port` is the vendor and consumer-adapter case of that
+encapsulation.
 
 The code form remains language-native. A service may be a class, a module of functions, an HTTP
 resource, or another native export. TypeScript exports, Java interfaces, schemas, commands, events,
@@ -207,8 +210,8 @@ There are three authored policy surfaces:
   boundary hierarchy, and global `A` structural bindings with measures, registered detectors,
   and negative fixtures. The walk is documented in [lifecycle](lifecycle.md). `graph.surface` is
   declared entry and encapsulation behind the contract. `graph.surface.service` is the first way to
-  declare that entry: named operations `contract.yaml` points at. `graph.adapters` is the vendor split of
-  that encapsulation. These are not `A` detectors and do not scan imports;
+  declare that entry: named operations `contract.yaml` points at. `graph.adapters` is the vendor and
+  consumer-adapter split of that encapsulation. These are not `A` detectors and do not scan imports;
 - `src/cg/guidelines/engineering.yaml` — the non-binding `E` engineering catalog; and
 - `product.yaml` — repository-owned `P` bindings specific to the adopting product, initially empty.
 
