@@ -1,4 +1,4 @@
 interface:
   display_name: "CG Auto Run"
   short_description: "Chain lifecycle stages until a real stop"
-  default_prompt: "Use $cg-auto-run at the stated authority level — default roadmap — to measure lifecycle state from disk, dispatch one stage at a time, follow only advancing Next action routes within that authority, stop on any blocker, unblock route, or exhausted stage budget, and leave a resumable ledger; then name the user's exact next action and skill."
+  default_prompt: "Use $cg-auto-run at the stated authority level — default roadmap — to measure lifecycle state from disk, dispatch one stage at a time, follow only advancing Next action routes within that authority, stop on any blocker or unblock route, and leave a resumable ledger; then name the user's exact next action and skill."

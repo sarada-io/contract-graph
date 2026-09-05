@@ -38,14 +38,15 @@ name one, use `roadmap` and say so.
 |---|---|---|
 | `queue` | `cg-produce` repeatedly, then `cg-sign-off` | the current queue drains |
 | `phase` | `cg-prepare`, `cg-produce`, `cg-sign-off` | one phase closes |
-| `roadmap` (default) | `cg-prepare`, `cg-produce`, `cg-sign-off` | three phases close, or the budget is exhausted; remaining phases are a fresh run |
+| `roadmap` (default) | `cg-prepare`, `cg-produce`, `cg-sign-off` | every remaining planned phase closes, or a genuine stop from §5 |
 | `programme` | all of the above plus `cg-plan` | the programme gate passes |
 
 `roadmap` is the default because a planned roadmap has already had its expensive review. Every
 phase in it was ordered, given an outcome and an acceptance gate, and agreed before any of this
-runs. A run should close a few phases, not one and not the whole programme. Yielding after three
-is a context break, not a request to re-approve the next one. Re-invoke this skill; the ledger is
-the resume point.
+runs. A `roadmap` run continues through remaining planned phases until the roadmap is done or a
+§5 stop fires. It does not stop after a count of phases or dispatches. Each phase starts from
+disk — contracts, queue, decision log, ledger — so a fresh agent can take the next phase without
+the prior phase's chat. That isolation is the context bound; a numeric cap is not.
 
 **`roadmap` authority requires a roadmap whose phases are all planned.** Check before the first
 dispatch: if any phase is a placeholder, or the roadmap ends mid-sequence, drop to `phase` and say
@@ -107,7 +108,7 @@ leave behind what it was about to do, not what it last finished.
 
 - **Authority:** <queue | phase | roadmap | programme>
 - **Started:** <timestamp>
-- **Stage budget:** <n dispatched> of <cap>
+- **Dispatched:** <n>
 - **About to dispatch:** <$cg-skill> — <exact input artifact>
 
 ## History
@@ -125,19 +126,17 @@ summary of it in place of the thing itself.
 The stage returns a `Next action` block. Extract three fields verbatim: the status heading, the
 `$cg-` token under `Next input`, and whether `Blocked by` is present.
 
-Advance if and only if **all five** hold:
+Advance if and only if **all four** hold:
 
 - [ ] `Blocked by` is absent.
 - [ ] The `Next input` token is a `$cg-` skill, not `None`.
 - [ ] That skill is dispatchable at the granted authority level.
-- [ ] The stage budget is not exhausted.
-- [ ] The status heading is not `Programme complete` or `Documentation complete`, and this run
-      has not already closed three phases (`Phase complete` counted from returned headings).
+- [ ] The status heading is not `Programme complete` or `Documentation complete`.
 
 If any is false, stop. Do not repair the block, do not re-run the stage hoping for a cleaner one,
-and do not substitute your own judgement about what the stage "meant". Do not invent a fifth field
+and do not substitute your own judgement about what the stage "meant". Do not invent another stop
 from `architecture.yaml` or `engineering.yaml`. A `Phase complete` heading whose `Next input` is
-`$cg-prepare` for the next planned phase is advancing until it is the third close this run. A
+`$cg-prepare` for the next planned phase is advancing at `roadmap` or `programme` authority. A
 stage that returned a malformed block is a defect to report, not an obstacle to route around.
 
 ## 5. Stop conditions
@@ -150,45 +149,34 @@ These are absolute. No authority level overrides any of them.
 | `Next input: $cg-unblock` | The fork needs a recorded decision; auto-following it would decide by default |
 | `Next input: None` | Terminal by the stage's own measurement |
 | Status heading `Programme complete` or `Documentation complete` | The programme or standalone docs task is finished |
-| Third `Phase complete` heading this run | A few phases is the window; remaining phases are a fresh run |
 | `Phase complete` at `queue` or `phase` authority | Those levels close one phase, then stop |
 | Route above granted authority | Authority is granted, never inferred |
-| Stage budget exhausted | See §6 |
 | Malformed or absent block | The successor is unknown; guessing it is worse than stopping |
 | Same stage returns the same route twice with no state change | A loop; report it as a defect |
 | Working tree dirty at run start | The run cannot distinguish its own changes from pre-existing ones |
 
-## 6. Stage budget and the context break
+## 6. Phase isolation, not a dispatch cap
 
 `cg-produce` drains every `Ready` Step in one invocation. A clean phase is three dispatches:
-prepare, produce, sign-off. A `roadmap` run should close a few of those phases in one window —
-enough to make progress, not enough to summarise twice.
+prepare, produce, sign-off. There is no per-run cap on how many of those phases a `roadmap` run
+may close, and no dispatch budget.
 
-Default cap: **twelve dispatches per run.** That is three clean phases plus slack — a second
-produce if execution yielded mid-queue, one re-prepare, and a backstop against a
-prepare↔produce loop. It is not sized as one dispatch per Step.
+Context stays bounded because each phase is a fresh start from disk, not because this adapter
+stops after three. When a phase closes and another planned phase remains, the next prepare reads
+contracts, the roadmap, and this ledger — not the prior phase's chat. Running that next phase in
+a new agent is the intended pattern; continuing in this session is allowed when the previous
+phase already wrote its state to disk.
 
-The cap does not rise with authority. After three `Phase complete` headings, stop even if
-budget remains. A fresh session continues the next planned phase with a fresh budget and a
-window that has not been summarised.
-
-Authority says how far the run is *allowed* to go; the budget says how far it can go *while
-still being any good*. A roadmap-authority run that never yields would drift further with every
-phase, and the phase most likely to be wrong would be the one nobody watched.
-
-Before each dispatch, check the budget. When it is exhausted, stop and yield a resumable
-checkpoint — do not attempt one more stage because it "looks small". The ledger written in §3 is the
-resume point: a fresh session reads this phase's ledger, re-measures per §2, and continues with
-its own budget. Resuming is cheap because the state is on disk. Continuing past the cap is expensive
-because the state is in a context window that is about to be summarised.
+The ledger still records every dispatch so a crash or a §5 stop resumes from measured state.
+Count dispatches in the ledger for the report; do not treat the count as a stop.
 
 When a run ends with the queue complete, mark the ledger `Closed` rather than deleting it. The
 history of which stages ran unattended is exactly what `cg-sign-off` needs at harvest.
 
 ## 7. Report the whole run
 
-The owner approved a plan and got back a few closed phases. They did not watch any of it. The
-report is the only thing standing between them and reading every Step brief, so it covers the
+The owner approved a plan and got back the phases this run closed. They did not watch any of it.
+The report is the only thing standing between them and reading every Step brief, so it covers the
 run, not just its route.
 
 ```markdown
@@ -225,20 +213,17 @@ a caveat, and do not describe an unreached gate as passing.
 Choose exactly one immediate route:
 
 - stopped on a blocker or a `$cg-unblock` route: use `cg-unblock` with the exact blocking entry;
-- stopped on budget with an advancing route pending: use the named stage with the ledger;
 - stopped on insufficient authority: name the stage and the level it needs;
-- three phases closed this run and a further planned phase exists: name no skill to dispatch
-  in this run; tell the user to re-invoke `cg-auto-run`;
-- selected phase closed at `queue` or `phase` authority, or no unstarted phase remains: name no
-  next skill.
+- selected phase closed at `queue` or `phase` authority, or no unstarted planned phase remains:
+  name no next skill.
 
 End the user-facing response with:
 
 ```markdown
-## Next action — <Run complete | Budget reached | Blocked | Authority required>
+## Next action — <Run complete | Blocked | Authority required>
 - **User action:** <one concrete action>
 - **Next input:** <$cg-skill | None — programme complete> — <exact ledger, brief, decision entry, or authority level>
-- **Blocked by:** <exact decision, prerequisite, failing gate, or exhausted budget>   <!-- omit unless the status is non-advancing -->
+- **Blocked by:** <exact decision, prerequisite, or failing gate>   <!-- omit unless the status is non-advancing -->
 ```
 
 ## Completion check
@@ -250,7 +235,7 @@ End the user-facing response with:
 - [ ] `cg-unblock` and `cg-warmup` were never auto-dispatched.
 - [ ] The ledger was written before each dispatch, not after.
 - [ ] No block carrying `Blocked by` was followed.
-- [ ] A third `Phase complete` heading was not followed with another dispatch in this run.
+- [ ] A phase count or dispatch count was not used as a stop.
 - [ ] The stopping condition and its verbatim block are both recorded.
 - [ ] The report covers what shipped, what changed beyond the Steps, and what needs the owner.
 - [ ] The response ends with one exact next action and skill.

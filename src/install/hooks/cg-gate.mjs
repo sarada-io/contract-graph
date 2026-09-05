@@ -139,9 +139,9 @@ if (!GATED.test(skill)) allow(`cg-gate: \`${skill || "unknown"}\` is not queue-g
  * a closed phase instead, has lost the review the stage boundary exists for — the decision point is
  * gone and the work already sits downstream of it.
  *
- * `cg-auto-run` is the sanctioned way across, because it carries the three things ad-hoc chaining
- * has none of: a granted authority level, a stage budget, and a ledger that survives a context
- * break. Set `CG_GATE_CHAIN=1` to allow chaining without it.
+ * `cg-auto-run` is the sanctioned way across, because it carries the two things ad-hoc chaining
+ * has none of: a granted authority level, and a ledger that survives a context break. Set
+ * `CG_GATE_CHAIN=1` to allow chaining without it.
  */
 if (
   alreadyRan.length &&
@@ -156,7 +156,7 @@ if (
       "choose it — naming it is not permission to take it, and continuing removes the review the " +
       "boundary exists for.\n\n" +
       "Report the stage that finished and stop. If the user wants the chain run for them, " +
-      "`cg-auto-run` is what does it: it carries an authority level, a stage budget, and a ledger " +
+      "`cg-auto-run` is what does it: it carries an authority level and a ledger " +
       "that survives a context break.\n\n" +
       "This resets on the user's next message, so they can simply ask for the next stage — they " +
       "do not need a new session, and should not be told to start one. To chain inside a single " +

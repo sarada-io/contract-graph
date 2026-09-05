@@ -79,7 +79,7 @@ dispatches warmup.
 | `cg-produce` | Run the earliest ready step; deliver implementation, tests, YAML contract updates, and detectors as one independently valid structural change; continue through ready work. |
 | `cg-sign-off` | Verify every prepared step completed and that the resulting graph still describes the implemented system; drive current-phase defects through corrective steps; harvest decisions; close only on a green gate. Also owns the durable record — design records, product and operator guidance, and diagrams — and is entered standalone when only documentation is needed. Never repairs contract correctness as detached cleanup. |
 | `cg-unblock` | Govern forks across the lifecycle: apply contract-backed or reversible defaults, record assumptions, log blocked steps, keep independent work moving. |
-| `cg-auto-run` | **Opt-in.** Follow already-named next stages while measured state advances, then stop on blockers, owner decisions, failed gates, three closed phases, or its dispatch budget. It performs no lifecycle stage itself. |
+| `cg-auto-run` | **Opt-in.** Follow already-named next stages while measured state advances, then stop on blockers, owner decisions, or failed gates. At `roadmap` authority it continues through remaining planned phases; it does not stop after a phase or dispatch count. It performs no lifecycle stage itself. |
 | `cg-warmup` | **Adoption, then additive reseed.** Discover an existing repository's real boundaries, write and connect their YAML contracts, add contract-owned routes, verify every applicable structural binding, and harvest product bindings or non-binding engineering guidelines. On a governed graph, reseed adds missing children, P rows, and route targets without rewriting existing purpose or P IDs. Raises what it cannot settle in the decision log rather than asking in chat. Never scores, never edits behaviour. |
 
 ```mermaid
@@ -101,7 +101,7 @@ flowchart TD
 ```
 
 Each stage finishes its own job and names what should happen next. It does not start the next
-stage on its own. Auto-run is the exception, because you grant it a budget to follow those names.
+stage on its own. Auto-run is the exception, because you grant it authority to follow those names.
 
 ## Why plan and prepare are separate
 

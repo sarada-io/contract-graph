@@ -50,8 +50,9 @@ steps can continue. A resolved decision is real authority until it is promoted i
 a product rule — or dropped with a reason. Plans and decision-log ids are not something a
 contract may cite as the source of a rule; `cg verify` fails a contract that cites a plan path or ticket id.
 
-Auto-run is optional. It follows an already-planned roadmap for a few phases, then stops. It
-does not invent the plan, and it does not settle owner decisions.
+Auto-run is optional. It follows an already-planned roadmap through remaining planned phases,
+and stops on blockers or owner decisions rather than a phase or dispatch count. It does not
+invent the plan, and it does not settle owner decisions.
 
 ## How a plan is executed
 

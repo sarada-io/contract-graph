@@ -2006,11 +2006,17 @@ test("cg-auto-run stays an adapter, and produce executes a prepared split", () =
   assert.match(autoRun, /does not rewrite a `Next input`/);
   assert.match(autoRun, /\.agents\/cg\/profile\.json/);
   assert.match(autoRun, /<docs>\/plans\/auto-run\//);
-  assert.match(autoRun, /twelve dispatches per run/);
-  assert.match(autoRun, /Third `Phase complete` heading this run/);
-  assert.match(autoRun, /A few phases is the window/);
+  assert.match(autoRun, /no per-run cap/);
+  assert.match(autoRun, /no dispatch budget/);
+  assert.match(autoRun, /fresh start from disk/);
+  assert.match(autoRun, /new agent is the intended pattern/);
+  assert.match(autoRun, /every remaining planned phase closes/);
+  assert.doesNotMatch(autoRun, /twelve dispatches per run/);
+  assert.doesNotMatch(autoRun, /Third `Phase complete` heading this run/);
+  assert.doesNotMatch(autoRun, /A few phases is the window/);
   assert.doesNotMatch(autoRun, /twenty-four/);
   assert.doesNotMatch(autoRun, /six dispatches per run/);
+  assert.doesNotMatch(autoRun, /Budget reached/);
   assert.doesNotMatch(
     autoRun,
     /Next input: \$cg-warmup/,
