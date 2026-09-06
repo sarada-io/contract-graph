@@ -62,6 +62,58 @@ request. Use this table as the minimum:
 Report the exact checks and outcomes in the pull request. “Tests pass” is not enough when the
 change affects interactive initialization or editor discovery.
 
+## Manager–Engineer interaction trial
+
+`npm test` includes regression tests for the interaction evidence verifier. Those tests exercise
+recorded-state checks and reject invalid histories; they do not launch models. A real host trial
+is separate so an ordinary test run needs neither model access nor a network connection.
+
+Create a disposable two-phase repository with `npm run --silent trial:interaction`. The command
+prints its absolute path, scaffolds the current source skills, writes an accepted Plan and a
+partially blocked queue, and leaves an unrelated dirty note to preserve. Use the source CLI or
+install the current packed package there without replacing its scaffold. Never point this trial
+at a working product repository. The independent acceptance checks under `checks/` are read-only
+for agents; do not reveal the synthetic owner answer before the recovery checkpoint.
+
+Run the actual Manager and Engineer with the host's agent tools and fresh, non-inherited contexts.
+The observer acts as the fixture's test owner through messages, not a real product approval.
+Collect observations from outside both roles:
+
+```bash
+npm run test:interaction -- observe <fixture> baseline <observer-id>
+npm run test:interaction -- observe <fixture> question <manager-id> <question-message-file>
+npm run test:interaction -- observe <fixture> recovered-question <new-manager-id> <question-message-file>
+npm run test:interaction -- observe <fixture> answer-recorded <new-manager-id> <message-file>
+npm run test:interaction -- observe <fixture> phase-1-complete <new-manager-id> <gate-envelope-file>
+npm run test:interaction -- observe <fixture> phase-2-complete <new-manager-id> <gate-envelope-file>
+npm run test:interaction -- verify <fixture>
+```
+
+Pause the first Manager after it saves and presents its question. Let the Engineer complete the
+independent count Step, then replace the Manager with a fresh session given only fixture paths
+and host identifiers. It must recover the same pending decision from disk. Supply this synthetic
+typed answer: `Use the stable node IDs in input order, and preserve each supplied label verbatim.`
+Capture the recorded answer before notifying the Engineer, using an observer barrier rather than
+another user authorization. Release that barrier and observe automatic resumption, corrective
+preparation for the hidden-node defect, sign-off, and a different Engineer for Phase 2. Pause at
+each completed-phase observation before proceeding so the observer can run independent checks.
+
+Question files contain the actual received messages. At completion, the external observer runs
+`node checks/check.mjs phase-1` or `phase-2` and `cg verify` and saves their real outputs as JSON:
+`{"text":"received handoff", "gates":[{"command":"node checks/check.mjs phase-1",
+"status":0,"stdout":"actual output","stderr":""}, ...]}`. Do not populate success values
+from an agent's claim. The observer snapshots files, queue state, graph findings, instruction
+hashes and messages into `<fixture>.evidence.jsonl`, outside the agents' writable repository.
+
+Keep the evidence and a concise result report, including failures and any changed instructions.
+The hash chain detects accidental changes, not forgery by someone controlling the observer.
+Snapshots do not prove every intervening write or model-internal context isolation. Report which
+host, actor identities, transport and recovery behavior were actually exercised; do not generalize
+one successful host run to all hosts or claim measured token savings.
+
+The [2026-09-06 live trial report](docs/testing/auto-run-interaction.md) records the actors,
+recovery transport, observed behavior and evidence limits for the local 0.6.0 workflow.
+
 ## Installation scenarios
 
 Initialization changes must cover all four scenarios below. Use throwaway repositories; never run

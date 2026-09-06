@@ -31,6 +31,8 @@
   },
   "scripts": {
     "test": "node --test",
+    "test:interaction": "node scripts/auto-run-interaction.mjs",
+    "trial:interaction": "node scripts/create-auto-run-fixture.mjs",
     "try": "node src/scripts/dev.js",
     "build": "node bin/cg.js build",
     "build:check": "node bin/cg.js build --check",

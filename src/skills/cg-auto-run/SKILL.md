@@ -1,241 +1,165 @@
 ---
 name: cg-auto-run
-description: Chain Contract Graph lifecycle stages automatically instead of returning each hop to the user. Use when the next stage is already determined by measured state and the owner wants the queue driven to a stop condition rather than resumed by hand. Dispatches one stage at a time, reads the mandatory Next action block it returns, and advances only on an advancing status within the granted authority level. Defaults to running preparation, execution, and closure unattended across every planned phase of a roadmap, stopping at planning and at any fork that reaches cg-unblock, and reports the whole run as one summary. Never follows a block carrying Blocked by, never auto-invokes cg-unblock or cg-warmup, never widens its own authority, and writes a resumable run ledger to disk before every dispatch so a context break resumes mid-run rather than restarting. Does not plan, prepare, implement, or close anything itself — every unit of work stays owned by the stage skill that owns it.
+description: Coordinate an accepted Contract Graph roadmap with an Auto-Run Manager and one fresh Auto-Run Engineer per phase. Use when the owner wants planned preparation, execution, and sign-off driven automatically. Keeps resumable context on disk, routes Engineer questions through the Manager to direct user interaction, records decisions before resuming dependent work, and respects the run's authority. Lifecycle work remains in its stage skills; fresh workers and model selection use host capabilities.
 ---
 
 # CG Auto Run
 
-Drive the lifecycle to its next genuine decision. Do no lifecycle work yourself.
-Read `.agents/cg/workflow.md` §Mandatory Next-Action Response before dispatching anything.
+Coordinate lifecycle work; do not replace the stage skills. Read
+`.agents/cg/workflow.md` §Mandatory Next-Action Response before dispatch.
 
-## Why it exists
+## 1. Select the role and authority
 
-Each lifecycle skill ends by naming exactly one successor. That handoff is already mechanically
-extractable — the route leads `Next input` as a `$cg-` token precisely so an adapter can follow it.
-What it lacks is something to do the following. This skill is that adapter, and nothing more.
+The main session is the **Auto-Run Manager**. Read [Manager instructions](references/manager.md).
+A worker explicitly assigned one phase is the **Auto-Run Engineer**; read only
+[Engineer instructions](references/engineer.md). An Engineer does not spawn another Manager or
+Engineer. Both use this entrypoint so hosts that register skill invocation can recognize the
+auto-run stage chain in the worker session as well as the Manager session.
 
-The value is not saved keystrokes. It is that the hop is taken from **measured state written to
-disk** rather than from a user reconstructing where they were three days ago.
+Use the host's agent tools when available to start one fresh Engineer for the selected phase,
+with an explicit brief and no inherited conversation history where supported. Keep that Engineer
+through preparation, execution, corrective work, and sign-off. Run only one Engineer at a time;
+the Manager coordinates while the Engineer owns phase implementation and queue writes.
 
-## Required outcome
+If the host cannot create fresh workers or message them, disclose the limitation and use the same
+role separation sequentially in the current session, checkpointing before handoffs. Do not claim
+context isolation in that fallback. If the owner requires fresh workers, stop with the exact host
+limitation instead. No new CLI daemon or universal agent launcher is implied by this skill.
 
-Finish with all six true:
-
-1. Every dispatched stage was named by the previous stage's `Next input`, or by measured state on
-   the first dispatch.
-2. Every stage ran under its own skill, unmodified. This skill added no rules to any of them.
-3. Every advance was inside the granted authority level.
-4. Every stop condition that fired is recorded with the block that triggered it.
-5. The run ledger on disk matches what actually happened, and was written *before* each dispatch.
-6. The response ends with one exact next action and skill.
-
-## 1. Establish authority before dispatching anything
-
-Authority is granted per run, never inferred, never widened mid-run. If the invocation does not
-name one, use `roadmap` and say so.
+Authority is granted per run and never widened by a worker, clarification, or user answer. If the
+invocation does not name a level, use `roadmap` and state it.
 
 | Level | May auto-dispatch | Stops after |
 |---|---|---|
-| `queue` | `cg-produce` repeatedly, then `cg-sign-off` | the current queue drains |
+| `queue` | `cg-produce`, then `cg-sign-off`, including correction of that queue | the current queue drains and closes |
 | `phase` | `cg-prepare`, `cg-produce`, `cg-sign-off` | one phase closes |
-| `roadmap` (default) | `cg-prepare`, `cg-produce`, `cg-sign-off` | every remaining planned phase closes, or a genuine stop from §5 |
+| `roadmap` (default) | `cg-prepare`, `cg-produce`, `cg-sign-off` | every remaining planned phase closes |
 | `programme` | all of the above plus `cg-plan` | the programme gate passes |
 
-`roadmap` is the default because a planned roadmap has already had its expensive review. Every
-phase in it was ordered, given an outcome and an acceptance gate, and agreed before any of this
-runs. A `roadmap` run continues through remaining planned phases until the roadmap is done or a
-§5 stop fires. It does not stop after a count of phases or dispatches. Each phase starts from
-disk — contracts, queue, decision log, ledger — so a fresh agent can take the next phase without
-the prior phase's chat. That isolation is the context bound; a numeric cap is not.
+At every level the Manager may invoke `cg-unblock` to clarify, record, and ask; this grants no
+permission to decide for the user or execute blocked work. Never auto-invoke `cg-warmup`.
+If any remaining roadmap phase is a placeholder, reduce `roadmap` authority to `phase` and say so.
+A phase Engineer receives at most the authority needed for its one assigned phase. A next-phase
+or planning route returns to the Manager, even when the whole run has wider authority.
 
-**`roadmap` authority requires a roadmap whose phases are all planned.** Check before the first
-dispatch: if any phase is a placeholder, or the roadmap ends mid-sequence, drop to `phase` and say
-so. Continuing across an unplanned boundary means preparing a phase whose outcome nobody wrote.
+## 2. Measure from disk
 
-`cg-plan` sits outside the default deliberately. A roadmap is the one artifact whose cost of being
-silently wrong is paid by every stage after it, and it is the cheapest one for an owner to read.
-Once the plan is agreed, preparation, execution, and closure are mechanical consequences of it —
-across successive runs, for every phase in it, not just the first.
+Resolve `<docs>` from `.agents/cg/profile.json` `docs` (default `docs`); confirm with `cg residue`.
+Read the root contract, the active Plan/roadmap, selected phase, relevant resolved and pending
+`DU-NN` decisions, preparation queue, prerequisite sign-offs, and existing auto-run ledgers.
+Read `.agents/cg/principles/architecture.yaml` for structural authority; the Engineer applies its
+`graph` walk through the stage skills before implementation.
+Use `cg next` to check queue state against the selected phase; if multiple active queues make the
+repository-wide result ambiguous, report that limitation rather than selecting another phase's
+Step. Record the checkout and pre-existing changes; a dirty tree alone is not a stop. Preserve
+unrelated work, and clarify a conflicting write before editing it.
 
-`cg-unblock` is the other stop, for the same reason from the other end — see §5. A fork that
-reaches it is one the contracts could not settle, so it is the owner's to settle.
+This adapter adds no graph rules and no `E` rules, and does not rewrite a `Next input`
+because a catalog disagrees with still-mixed code. Stage skills own graph traversal and checks.
 
-`cg-warmup` is dispatchable at no level. It is owner-invoked adoption or additive reseed; it
-rewrites or extends the contract surface the other stages depend on, and its `Harvested rules
-and structural candidates — please confirm` register exists to be read by a person.
+| Measured state | Next work |
+|---|---|
+| no accepted Plan or no phase selected | Manager invokes `cg-plan` only at `programme` authority; otherwise returns that requirement |
+| selected phase, no queue | Engineer invokes `cg-prepare` |
+| an eligible Step is `Ready`, or an unblocked Step is `In progress` | Engineer invokes `cg-produce` |
+| every Step complete | Engineer invokes `cg-sign-off` |
+| phase signed off and archived, another planned phase remains | Manager checks evidence, then assigns a new Engineer within authority |
+| unresolved decision, no eligible Step | Manager handles `cg-unblock`; Engineer waits for resolution |
 
-## 2. Measure state before the first dispatch
+## 3. Checkpoint and dispatch
 
-Do not ask the user where they are. Establish it:
+Use `<docs>/plans/auto-run/<programme>/manager.auto-run.md` for compact programme continuity and
+`<docs>/plans/auto-run/<programme>/<phase>.auto-run.md` for each phase's dispatch history. Resolve
+`<programme>` from the roadmap's repository-relative path so different roadmaps do not share a
+ledger. `cg init` ignores `auto-run/` and `*.auto-run.md`; these are resumable working state, not
+the durable sign-off record. Use canonical Plan and decision artifacts for enduring authority.
 
-1. Resolve `<docs>` from `.agents/cg/profile.json` `docs` (default `docs`). Confirm with
-   `cg residue`, which prints `<docs>/plans/`.
-2. Read `.agents/cg/contract.yaml` and route through its connected contract graph. Dispatched
-   skills apply `.agents/cg/principles/architecture.yaml` `graph` and consult `E` themselves.
-   This adapter adds no graph rules and no `E` rules, and it does not rewrite a `Next input`
-   token because a catalog disagrees with still-mixed code.
-3. Read `<docs>/plans/` for the active roadmap and the selected phase.
-4. Read the phase's preparation record: does a Step queue exist, and what is each Step's state?
-5. Read `<docs>/plans/decision-log.md` for `DU-NN` entries that block the selected phase.
-6. Read `<docs>/plans/auto-run/` if present — a prior run may have checkpointed this phase mid-queue.
+The Manager records the accepted Plan, authority, selected phase, Engineer identity, model choices,
+pending decision IDs, sign-off links, and forward implications with their source paths. Replace
+stale summaries; do not append every chat message or copy complete catalogs into each handoff.
 
-Name the first stage from that measurement:
-
-- no roadmap, or no phase selected → `cg-plan` is required, and only `programme` authority may
-  dispatch it: stop, and say so;
-- phase selected, no prepared queue → `cg-prepare`;
-- queue prepared, a Step is `Ready` → `cg-produce`. Do not re-dispatch `cg-prepare` to re-score
-  its required-outcome list; a Ready queue is sufficient to keep executing.
-- every Step `Complete` → `cg-sign-off`;
-- phase closed and the roadmap names an unstarted phase → `cg-prepare` with that phase, at
-  `roadmap` or `programme` authority only; at `queue` or `phase`, stop and say the run finished
-  what it was authorised for;
-- queue prepared, no Step `Ready`, blockers present → stop; this is `cg-unblock`'s work, not yours.
-
-## 3. Write the ledger, then dispatch one stage
-
-Write `<docs>/plans/auto-run/<phase>.auto-run.md` **before** each dispatch, never after.
-
-One file per phase in one directory, so running Phase 3 does not overwrite the record of Phase 2
-and the clutter stays in a single place. `cg init` ignores both `auto-run/` and `*.auto-run.md` in
-the root `.gitignore`, so these are local working state at whatever depth they land — keep them as
-long as they are useful, they never reach history. The durable account of what a run produced is
-`cg-sign-off`'s output, not this. A run that dies mid-stage must
-leave behind what it was about to do, not what it last finished.
+Before each stage dispatch the Engineer writes:
 
 ```markdown
-# Auto-run ledger
-
-- **Authority:** <queue | phase | roadmap | programme>
-- **Started:** <timestamp>
-- **Dispatched:** <n>
+# Auto-run phase ledger
+- **Phase:** <Plan path and phase>
+- **Authority:** <queue | phase>
+- **Engineer:** <host worker ID, or same-session fallback>
+- **Model / reasoning:** <requested; effective if exposed, otherwise unverified>
 - **About to dispatch:** <$cg-skill> — <exact input artifact>
+- **Pending decisions:** <IDs, or None>
 
 ## History
-| # | Stage | Returned status | Route taken | Ledger written |
+| # | Stage | Returned status | Route taken | Evidence |
 |---|---|---|---|---|
-| 1 | $cg-prepare | Ready | $cg-produce | yes |
+| 1 | $cg-prepare | Ready | $cg-produce | <queue path> |
 ```
 
-Dispatch exactly one stage. Pass it the exact artifact the previous block named under `Next input` —
-the phase, the Step brief, the evidence bundle. Never paraphrase the artifact, and never pass a
-summary of it in place of the thing itself.
+The Manager writes its checkpoint before spawning or resuming a worker. On recovery, check for a
+live Engineer and inspect disk progress before dispatching: do not duplicate a still-running
+worker or blindly replay the ledger's last intention. Stop a failed worker before replacing it.
+Replacement Engineers resume the same phase from the Plan, queue, decisions and verification
+artifacts, with incomplete work clearly marked.
 
-## 4. Read the returned block, do not interpret it
+Dispatch exactly one lifecycle stage at a time with the exact artifact named by measured state or
+the previous `Next input`. Never substitute the Manager's summary for that artifact. Skills are
+loaded when their stage is needed, not all at Engineer startup.
 
-The stage returns a `Next action` block. Extract three fields verbatim: the status heading, the
-`$cg-` token under `Next input`, and whether `Blocked by` is present.
+## 4. Interpret outcomes without bypassing blockers
 
-Advance if and only if **all four** hold:
+Read the returned `Next action` status, `$cg-` token, artifact, and `Blocked by` verbatim. Compare
+them with current disk state before proceeding. Advance lifecycle work only when the block is
+well formed, no `Blocked by` is present, and the route is within authority and phase assignment.
 
-- [ ] `Blocked by` is absent.
-- [ ] The `Next input` token is a `$cg-` skill, not `None`.
-- [ ] That skill is dispatchable at the granted authority level.
-- [ ] The status heading is not `Programme complete` or `Documentation complete`.
+An incomplete phase with a runnable corrective route is advancing: dispatch `cg-prepare` or
+`cg-produce` to repair it rather than asking the user to add a Step or restart. A product failure
+does not itself block preparation of its repair. For a corrective preparation route, use
+`cg next --for cg-prepare` to check permission; the queue's default execution stage need not be
+preparation. Stage permission does not grant wider run authority. If a handoff names an authorized
+repair but lists only the repairable defect as `Blocked by`, return that contradictory handoff
+to the same Engineer for correction. Do not silently ignore its blocking field or stop as though
+a new user decision were needed. Preserve the failure evidence and the original block in history.
 
-If any is false, stop. Do not repair the block, do not re-run the stage hoping for a cleaner one,
-and do not substitute your own judgement about what the stage "meant". Do not invent another stop
-from `architecture.yaml` or `engineering.yaml`. A `Phase complete` heading whose `Next input` is
-`$cg-prepare` for the next planned phase is advancing at `roadmap` or `programme` authority. A
-stage that returned a malformed block is a defect to report, not an obstacle to route around.
+A blocking block stops its dependent work, not clarification. Send a decision or `$cg-unblock`
+route to the Manager under `cg-unblock` D-6. The Manager asks the user directly when existing
+authority cannot settle it, offering all viable options and a typed solution. Independent work
+can continue while the question is pending where the host supports asynchronous interaction.
+If every Step is blocked, keep the same Engineer waiting rather than starting the next phase.
 
-## 5. Stop conditions
+When an answer arrives, the Manager records it in the same decision entry and notifies the
+Engineer. The Engineer clears only satisfied blockers, updates queue readiness, and remeasures
+with `cg next`. Resume within the original authority immediately; do not require another start
+command. Keep the old blocking block in history as evidence, never rewrite it as an advance.
 
-These are absolute. No authority level overrides any of them.
+Stop lifecycle dispatch for a failed gate without a valid corrective route, a malformed block,
+unknown state, route above authority, conflicting writes, or repeated identical route with no
+state change. A pending question is not a polling loop: await a message or checkpoint and yield
+when the host cannot wait. User cancellation ends the run. A `None`, `Programme complete`, or
+`Documentation complete` result ends the corresponding work. Phase closure at `queue` or `phase`
+authority ends that run; otherwise it returns control to the Manager for the next planned phase.
 
-| Condition | Why it is terminal |
-|---|---|
-| `Blocked by` present | `workflow.md` §Mandatory Next-Action Response makes this the single stop signal |
-| `Next input: $cg-unblock` | The fork needs a recorded decision; auto-following it would decide by default |
-| `Next input: None` | Terminal by the stage's own measurement |
-| Status heading `Programme complete` or `Documentation complete` | The programme or standalone docs task is finished |
-| `Phase complete` at `queue` or `phase` authority | Those levels close one phase, then stop |
-| Route above granted authority | Authority is granted, never inferred |
-| Malformed or absent block | The successor is unknown; guessing it is worse than stopping |
-| Same stage returns the same route twice with no state change | A loop; report it as a defect |
-| Working tree dirty at run start | The run cannot distinguish its own changes from pre-existing ones |
+## 5. Phase isolation and reporting
 
-## 6. Phase isolation, not a dispatch cap
+Each Engineer is a fresh start from disk when the host supports it. A new agent is the intended
+pattern for the next phase; there is no per-run cap and no dispatch budget. Context remains useful
+within a phase, including sign-off and repair, while only relevant evidence crosses phases.
 
-`cg-produce` drains every `Ready` Step in one invocation. A clean phase is three dispatches:
-prepare, produce, sign-off. There is no per-run cap on how many of those phases a `roadmap` run
-may close, and no dispatch budget.
+The Engineer returns sign-off status, exact verification results, changed contracts and durable
+records, decision IDs and response implications, unresolved matters, and forward obligations with
+source links. The Manager checks this evidence and the Plan's acceptance conditions before moving
+on. This is completion checking, not an independent implementation review. Never soften a failed
+gate or treat an unrun gate as passed. Mark a phase ledger `Closed` only after actual closure.
 
-Context stays bounded because each phase is a fresh start from disk, not because this adapter
-stops after three. When a phase closes and another planned phase remains, the next prepare reads
-contracts, the roadmap, and this ledger — not the prior phase's chat. Running that next phase in
-a new agent is the intended pattern; continuing in this session is allowed when the previous
-phase already wrote its state to disk.
-
-The ledger still records every dispatch so a crash or a §5 stop resumes from measured state.
-Count dispatches in the ledger for the report; do not treat the count as a stop.
-
-When a run ends with the queue complete, mark the ledger `Closed` rather than deleting it. The
-history of which stages ran unattended is exactly what `cg-sign-off` needs at harvest.
-
-## 7. Report the whole run
-
-The owner approved a plan and got back the phases this run closed. They did not watch any of it.
-The report is the only thing standing between them and reading every Step brief, so it covers the
-run, not just its route.
+Report the whole run: authority, requested/effective models and host limitations, phases completed,
+what shipped, acceptance commands and results, decisions and outstanding answers, durable records,
+forward handovers, and the ledger paths. Do not report measured token savings unless measured.
+End with one next action:
 
 ```markdown
-## Auto-run report
-- **Authority:** <level> · **Dispatched:** <n> stage(s) · **Stopped on:** <condition from §5>
-- **Phases:** <each phase closed this run> — <its outcome, one line each>
-- **Acceptance gate:** <the exact command> — <passed | failed | not reached>
-
-### What shipped
-| Step | Name | Result | Contracts and detectors touched |
-|---|---|---|---|
-| 1 | <name> | Complete | <contract paths, or None> |
-
-### What changed beyond the Steps
-- **Decisions logged:** <DL entries, or None>
-- **Assumptions recorded:** <count and where, or None>
-- **Durable records written:** <design records, guides, diagrams from cg-sign-off, or None>
-- **Handovers raised:** <out-of-phase findings sent to planning, or None>
-
-### What needs you
-- <blocked Step, failing gate, unlogged decision, or "Nothing — the phase is closed">
-
-- **Stopping block:** <the verbatim Next action block that ended the run>
-- **Ledger:** `<docs>/plans/auto-run/<phase>.auto-run.md`
+## Next action — <Run complete | Waiting for decision | Blocked | Authority required>
+- **User action:** <one concrete action, or None>
+- **Next input:** <$cg-skill | None — run complete> — <exact artifact or decision>
+- **Blocked by:** <condition preventing the named next action>   <!-- only for non-advancing status -->
 ```
 
-Every row is copied from what a stage already reported. Summarising means selecting and compressing,
-never restating an outcome in your own words — if a Step said `Blocked`, the table says `Blocked`.
-A run that reached `cg-sign-off` inherits its phase gate verbatim; do not soften a failed gate into
-a caveat, and do not describe an unreached gate as passing.
-
-## 8. Next-action response
-
-Choose exactly one immediate route:
-
-- stopped on a blocker or a `$cg-unblock` route: use `cg-unblock` with the exact blocking entry;
-- stopped on insufficient authority: name the stage and the level it needs;
-- selected phase closed at `queue` or `phase` authority, or no unstarted planned phase remains:
-  name no next skill.
-
-End the user-facing response with:
-
-```markdown
-## Next action — <Run complete | Blocked | Authority required>
-- **User action:** <one concrete action>
-- **Next input:** <$cg-skill | None — programme complete> — <exact ledger, brief, decision entry, or authority level>
-- **Blocked by:** <exact decision, prerequisite, or failing gate>   <!-- omit unless the status is non-advancing -->
-```
-
-## Completion check
-
-- [ ] Authority was granted explicitly, or defaulted to `roadmap` and was stated.
-- [ ] At `roadmap` authority, every phase in the roadmap was planned before the first dispatch.
-- [ ] Every dispatch was named by measured state or the previous block's `Next input`.
-- [ ] No stage was dispatched above the granted authority level.
-- [ ] `cg-unblock` and `cg-warmup` were never auto-dispatched.
-- [ ] The ledger was written before each dispatch, not after.
-- [ ] No block carrying `Blocked by` was followed.
-- [ ] A phase count or dispatch count was not used as a stop.
-- [ ] The stopping condition and its verbatim block are both recorded.
-- [ ] The report covers what shipped, what changed beyond the Steps, and what needs the owner.
-- [ ] The response ends with one exact next action and skill.
+An Engineer reports its next action to the Manager; the Manager owns the user-facing run report.

@@ -9,8 +9,9 @@ Own closure and the record it leaves behind. Verify the accumulated repository, 
 keep the phase active until it is green or honestly blocked, and write the durable knowledge that
 must survive the plan.
 
-Read `.agents/skills/cg-unblock/SKILL.md` only when a fork fails D-1: unresolvable from contracts
-and accepted decisions, material, costly to reverse, and nothing else can proceed.
+Read `.agents/skills/cg-unblock/SKILL.md` when a fork remains unresolved by the Plan, contracts
+and accepted decisions, or requires owner authority. Under auto-run, ask the Manager first;
+otherwise ask the user directly under D-6. Record the answer and continue independent work.
 
 ## Two entry paths
 
@@ -154,7 +155,9 @@ role-by-route or isolation matrices unless those contracts or the gate name them
 1. Run every Step verification in the final state.
 2. Confirm positive and negative evidence.
 3. Confirm all detectors are non-vacuous and fail on demand.
-4. Confirm decisions appear once in the decision log.
+4. Confirm decisions appear once in the decision log, their selected options or typed solutions
+   and scoped interpretations are preserved, and the implementation follows the applicable
+   resolved decisions. Pending answers remain pending and cannot satisfy phase acceptance.
 5. Run the phase acceptance gate from `cg-plan`.
 6. Confirm no unexpected worktree residue remains.
 
@@ -168,6 +171,11 @@ would add a child for a self-sufficient unit that has no contract, that is the s
 
 When the active roadmap and preparation declare a decision-harvest cohort, classify only that
 cohort. Do not default to every resolved decision in the log.
+
+Before draining an entry, check active decision and phase dependencies. Preserve its authority
+and relevant user-response evidence at an accessible destination and update transient consumers;
+otherwise leave it in the log and report the harvest prerequisite. The original design answer
+does not authorize a different harvest classification. Permanent contracts cannot cite plan IDs.
 
 1. Create one versioned JSON manifest in the closure-owned phase-close path reserved by
    `cg-prepare`.
@@ -200,6 +208,9 @@ approves the proposed promotions; it does not reopen the underlying decisions.
    in `acceptedAt`, and `acceptedDecisionIds` exactly equal to the eligible decision IDs.
 2. Route a non-empty accepted cohort to the next already-planned destination phase through
    `cg-prepare`. If no matching phase exists, return the work to `cg-plan` first.
+   Under auto-run, return this request to the Manager's preparation-only exception and pause
+   writes. The same source Engineer resumes sign-off with the returned preparation artifact;
+   no destination Engineer executes before source closure.
 3. The first prepared harvest Step must name the exact source manifest, cohort ID, classification
    digest, and drain IDs exactly equal the eligible decision IDs. That Step stays `Blocked` on
    source-phase completion; later Steps stay `Waiting` behind it.
@@ -346,6 +357,12 @@ dispatched by it, you are the last stage of this turn.
 
 ## 11. Sign-off report and next action
 
+A failed phase gate keeps the phase incomplete, but an authorized repair route is advancing.
+Use `Re-preparation required` for `cg-prepare` or `Corrective Step ready` for `cg-produce`, omitting
+`Blocked by` unless something prevents that corrective action itself. Describe the failed gate
+in the report and finding, not as an automatic stop signal. Under auto-run, the Engineer owns
+the correction and `User action` is `None — auto-run continues with the corrective route`.
+
 Report the execution baseline, queue-state history, final gates, defects and dispositions,
 emergent tests, phase acceptance result, contracts and detectors verified, durable documents and
 their validation method, out-of-phase handovers, archive location when eligible, and the exact
@@ -375,10 +392,10 @@ Choose exactly one immediate route:
 End the user-facing response with:
 
 ```markdown
-## Next action — <Corrective Step ready | Phase blocked | Phase complete | Documentation complete | Programme complete>
+## Next action — <Re-preparation required | Corrective Step ready | Phase blocked | Phase complete | Documentation complete | Programme complete>
 - **User action:** <one concrete action>
 - **Next input:** <$cg-produce | $cg-prepare | $cg-unblock | $cg-sign-off | $cg-plan | None — documentation or programme complete> — <exact corrective brief, finding, decision entry, next phase, handover, verified artifact, or closure evidence>
-- **Blocked by:** <exact decision, prerequisite, or failing gate>   <!-- omit unless the status is non-advancing -->
+- **Blocked by:** <condition preventing the named next action>   <!-- omit unless the status is non-advancing -->
 ```
 
 Name the next selected phase and skill, or state that no next skill remains. Do not invent a

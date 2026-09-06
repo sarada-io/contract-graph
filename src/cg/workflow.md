@@ -20,14 +20,18 @@ structural integrity.
    line by line. Everything after is pattern-matched to it.
 5. **Verify with commands.** Never assert something works without running the build, the tests,
    or the check.
-6. **Decide, don't ask live.** Unspecified detail is resolved from the principles, the existing
-   code, or the owner's recorded priors — and logged as an assumption — not escalated. Stopping
-   mid-task costs the slice; a wrong reversible decision costs one edit. Follow
-   `.agents/skills/cg-unblock/SKILL.md`: it is binding for every non-trivial task. Resolve `<docs>`
-   from `.agents/cg/profile.json` `docs` (default `docs`). Rule D-4 requires every surviving
-   question to be enumerated at plan time; Rule D-5 requires it be **logged as a `DU-NN` entry in
-   `<docs>/plans/decision-log.md`**, not asked in chat, unless the entire remaining task is blocked
-   with nothing else to work on.
+6. **Resolve from authority; ask when a user decision remains.** Follow
+   `.agents/skills/cg-unblock/SKILL.md` for assumptions, protected choices, and decision records.
+   An Auto-Run Engineer asks its Manager first; the Manager checks the Plan and accepted decisions
+   before asking the user directly in chat or interaction mode. Resolve `<docs>` from
+   `.agents/cg/profile.json` `docs` (default `docs`). Record the context, viable options, and
+   recommendation in `<docs>/plans/decision-log.md`, present the question with a free-text answer
+   path, and record the user's selected option or typed solution against the same `DU-NN` entry.
+   Save the full request before asking, so a new session can recover and present unanswered
+   questions under the same IDs without needing the previous chat. Save answers before unblocking.
+   Ask while independent work continues when the host permits it. A pending recommendation,
+   preselected option, silence, or elapsed time is not approval. Recalculate readiness immediately
+   after recording an answer; resume only work whose dependencies and blockers are satisfied.
 
 After structural bindings, scoped product rules, the repository constitution, contracts, accepted
 decisions, durable requirements, and existing green patterns have been applied, load only the
@@ -119,6 +123,15 @@ and commits. Until those controls exist, `cg-prepare` emits sequential Steps onl
 
 ## Mandatory Next-Action Response
 
+Under `cg-auto-run`, the Manager coordinates one Engineer per phase. The Engineer reads the
+Plan directly, retains phase context through preparation, production, corrective work and
+sign-off, and returns evidence and forward implications. The Manager maintains programme
+continuity, handles user questions, and validates completion evidence before selecting another
+Engineer. Load the role instructions linked from `.agents/skills/cg-auto-run/SKILL.md`; skills
+still own lifecycle work. Fresh context and model selection depend on host capabilities and must
+not be claimed when unavailable. The Plan, contracts, decision records, queues and sign-off
+artifacts allow either role to recover without previous chat history.
+
 Every completed Contract Graph skill invocation, including a blocked or corrective result, ends its
 user-facing response with exactly one `Next action` block:
 
@@ -126,7 +139,7 @@ user-facing response with exactly one `Next action` block:
 ## Next action — <measured lifecycle status>
 - **User action:** <one concrete action>
 - **Next input:** <$cg-skill | None — terminal reason> — <exact artifact, brief, decision, or evidence>
-- **Blocked by:** <exact decision, prerequisite, or failing gate>   <!-- omit unless the status is non-advancing -->
+- **Blocked by:** <condition preventing the named next action>   <!-- omit unless the status is non-advancing -->
 ```
 
 Two body lines on an advancing status, three when something stops. The measured lifecycle status is
@@ -137,8 +150,24 @@ than buried in prose.
 **`Blocked by` appears if and only if the status does not advance.** On a green route it is omitted
 entirely: a precondition that is already satisfied is not information, and a mandatory field with
 nothing to say gets padded with restated status or completed-work evidence. Its presence is also the
-single stop signal any auto-advance adapter reads — a block carrying `Blocked by` is never followed
-automatically, at any authority level.
+single stop signal for dependent lifecycle work — a block carrying `Blocked by` is never followed
+automatically into that work, at any authority level. The Auto-Run Manager may invoke `cg-unblock`
+to clarify or ask the user. After the answer is recorded and queue readiness is recalculated,
+dispatch from fresh measured state; do not follow or erase the old blocking block.
+
+Advancing describes the **next action**, not whether the current implementation passes. A failed
+test, rendering defect, or incomplete evidence is corrective work when an authorized agent can
+investigate or fix it. Use `Re-preparation required` or `Corrective Step ready` and omit `Blocked by`
+when `cg-prepare` or `cg-produce` can proceed. Put failure evidence in the finding and phase report;
+the phase remains incomplete until repaired and verified. `Blocked by` names what prevents the
+named next action itself: an unanswered user decision, unavailable external prerequisite, missing
+authority, or a failure for which no authorized corrective route can proceed.
+
+Under auto-run, `User action` is `None — auto-run continues with the corrective route` when the
+Engineer can perform that work. Do not ask the user to add a Step or restart an already-authorized
+repair. Outside auto-run, name the next skill for the user to invoke as usual. Evidence work that
+depends on a repair stays `Waiting` on the corrective Step; it becomes `Ready` only after the
+repair's verified handoff and all other prerequisites pass.
 
 Select the immediate route from measured state. Do not list several possible skills, say only
 "continue", or make the user infer which phase, Step, repair, or decision comes next. A prepared

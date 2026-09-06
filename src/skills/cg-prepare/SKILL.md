@@ -8,8 +8,9 @@ description: Prepare one selected Contract Graph phase as a prioritized queue of
 Turn one accepted phase into one ordered execution queue. Do not implement the phase or edit
 permanent contracts here.
 
-Read `.agents/skills/cg-unblock/SKILL.md` only when a fork fails D-1: unresolvable from contracts
-and accepted decisions, material, costly to reverse, and nothing else can proceed.
+Read `.agents/skills/cg-unblock/SKILL.md` when a fork remains unresolved by the Plan, contracts
+and accepted decisions, or requires owner authority. Under auto-run, ask the Manager first;
+otherwise ask the user directly under D-6. Record the answer and continue independent work.
 
 ## Required outcome
 
@@ -43,7 +44,9 @@ execution branch or worktree policy is known. If the outcome or gate must change
 
 1. Load `.agents/cg/principles/architecture.yaml`. Apply `hierarchy.kinds` and `graph` before
    assigning any path.
-2. Load the selected phase from the roadmap. Run `cg contract route --task "<phase outcome>"`.
+2. Read the Plan directly: programme outcome and constraints, phase sequence, complete selected
+   phase and acceptance criteria, and necessary prerequisite evidence. A Manager brief does not
+   replace it. Run `cg contract route --task "<phase outcome>"`.
    Load only the matched contracts and their named children; then scoped `P` rules, then the
    repository constitution and specifications. Consult `E` only for a remaining design fork. A
    practice already cited on the selected phase is not remaining. An `E` disagreement is not
@@ -57,6 +60,13 @@ When `cg-sign-off` returns corrective work, preserve its reproduction, expected 
 affected paths, contract and detector impact, dependencies, and `Done when` evidence. Re-prepare
 the remaining sequence only when the phase outcome and gate are unchanged. A successor-planning
 handover first goes through `cg-plan`.
+
+The same correction path applies when production finds a defect that requires new paths or a
+changed queue. A failing product check does not prevent preparing its repair. Add the corrective
+Step with a stable ID and explicit dependencies, keep dependent evidence Steps `Waiting`, and
+return the earliest eligible repair Step to production. Do not make evidence `Ready` merely
+because a corrective Step was added; its verified completion is the prerequisite. Clear only
+failure labels replaced by that dependency, preserving genuine user or external blockers.
 
 After one batch acceptance, an accepted non-empty decision-harvest cohort may be prepared for its
 already-planned destination phase while the source phase is still completing. Reserve the first
@@ -278,7 +288,7 @@ End the user-facing response with:
 ## Next action — <Ready | Blocked | Returned to planning>
 - **User action:** <one concrete action>
 - **Next input:** <$cg-produce | $cg-sign-off | $cg-plan | $cg-unblock | None — waiting on prerequisite> — <exact preparation record and earliest Ready Step brief, finding, or blocker set>
-- **Blocked by:** <exact decision, prerequisite, or failing gate>   <!-- omit unless the status is non-advancing -->
+- **Blocked by:** <condition preventing the named next action>   <!-- omit unless the status is non-advancing -->
 ```
 
 Do not make the user choose among Steps. Name exactly the earliest `Ready` Step, or the consolidated

@@ -45,14 +45,69 @@ It does not rewrite existing purpose or P IDs, and it does not rewrite the produ
 | Produce | The implementation of the current step, and contracts that describe **what is true now** | A new split the step did not name |
 | Sign-off | Whether the phase gate passed; what to keep as durable record; work that belongs in another phase | Fixing a behaviour or contract defect only in documentation |
 
-Unblock sits beside this stack. When a choice is expensive or protected, it is logged so other
-steps can continue. A resolved decision is real authority until it is promoted into a contract or
-a product rule — or dropped with a reason. Plans and decision-log ids are not something a
-contract may cite as the source of a rule; `cg verify` fails a contract that cites a plan path or ticket id.
+Unblock sits beside this stack. Existing accepted decisions settle questions within their scope.
+When a user decision remains, the agent records the context, viable options, tradeoffs and
+recommendation, then asks directly in chat or interaction mode. You can select an option or type
+another solution. Your response and its scoped interpretation are recorded against the same
+stable decision entry. Independent work continues when the host supports asynchronous questions;
+dependent work resumes after the answer is recorded and all its blockers are cleared. Silence or
+a preselected recommendation is never approval.
 
-Auto-run is optional. It follows an already-planned roadmap through remaining planned phases,
-and stops on blockers or owner decisions rather than a phase or dispatch count. It does not
-invent the plan, and it does not settle owner decisions.
+The decision log is written **before** the question is presented. If you abandon the session,
+a new one reads pending entries and presents the same unanswered questions with their existing
+IDs. It also reads saved answers before deciding what can resume. Neither the question nor its
+resolution depends on retaining the previous chat.
+
+A fixable defect does not stop auto-run. If a rendering failure needs a corrective Step, the
+Engineer prepares that repair, implements it, and reruns the evidence. The phase stays incomplete,
+but its corrective route advances. A handoff's `Blocked by` field is reserved for a condition
+that prevents the next action itself, such as an unanswered user decision or unavailable access.
+Dependent evidence waits for the verified repair; adding the Step alone does not make it ready.
+The optional stage gate permits preparation to amend a parseable queue even when that queue
+cannot execute yet. Production and sign-off remain gated by readiness, and standalone skills
+still yield at their stage boundary unless auto-run is authorized.
+
+A resolved decision is authority within its scope until promoted, superseded, or dropped with a
+reason. Later decisions can reference the constraints they depend on. Sign-off checks that the
+implementation follows the accepted choices and preserves evidence still needed by active work.
+Permanent contracts state enduring rules directly; they cannot cite plan or decision-log IDs as
+the source of those rules.
+`cg verify` fails a contract that cites a plan path or ticket id as its authority.
+
+## Auto-run roles and context
+
+Auto-run is optional. Its **Manager** maintains programme continuity and coordinates one
+**Engineer** per phase. The Engineer reads the Plan directly, including programme intent and
+constraints, its full phase and acceptance criteria, and relevant prerequisite evidence. It then
+routes through contracts and loads implementation and skills as needed. It retains that context
+through preparation, sequential execution, repairs and sign-off.
+
+The Engineer asks its Manager for clarification first. The Manager checks the Plan and accepted
+decisions, and asks you when a new user choice is needed. It records your answer and sends the
+resolution back so the same Engineer can resume. The Manager owns decision-log writes; the
+Engineer owns phase queue and implementation writes. A prepared harvest drain uses an explicit
+temporary handoff of decision-log ownership so the two roles never write it concurrently.
+
+After sign-off, the Engineer returns verification evidence, durable-record links, unresolved
+matters and scoped implications for later phases. The Manager checks completion evidence before
+starting the next Engineer. It does not duplicate implementation review. Durable truth stays in
+contracts, specifications and decision records; neither role relies on the previous chat as its
+only memory. A failed phase stays with its Engineer for correction. When source sign-off requires an accepted
+harvest destination to be prepared first, the Manager can coordinate that preparation while the
+source Engineer pauses; destination execution still waits for source closure and sufficient
+authority and host support are required.
+
+You may select the Manager and Engineer models and reasoning settings separately in your run
+request, with explicit phase overrides if needed. Auto-run records those choices and uses the
+host's actual controls; writing a model name into a skill does not select it. Without explicit
+choices it retains host defaults. Unsupported requested settings are reported rather than silently
+substituted. No universal model-selection CLI or agent runtime ships with Contract Graph.
+
+Fresh workers and live questions depend on the host. Where workers are unavailable, the roles can
+run sequentially in one session, with that limitation disclosed; this does not isolate context.
+If you require fresh workers, an unsupported host is a blocker. Where asynchronous input is
+unavailable, the run checkpoints and yields for your answer. Context isolation is intended to
+reduce accumulated context across phases; token savings have not been established by benchmarks.
 
 ## How a plan is executed
 

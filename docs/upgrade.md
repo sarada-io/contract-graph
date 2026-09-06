@@ -62,6 +62,22 @@ adoption corrective set are left in place. The delta is
 `phases.json`, and docs. It does not merge catalogs, and it does not delete leftover
 `.agents/rules` from older installs. There is no `cg upgrade` verb.
 
+## Adopting the 0.6.0 auto-run workflow
+
+The 0.6.0 source includes Manager–Engineer auto-run instructions and direct user questions backed
+by the decision log. Install the package build you intend to test, then run `cg init --yes --docs
+docs` with your existing docs root and profiles. This updates skills and their role references;
+it does not publish the package or change repository-owned workflow choices.
+
+An existing `workflow.md` may still require logging instead of asking in chat or stopping all
+auto-run activity at an unblock route. Deliberately reconcile those clauses with the new workflow
+before using the new roles, preserving your other amendments. Compare against the package's
+`agent/cg/workflow.md`. Re-init and warmup do not silently make this policy choice for you.
+
+Fresh phase workers, independent model selection and asynchronous questions depend on the host.
+The skill reports unavailable capabilities and preserves recorded state; `cg verify` checks graph
+integrity, not whether a particular host executed the Manager–Engineer protocol correctly.
+
 ## 0.3.0 versus 0.4.0
 
 - **0.3.0 → 0.5.0** is the high-value reseed. Replaced skills bring Phase D, `warmup.yaml` cues,

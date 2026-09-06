@@ -8,8 +8,9 @@ description: Execute a prepared Contract Graph queue continuously and sequential
 Run the prepared queue with one Step `In progress` at a time. Do not redesign the phase, create
 another execution branch, run Steps concurrently, or defer contract truth.
 
-Read `.agents/skills/cg-unblock/SKILL.md` only when a fork fails D-1: unresolvable from contracts
-and accepted decisions, material, costly to reverse, and nothing else can proceed.
+Read `.agents/skills/cg-unblock/SKILL.md` when a fork remains unresolved by the Plan, contracts
+and accepted decisions, or requires owner authority. Under auto-run, ask the Manager first;
+otherwise ask the user directly under D-6. Record the answer and continue independent work.
 
 ## Required outcome
 
@@ -190,6 +191,11 @@ queue drains or no `Ready` Step remains.
 
 ## 9. Next-action response
 
+A fixable defect is work, not a run-wide blocker. If repair needs preparation, checkpoint the
+finding and yield `Re-preparation required` to `cg-prepare` without `Blocked by`, unless that
+preparation itself cannot proceed. Keep the affected Step incomplete. Under auto-run, set
+`User action` to `None — auto-run continues with the corrective route`; the Engineer handles it.
+
 Choose exactly one immediate route:
 
 - all Steps are `Complete`: use `cg-sign-off` with the preparation record and all Step reports;
@@ -206,7 +212,7 @@ End the user-facing response with:
 ## Next action — <Queue complete | Ready handoff | Re-preparation required | Queue blocked>
 - **User action:** <one concrete action>
 - **Next input:** <$cg-produce | $cg-sign-off | $cg-prepare | $cg-unblock | None — waiting on prerequisite> — <earliest Ready Step brief, Step report set, preparation finding, or blocker set>
-- **Blocked by:** <exact decision, prerequisite, or failing gate>   <!-- omit unless the status is non-advancing -->
+- **Blocked by:** <condition preventing the named next action>   <!-- omit unless the status is non-advancing -->
 ```
 
 Do not stop for a user-facing response after every green Step while this run can safely continue.

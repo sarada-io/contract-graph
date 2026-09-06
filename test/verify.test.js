@@ -2001,7 +2001,7 @@ test("cg-auto-run stays an adapter, and produce executes a prepared split", () =
     fs.readFileSync(path.join(SOURCE_ROOT, "skills", name, "SKILL.md"), "utf8");
 
   const autoRun = skill("cg-auto-run");
-  assert.match(autoRun, /never auto-invokes cg-unblock or cg-warmup/);
+  assert.match(autoRun, /Never auto-invoke `cg-warmup`/);
   assert.match(autoRun, /adds no graph rules and no `E` rules/);
   assert.match(autoRun, /does not rewrite a `Next input`/);
   assert.match(autoRun, /\.agents\/cg\/profile\.json/);
@@ -2009,7 +2009,7 @@ test("cg-auto-run stays an adapter, and produce executes a prepared split", () =
   assert.match(autoRun, /no per-run cap/);
   assert.match(autoRun, /no dispatch budget/);
   assert.match(autoRun, /fresh start from disk/);
-  assert.match(autoRun, /new agent is the intended pattern/);
+  assert.match(autoRun, /new agent is the intended\npattern/);
   assert.match(autoRun, /every remaining planned phase closes/);
   assert.doesNotMatch(autoRun, /twelve dispatches per run/);
   assert.doesNotMatch(autoRun, /Third `Phase complete` heading this run/);
@@ -3382,6 +3382,35 @@ test("next does not select a Ready Step whose dependency is unfinished", () => {
   assert.equal(next(dir).state, "blocked");
 });
 
+test("decision resolution resumes only work whose blockers and dependencies are cleared", () => {
+  const dir = makeRepo();
+  // A stale Ready label must not turn a pending recommendation into permission.
+  queue(dir, {
+    1: { status: "Ready", blocked: "DU-07; provider access" },
+    2: { status: "Ready" },
+    3: { status: "Ready", depends: "Step 1, Step 2" },
+  });
+  assert.equal(next(dir).step.number, 2);
+  queue(dir, {
+    1: { status: "Ready", blocked: "provider access" },
+    2: { status: "Complete" },
+    3: { status: "Ready", depends: "Step 1, Step 2" },
+  });
+  assert.equal(next(dir).stage, "cg-unblock", "answering DU-07 does not clear provider access");
+  queue(dir, {
+    1: { status: "Ready" },
+    2: { status: "Complete" },
+    3: { status: "Ready", depends: "Step 1, Step 2" },
+  });
+  assert.equal(next(dir).step.number, 1);
+  queue(dir, {
+    1: { status: "Complete" },
+    2: { status: "Complete" },
+    3: { status: "Ready", depends: "Step 1, Step 2" },
+  });
+  assert.equal(next(dir).step.number, 3);
+});
+
 test("next routes to sign-off only when every Step is Complete", () => {
   const dir = makeRepo();
   queue(dir, { 1: { status: "Complete" }, 2: { status: "Complete" } });
@@ -3716,6 +3745,43 @@ test("cg-auto-run in the session lifts the boundary, and is never itself gated",
   const wrong = gate(dir, "cg-produce", session);
   assert.equal(wrong.permissionDecision, "deny");
   assert.match(wrong.permissionDecisionReason, /does not support dispatching/);
+});
+
+test("auto-run can prepare a repair without authorizing blocked production or premature sign-off", () => {
+  const dir = makeRepo();
+  const session = `repair-${Date.now()}`;
+  queue(dir, { 6: { status: "Blocked", blocked: "review nodes are hidden" } });
+  assert.equal(gate(dir, "cg-auto-run", session).permissionDecision, "allow");
+  assert.equal(gate(dir, "cg-prepare", session).permissionDecision, "allow");
+  assert.equal(gate(dir, "cg-produce", session).permissionDecision, "deny");
+  assert.equal(gate(dir, "cg-sign-off", session).permissionDecision, "deny");
+
+  // Preparation makes the defect an executable correction; evidence waits for its handoff.
+  queue(dir, {
+    6: { status: "Waiting", depends: "Step 7" },
+    7: { status: "Ready" },
+  });
+  assert.equal(next(dir).step.number, 7);
+  assert.equal(gate(dir, "cg-produce", session).permissionDecision, "allow");
+  assert.equal(gate(dir, "cg-sign-off", session).permissionDecision, "deny");
+  queue(dir, {
+    6: { status: "Ready", depends: "Step 7" },
+    7: { status: "Complete" },
+  });
+  assert.equal(next(dir).step.number, 6);
+  queue(dir, {
+    6: { status: "Complete", depends: "Step 7" },
+    7: { status: "Complete" },
+  });
+  assert.equal(gate(dir, "cg-sign-off", session).permissionDecision, "allow");
+});
+
+test("corrective preparation remains available after completion but cannot bypass an unreadable queue", () => {
+  const dir = makeRepo();
+  queue(dir, { 1: { status: "Complete" } });
+  assert.equal(permits(next(dir), "cg-prepare").allowed, true);
+  queue(dir, { 1: { status: "Unknown" } });
+  assert.equal(permits(next(dir), "cg-prepare").allowed, false);
 });
 
 test("every stage skill states the yield rule", () => {

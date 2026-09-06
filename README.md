@@ -83,7 +83,7 @@ write product code.
 | `/cg-produce` | Run the next ready step: code, tests, and contracts together |
 | `/cg-sign-off` | Close a phase when the graph still describes the code |
 | `/cg-unblock` | Record a fork so other work can continue |
-| `/cg-auto-run` | Opt-in: follow already-planned stages; never auto-runs warmup or unblock |
+| `/cg-auto-run` | Opt-in: Manager coordinates one Engineer per phase and asks unresolved decisions; never auto-runs warmup |
 
 | Command | Purpose |
 |---|---|

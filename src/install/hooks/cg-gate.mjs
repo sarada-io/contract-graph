@@ -8,8 +8,10 @@
  * advances an unattended run past exactly the condition that was meant to stop it.
  *
  * This runs before the Skill tool and answers the same question from `cg next`, which reads the
- * Step briefs instead. Agreement lets the dispatch through; disagreement denies it and says what
- * the queue actually shows. Two independent sources that must agree is the whole mechanism.
+ * Step briefs instead. Production and sign-off require agreement with queue readiness.
+ * Preparation may amend any parseable queue, including one awaiting repair; this does not release
+ * production blockers. The separate stage boundary still requires an authorized auto-run chain
+ * or a new user instruction before crossing stages.
  *
  * Wire it as a PreToolUse hook on the Skill tool, and as a UserPromptSubmit hook. It reads the hook
  * payload on stdin and writes a permission decision on stdout. Anything it cannot answer

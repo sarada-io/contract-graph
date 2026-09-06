@@ -28,8 +28,9 @@ programme. Warmup does not rewrite the code.
 file. If the service types exist, declare them. If they do not, record a corrective Step to
 introduce them. Folder wrappers to impose layout are forbidden.
 
-Read `.agents/skills/cg-unblock/SKILL.md` only when a fork fails D-1: unresolvable from contracts
-and accepted decisions, material, costly to reverse, and nothing else can proceed.
+Read `.agents/skills/cg-unblock/SKILL.md` when a fork remains unresolved by contracts and
+accepted decisions or requires owner authority. Ask directly under D-6 and continue independent
+work while recording the response.
 
 ## Which entry — read this before §1
 
@@ -574,9 +575,10 @@ Owner questions go in `<docs>/plans/decision-log.md` under *Pending your review*
 [the decision entry template](../cg-unblock/assets/decision-entry.template.md). Keep each as its
 own stable `DU-NN` entry, and never renumber one.
 
-A logged question never pauses unrelated work. Present the set once, at the end. Stop and ask in
-chat only if nothing else can proceed — which, for warmup, means the repository has no
-discoverable modules at all.
+Use `cg-unblock` D-6 to present concrete questions directly in chat or interaction mode, with
+options and a typed-answer path, and record responses against the same entries. A logged question
+never pauses unrelated work when asynchronous interaction is available. If the repository has no
+discoverable modules, ask before inventing a boundary.
 
 ## 11. Report coverage honestly
 
@@ -681,5 +683,5 @@ End the user-facing response with:
 ## Next action — <Warmup complete | Answers pending | Findings need delivery | Empty reseed>
 - **User action:** <one concrete action — when answers are pending, "answer the N entries under *Pending your review*"; always say what happened to warmup-findings, warmup-corrective-set, warmup-report, and warmup-reseed-delta>
 - **Next input:** <$cg-plan | $cg-unblock | None — warmup complete | None — empty delta> — <exact decision-log entries, corrective set, delta, or gate evidence>
-- **Blocked by:** <exact decision, prerequisite, or failing gate>   <!-- omit unless the status is non-advancing -->
+- **Blocked by:** <condition preventing the named next action>   <!-- omit unless the status is non-advancing -->
 ```

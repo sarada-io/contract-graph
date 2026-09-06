@@ -164,7 +164,7 @@ export function next(repoRoot, { docs } = {}) {
   }
 
   const ready = briefs
-    .filter((b) => b.status === "Ready" && b.dependsOn.every((id) => complete.has(id)))
+    .filter((b) => b.status === "Ready" && !b.blockedBy && b.dependsOn.every((id) => complete.has(id)))
     .sort((a, b) => a.priority - b.priority);
 
   if (ready.length) {
@@ -214,6 +214,11 @@ function readDocsRoot(repoRoot) {
 export function permits(result, skill) {
   if (result.state === "unreadable") {
     return { allowed: false, reason: `the Step queue does not parse:\n  ${result.problems.join("\n  ")}` };
+  }
+  // Preparation repairs the plan of work, including when a failed evidence Step cannot run.
+  // Allowing that edit does not authorize production or waive any existing blocker.
+  if (skill === "cg-prepare") {
+    return { allowed: true, reason: "preparation may amend the queue; production and sign-off remain gated by readiness" };
   }
   // Never gated: one resolves blockers, one is the adapter itself, one is pre-lifecycle, and
   // planning is what you run precisely when the queue has nothing to say.

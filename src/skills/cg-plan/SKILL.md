@@ -7,8 +7,9 @@ description: Create or revise a phase-wise Contract Graph roadmap from binding c
 
 Turn a broad outcome into an ordered phase roadmap. Do not prepare implementation Steps here.
 
-Read `.agents/skills/cg-unblock/SKILL.md` only when a fork fails D-1: unresolvable from contracts
-and accepted decisions, material, costly to reverse, and nothing else can proceed.
+Read `.agents/skills/cg-unblock/SKILL.md` when a fork remains unresolved by the Plan, contracts
+and accepted decisions, or requires owner authority. Under auto-run, ask the Manager first;
+otherwise ask the user directly under D-6. Record the answer and continue independent work.
 
 ## Required outcome
 
@@ -192,7 +193,7 @@ End the user-facing response with:
 ## Next action — <Ready | Blocked | Programme complete>
 - **User action:** <one concrete action>
 - **Next input:** <$cg-prepare | $cg-unblock | None — programme complete> — <exact roadmap, selected phase, handover, or decision entry>
-- **Blocked by:** <exact decision, prerequisite, or failing gate>   <!-- omit unless the status is non-advancing -->
+- **Blocked by:** <condition preventing the named next action>   <!-- omit unless the status is non-advancing -->
 ```
 
 Do not say only "continue" or list several possible next skills. Name the selected phase when
