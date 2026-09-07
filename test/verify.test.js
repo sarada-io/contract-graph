@@ -2023,6 +2023,29 @@ test("cg-auto-run stays an adapter, and produce executes a prepared split", () =
     "warmup is never a successor this adapter may follow",
   );
 
+  const protocol = fs.readFileSync(
+    path.join(SOURCE_ROOT, "skills", "cg-auto-run", "references", "protocol.md"),
+    "utf8",
+  );
+  const engineer = fs.readFileSync(
+    path.join(SOURCE_ROOT, "skills", "cg-auto-run", "references", "engineer.md"),
+    "utf8",
+  );
+  const manager = fs.readFileSync(
+    path.join(SOURCE_ROOT, "skills", "cg-auto-run", "references", "manager.md"),
+    "utf8",
+  );
+  assert.match(autoRun, /Do not read\n\[Manager instructions\]/);
+  assert.match(engineer, /protocol\.md/);
+  assert.doesNotMatch(engineer, /references\/manager\.md/);
+  assert.doesNotMatch(protocol, /start one fresh Engineer/);
+  assert.doesNotMatch(protocol, /Report the whole run:/);
+  assert.match(protocol, /Dispose working files/);
+  assert.match(protocol, /mixed-context/);
+  assert.match(manager, /Accept the phase only when all of these exist on disk/);
+  assert.match(manager, /harvest\.auto-run\.md/);
+  assert.match(autoRun, /Standalone `cg-plan`/);
+
   const produce = skill("cg-produce");
   assert.match(produce, /still-mixed code is the starting state, not a reason to stop/);
   assert.match(produce, /do not\nemit `\$cg-plan`/);
@@ -3575,12 +3598,46 @@ test("an empty directory is residue even though git cannot see it", () => {
   assert.match(found[0].why, /empty directory/);
 });
 
-test("archived and ignored subtrees are never residue", () => {
+test("archived subtrees and live auto-run ledgers are never residue", () => {
   const dir = makeRepo();
   plan(dir, "a-roadmap.md", "# Roadmap\n");
   plan(dir, "archive/phase-0/step-01.md", "# closed\n");
   plan(dir, "auto-run/phase-1.auto-run.md", "# ledger\n");
   assert.deepEqual(residue(dir).residue.map((r) => r.path), []);
+});
+
+test("a Closed auto-run ledger is residue and a live one is not", () => {
+  const dir = makeRepo();
+  plan(dir, "a-roadmap.md", "# Roadmap\n");
+  plan(dir, "auto-run/trial/phase-1.auto-run.md", "**Phase:** phase-1\nClosed\n");
+  plan(dir, "auto-run/trial/phase-2.auto-run.md", "**Phase:** phase-2\n");
+  const found = residue(dir).residue;
+  assert.deepEqual(found.map((r) => r.path), ["docs/plans/auto-run/trial/phase-1.auto-run.md"]);
+  assert.match(found[0].why, /closed auto-run ledger/);
+});
+
+test("closed ledger detection supports explicit status and stale inbound links", () => {
+  const dir = makeRepo();
+  plan(dir, "a-roadmap.md", "# Roadmap\n[old run](auto-run/trial/)\n");
+  for (const [name, text] of [
+    ["canonical", "**Status:** Closed\n"],
+    ["bullet", "- **Status:** Closed\n"],
+    ["plain", "Status: Closed\n"],
+    ["legacy", "Closed\n"],
+  ]) plan(dir, `auto-run/trial/${name}.auto-run.md`, text);
+  assert.equal(residue(dir).residue.length, 4);
+  assert.ok(residue(dir).residue.every(item => /closed auto-run ledger/.test(item.why)));
+});
+
+test("live ledger status overrides historical Closed text", () => {
+  const dir = makeRepo();
+  plan(dir, "a-roadmap.md", "# Roadmap\n");
+  plan(dir, "auto-run/trial/active.auto-run.md", "**Status:** Active\nClosed\n");
+  plan(dir, "auto-run/trial/suspended.auto-run.md", "**Status:** Suspended\nPending answer: keep verbatim\n");
+  plan(dir, "auto-run/trial/awaiting.auto-run.md", "**Status:** Awaiting acceptance\n");
+  plan(dir, "auto-run/trial/history.auto-run.md", "```markdown\n**Status:** Closed\nClosed\n```\n");
+  plan(dir, "auto-run/trial/contradictory.auto-run.md", "**Status:** Active\n**Status:** Closed\n");
+  assert.deepEqual(residue(dir).residue, []);
 });
 
 test("warmup's files are live during warmup and residue after it", () => {

@@ -151,7 +151,12 @@ phase whose acceptance gate can prove the destination's obligations.
    a competing copy. The Engineer owns queue updates, including blocking and independent progress;
    applying the answer is serialized after the Manager records it. During a prepared harvest
    drain the Manager may temporarily hand off exact-cohort log writes, pausing its own writes
-   and queuing incoming answers until the Engineer returns ownership.
+   and queuing incoming answers until the Engineer returns ownership. Write
+   `<docs>/plans/auto-run/<programme>/harvest.auto-run.md` before that handoff and delete it when
+   ownership returns and all queued answers have been persisted and re-read in the
+   authoritative log. Cancellation stops execution, not answer preservation: reconcile
+   the worker before writing, and retain Suspended ledgers and the ownership record if
+   that cannot finish safely. Never delete the only recorded copy of a user answer.
 3. Ask directly in chat or the host's interaction tool. Include the decision ID, enough context
    to answer, all viable options with tradeoffs, and a clearly labelled recommendation. Offer
    selection or a typed solution; if the tool limits option count, present the complete options

@@ -86,6 +86,7 @@ npm run test:interaction -- observe <fixture> recovered-question <new-manager-id
 npm run test:interaction -- observe <fixture> answer-recorded <new-manager-id> <message-file>
 npm run test:interaction -- observe <fixture> phase-1-complete <new-manager-id> <gate-envelope-file>
 npm run test:interaction -- observe <fixture> phase-2-complete <new-manager-id> <gate-envelope-file>
+npm run test:interaction -- observe <fixture> cleanup <new-manager-id> <message-file>
 npm run test:interaction -- verify <fixture>
 ```
 
@@ -96,7 +97,13 @@ typed answer: `Use the stable node IDs in input order, and preserve each supplie
 Capture the recorded answer before notifying the Engineer, using an observer barrier rather than
 another user authorization. Release that barrier and observe automatic resumption, corrective
 preparation for the hidden-node defect, sign-off, and a different Engineer for Phase 2. Pause at
-each completed-phase observation before proceeding so the observer can run independent checks.
+each completed-phase observation after acceptance but before ledger deletion, so the observer
+can run independent checks and retain the actual Engineer identity and handoff. Release that
+measurement barrier, delete the accepted phase ledger, and then start the successor Engineer.
+After the final handoff capture, reconcile and remove the remaining working ledgers and handoff
+files, then capture `cleanup`. Canonical decisions, source and archived evidence must survive
+unchanged. New observations use evidence version 2; historical version 1 traces remain
+readable under their original six-checkpoint contract and cannot be appended to.
 
 Question files contain the actual received messages. At completion, the external observer runs
 `node checks/check.mjs phase-1` or `phase-2` and `cg verify` and saves their real outputs as JSON:

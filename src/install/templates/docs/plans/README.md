@@ -3,7 +3,9 @@
 Transient working documents: phase roadmaps from `cg-plan`, preparation records from `cg-prepare`,
 phase-close manifests from `cg-sign-off`, and [the decision log](decision-log.md).
 
-**Everything here is deletable.** That is the property the framework depends on: a permanent
+**Everything here is eventually disposable after its work and handoffs are reconciled.**
+Do not delete unresolved decisions, queued user answers, or the only recovery record of
+interrupted work. That is the property the framework depends on: a permanent
 contract may not cite a path under `docs/plans/` or a plan ticket ID as the source of a rule, and
 `cg verify` fails the build when one does. If deleting this directory would lose a rule, the rule
 was in the wrong place — move it to `.agents/cg/principles/` with its detector, or to a durable
@@ -15,6 +17,7 @@ record under `docs/decisions/`.
 | preparation record and Step queue | `cg-prepare` | `archive/` at phase close |
 | decision log | `cg-unblock` | entries graduate; the file stays as a ledger (entry shape is in the skill, not the file) |
 | decision-harvest manifest | `cg-sign-off` | `archive/` with its phase |
+| auto-run ledgers (`auto-run/`, `*.auto-run.md`) | `cg-auto-run` | gitignored live state; **delete** only after acceptance and reconciliation; retain Suspended recovery state — do not archive |
 
 Move a completed phase's records to `archive/` when its acceptance gate is green, and update any
 links that pointed at them.

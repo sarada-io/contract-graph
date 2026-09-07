@@ -8,11 +8,13 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { next, parseQueueDocument } from '../src/scripts/next.js';
+import { autoRunLedgerStatus } from '../src/scripts/residue.js';
 import { verify as verifyGraph } from '../src/scripts/verify.js';
 
 export const ANSWER = 'Use the stable node IDs in input order, and preserve each supplied label verbatim.';
-export const EVENTS = ['baseline', 'question', 'recovered-question', 'answer-recorded', 'phase-1-complete', 'phase-2-complete'];
-const instructions = ['cg-auto-run/SKILL.md', 'cg-auto-run/references/manager.md', 'cg-auto-run/references/engineer.md', 'cg-unblock/SKILL.md'];
+export const LEGACY_EVENTS = ['baseline', 'question', 'recovered-question', 'answer-recorded', 'phase-1-complete', 'phase-2-complete'];
+export const EVENTS = [...LEGACY_EVENTS, 'cleanup'];
+const instructions = ['cg-auto-run/SKILL.md', 'cg-auto-run/references/protocol.md', 'cg-auto-run/references/manager.md', 'cg-auto-run/references/engineer.md', 'cg-unblock/SKILL.md'];
 const ledger = phase => `docs/plans/auto-run/trial/${phase}.auto-run.md`;
 const sha = value => crypto.createHash('sha256').update(value).digest('hex');
 const questionFields = ['Context', 'Options', 'Recommendation', 'Blocks', 'Unblocks when', 'Scope'];
@@ -58,6 +60,7 @@ export function observe(root, event, actor, messageFile) {
     const { hash, ...body } = history[i];
     if (hash !== sha(JSON.stringify(body)) || body.previousHash !== (history[i - 1]?.hash ?? null)) throw new Error('Existing evidence chain is corrupt; do not append');
   }
+  if (history.length && history[0].version !== 2) throw new Error('Historical evidence is read-only; start a fresh version 2 trial');
   if (EVENTS[history.length] !== event) throw new Error(`Expected ${EVENTS[history.length] ?? 'no further event'}, received ${event}`);
   const files = snapshotFiles(root);
   const skillHashes = Object.fromEntries(instructions.map(file => {
@@ -72,7 +75,7 @@ export function observe(root, event, actor, messageFile) {
     message = envelope.text;
     gates = envelope.gates ?? [];
   }
-  const record = seal({ version: 1, root, event, actor, timestamp: new Date().toISOString(), files, skillHashes,
+  const record = seal({ version: 2, root, event, actor, timestamp: new Date().toISOString(), files, skillHashes,
     next: next(root), graphFailures: verifyGraph(root).failures, message, gates }, history.at(-1)?.hash ?? null);
   fs.appendFileSync(evidencePath(root), JSON.stringify(record) + '\n', { flag: 'a', mode: 0o600 });
   return record;
@@ -81,19 +84,25 @@ export function observe(root, event, actor, messageFile) {
 export function evaluate(history) {
   const findings = [];
   const require = (condition, message) => { if (!condition) findings.push(message); };
-  require(history.length === EVENTS.length, 'Incomplete evidence: expected baseline and all five interaction events');
   const baseline = history[0];
+  const version = baseline?.version;
+  const expectedEvents = version === 1 ? LEGACY_EVENTS : EVENTS;
+  const requiredInstructions = version === 1 && !baseline?.files?.['.agents/skills/cg-auto-run/references/protocol.md']
+    ? instructions.filter(file => file !== 'cg-auto-run/references/protocol.md') : instructions;
+  require(version === 1 || version === 2, 'Unsupported evidence version');
+  require(history.length === expectedEvents.length, 'Incomplete evidence: expected all interaction events and required cleanup');
   for (let i = 0; i < history.length; i++) {
     const record = history[i];
     const { hash, ...body } = record;
     require(hash === sha(JSON.stringify(body)), `${record.event}: evidence hash mismatch`);
     require(record.previousHash === (history[i - 1]?.hash ?? null), `${record.event}: broken evidence chain`);
-    require(record.event === EVENTS[i], `Event ${i}: invalid event order`);
+    require(record.version === version, `${record.event}: mixed evidence versions`);
+    require(record.event === expectedEvents[i], `Event ${i}: invalid event order`);
     require(record.root === baseline.root, `${record.event}: fixture changed`);
     require(typeof record.actor === 'string' && record.actor.trim(), `${record.event}: actor missing`);
     require(Number.isFinite(Date.parse(record.timestamp)) && (!i || Date.parse(record.timestamp) >= Date.parse(history[i - 1].timestamp)), `${record.event}: invalid timestamp order`);
     require(JSON.stringify(record.skillHashes) === JSON.stringify(baseline.skillHashes), `${record.event}: installed instructions changed`);
-    for (const instruction of instructions) require(record.skillHashes?.[instruction] === sha(record.files?.[`.agents/skills/${instruction}`] ?? ''), `${record.event}: missing or inconsistent instruction hash: ${instruction}`);
+    for (const instruction of requiredInstructions) require(record.skillHashes?.[instruction] === sha(record.files?.[`.agents/skills/${instruction}`] ?? ''), `${record.event}: missing or inconsistent instruction hash: ${instruction}`);
     const installed = files => Object.fromEntries(Object.entries(files ?? {}).filter(([file]) => file.startsWith('.agents/skills/')));
     require(JSON.stringify(installed(record.files)) === JSON.stringify(installed(baseline.files)), `${record.event}: installed skill files changed`);
     require(record.files?.['notes.txt'] === baseline.files?.['notes.txt'] && baseline.files?.['notes.txt'] !== undefined, `${record.event}: unrelated edit not preserved`);
@@ -102,6 +111,14 @@ export function evaluate(history) {
     require(Array.isArray(record.graphFailures) && record.graphFailures.length === 0, `${record.event}: graph verification failed`);
     require(record.next && record.next.state !== 'unreadable', `${record.event}: queue unreadable`);
     if (i === 0) continue;
+    if (record.event === 'cleanup') {
+      const working = file => file.startsWith('docs/plans/auto-run/');
+      require(!Object.keys(record.files ?? {}).some(working), 'cleanup: working ledgers or handoffs remain');
+      const lasting = files => Object.fromEntries(Object.entries(files ?? {}).filter(([file]) => !working(file)));
+      require(JSON.stringify(lasting(record.files)) === JSON.stringify(lasting(history[i - 1].files)), 'cleanup: source, decisions or durable evidence changed during disposal');
+      require(record.actor === history[i - 1].actor, 'cleanup: completion Manager must confirm disposal');
+      continue;
+    }
     const log = record.files?.['docs/plans/decision-log.md'] ?? '';
     require((log.match(/^#{2,6}\s+DU-\d+\b/gm) ?? []).length === 1 && /^#{2,6}\s+DU-01\b/m.test(log), `${record.event}: expected exactly one DU-01 decision heading`);
     if (i <= 2) {
@@ -121,13 +138,14 @@ export function evaluate(history) {
     if (i >= 4) {
       const phase = `phase-${i - 3}`;
       const phaseLedger = record.files?.[ledger(phase)] ?? '';
-      require(/Closed/i.test(phaseLedger) && new RegExp(`\\*\\*Phase:\\*\\*[^\\n]*${phase.replace('-', '[- ]')}\\b`, 'i').test(phaseLedger), `${record.event}: closed phase ledger missing or wrong phase`);
+      require((version === 1 ? /Closed/i.test(phaseLedger) : autoRunLedgerStatus(phaseLedger) === 'closed') && new RegExp(`\\*\\*Phase:\\*\\*[^\\n]*${phase.replace('-', '[- ]')}\\b`, 'i').test(phaseLedger), `${record.event}: closed phase ledger missing or wrong phase`);
       const queues = Object.entries(record.files ?? {}).filter(([file]) => file.includes('/archive/') && file.includes(phase) && file.endsWith('_detailed_preparation.md'));
       require(queues.some(([file, text]) => { const steps = parseQueueDocument(text, file); return steps.length > 0 && steps.every(step => step.status === 'Complete' && !step.problems.length); }), `${record.event}: completed archived queue missing`);
       require(Array.isArray(record.gates) && record.gates.length > 0 && record.gates.every(gate => typeof gate.command === 'string' && gate.command.trim() && gate.status === 0 && typeof gate.stdout === 'string' && typeof gate.stderr === 'string'), `${record.event}: missing or failed acceptance gate evidence`);
       require(record.gates?.some(gate => gate.command === `node checks/check.mjs ${phase}`) && record.gates?.some(gate => /(?:^|\s|\/)cg(?:\.js)?\s+verify\b/.test(gate.command)), `${record.event}: expected phase acceptance and cg verify commands`);
     }
   }
+  if (version === 2 && history[5]) require(!history[5].files?.[ledger('phase-1')], 'phase-2-complete: accepted phase 1 ledger was not disposed');
   if (history[2]) require(history[1].actor !== history[2].actor, 'Recovery must use a different Manager');
   if (history[2]) for (const field of questionFields) require(fieldContent(history[1].files?.['docs/plans/decision-log.md'] ?? '', field) === fieldContent(history[2].files?.['docs/plans/decision-log.md'] ?? '', field), `Recovery changed saved decision ${field}`);
   if (history[3]) require(history[2].actor === history[3].actor, 'Recovered Manager must record the answer');

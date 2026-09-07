@@ -123,14 +123,22 @@ and commits. Until those controls exist, `cg-prepare` emits sequential Steps onl
 
 ## Mandatory Next-Action Response
 
-Under `cg-auto-run`, the Manager coordinates one Engineer per phase. The Engineer reads the
-Plan directly, retains phase context through preparation, production, corrective work and
-sign-off, and returns evidence and forward implications. The Manager maintains programme
-continuity, handles user questions, and validates completion evidence before selecting another
-Engineer. Load the role instructions linked from `.agents/skills/cg-auto-run/SKILL.md`; skills
-still own lifecycle work. Fresh context and model selection depend on host capabilities and must
-not be claimed when unavailable. The Plan, contracts, decision records, queues and sign-off
-artifacts allow either role to recover without previous chat history.
+Under `cg-auto-run`, the Manager coordinates one Engineer per phase. Those roles exist only
+under that skill: standalone `cg-plan` and `cg-produce` are user-invoked stages, not Manager
+or Engineer jobs. The Engineer reads the Plan directly, retains phase context through
+preparation, production, corrective work and sign-off, and returns evidence and forward
+implications. The Manager maintains programme continuity, handles user questions, and
+validates a closed disk checklist before selecting another Engineer. Load the role
+instructions linked from `.agents/skills/cg-auto-run/SKILL.md`; the Engineer reads protocol.md
+then engineer.md, not manager.md. Skills still own lifecycle work. The discrete agent is one
+fresh Engineer per phase, not one agent per stage. Fresh context and model selection depend
+on host capabilities and must not be claimed when unavailable; without workers, stop unless
+the invocation names `mixed-context`. Auto-run ledgers are deleted only after acceptance and cleanup reconciliation,
+not merely because a run stops. Keep Suspended recovery state on cancellation,
+missing authority or host failure until ownership and queued user answers are safe.
+Use an explicit `**Status:** Closed` field only when a ledger is safe to delete;
+never archive working ledgers. The Plan, contracts, decision records, queues and sign-off artifacts
+allow either role to recover without previous chat history.
 
 Every completed Contract Graph skill invocation, including a blocked or corrective result, ends its
 user-facing response with exactly one `Next action` block:

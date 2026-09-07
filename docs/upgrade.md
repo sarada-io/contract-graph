@@ -75,8 +75,12 @@ before using the new roles, preserving your other amendments. Compare against th
 `agent/cg/workflow.md`. Re-init and warmup do not silently make this policy choice for you.
 
 Fresh phase workers, independent model selection and asynchronous questions depend on the host.
-The skill reports unavailable capabilities and preserves recorded state; `cg verify` checks graph
-integrity, not whether a particular host executed the Manager–Engineer protocol correctly.
+Without workers, the skill stops unless the invocation names `mixed-context`. Use `**Status:** Closed` only after acceptance, worker-ownership reconciliation and
+persistence of queued answers. Delete those ledgers rather than archiving them;
+`cg residue` reports them even if stale links remain. Cancellation and authority exhaustion
+retain Suspended recovery state when cleanup conditions are unmet. Older standalone
+`Closed` markers remain recognized; an explicit Active or Suspended status takes precedence. `cg verify` checks
+graph integrity, not whether a particular host executed the Manager–Engineer protocol correctly.
 
 ## 0.3.0 versus 0.4.0
 

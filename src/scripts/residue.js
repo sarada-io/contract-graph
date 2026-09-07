@@ -26,8 +26,45 @@ const LINK = /\[[^\]]*\]\(<?([^)>\s]+)[^)]*\)|^\[[^\]]+\]:\s*(\S+)/gm;
 /** Always claimed: the log is permanent by design, the README is optional prose about the tree. */
 const NAMED_ROOTS = new Set(["decision-log.md", "README.md"]);
 
-/** Drained or ignored already — not this command's business. */
-const EXEMPT_DIRS = new Set(["archive", "auto-run"]);
+/** Drained already — not this command's business. Live auto-run ledgers are working state; Closed ones are residue. */
+const EXEMPT_DIRS = new Set(["archive"]);
+
+/** Auto-run ledgers and locks live under this plans subtree. */
+function isAutoRunPath(plansRoot, file) {
+  const rel = path.relative(plansRoot, file);
+  return rel === "auto-run" || rel.startsWith(`auto-run${path.sep}`);
+}
+
+/** Read explicit current status outside fenced history; support older bare Closed markers. */
+export function autoRunLedgerStatus(text) {
+  const lines = [];
+  let fence = null;
+  for (const line of text.split(/\r?\n/)) {
+    const marker = /^\s{0,3}(`{3,}|~{3,})/.exec(line)?.[1];
+    if (marker) {
+      if (!fence) fence = marker;
+      else if (marker[0] === fence[0] && marker.length >= fence.length) fence = null;
+      continue;
+    }
+    if (!fence) lines.push(line);
+  }
+  const statuses = lines.flatMap(line => {
+    const match = /^\s*(?:[-*]\s+)?(?:\*\*Status:\*\*|Status:)\s*(.*?)\s*$/i.exec(line);
+    return match ? [match[1].toLowerCase()] : [];
+  });
+  if (statuses.length) return new Set(statuses).size === 1 ? statuses[0] : null;
+  return lines.some(line => /^Closed\s*$/i.test(line)) ? "closed" : null;
+}
+
+/** A phase or manager ledger marked Closed — leftover working state, not history. */
+function isClosedAutoRunLedger(file) {
+  if (!/\.auto-run\.md$/i.test(file)) return false;
+  try {
+    return autoRunLedgerStatus(fs.readFileSync(file, "utf8")) === "closed";
+  } catch {
+    return false;
+  }
+}
 
 /** Warmup's outputs, which are legitimately unreferenced while warmup is still running. */
 const WARMUP_FILES = new Set([
@@ -147,13 +184,16 @@ export function residue(repoRoot, { docs } = {}) {
   }
 
   const unreachable = files
-    .filter((file) => !reachable.has(file))
+    .filter((file) => !reachable.has(file) || (isAutoRunPath(plansRoot, file) && isClosedAutoRunLedger(file)))
+    .filter((file) => !isAutoRunPath(plansRoot, file) || isClosedAutoRunLedger(file))
     .map((file) => ({
       path: rel(file),
       why:
         WARMUP_FILES.has(path.basename(file)) && finished && path.basename(file) !== RESEED_DELTA
           ? "warmup finished; its working files have no reader left"
-          : "not reachable by a link from any root",
+          : isAutoRunPath(plansRoot, file) && isClosedAutoRunLedger(file)
+            ? "closed auto-run ledger remains; reconcile stale links and delete it, do not archive"
+            : "not reachable by a link from any root",
     }));
 
   const empty = dirs

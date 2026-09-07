@@ -76,26 +76,31 @@ the source of those rules.
 
 ## Auto-run roles and context
 
-Auto-run is optional. Its **Manager** maintains programme continuity and coordinates one
-**Engineer** per phase. The Engineer reads the Plan directly, including programme intent and
-constraints, its full phase and acceptance criteria, and relevant prerequisite evidence. It then
-routes through contracts and loads implementation and skills as needed. It retains that context
-through preparation, sequential execution, repairs and sign-off.
+Auto-run is optional. Manager and Engineer exist only under `/cg-auto-run`. Standalone
+`/cg-plan` and `/cg-produce` are skills you invoke; they are not those roles. A new chat for
+Produce after the Plan is on disk is ordinary isolation, not a Manager.
+
+Its **Manager** maintains programme continuity and coordinates one **Engineer** per phase. The
+Engineer reads the Plan directly, including programme intent and constraints, its full phase
+and acceptance criteria, and relevant prerequisite evidence. It then routes through contracts
+and loads implementation and skills as needed. It retains that context through preparation,
+sequential execution, repairs and sign-off. That discrete agent is one phase, not one stage.
 
 The Engineer asks its Manager for clarification first. The Manager checks the Plan and accepted
 decisions, and asks you when a new user choice is needed. It records your answer and sends the
 resolution back so the same Engineer can resume. The Manager owns decision-log writes; the
 Engineer owns phase queue and implementation writes. A prepared harvest drain uses an explicit
-temporary handoff of decision-log ownership so the two roles never write it concurrently.
+`harvest.auto-run.md` so the two roles never write the log concurrently.
 
 After sign-off, the Engineer returns verification evidence, durable-record links, unresolved
-matters and scoped implications for later phases. The Manager checks completion evidence before
-starting the next Engineer. It does not duplicate implementation review. Durable truth stays in
-contracts, specifications and decision records; neither role relies on the previous chat as its
-only memory. A failed phase stays with its Engineer for correction. When source sign-off requires an accepted
-harvest destination to be prepared first, the Manager can coordinate that preparation while the
-source Engineer pauses; destination execution still waits for source closure and sufficient
-authority and host support are required.
+matters and scoped implications for later phases. The Manager accepts the phase from a closed
+disk checklist (sign-off artifact, archived queue, gate stdout, `cg verify`, Next action with
+no `Blocked by`) before starting the next Engineer. It does not duplicate implementation
+review. Durable truth stays in contracts, specifications and decision records; neither role
+relies on the previous chat as its only memory. A failed phase stays with its Engineer for
+correction. When source sign-off requires an accepted harvest destination to be prepared first,
+the Manager can coordinate that preparation while the source Engineer pauses; destination
+execution still waits for source closure and sufficient authority and host support are required.
 
 You may select the Manager and Engineer models and reasoning settings separately in your run
 request, with explicit phase overrides if needed. Auto-run records those choices and uses the
@@ -103,11 +108,16 @@ host's actual controls; writing a model name into a skill does not select it. Wi
 choices it retains host defaults. Unsupported requested settings are reported rather than silently
 substituted. No universal model-selection CLI or agent runtime ships with Contract Graph.
 
-Fresh workers and live questions depend on the host. Where workers are unavailable, the roles can
-run sequentially in one session, with that limitation disclosed; this does not isolate context.
-If you require fresh workers, an unsupported host is a blocker. Where asynchronous input is
-unavailable, the run checkpoints and yields for your answer. Context isolation is intended to
-reduce accumulated context across phases; token savings have not been established by benchmarks.
+Fresh workers and live questions depend on the host. Where workers are unavailable, Auto-Run
+stops unless the invocation names `mixed-context`; that sequential fallback does not isolate
+context. If you require fresh workers, an unsupported host is a blocker. Where asynchronous
+input is unavailable, the run checkpoints and yields for your answer. Context isolation is
+intended to reduce accumulated context across phases; token savings have not been established
+by benchmarks. Use an explicit `**Status:** Closed` field only after acceptance and cleanup
+reconciliation. Persist queued answers in the decision log and resolve worker ownership
+before deletion. Cancellation or authority exhaustion retains Suspended recovery state
+when those conditions are unmet; it never discards the only copy of an answer. Closed
+ledgers are deleted, not archived, after any requested external evidence capture.
 
 ## How a plan is executed
 
@@ -140,8 +150,8 @@ decisions** as settled until they are promoted or dropped.
 
 | Lasting | Temporary |
 |---|---|
-| `contract.yaml` nodes, edges, routes, invariants | Roadmaps and step queues |
-| Architecture bindings (`A`) and product rules (`P`) | Auto-run ledgers |
+| `contract.yaml` nodes, edges, routes, invariants | Roadmaps and step queues (archive at close, then delete) |
+| Architecture bindings (`A`) and product rules (`P`) | Auto-run ledgers (delete after acceptance and reconciliation; retain Suspended recovery state; do not archive) |
 | Durable records under `docs/decisions/` and `docs/guides/` | Warmup findings once adoption has finished; a reseed delta after the owner has read it |
 | The decision log *file* (entries drain; the ledger remains) | A decision *id* as the source of a contract rule |
 
