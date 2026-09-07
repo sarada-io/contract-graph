@@ -9,3 +9,10 @@ plan/
 tmp/
 build/
 compiled/   # leftover name for build/; keep ignored so it cannot be committed
+
+# Test output when a host sets its temporary directory to the checkout.
+# mkdtemp appends six random characters; do not ignore all cg-* paths.
+/cg-*-[A-Za-z0-9][A-Za-z0-9][A-Za-z0-9][A-Za-z0-9][A-Za-z0-9][A-Za-z0-9]/
+/cg-gate-*.json
+/cg-npm-cache/
+/node-compile-cache/
