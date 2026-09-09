@@ -12,7 +12,7 @@ tree — not a graph to copy. After adoption, `cg-plan`, `cg-prepare`, `cg-produ
 have real contracts to work against. An already-governed tree uses **Reseed** instead: the graph
 on disk is the baseline, not a predecessor.
 
-**Never delete this skill.** `cg verify` requires all seven skills, and a later module tree still
+**Never delete this skill.** `cg verify` requires all eight skills, and a later module tree still
 needs these instructions. Auto-run never dispatches it.
 
 Warmup declares and mechanically protects an existing cohesive declared surface before proposing

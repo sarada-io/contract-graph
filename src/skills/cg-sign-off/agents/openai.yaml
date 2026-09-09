@@ -1,4 +1,4 @@
 interface:
   display_name: "CG Sign Off"
-  short_description: "Close a phase and write its durable record"
-  default_prompt: "Use $cg-sign-off to verify that every prepared Step completed through a dependency-safe continuous sequential history, drive corrective Steps when needed, hand out-of-phase work or roadmap corrections to planning, harvest and write the durable design records, guides, and diagrams the phase leaves behind, close only on a green gate, and name the user's exact next action and skill."
+  short_description: "Finish a prototype or close a delivery phase"
+  default_prompt: "Use $cg-sign-off to finish the selected prototype's remaining production work or verify and close the selected delivery phase, preserving UX acceptance and closing only after required code, tests, contracts, documentation, and final checks are complete."

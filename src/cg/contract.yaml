@@ -64,6 +64,8 @@ extensions:
         path: .agents/skills/cg-prepare/SKILL.md
       - name: cg-produce
         path: .agents/skills/cg-produce/SKILL.md
+      - name: cg-prototype
+        path: .agents/skills/cg-prototype/SKILL.md
       - name: cg-sign-off
         path: .agents/skills/cg-sign-off/SKILL.md
       - name: cg-unblock

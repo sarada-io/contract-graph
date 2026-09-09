@@ -54,7 +54,9 @@ execution branch or worktree policy is known. If the outcome or gate must change
 3. Resolve `<docs>` from `.agents/cg/profile.json` `docs` (default `docs`). Confirm with
    `cg residue`. The queue file is `<docs>/plans/<programme>/<phase>_detailed_preparation.md`.
 4. Inspect source, tests, resources, and the worktree inside the selected units only.
-5. Run `cg verify` and the narrowest useful baseline. Record existing failures as facts.
+5. Establish `cg verify` and the narrowest useful baseline; reuse applicable recorded evidence
+   under [verification](../cg-prepare/references/verification.md), otherwise run the commands.
+   Record existing failures as facts.
 
 When `cg-sign-off` returns corrective work, preserve its reproduction, expected and actual result,
 affected paths, contract and detector impact, dependencies, and `Done when` evidence. Re-prepare
@@ -75,6 +77,16 @@ later Step `Waiting` behind it. After writing the route, resume `cg-sign-off` fo
 do not begin destination execution yet.
 
 The roadmap is transient. Do not cite a plan path as the source of a rule.
+
+## Prototype admission
+
+For a prototype programme, use `cg next --programme <slug>` and read its durable prototype
+record. Delivery requires `Handed off`, explicit human acceptance, and a finalised roadmap. Admit
+the exact worktree including relevant uncommitted files; do not reconstruct it from the plan or
+call it green. Assign retained code, incomplete behavior, deferred tests, and known failures to
+Steps that complete and verify them. The first corrective Step may start from this measured
+provisional baseline. Existing verification failures are work to repair, not automatic reasons
+to refuse preparation. Only record a verified handoff after the assigned gate passes.
 
 ## 2. Define Steps
 
@@ -200,9 +212,11 @@ cross-branch handoffs. Prepare sequential Steps only.
 
 ## 7. Define verification
 
-Every Step has one runnable `Done when` command. It includes Step-specific positive and negative
-tests, `cg verify`, residue or ownership checks for moves, the full build when the repository
-requires it, and a clean or explicitly accounted-for worktree.
+Every Step has one runnable `Done when` command. Apply [verification](references/verification.md):
+cover changed promises with applicable positive and negative cases, `cg verify`, residue or
+ownership checks for moves, the full build when repository policy or impact requires it, and
+a clean or explicitly accounted-for worktree. Record existing sufficient coverage; do not create
+tests that merely mirror class or file structure. Assign each check once per applicable state.
 
 In the phase preamble, name checks that only make sense after the full sequence: composition,
 residue, and the phase acceptance gate. Do not put those in a Step `Done when`. Emergent checks
@@ -265,10 +279,15 @@ After writing, run `cg next`. If it reports `unreadable`, fix the headers before
 
 ## Stage boundary — yield here
 
+When invoked by the [prototype completion coordinator](../cg-sign-off/references/prototype-completion.md),
+return the stage handoff to that coordinator so it can continue the selected prototype's recorded
+completion request. Preserve normal queue readiness, ownership, and Step verification. The ordinary
+standalone boundary below still applies outside that scope.
+
 **Finish your stage, then return to the user.** Do not invoke the next skill yourself, however
 obvious the route is. The `Next action` block names the successor so a person can choose it and so
 `cg-auto-run` can follow it under a granted authority — naming it is not permission to take it.
-The single exception is a dispatch from `cg-auto-run`. If you were not dispatched by it, you are
+Outside prototype completion, the exception is a dispatch from `cg-auto-run`. If you were not dispatched by it, you are
 the last stage of this turn.
 
 ## 9. Next-action response

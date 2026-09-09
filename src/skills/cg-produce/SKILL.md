@@ -23,7 +23,7 @@ Finish with all ten true:
    governing contract.
 5. A new or changed rule and its detector land with the implementation.
 6. The Step edits only its declared paths and preserves unrelated work.
-7. Its `Done when` command and repository full gate pass.
+7. Its assigned `Done when` gate passes, including broader checks when scope or policy requires them.
 8. Every handoff updates the Step report and all affected queue states.
 9. Execution continues through ready work until the queue drains or no `Ready` Step remains.
 10. The response ends with the `Next action` block in §9.
@@ -44,9 +44,13 @@ state, editable paths, required contract changes, work, handoff, or `Done when`.
    your review* entries are not, and a Step blocked on one stays blocked.
 4. Run `cg next`. Confirm this is the lowest-numbered `Ready` Step.
 5. Confirm the branch or worktree and baseline match the preparation.
-6. Verify every declared prerequisite handoff and the latest accumulated phase state.
+6. Verify every declared prerequisite handoff and the latest accumulated phase state. The first
+   prepared prototype repair may explicitly admit a measured provisional baseline; do not claim it
+   is green or refuse the repair solely because the assigned defects still exist.
 7. Inspect the worktree and preserve pre-existing unrelated changes.
-8. Run `cg verify` and the narrowest useful baseline. Record existing failures as facts.
+8. Establish `cg verify` and the narrowest useful baseline; reuse applicable recorded evidence
+   under [verification](../cg-prepare/references/verification.md), otherwise run the commands.
+   Record existing failures as facts.
 
 If `graph` decides `add-child` or `elsewhere`, compare it to the Step brief. If the brief already
 names that split, new child, service set, or vendor adapter as this Step's work, execute it:
@@ -72,7 +76,7 @@ Within the Step:
 1. state the contract truth that changes;
 2. update or add its executable detector;
 3. implement the smallest end-to-end behavior;
-4. update or add functional tests;
+4. update or add functional tests where changed promises lack adequate coverage;
 5. update resources and dependencies;
 6. run the Step verification and `cg verify`;
 7. inspect the diff and residue scan; and
@@ -166,8 +170,9 @@ satisfied by writing a document about it.
 ## 8. Verify and hand off accumulated state
 
 1. Run the Step's `Done when` verbatim.
-2. Run the full build-and-contract gate named in the preparation record — its build/test command
-   plus `cg verify`. If the command is not named, ask for it; do not invent one.
+2. Account for each assigned check once using [verification](../cg-prepare/references/verification.md).
+   Do not add a second unconditional full gate. Run broader checks when the preparation or retained
+   repository policy requires them; missing Step verification requires re-preparation.
 3. Compare the diff with the Step's expected starting state.
 4. Confirm only declared paths and preserved unrelated changes appear.
 5. Record the commit or exact worktree state that dependent Steps consume.
@@ -182,10 +187,15 @@ state in the phase's single execution context.
 
 ## Stage boundary — yield here
 
+When invoked by the [prototype completion coordinator](../cg-sign-off/references/prototype-completion.md),
+return the stage handoff to that coordinator so it can continue the selected prototype's recorded
+completion request. Preserve normal queue readiness, ownership, and Step verification. The ordinary
+standalone boundary below still applies outside that scope.
+
 Drain every `Ready` Step in this invocation. That is this stage, not a new one. Then return to the
 user. Do not invoke the next skill yourself, however obvious the route is. The `Next action` block
 names the successor so a person can choose it and so `cg-auto-run` can follow it under a granted
-authority — naming it is not permission to take it. The single exception is a dispatch from
+authority — naming it is not permission to take it. Outside prototype completion, the exception is a dispatch from
 `cg-auto-run`. If you were not dispatched by it, you are the last stage of this turn after the
 queue drains or no `Ready` Step remains.
 

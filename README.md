@@ -29,7 +29,7 @@ npm install --global contract-graph
 cg --version
 ```
 
-That installs the CLI, its YAML parser, the scaffold, and the seven lifecycle skills. Nothing in
+That installs the CLI, its YAML parser, the scaffold, and the eight lifecycle skills. Nothing in
 your repository changes until you run `cg init` there.
 
 ## Use it in a repository
@@ -79,9 +79,10 @@ write product code.
 |---|---|
 | `/cg-warmup` | Adoption or additive reseed on existing code: discover boundaries, write or extend their contracts |
 | `/cg-plan` | Turn an outcome into ordered phases |
+| `/cg-prototype` | Launch and refine a working prototype with your feedback, then prepare the accepted result for delivery |
 | `/cg-prepare` | Turn one phase into a queue of steps |
 | `/cg-produce` | Run the next ready step: code, tests, and contracts together |
-| `/cg-sign-off` | Close a phase when the graph still describes the code |
+| `/cg-sign-off` | Finish a selected prototype's production work, or verify and close a delivery phase |
 | `/cg-unblock` | Record a fork so other work can continue |
 | `/cg-auto-run` | Opt-in: Manager coordinates one Engineer per phase and asks unresolved decisions; never auto-runs warmup |
 
@@ -114,7 +115,7 @@ and [vision](https://sarada.io/community/contract-graph/vision/) guides.
 
 ## Honest limits
 
-Built today: schema-backed contracts, task routing, brownfield discovery, the seven skills, and
+Built today: schema-backed contracts, task routing, brownfield discovery, the eight skills, and
 verification that the authored graph is connected (reciprocal edges, no cycles, reachable from
 the root, declared surfaces and checks resolve).
 

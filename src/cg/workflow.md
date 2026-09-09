@@ -18,8 +18,8 @@ structural integrity.
    problem you meant.
 4. **Walking skeleton before features.** The first deployed slice goes end to end and is read
    line by line. Everything after is pattern-matched to it.
-5. **Verify with commands.** Never assert something works without running the build, the tests,
-   or the check.
+5. **Match claims to evidence.** Use executable checks for machine-verifiable promises and
+   attributed human observations for prototype acceptance. State failures and checks not run.
 6. **Resolve from authority; ask when a user decision remains.** Follow
    `.agents/skills/cg-unblock/SKILL.md` for assumptions, protected choices, and decision records.
    An Auto-Run Engineer asks its Manager first; the Manager checks the Plan and accepted decisions
@@ -58,23 +58,40 @@ During harvest, use `cg-unblock` D-5a: route a recurring decision once to a cont
    elsewhere. Recurse until `graph.selfSufficient` and `graph.stop` say this node is the leaf.
    If placement is wrong, re-route or prepare that graph change — do not add the
    behavior to the boundary already opened. Read implementation only after this placement is known.
-6. Use `cg-plan` to create or update the phase-wise roadmap for non-trivial work.
+6. Use `cg-plan` for a sufficiently understood outcome. When the intended experience needs
+   exploration, use `cg-prototype`: launch, iterate through manual feedback, record explicit
+   acceptance, and finalise the same roadmap before preparation. Prototype iterations defer
+   application test automation and prepared Steps, while contract truth and binding detectors remain.
 7. Use `cg-prepare` to turn one selected phase into one prioritized, dependency-ordered Step queue
    in a single execution branch or worktree.
 8. Use `cg-produce` to run the earliest `Ready` Step, one at a time. After each verified handoff,
    recalculate the queue and continue through ready work until every Step is `Complete` or no
    `Ready` Step remains. Never execute Steps concurrently.
-9. Every new class ships with its own test coverage in the same change; every materially modified
-   class has its existing tests updated or extended to cover the change. A passing build is not
-   evidence of this by itself — a new/changed class with no corresponding test file or test method
-   is incomplete, whether or not everything else compiles and the existing suite is green.
+9. Delivery Steps need adequate test coverage for changed observable behavior and invariants.
+   Extend tests when existing coverage is insufficient; record the evidence rather than requiring
+   a new test file merely because a class changed. A passing build alone does not prove coverage.
 10. If behavior, boundaries, invariants, entry points, or operational assumptions changed, the
    executing Step updates impacted contract(s) and detectors in the same change.
 11. Use `cg-sign-off` to verify the accumulated Step sequence, drive defects through corrective
     Steps and re-verification, and close the selected phase only when its acceptance gate passes.
 
-A task that changes behavior but skips contract updates is incomplete. A task that adds or
-materially changes a class but skips its test coverage is incomplete the same way.
+Every task assesses contract impact. Update contracts when their facts change; internal changes
+with unchanged promises can leave YAML untouched. Delivery is incomplete when changed behavior
+lacks adequate coverage. Preparation, production, and sign-off share the evidence rules in
+`.agents/skills/cg-prepare/references/verification.md`; do not repeat unchanged checks just because
+a new stage asks the same question. Retained repository gates and binding detectors still apply.
+
+Prototype progress is recorded under `.agents/cg/prototypes/` and the programme roadmap. Human
+approval is distinct from delivery completion. Preparation admits the measured provisional code
+and assigns deferred obligations. Final sign-off closes the durable prototype receipt only after
+the delivery gate passes. Optional repository merge protection uses `cg delivery verify --base`
+as a required check alongside ordinary CI; prototype status itself is not permission to merge.
+
+Concurrent prototype and delivery sessions keep separate programme ledgers and declare each
+writer's scope with `cg prototype checkpoint --programme <slug> --session <id> --evidence <json>`.
+Follow the cg-prototype concurrent-work reference for observed changes, overlaps, shared resources,
+and stable final checks. Session declarations do not prove independent writes. One programme's
+closure does not approve another programme or make their combined branch mergeable.
 
 Contract correctness is an execution responsibility. `cg-prepare` assigns each required contract
 change to the Step that changes the behavior; `cg-produce` changes the contract and detector with
@@ -93,6 +110,21 @@ affected scope, contract and decision impact, a proposed acceptance gate, depend
 status, and the reason it cannot be fixed safely in the selected phase. Only truly out-of-scope
 work may be carried forward while closing a green phase. A failing phase acceptance gate remains
 Incomplete or Blocked and must not be archived as Complete.
+
+## Completing a prototype with cg-sign-off
+
+A direct request to finish a selected prototype enters cg-sign-off's prototype-completion path.
+It records the user's completion request separately from UX acceptance, reconciles deferred work,
+finalises the same roadmap, and coordinates prepare, sequential produce, repairs, documentation,
+and ordinary phase sign-off until that prototype's completion requirements pass. It may assess
+work before a delivery queue exists; assessment never authorizes premature closure.
+
+This is a scoped stage-continuation exception for the selected prototype, with a durable request
+and roadmap ledger. Prepare and produce return their handoffs to the sign-off coordinator rather
+than requiring another user invocation. Existing normal phase sign-off and auto-run authority
+remain unchanged. An auto-run phase worker cannot grant itself whole-prototype authority.
+Use the same phase guards for actual closure, preserve concurrent ownership, and do not infer
+UX approval from a sign-off command. Follow `.agents/skills/cg-sign-off/references/prototype-completion.md`.
 
 ## Sequential Execution Rule
 

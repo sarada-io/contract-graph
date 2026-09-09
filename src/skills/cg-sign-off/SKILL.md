@@ -1,6 +1,6 @@
 ---
 name: cg-sign-off
-description: Close one selected Contract Graph phase and own the durable record it leaves behind. Use after every prepared cg-produce Step reports complete, when final composition exposes a defect, or standalone whenever implemented behavior or durable rationale must be explained outside .agents/cg files. Verifies dependency-safe queue history, blocked-Step deferrals and resumptions, every Step handoff, and combined phase behavior; fixes closure-owned composition issues directly; drives behavior or contract defects through corrective cg-produce Steps; harvests decisions and durable knowledge; maintains architecture and design records, product and operator guides, and Mermaid diagrams; and emits planning handovers for out-of-phase work or roadmap corrections. Never closes or archives a phase with an incomplete Step or failing acceptance gate, and never displaces a required contract update from cg-produce.
+description: Complete a selected prototype through its remaining production work, or close a prepared Contract Graph phase and its durable record. Use when the user asks to finish a prototype, after prepared Steps complete, when final composition exposes a defect, or for standalone durable documentation. Prototype completion coordinates prepare, produce, tests, contract updates, documentation, repairs, and final verification within the user's selected scope. Ordinary phase sign-off verifies sequential history, harvests decisions and guides, and closes only on passing gates. Never invents UX approval or displaces contract updates from production Steps.
 ---
 
 # CG Sign Off
@@ -13,14 +13,18 @@ Read `.agents/skills/cg-unblock/SKILL.md` when a fork remains unresolved by the 
 and accepted decisions, or requires owner authority. Under auto-run, ask the Manager first;
 otherwise ask the user directly under D-6. Record the answer and continue independent work.
 
-## Two entry paths
+## Select the entry path
 
 | Invocation | Run |
 |---|---|
+| the user asks to finish a selected prototype, including deferred production work | [prototype completion](references/prototype-completion.md), then ordinary closure of its delivery phases |
 | a prepared phase queue has drained, or composition exposed a defect | §1–§10, then §11 |
 | durable rationale or product/operator guidance must be written, with no phase closing | §8 alone, then §11 |
 
 The standalone path never marks a phase Complete and never edits `.agents/cg/`.
+An auto-run dispatch naming one phase uses ordinary phase closure. Prototype admission can assess
+work before a queue exists; the requirements below still govern actual phase closure. A
+readiness-only request performs assessment without starting production.
 
 ## Required outcome
 
@@ -51,8 +55,12 @@ finish with Incomplete or Blocked from §9 and §10. That is actionable; it is n
    describes the code.
 2. Resolve `<docs>` from `.agents/cg/profile.json` `docs` (default `docs`). Confirm with
    `cg residue`.
-3. Run `cg next`. Closure starts only when every prepared Step is `Complete`.
-4. Run `cg verify` and the full build-and-contract gate named in the preparation record.
+3. Run `cg next --programme <slug>` when a programme is selected, otherwise `cg next`.
+   Closure starts only when every prepared Step in the exact selected phase is `Complete`.
+4. Build one final evidence inventory under [verification](../cg-prepare/references/verification.md).
+   Establish `cg verify`, Step checks, and the repository full gate for the final state; reuse only
+   applicable evidence and execute missing or invalidated checks. Later sections consume this
+   inventory rather than triggering duplicate runs.
 
 Do not begin closure until every prepared Step is accounted for and `Complete`; each `Done when`
 comes from the final accumulated state; the branch or worktree descends from the preparation
@@ -77,8 +85,9 @@ Classify every admission, test, contract, or acceptance finding:
 
 Closure-owned fixes are limited to paths reserved by `cg-prepare`: emergent composition tests and
 phase-close records. If a repair changes production behavior, a boundary, an invariant, an entry
-point, a contract, or a detector, write a corrective Step brief and yield. Do not invoke
-`cg-produce` or `cg-prepare` from this skill.
+point, a contract, or a detector, write a corrective Step brief and yield. On the ordinary phase path, do not invoke
+`cg-produce` or `cg-prepare` from this skill. In prototype completion, return the corrective brief
+to the completion coordinator, which continues the authorized prepare/produce route.
 
 Use this corrective brief:
 
@@ -109,7 +118,8 @@ Source: cg-sign-off
 ```
 
 When a corrective Step returns and sign-off is resumed: confirm the handoff matches the execution
-context, repeat admission, re-run the full phase gate and every original Step gate, and continue
+context, repeat admission, invalidate affected evidence, establish the full phase gate and every
+original Step obligation for the repaired state under the shared evidence rules, and continue
 until green or blocked.
 
 ## 3. Verify the continuous sequential history
@@ -123,14 +133,15 @@ Walk the actual Step execution history:
 4. confirm every blocked deferral names an unresolved decision or external prerequisite;
 5. confirm later work executed during a deferral had no dependency or path collision with the
    blocked Step;
-6. confirm each observable outcome and run its `Done when`;
+6. confirm each observable outcome and its `Done when` evidence in the final inventory;
 7. confirm positive and negative evidence;
 8. compare implementation with the contracts and detectors delivered by that Step;
 9. confirm repeated paths evolved in explicit dependency order; and
 10. reject waived Steps, unrecorded deferrals, dependency violations, divergent histories, or
     unaccounted residue.
 
-Then run the repository full gate in the final accumulated state. There is no branch merge,
+Account for the repository full gate in the final accumulated state; run it if the inventory lacks
+applicable evidence. There is no branch merge,
 per-Step rebase, or conflict-resolution phase.
 
 ## 4. Resolve accumulated contradictions
@@ -152,13 +163,13 @@ role-by-route or isolation matrices unless those contracts or the gate name them
 
 ## 6. Confirm the phase
 
-1. Run every Step verification in the final state.
+1. Confirm every Step verification has applicable evidence for the final state in the inventory.
 2. Confirm positive and negative evidence.
 3. Confirm all detectors are non-vacuous and fail on demand.
 4. Confirm decisions appear once in the decision log, their selected options or typed solutions
    and scoped interpretations are preserved, and the implementation follows the applicable
    resolved decisions. Pending answers remain pending and cannot satisfy phase acceptance.
-5. Run the phase acceptance gate from `cg-plan`.
+5. Establish the phase acceptance gate from the roadmap, reusing only applicable evidence.
 6. Confirm no unexpected worktree residue remains.
 
 If an applicable P binding is absent from a contract, or an A detector fails, write a corrective
@@ -343,16 +354,31 @@ or decision that unblocks it, and do not archive it as Complete.
 8. Update links to archived paths.
 9. Re-run `cg verify` and a sweep that durable documents do not cite `<docs>/plans/` paths.
 
+For a prototype programme, close its receipt only when all delivery phases and programme
+obligations are complete, after durable documentation and contract changes have settled. Run
+`cg prototype close --programme <slug> --session <id> --evidence <programme-sign-off.md> --gate "<repository delivery gate>"`.
+When another session is active, apply [concurrent work](../cg-prototype/references/concurrent-work.md)
+and arrange stable inputs. Record the session's released checkpoint before final close.
+This command executes the full gate and records a source-bound receipt; use that execution as the
+final inventory result rather than running the gate twice. It rejects failed gates or gates that
+change source inputs. Keep `.agents/cg/prototypes/<slug>.json` tracked after plan cleanup.
+A PR still needs ordinary required CI and adopted branch protection. If completion changes the
+accepted experience, obtain affected human acceptance before closure.
+
 If the gate cannot become green, stop at Incomplete or Blocked. Do not archive.
 
 ## Stage boundary — yield here
+
+The [prototype completion](references/prototype-completion.md) entry is a scoped exception: its
+coordinator continues authorized delivery and repairs until the selected prototype closes or is
+blocked. The ordinary phase and standalone paths retain the boundary below.
 
 Finish closure-owned work in this invocation: admission, history, harvest classification, durable
 record, and archival. Do not invoke the next skill yourself, however obvious the route is. If the
 repair loop names `$cg-produce`, `$cg-prepare`, `$cg-plan`, or `$cg-unblock`, stop and emit Next
 action — that hop is a new stage. The `Next action` block names the successor so a person can
 choose it and so `cg-auto-run` can follow it under a granted authority — naming it is not
-permission to take it. The single exception is a dispatch from `cg-auto-run`. If you were not
+permission to take it. Outside prototype completion, the exception is a dispatch from `cg-auto-run`. If you were not
 dispatched by it, you are the last stage of this turn.
 
 ## 11. Sign-off report and next action

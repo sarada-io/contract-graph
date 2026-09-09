@@ -100,6 +100,7 @@ export const CORE_CG_SKILLS = [
   "cg-plan",
   "cg-prepare",
   "cg-produce",
+  "cg-prototype",
   "cg-sign-off",
   "cg-unblock",
   "cg-warmup",
@@ -262,7 +263,9 @@ export function checkSkills(
       fail(`[9] ${relative}: frontmatter description exceeds 1024 characters`);
     }
 
-    if (!catalog.has(folderName)) {
+    // The optional prototype entry remains discoverable from its installed skill on upgrade,
+    // even while a preserved root catalog predates it. Its scoped adoption can add the entry.
+    if (!catalog.has(folderName) && folderName !== "cg-prototype") {
       fail(`[9] ${relative}: skill is missing from .agents/cg/contract.yaml catalog`);
     }
 

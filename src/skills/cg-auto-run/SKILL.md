@@ -74,3 +74,20 @@ measured token savings unless measured.
 
 An Engineer reports its next action to the Manager; the Manager owns the
 user-facing run report.
+
+## Prototype delivery
+
+For side-by-side prototype and delivery sessions, apply
+[concurrent work](../cg-prototype/references/concurrent-work.md). Each writing Engineer records
+its own session and scope; a Manager does not claim its worker's edits. Keep programme-qualified
+ledgers and record the actual worker context. Arrange stable inputs before the final closing gate.
+
+An accepted prototype roadmap may enter this lifecycle after its record is `Handed off`.
+Use `cg next --programme <slug>` to avoid unrelated queues. On hosts using the optional gate,
+set `CG_PROGRAMME` to that selected slug in the hook environment when multiple programmes exist.
+Pass the actual prototype worktree, including relevant uncommitted files, to its Engineer. Do not
+start a fresh checkout without those changes. Preparation measures the provisional baseline and
+assigns deferred tests and repairs; prototype acceptance is not a verified handoff. Keep ordinary
+authority limits and final sign-off. Do not dispatch cg-prototype automatically or infer human
+approval. If the accepted experience must change, record the affected question and continue only
+independent authorized work until it is resolved.

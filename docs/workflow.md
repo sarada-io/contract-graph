@@ -6,9 +6,20 @@ repository rather than from yesterday's chat.
 The [lifecycle](lifecycle.md) lists the stages. This page is the shape of the work: what you
 agree at each layer, what gets written, and what is still true after the plan is archived.
 
+## Prototype before detailed delivery
+
+When the desired experience needs hands-on exploration, start with `/cg-prototype`. It launches
+the application, makes small changes, and iterates through your manual feedback while deferring
+application test automation. Relevant contracts still guide placement and remain truthful.
+
+Explicit prototype acceptance leads to a roadmap and preparation of the actual provisional code.
+Normal produce completes its implementation and coverage; sign-off closes delivery. Prototype
+acceptance never marks the initiative delivered. See [Prototype](prototype.md) for recovery,
+review evidence, and optional merge protection.
+
 ## The decomposition stack
 
-A change is split four times before production code is supposed to move. Each split answers one
+For a sufficiently understood outcome, a change is split four times before delivery code moves. Each split answers one
 question. A later stage may refine *how* the work is allocated. It should not quietly change the
 question already answered.
 
@@ -65,7 +76,9 @@ that prevents the next action itself, such as an unanswered user decision or una
 Dependent evidence waits for the verified repair; adding the Step alone does not make it ready.
 The optional stage gate permits preparation to amend a parseable queue even when that queue
 cannot execute yet. Production and sign-off remain gated by readiness, and standalone skills
-still yield at their stage boundary unless auto-run is authorized.
+still yield at their stage boundary unless auto-run or the selected prototype's recorded
+sign-off completion path is authorized. That prototype entry coordinates remaining delivery;
+it does not waive UX acceptance, queue readiness, or final gates. See [prototype](prototype.md).
 
 A resolved decision is authority within its scope until promoted, superseded, or dropped with a
 reason. Later decisions can reference the constraints they depend on. Sign-off checks that the
@@ -132,7 +145,8 @@ what it depends on, what blocks it, and the command that proves it. Priority is 
 among ready work. Real constraints are explicit dependencies, so a blocked step does not freeze
 an independent later step.
 
-**Produce** runs the earliest ready step from the last verified state. Code, tests, and any
+**Produce** runs the earliest ready step from the last verified state, or the explicitly measured
+prototype baseline admitted for its first corrective Step. Code, tests, and any
 contract change for that step land together. When the step's gate and `cg verify` pass, that
 handoff **is** the starting point for the next ready step. Produce continues through ready work
 until the queue is drained or nothing is ready.
@@ -141,6 +155,18 @@ until the queue is drained or nothing is ready.
 plan files for that phase are archived. Knowledge that must survive goes into contracts, product
 rules, or durable docs — not into a plan you are about to delete. A defect that is still this
 phase's behaviour returns to produce. A finding that was never this phase returns to plan.
+
+## Verification without duplicate work
+
+Preparation assigns checks for the changed promises, applicable detectors, and affected consumers.
+Produce executes that assignment. Sign-off uses one final evidence inventory for Step obligations,
+composition, and the full repository gate. Checks run again when relevant inputs change or their
+applicability is uncertain; a stage transition alone does not invalidate a recorded result.
+
+Coverage follows changed behavior and invariants, rather than requiring a new test file for every
+class. Existing sufficient coverage can be retained. Internal edits with unchanged contract facts
+need an impact assessment but no artificial YAML change. Repository-required gates remain binding;
+Contract Graph does not yet calculate safe implementation impact automatically.
 
 ## What the next session is supposed to trust
 

@@ -1,0 +1,4 @@
+interface:
+  display_name: "CG Prototype"
+  short_description: "Iterate on a working prototype with human feedback"
+  default_prompt: "Use $cg-prototype to launch the application, make small changes, and iterate with my manual feedback before preparing the accepted result for delivery."

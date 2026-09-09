@@ -20,6 +20,9 @@ supposed to remain after a plan is deleted.
 | [Lifecycle](lifecycle.md) | The stages you run, and the structural walk they share |
 | [Upgrade](upgrade.md) | 0.3.0 / 0.4.0 → 0.5.0: `cg init`, then adoption or reseed |
 
+For exploratory work, read [Prototype](prototype.md). The
+[workflow review](proposals/prototype-workflow.md) records the source findings behind this extension.
+
 Watch the [Quick Introduction Video](https://sarada.io/cg/#watch) first. Start with vision if you are deciding
 whether to adopt. Start with [upgrade](upgrade.md) if you already have 0.3.0 or 0.4.0 installed.
 Start with workflow if you already installed 0.5.0 and want to see how work is supposed to move.

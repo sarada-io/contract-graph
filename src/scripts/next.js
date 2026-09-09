@@ -14,6 +14,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 import { profilePath } from "./profiles.js";
+import { readPrototypes, programmeName, prototypeSnapshot } from "./prototype.js";
 
 /** The Step lifecycle, as `cg-prepare` and `cg-produce` write it into brief headers. */
 export const STEP_STATES = Object.freeze([
@@ -132,9 +133,36 @@ export function readQueue(repoRoot, docsRoot = "docs") {
  * are all `Complete`. It lives here rather than only in prose so something other than a model
  * can check it was followed.
  */
-export function next(repoRoot, { docs } = {}) {
+export function next(repoRoot, { docs, programme } = {}) {
   const docsRoot = docs ?? readDocsRoot(repoRoot);
-  const briefs = readQueue(repoRoot, docsRoot);
+  let prototypes;
+  try {
+    if (programme) programmeName(programme);
+    prototypes = readPrototypes(repoRoot);
+  } catch (error) {
+    return { state: "unreadable", stage: null, problems: [error.message], briefs: [] };
+  }
+  let briefs = readQueue(repoRoot, docsRoot);
+  const active = prototypes.filter(r => !["Closed", "Abandoned"].includes(r.status));
+  const programmes = new Set([...active.map(r => r.programme), ...briefs.map(b => b.file.split("/")[2])]);
+  if (!programme && active.length && programmes.size > 1) {
+    return { state: "selection-required", stage: null, reason: "multiple programmes are active; pass --programme <slug>", briefs, problems: [] };
+  }
+  const selected = programme ?? (active.length === 1 ? active[0].programme : null);
+  if (selected) briefs = briefs.filter(b => b.file.startsWith(`${docsRoot}/plans/${selected}/`));
+  const prototype = prototypes.find(r => r.programme === selected);
+  if (prototype && !["Handed off", "Closed"].includes(prototype.status)) {
+    let stale = false;
+    try {
+      if (prototype.status === "Approved") stale = prototype.approval.snapshot !== prototypeSnapshot(repoRoot);
+    } catch (error) { return { state: "unreadable", stage: null, problems: [error.message], briefs }; }
+    return { state: "prototype", stage: "cg-prototype", prototype, briefs, problems: [],
+      reason: stale ? "approved source changed; resume the prototype for affected review" : `${selected}: ${prototype.status} — prototype review and handoff precede delivery` };
+  }
+  return { ...nextQueue(briefs, docsRoot), ...(prototype ? { prototype } : {}) };
+}
+
+function nextQueue(briefs, docsRoot) {
   const problems = briefs.flatMap((b) => b.problems);
 
   if (problems.length) {
@@ -150,7 +178,8 @@ export function next(repoRoot, { docs } = {}) {
     };
   }
 
-  const complete = new Set(briefs.filter((b) => b.status === "Complete").map((b) => b.number));
+  const dependencyKey = (b, number) => `${b.file.split(":")[0]}:${number}`;
+  const complete = new Set(briefs.filter((b) => b.status === "Complete").map((b) => dependencyKey(b, b.number)));
   const running = briefs.find((b) => b.status === "In progress");
   if (running) {
     return {
@@ -164,7 +193,7 @@ export function next(repoRoot, { docs } = {}) {
   }
 
   const ready = briefs
-    .filter((b) => b.status === "Ready" && !b.blockedBy && b.dependsOn.every((id) => complete.has(id)))
+    .filter((b) => b.status === "Ready" && !b.blockedBy && b.dependsOn.every((id) => complete.has(dependencyKey(b, id))))
     .sort((a, b) => a.priority - b.priority);
 
   if (ready.length) {
@@ -215,6 +244,13 @@ export function permits(result, skill) {
   if (result.state === "unreadable") {
     return { allowed: false, reason: `the Step queue does not parse:\n  ${result.problems.join("\n  ")}` };
   }
+  if (result.state === "selection-required") return { allowed: false, reason: result.reason };
+  if (skill === "cg-sign-off" && result.prototype) {
+    return { allowed: true, entry: "prototype-completion", reason: `${result.prototype.programme}: admit the selected prototype for completion assessment; approval, prepared Steps, and passing final gates are still required to close` };
+  }
+  if (result.state === "prototype" && ["cg-prepare", "cg-produce", "cg-sign-off"].includes(skill)) {
+    return { allowed: false, reason: result.reason };
+  }
   // Preparation repairs the plan of work, including when a failed evidence Step cannot run.
   // Allowing that edit does not authorize production or waive any existing blocker.
   if (skill === "cg-prepare") {
@@ -222,7 +258,7 @@ export function permits(result, skill) {
   }
   // Never gated: one resolves blockers, one is the adapter itself, one is pre-lifecycle, and
   // planning is what you run precisely when the queue has nothing to say.
-  if (["cg-unblock", "cg-auto-run", "cg-warmup", "cg-plan"].includes(skill)) {
+  if (["cg-unblock", "cg-auto-run", "cg-warmup", "cg-plan", "cg-prototype"].includes(skill)) {
     return { allowed: true, reason: "not gated by queue state" };
   }
   if (skill === result.stage) return { allowed: true, reason: result.reason };

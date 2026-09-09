@@ -8,7 +8,8 @@
  * advances an unattended run past exactly the condition that was meant to stop it.
  *
  * This runs before the Skill tool and answers the same question from `cg next`, which reads the
- * Step briefs instead. Production and sign-off require agreement with queue readiness.
+ * Step briefs instead. Production and phase closure require agreement with queue readiness.
+ * Sign-off can also admit a selected prototype for completion assessment.
  * Preparation may amend any parseable queue, including one awaiting repair; this does not release
  * production blockers. The separate stage boundary still requires an authorized auto-run chain
  * or a new user instruction before crossing stages.
@@ -51,18 +52,24 @@ import process from "node:process";
 function sessionStore(repoRoot, sessionId) {
   const key = crypto.createHash("sha256").update(`${repoRoot}\u0000${sessionId}`).digest("hex").slice(0, 16);
   const file = path.join(os.tmpdir(), `cg-gate-${key}.json`);
-  let seen = [];
+  let state = { seen: [], completionProgramme: null };
   try {
-    seen = JSON.parse(fs.readFileSync(file, "utf8")).seen ?? [];
+    state = { ...state, ...JSON.parse(fs.readFileSync(file, "utf8")) };
   } catch {
-    seen = [];
+    state = { seen: [], completionProgramme: null };
   }
   return {
-    seen,
+    seen: state.seen,
+    completionProgramme: state.completionProgramme,
+    admitPrototype(programme) {
+      state.completionProgramme = programme;
+      try { fs.writeFileSync(file, JSON.stringify(state), "utf8"); } catch { /* no durable grant */ }
+    },
     record(skill) {
-      if (seen.includes(skill)) return;
+      if (state.seen.includes(skill)) return;
       try {
-        fs.writeFileSync(file, JSON.stringify({ seen: [...seen, skill] }), "utf8");
+        state.seen = [...state.seen, skill];
+        fs.writeFileSync(file, JSON.stringify(state), "utf8");
       } catch {
         // Losing the record costs enforcement, never the user's work.
       }
@@ -129,47 +136,18 @@ if (input?.hook_event_name === "UserPromptSubmit") {
 
 const skill = input?.tool_input?.skill ?? "";
 const alreadyRan = store.seen.filter((s) => GATED.test(s));
-store.record(skill);
 
-if (!GATED.test(skill)) allow(`cg-gate: \`${skill || "unknown"}\` is not queue-gated`);
-
-/**
- * One stage per invocation, unless `cg-auto-run` is driving.
- *
- * A stage naming its successor is how a person knows what to do next; it is not permission for the
- * model to go and do it. Someone who runs `cg-prepare` to read the queue it produced, and is handed
- * a closed phase instead, has lost the review the stage boundary exists for — the decision point is
- * gone and the work already sits downstream of it.
- *
- * `cg-auto-run` is the sanctioned way across, because it carries the two things ad-hoc chaining
- * has none of: a granted authority level, and a ledger that survives a context break. Set
- * `CG_GATE_CHAIN=1` to allow chaining without it.
- */
-if (
-  alreadyRan.length &&
-  !alreadyRan.includes(skill) &&
-  !store.seen.includes("cg-auto-run") &&
-  process.env.CG_GATE_CHAIN !== "1"
-) {
-  deny(
-    `Blocked by cg-gate: \`${alreadyRan.join("\`, \`")}\` already ran in this session, and ` +
-      `dispatching \`${skill}\` crosses a stage boundary.\n\n` +
-      "One stage per invocation. The `Next action` block names the successor so the user can " +
-      "choose it — naming it is not permission to take it, and continuing removes the review the " +
-      "boundary exists for.\n\n" +
-      "Report the stage that finished and stop. If the user wants the chain run for them, " +
-      "`cg-auto-run` is what does it: it carries an authority level and a ledger " +
-      "that survives a context break.\n\n" +
-      "This resets on the user's next message, so they can simply ask for the next stage — they " +
-      "do not need a new session, and should not be told to start one. To chain inside a single " +
-      "instruction without `cg-auto-run`, set CG_GATE_CHAIN=1.",
-  );
+if (!GATED.test(skill)) {
+  store.record(skill);
+  allow(`cg-gate: \`${skill || "unknown"}\` is not queue-gated`);
 }
+
 
 let result;
 try {
   const [bin, prefix] = cgCommand(repoRoot);
-  const stdout = execFileSync(bin, [...prefix, "next", repoRoot, "--json", "--for", skill], {
+  const selection = process.env.CG_PROGRAMME ? ["--programme", process.env.CG_PROGRAMME] : [];
+  const stdout = execFileSync(bin, [...prefix, "next", repoRoot, "--json", "--for", skill, ...selection], {
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
   });
@@ -186,7 +164,54 @@ try {
   }
 }
 
-if (result.allowed) allow(`cg-gate: queue agrees — ${result.reason}`);
+// Entering sign-off admits only this programme. Chaining additionally requires an attributed,
+// active completion request; this never releases production blockers or authorizes final closure.
+const prototypeChain = result.prototype?.status === "Handed off" &&
+  result.prototype?.completionRequest?.state === "Active" &&
+  store.completionProgramme === result.prototype.programme;
+if (store.completionProgramme && !store.seen.includes("cg-auto-run") &&
+    (result.prototype?.programme !== store.completionProgramme || (skill !== "cg-sign-off" && !prototypeChain))) {
+  deny("Blocked by cg-gate: prototype continuation requires an active completion request for the programme admitted by sign-off in this session. Return to that sign-off entry or obtain a new instruction for another programme.");
+}
+
+/**
+ * One stage per invocation, except auto-run or recorded prototype completion.
+ *
+ * A stage naming its successor is how a person knows what to do next; it is not permission for the
+ * model to go and do it. Someone who runs `cg-prepare` to read the queue it produced, and is handed
+ * a closed phase instead, has lost the review the stage boundary exists for — the decision point is
+ * gone and the work already sits downstream of it.
+ *
+ * Auto-run and prototype completion carry recorded scope and recovery evidence. Set
+ * `CG_GATE_CHAIN=1` to allow chaining without it.
+ */
+if (
+  alreadyRan.length &&
+  !alreadyRan.includes(skill) &&
+  !store.seen.includes("cg-auto-run") &&
+  process.env.CG_GATE_CHAIN !== "1" &&
+  !prototypeChain
+) {
+  deny(
+    `Blocked by cg-gate: \`${alreadyRan.join("\`, \`")}\` already ran in this session, and ` +
+      `dispatching \`${skill}\` crosses a stage boundary.\n\n` +
+      "One stage per invocation. The `Next action` block names the successor so the user can " +
+      "choose it — naming it is not permission to take it, and continuing removes the review the " +
+      "boundary exists for.\n\n" +
+      "Report the stage that finished and stop. If the user wants the chain run for them, " +
+      "`cg-auto-run` is what does it: it carries an authority level and a ledger " +
+      "that survives a context break.\n\n" +
+      "This resets on the user's next message, so they can simply ask for the next stage — they " +
+      "do not need a new session, and should not be told to start one. To chain inside a single " +
+      "instruction without `cg-auto-run`, set CG_GATE_CHAIN=1.",
+  );
+}
+
+if (result.allowed) {
+  store.record(skill);
+  if (skill === "cg-sign-off" && result.entry === "prototype-completion") store.admitPrototype(result.prototype.programme);
+  allow(`cg-gate: queue agrees — ${result.reason}`);
+}
 
 deny(
   `Blocked by cg-gate: the Step queue on disk does not support dispatching \`${skill}\`.\n\n` +

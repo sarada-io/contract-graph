@@ -1,6 +1,6 @@
 # Plans
 
-Transient working documents: phase roadmaps from `cg-plan`, preparation records from `cg-prepare`,
+Transient working documents: phase roadmaps from `cg-plan` or `cg-prototype`, preparation records from `cg-prepare`,
 phase-close manifests from `cg-sign-off`, and [the decision log](decision-log.md).
 
 **Everything here is eventually disposable after its work and handoffs are reconciled.**

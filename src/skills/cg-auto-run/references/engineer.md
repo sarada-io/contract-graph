@@ -81,3 +81,15 @@ records. The handoff points to them. Mark the ledger `**Status:** Awaiting accep
 if it finds a phase defect, continue in this same context. Once accepted, stop
 writing so the next phase can receive a fresh Engineer. The Manager deletes
 the phase ledger only after acceptance and cleanup reconciliation; do not archive it.
+
+## Prototype delivery
+
+An accepted prototype roadmap may enter this lifecycle after its record is `Handed off`.
+Use `cg next --programme <slug>` to avoid unrelated queues. On hosts using the optional gate,
+set `CG_PROGRAMME` to that selected slug in the hook environment when multiple programmes exist.
+Pass the actual prototype worktree, including relevant uncommitted files, to its Engineer. Do not
+start a fresh checkout without those changes. Preparation measures the provisional baseline and
+assigns deferred tests and repairs; prototype acceptance is not a verified handoff. Keep ordinary
+authority limits and final sign-off. Do not dispatch cg-prototype automatically or infer human
+approval. If the accepted experience must change, record the affected question and continue only
+independent authorized work until it is resolved.

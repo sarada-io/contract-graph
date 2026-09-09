@@ -25,6 +25,7 @@ import { init } from "./init.js";
 import { HarvestError, checkHarvest } from "./harvest.js";
 import { moduleCoverage, openDescent } from "./modules.js";
 import { next, permits } from "./next.js";
+import { prototypeAction, deliveryReadiness } from "./prototype.js";
 import { residue } from "./residue.js";
 import { multiSelect } from "./picker.js";
 import {
@@ -50,6 +51,8 @@ Usage:
   cg build [dir] [--check]                         assemble the package target under build/
   cg init [--profile a,b] [--docs dir]             scaffold governance
   cg next [dir] [--json] [--for skill]            what runs next, computed from the Step queue
+  cg prototype <action> [dir] --programme slug   start, checkpoint, review, approve, handoff, request-sign-off, suspend, resume, abandon, close, status
+  cg delivery verify [dir] --base ref --gate cmd check prototype delivery receipts for a pull request
   cg residue [dir] [--json]                       plan documents nothing points at any more
   cg sync [dir] [--check]                         regenerate derived artifacts
   cg verify [dir] [--warn]                        verify governance
@@ -77,6 +80,11 @@ Options:
   --task <text>     task description to match against contract routes
   --format <name>   output format: markdown, tree, json, or mermaid
   --for <skill>     exit 0 only if dispatching that skill agrees with the queue (next only)
+  --programme <slug> select one programme (prototype or next)
+  --evidence <file> checkpoint/approval/completion-request JSON or final sign-off document
+  --session <id>    identify the acting session; required for prototype checkpoints
+  --gate <command>  execute the repository delivery gate before closing a prototype
+  --base <ref>      trusted target ref with fetched history (delivery verify)
   --check           verify build/init/sync output without changing it
   --yes             accept replacing framework core without being asked (init only)
   --warn            report findings and exit 0 (verify only)
@@ -103,6 +111,11 @@ const KNOWN_FLAGS = new Set([
   "task",
   "format",
   "for",
+  "programme",
+  "session",
+  "evidence",
+  "gate",
+  "base",
   "yes",
   "warn",
   "quiet",
@@ -116,7 +129,11 @@ function parseArgs(argv) {
   // options consume values (in either `--name x` or `--name=x` form).
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
-    if (arg === "--profile") {
+    const extraValue = /^--(programme|session|evidence|gate|base)(?:=(.*))?$/.exec(arg);
+    if (extraValue) {
+      flags[extraValue[1]] = extraValue[2] ?? argv[++i];
+      if (typeof flags[extraValue[1]] !== "string" || !flags[extraValue[1]].trim() || flags[extraValue[1]].startsWith("--")) throw new Error(`${extraValue[1]} requires a value`);
+    } else if (arg === "--profile") {
       flags.profile = argv[++i] ?? "";
     } else if (arg.startsWith("--profile=")) {
       flags.profile = arg.slice("--profile=".length);
@@ -462,6 +479,21 @@ async function main(argv) {
     }
   }
 
+  if (command === "prototype" || command === "delivery") {
+    const action = positional[0];
+    const root = path.resolve(positional[1] ?? ".");
+    if (command === "delivery") {
+      if (action !== "verify" || !flags.base || !flags.gate) throw new Error("usage: cg delivery verify [dir] --base <trusted target ref> --gate <required command>");
+      const result = deliveryReadiness(root, { base: flags.base, gate: flags.gate });
+      if (flags.json) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      else process.stdout.write(`cg delivery: ${result.failures.length ? "FAIL" : "OK"}\n${result.failures.map(f => `  ${f}\n`).join("")}`);
+      return result.failures.length ? 1 : 0;
+    }
+    const result = prototypeAction(root, action, { programme: flags.programme, evidence: flags.evidence, gate: flags.gate, session: flags.session });
+    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+    return 0;
+  }
+
   // All repository commands accept an optional directory as their first positional argument.
   const repoRoot = path.resolve(positional[0] ?? ".");
 
@@ -635,6 +667,9 @@ async function main(argv) {
     );
 
     for (const message of advisories) process.stdout.write(`  ${message}\n`);
+    if (result.skipped.some(file => file.endsWith("workflow.md"))) {
+      process.stdout.write("  prototype: repository workflow and catalogs were preserved. /cg-prototype can adopt its scoped workflow exception; existing policy is not silently replaced.\n");
+    }
 
     const rivals = detectRivalDocTrees(repoRoot, result.docs);
     if (rivals.length) {
@@ -691,7 +726,7 @@ async function main(argv) {
   }
 
   if (command === "next") {
-    const result = next(repoRoot);
+    const result = next(repoRoot, { programme: flags.programme });
     if (flags.json) {
       process.stdout.write(`${JSON.stringify(
         {
@@ -700,6 +735,8 @@ async function main(argv) {
           reason: result.reason ?? null,
           step: result.step ? { file: result.step.file, title: result.step.title } : null,
           problems: result.problems,
+          ...(result.prototype ? { prototype: { programme: result.prototype.programme, status: result.prototype.status,
+            completionRequest: result.prototype.completionRequest ? { state: result.prototype.completionRequest.state } : null } } : {}),
           ...(flags.for ? { for: flags.for, ...permits(result, flags.for) } : {}),
         },
         null,

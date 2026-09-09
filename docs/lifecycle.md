@@ -64,9 +64,13 @@ Warmup, prepare, and produce walk this sequence before they keep work on the ope
 adopting repository whose installed catalog is missing a key is stale; copy the packaged binding.
 `cg init` will not overwrite the installed catalog.
 
-## The seven stages
+## The lifecycle skills
 
-The delivery sequence is plan → prepare → produce → sign-off. Warmup runs at adoption before
+The delivery sequence is plan → prepare → produce → sign-off. `/cg-sign-off` also accepts a
+request to finish a selected prototype: it coordinates the remaining delivery through these
+stages and closes only on passing requirements. See [prototype completion](prototype.md).
+For an uncertain experience,
+prototype → manual acceptance supplies the roadmap and provisional implementation before prepare. Warmup runs at adoption before
 that sequence, and again as an additive reseed after a package upgrade when the graph already
 exists. Unblock is entered from any stage when a choice is expensive or protected. Auto-run
 is optional and follows an already-planned roadmap; it does not invent the plan, and it never
@@ -75,6 +79,7 @@ dispatches warmup.
 | Skill | Responsibility |
 |---|---|
 | `cg-plan` | Traverse the current graph, convert a broad outcome into an ordered phase roadmap, and identify the boundaries likely to change. Owns programme shape, dependencies, phase acceptance, risk, and status — not which files move. |
+| `cg-prototype` | Launch a working application and iterate through manual human feedback before formal preparation. Keeps contract truth, records provisional changes and explicit acceptance, and hands the accepted implementation and remaining roadmap to normal delivery. |
 | `cg-prepare` | Select one phase and convert it into one prioritized queue of contract-complete steps. Each step names its owning boundary, expected graph changes, verification, explicit dependencies, blockers, and state in a single execution branch or worktree. |
 | `cg-produce` | Run the earliest ready step; deliver implementation, tests, YAML contract updates, and detectors as one independently valid structural change; continue through ready work. |
 | `cg-sign-off` | Verify every prepared step completed and that the resulting graph still describes the implemented system; drive current-phase defects through corrective steps; harvest decisions; close only on a green gate. Also owns the durable record — design records, product and operator guidance, and diagrams — and is entered standalone when only documentation is needed. Never repairs contract correctness as detached cleanup. |

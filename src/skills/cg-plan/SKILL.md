@@ -6,6 +6,9 @@ description: Create or revise a phase-wise Contract Graph roadmap from binding c
 # CG Plan
 
 Turn a broad outcome into an ordered phase roadmap. Do not prepare implementation Steps here.
+If the user needs a working experience to discover the outcome, route to cg-prototype with the
+known scope instead of elaborating speculative delivery phases. Prototype uses sections 2–7 as
+the shared roadmap contract and can hand an accepted complete roadmap directly to preparation.
 
 Read `.agents/skills/cg-unblock/SKILL.md` when a fork remains unresolved by the Plan, contracts
 and accepted decisions, or requires owner authority. Under auto-run, ask the Manager first;
@@ -41,7 +44,9 @@ Before writing or revising the roadmap:
    `cg residue`, which prints `<docs>/plans/`. Find the active roadmap by `Status: Proposed` or
    `Status: Active` under `<docs>/plans/*/roadmap.md`, not by filename.
 4. Inspect source, tests, resources, and the worktree inside the selected units only.
-5. Run `cg verify` and the narrowest useful baseline. Record existing failures as facts.
+5. Establish `cg verify` and the narrowest useful baseline; reuse applicable recorded evidence
+   under [verification](../cg-prepare/references/verification.md), otherwise run the commands.
+   Record existing failures as facts.
 6. Read accepted decisions in `<docs>/plans/decision-log.md`.
 7. If invoked from `cg-sign-off`, validate the handover against the fields in §8 before placing it.
 
