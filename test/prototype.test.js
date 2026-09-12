@@ -40,9 +40,28 @@ function accepted(f, programme = "dashboard") {
   const evidence = `${f.docs}/plans/${programme}/approval.json`;
   write(f.root, evidence, JSON.stringify({ by: "fixture owner", response: "The prototype is approved", scope: "Dashboard at desktop size and keyboard navigation" }));
   action(f, "approve", { evidence }, programme);
-  const plan = `${f.docs}/plans/${programme}/roadmap.md`;
-  write(f.root, plan, fs.readFileSync(path.join(f.root, plan), "utf8").replace("Status: Proposed", "Status: Active"));
+  finaliseRoadmap(f, programme);
   action(f, "handoff", {}, programme);
+}
+function finaliseRoadmap(f, programme = "dashboard") {
+  const plan = `${f.docs}/plans/${programme}/roadmap.md`;
+  write(f.root, plan, `# ${programme}
+Status: Active
+
+## Final outcome
+Complete and verify the accepted dashboard.
+
+## Phase map
+| Phase | Observable outcome | Prerequisites | Scope | Acceptance gate | Status |
+|---|---|---|---|---|---|
+| 1 — Dashboard delivery | Accepted dashboard works with real data | None | Dashboard boundary | Fixture delivery gate | Current |
+
+## Deferred tests and known gaps
+Dashboard integration coverage is deferred to phase 1.
+
+## Programme completion gate
+Run the fixture delivery gate after all Steps complete.
+`);
 }
 function close(f, gate = PASS_GATE) {
   const evidence = `${f.docs}/plans/dashboard/programme-sign-off.md`;
@@ -127,6 +146,53 @@ test("missing acceptance and edits after review cannot become delivery handoffs"
   write(f.root, "new-component.txt", "new untracked source");
   assert.throws(() => action(f, "handoff"), /approved prototype changed/);
   assert.match(next(f.root).reason, /approved source changed/);
+});
+
+test("handoff rejects starter placeholders and incomplete roadmap sections", t => {
+  const f = fixture(t); action(f, "start"); action(f, "review");
+  const evidence = "docs/plans/dashboard/approval.json";
+  write(f.root, evidence, JSON.stringify({ by: "owner", response: "Approved", scope: "whole dashboard" }));
+  action(f, "approve", { evidence });
+  const file = "docs/plans/dashboard/roadmap.md";
+  const starter = fs.readFileSync(path.join(f.root, file), "utf8");
+  write(f.root, file, starter.replace("Status: Proposed", "Status: Active"));
+  assert.throws(() => action(f, "handoff"), /Phase map/);
+  finaliseRoadmap(f);
+  const valid = fs.readFileSync(path.join(f.root, file), "utf8");
+  const variants = [
+    [valid.replace(/\| 1 — Dashboard delivery.*\n/, ""), /Phase map/],
+    [valid.replace("Accepted dashboard works with real data", "user/system result"), /Phase map/],
+    [valid.replace("Run the fixture delivery gate after all Steps complete.", "Name the repository delivery gate before handoff."), /Programme completion gate/],
+    [valid.replace("Run the fixture delivery gate after all Steps complete.", "<!-- npm test -->\nTBD"), /Programme completion gate/],
+    [valid.replace("Dashboard integration coverage is deferred to phase 1.", ""), /Deferred tests and known gaps/],
+    [valid.replace("Dashboard integration coverage is deferred to phase 1.", "- **TBD**"), /Deferred tests and known gaps/],
+    [valid.replace("## Deferred tests and known gaps", "## Unrelated notes"), /Deferred tests and known gaps/],
+    [valid.replace("Dashboard integration coverage is deferred to phase 1.", "List deferred tests and known gaps, or explicitly state none with a reason."), /Deferred tests and known gaps/],
+    [valid.replace("Status: Active", "Status: Proposed") + "\n## Phase 1\nStatus: Active\n", /programme Status: Active/],
+    ["```markdown\n" + valid + "```\n", /programme Status: Active/],
+  ];
+  for (const [body, error] of variants) {
+    write(f.root, file, body);
+    assert.throws(() => action(f, "handoff"), error);
+    assert.equal(readPrototypes(f.root)[0].status, "Approved");
+  }
+  write(f.root, file, valid.replace("Run the fixture delivery gate after all Steps complete.", "```sh\nnpm test\n```"));
+  assert.equal(action(f, "handoff").status, "Handed off");
+});
+
+test("closed prototype receipts use ordinary phase routing without completion authority", t => {
+  const f = fixture(t); action(f, "start"); accepted(f); requestSignOff(f); close(f);
+  queue(f, "dashboard", "Ready");
+  let permit = permits(next(f.root, { programme: "dashboard" }), "cg-sign-off");
+  assert.equal(permit.entry, undefined);
+  assert.equal(permit.allowed, false);
+  queue(f, "dashboard", "Complete");
+  permit = permits(next(f.root, { programme: "dashboard" }), "cg-sign-off");
+  assert.equal(permit.entry, undefined);
+  assert.equal(permit.allowed, true);
+  assert.equal(next(f.root, { skill: "cg-sign-off" }).signOffRecovery.state, "none");
+  assert.equal(dispatch(f, "cg-sign-off").permissionDecision, "allow");
+  assert.equal(dispatch(f, "cg-prepare").permissionDecision, "deny");
 });
 
 test("sign-off admits prototype assessment without granting acceptance, production, or closure", t => {
@@ -298,6 +364,106 @@ test("scope expansion and deletions remain observable without implying authorshi
   assert.throws(() => action(f, "checkpoint"), /requires --session/);
 });
 
+test("scoped review tolerates unrelated writes through approval and handoff but closure stays whole-tree", t => {
+  const f = fixture(t); action(f, "start");
+  checkpoint(f, "dashboard", "editor", ["app.txt"]);
+  action(f, "review");
+  assert.deepEqual(readPrototypes(f.root)[0].reviewScope, ["app.txt"]);
+  write(f.root, "other.txt", "unrelated dirty work before approval");
+  const evidence = "docs/plans/dashboard/approval.json";
+  write(f.root, evidence, JSON.stringify({ by: "owner", response: "Approved", scope: "whole dashboard" }));
+  action(f, "approve", { evidence });
+  write(f.root, "other.txt", "unrelated work before handoff");
+  assert.doesNotMatch(next(f.root).reason, /approved source changed/);
+  finaliseRoadmap(f); action(f, "handoff"); close(f);
+  assert.deepEqual(deliveryReadiness(f.root).failures, []);
+  write(f.root, "other.txt", "unrelated work after closure");
+  assert.match(deliveryReadiness(f.root).failures[0], /changed after final sign-off/);
+  const script = "require('fs').writeFileSync('other.txt', 'gate mutation outside review')";
+  assert.throws(() => close(f, `${quote(process.execPath)} -e ${quote(script)}`), /changed source inputs/);
+});
+
+test("adding declarations cannot retroactively narrow a legacy review", t => {
+  const f = fixture(t); action(f, "start"); action(f, "review");
+  checkpoint(f, "dashboard", "editor", ["app.txt"]);
+  const evidence = "docs/plans/dashboard/approval.json";
+  write(f.root, evidence, JSON.stringify({ by: "owner", response: "Approved", scope: "whole dashboard" }));
+  action(f, "approve", { evidence });
+  assert.equal(readPrototypes(f.root)[0].reviewScope, undefined);
+  write(f.root, "unrelated.txt", "still included in the original whole-tree review");
+  assert.throws(() => action(f, "handoff"), /approved prototype changed/);
+});
+
+test("review reports undeclared dirty source without blocking approval and retains the observation", t => {
+  const f = fixture(t, "handbook");
+  for (const file of ["app/dashboard/view.css", "shared/style.css", "shared/.agents/cg/contract.yaml", "removed.txt", "old-name.txt"]) {
+    write(f.root, file, `original ${file}\n`);
+  }
+  write(f.root, ".gitignore", "*.tmp\n");
+  git(f.root, "add", "."); git(f.root, "commit", "-qm", "shared inputs");
+  action(f, "start"); checkpoint(f, "dashboard", "editor", ["app/dashboard"]);
+  write(f.root, "app/dashboard/view.css", "in-scope edit");
+  write(f.root, "shared/style.css", "staged shared edit"); git(f.root, "add", "shared/style.css");
+  write(f.root, "shared/.agents/cg/contract.yaml", "unstaged shared edit");
+  write(f.root, "app/dashboard-other.css", "untracked sibling outside the directory");
+  write(f.root, "ignored.tmp", "ignored output");
+  fs.rmSync(path.join(f.root, "removed.txt"));
+  git(f.root, "mv", "old-name.txt", "new-name.txt");
+  const expected = ["app/dashboard-other.css", "new-name.txt", "old-name.txt", "removed.txt", "shared/.agents/cg/contract.yaml", "shared/style.css"];
+  const review = action(f, "review");
+  assert.deepEqual(review.reviewUnscopedDirty, expected);
+  assert.deepEqual(readPrototypes(f.root)[0].history.at(-1).reviewUnscopedDirty, expected);
+  const evidence = "handbook/plans/dashboard/approval.json";
+  write(f.root, evidence, JSON.stringify({ by: "owner", response: "Approved", scope: "whole dashboard" }));
+  action(f, "approve", { evidence });
+  finaliseRoadmap(f); assert.equal(action(f, "handoff").status, "Handed off");
+  assert.equal(action(f, "resume").reviewUnscopedDirty, undefined);
+  checkpoint(f, "dashboard", "editor", ["app/dashboard", "shared", ...expected.slice(0, 4)]);
+  assert.deepEqual(action(f, "review").reviewUnscopedDirty, []);
+  assert.deepEqual(readPrototypes(f.root)[0].history.find(event => event.action === "review").reviewUnscopedDirty, expected);
+});
+
+test("review retains all programme writers and detects scoped additions, deletions, and modes", t => {
+  const f = fixture(t); action(f, "start");
+  write(f.root, "screens/a.txt", "screen");
+  checkpoint(f, "dashboard", "first", ["app.txt"], { state: "released" });
+  checkpoint(f, "dashboard", "second", ["screens", "screens/a.txt"]);
+  const evidence = "docs/plans/dashboard/approval.json";
+  write(f.root, evidence, JSON.stringify({ by: "owner", response: "Approved", scope: "whole dashboard" }));
+  for (const mutate of [
+    () => write(f.root, "app.txt", "released writer's source changed"),
+    () => write(f.root, "screens/new.txt", "new untracked source"),
+    () => fs.rmSync(path.join(f.root, "screens/a.txt")),
+    () => fs.chmodSync(path.join(f.root, "app.txt"), 0o755),
+    () => { fs.rmSync(path.join(f.root, "app.txt")); fs.symlinkSync("screens/new.txt", path.join(f.root, "app.txt")); },
+  ]) {
+    action(f, "review", { session: "second" });
+    assert.deepEqual(readPrototypes(f.root)[0].reviewScope, ["app.txt", "screens"]);
+    mutate();
+    assert.throws(() => action(f, "approve", { evidence }), /changed after review/);
+    action(f, "resume");
+  }
+});
+
+test("scope cannot shrink away reviewed files, and expansion requires new review", t => {
+  const f = fixture(t); action(f, "start");
+  checkpoint(f, "dashboard", "editor", ["app.txt", "screens"]);
+  action(f, "review");
+  const evidence = "docs/plans/dashboard/approval.json";
+  write(f.root, evidence, JSON.stringify({ by: "owner", response: "Approved", scope: "whole dashboard" }));
+  checkpoint(f, "dashboard", "editor", ["screens"]);
+  write(f.root, "app.txt", "cannot hide this edit by narrowing scope");
+  assert.throws(() => action(f, "approve", { evidence }), /changed after review/);
+  action(f, "resume"); action(f, "review"); action(f, "approve", { evidence });
+  checkpoint(f, "dashboard", "editor", ["shared-config"]);
+  assert.match(next(f.root).reason, /approved source changed/);
+  assert.throws(() => action(f, "handoff"), /approved prototype changed/);
+  action(f, "resume"); action(f, "review"); action(f, "approve", { evidence });
+  finaliseRoadmap(f);
+  write(f.root, "app.txt", "changed after scoped approval");
+  assert.throws(() => action(f, "handoff"), /approved prototype changed/);
+});
+
 test("a closing process cannot lose history to a second writer; other programmes can checkpoint", t => {
   const f = fixture(t); action(f, "start"); accepted(f); action(f, "start", {}, "instructions");
   checkpoint(f, "instructions", "preview", ["other.txt"]);
@@ -418,6 +584,7 @@ test("new skill installs and upgrades preserve repository-owned policy and recor
   const f = fixture(t); init(f.root, { docs: "docs" }); sync(f.root);
   assert.ok(fs.existsSync(path.join(f.root, ".agents/skills/cg-prototype/SKILL.md")));
   assert.ok(fs.existsSync(path.join(f.root, ".agents/skills/cg-prototype/references/concurrent-work.md")));
+  assert.ok(fs.existsSync(path.join(f.root, ".agents/skills/cg-prototype/references/session-setup.md")));
   assert.ok(fs.existsSync(path.join(f.root, ".agents/skills/cg-sign-off/references/prototype-completion.md")));
   assert.ok(fs.existsSync(path.join(f.root, ".agents/skills/cg-sign-off/references/phase-sign-off.md")));
   assert.ok(fs.existsSync(path.join(f.root, ".agents/skills/cg-sign-off/references/closure-checks.md")));

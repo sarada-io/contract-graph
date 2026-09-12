@@ -62,6 +62,8 @@ During harvest, use `cg-unblock` D-5a: route a recurring decision once to a cont
    exploration, use `cg-prototype`: launch, iterate through manual feedback, record explicit
    acceptance, and finalise the same roadmap before preparation. Prototype iterations defer
    application test automation and prepared Steps, while contract truth and binding detectors remain.
+   Run `cg verify` in an iteration that changes contract YAML; unchanged YAML does not require a
+   new graph check on each feedback turn.
 7. Use `cg-prepare` to turn one selected phase into one prioritized, dependency-ordered Step queue
    in a single execution branch or worktree.
 8. Use `cg-produce` to run the earliest `Ready` Step, one at a time. After each verified handoff,
@@ -82,9 +84,10 @@ lacks adequate coverage. Preparation, production, and sign-off share the evidenc
 a new stage asks the same question. Retained repository gates and binding detectors still apply.
 
 Prototype progress is recorded under `.agents/cg/prototypes/` and the programme roadmap. Human
-approval is distinct from delivery completion. Preparation admits the measured provisional code
-and assigns deferred obligations. Final sign-off closes the durable prototype receipt only after
-the delivery gate passes. Optional repository merge protection uses `cg delivery verify --base`
+approval is distinct from delivery completion. A `Handed off` prototype with an `Active` roadmap
+is valid input for preparation without another cg-plan invocation. Preparation admits the measured
+provisional code and assigns deferred obligations. Final sign-off closes the durable prototype
+receipt only after the delivery gate passes. Optional repository merge protection uses `cg delivery verify --base`
 as a required check alongside ordinary CI; prototype status itself is not permission to merge.
 
 Concurrent prototype and delivery sessions keep separate programme ledgers and declare each
@@ -121,7 +124,9 @@ it remains ambiguous. Both procedures use `references/closure-checks.md` for evi
 the selected procedure retains continuation authority when those checks return a repair finding.
 
 A direct request to finish a selected prototype enters cg-sign-off's prototype-completion path.
-It records the user's completion request separately from UX acceptance, reconciles deferred work,
+It records the user's actual completion request separately from UX acceptance, never speculatively
+at prototype start. A bare “sign this off” during iteration still requires explicit whole-prototype
+UX acceptance before delivery. The coordinator reconciles deferred work,
 finalises the same roadmap, and coordinates prepare, sequential produce, repairs, documentation,
 and ordinary phase sign-off until that prototype's completion requirements pass. It may assess
 work before a delivery queue exists; assessment never authorizes premature closure.

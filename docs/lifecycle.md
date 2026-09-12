@@ -66,7 +66,8 @@ adopting repository whose installed catalog is missing a key is stale; copy the 
 
 ## The lifecycle skills
 
-The delivery sequence is plan → prepare → produce → sign-off. `/cg-sign-off` also accepts a
+The two entry paths are plan → prepare → produce → sign-off and
+prototype → manual acceptance and roadmap → prepare → produce → sign-off. `/cg-sign-off` also accepts a
 request to finish a selected prototype: it coordinates the remaining delivery through these
 stages and closes only on passing requirements. Its entry point selects the programme and loads
 separate prototype-completion or phase-sign-off instructions; it asks when the intended target
@@ -93,7 +94,14 @@ dispatches warmup.
 ```mermaid
 flowchart TD
     Contracts["YAML contract graph"] --> Plan["cg-plan"]
-    Plan --> Prepare["cg-prepare<br/>(one selected phase)"]
+    Contracts --> Prototype["cg-prototype<br/>(launch + feedback)"]
+    Prototype -->|"feedback"| Prototype
+    Prototype --> Accept["Explicit UX acceptance<br/>+ Active roadmap + handoff"]
+    Accept --> Prepare["cg-prepare<br/>(one selected phase)"]
+    Plan --> Prepare
+    Prototype -.->|"finish this prototype"| Completion["cg-sign-off<br/>(prototype completion coordinator)"]
+    Completion -.->|"obtain acceptance + finalise roadmap"| Accept
+    Completion -.->|"coordinate remaining phases"| Prepare
     Prepare --> Produce["cg-produce<br/>(earliest ready step)"]
     Produce -->|"ready work remains"| Produce
     Produce -->|"all steps complete"| SignOff["cg-sign-off<br/>(close + durable record)"]
@@ -103,13 +111,16 @@ flowchart TD
     SignOff -->|"successor or roadmap handover"| Plan
     Docs["Documentation only"] -.->|"standalone entry"| SignOff
     Unblock["cg-unblock"] -.-> Plan
+    Unblock -.-> Prototype
     Unblock -.-> Prepare
     Unblock -.->|"answer recorded"| Produce
     Unblock -.-> SignOff
 ```
 
 Each stage finishes its own job and names what should happen next. It does not start the next
-stage on its own. Auto-run is the exception, because you grant it authority to follow those names.
+stage on its own. Explicit auto-run authority or a request to complete the selected prototype
+allows continued delivery. Prototype completion records that request and coordinates the remaining
+stages; it still requires separate UX acceptance and passing final gates.
 
 ## Why plan and prepare are separate
 

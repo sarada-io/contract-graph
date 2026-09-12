@@ -40,22 +40,34 @@ function ownedPath(root, relative) {
   return current;
 }
 
-/** Conservatively identify all Git-visible source, including uncommitted and untracked files.
+/** Identify Git-visible source, including uncommitted and untracked files; default to the whole tree.
  * Lifecycle receipts and transient plan prose do not invalidate their own evidence.
  * Ignored files and external services are not covered; the delivery gate must cover those inputs.
  */
-export function prototypeSnapshot(root) {
+export function prototypeSnapshot(root, writes) {
   const hash = crypto.createHash("sha256");
-  for (const entry of sourceEntries(root)) hash.update(JSON.stringify(entry));
+  if (writes) hash.update(JSON.stringify({ writes }));
+  for (const entry of sourceEntries(root, writes)) hash.update(JSON.stringify(entry));
   return hash.digest("hex");
 }
 
-function sourceEntries(root) {
+function isSnapshotPath(file, docs) {
+  return !file.startsWith(`${PROTOTYPE_ROOT}/`) && !(file.startsWith(`${docs}/plans/`) && /\.(md|json)$/.test(file));
+}
+
+function dirtyPaths(root) {
+  // Report both sides of a rename, including removal from a declared directory.
+  return [...new Set([git(root, ["diff", "--no-renames", "--name-only", "-z", "HEAD"]),
+    git(root, ["ls-files", "--others", "--exclude-standard", "-z"])].join("\0").split("\0").filter(Boolean))].sort();
+}
+
+function sourceEntries(root, writes) {
   const docs = prototypeDocs(root);
   const files = [...new Set(git(root, ["ls-files", "-z", "--cached", "--others", "--exclude-standard"]).split("\0").filter(Boolean))].sort();
   const entries = [];
   for (const file of files) {
-    if (file.startsWith(`${PROTOTYPE_ROOT}/`) || (file.startsWith(`${docs}/plans/`) && /\.(md|json)$/.test(file))) continue;
+    if (writes && !writes.some(p => intersects(file, p))) continue;
+    if (!isSnapshotPath(file, docs)) continue;
     const full = path.join(root, file);
     let stat;
     try { stat = fs.lstatSync(full); } catch (error) { if (error.code === "ENOENT") continue; throw error; }
@@ -68,6 +80,25 @@ function sourceEntries(root) {
 }
 
 function nonempty(value) { return typeof value === "string" && value.trim().length > 0; }
+function writePath(p) {
+  return nonempty(p) && !p.includes("\\") && !/[*?\[\]\x00-\x1f]/.test(p) &&
+    p.split("/").every(part => part && part !== "." && part !== "..");
+}
+
+// Retain earlier and released writers' declarations: narrowing a later checkpoint must not
+// remove prototype code from review. Parent directories subsume their explicitly listed files.
+function reviewWrites(record) {
+  const checkpoints = [...(record.sessions ?? []), ...record.history.map(e => e.checkpoint).filter(Boolean)];
+  const writes = [...new Set([...(record.reviewScope ?? []), ...checkpoints.flatMap(s => s.writes)])].sort();
+  return writes.filter(p => !writes.some(parent => parent !== p && p.startsWith(`${parent}/`)));
+}
+
+/** Review uses declared programme writes; old unscoped evidence stays whole-repository.
+ * Include subsequent scope expansion so it cannot inherit acceptance for unreviewed inputs.
+ */
+export function prototypeReviewSnapshot(root, record) {
+  return prototypeSnapshot(root, record.reviewScope ? reviewWrites(record) : undefined);
+}
 
 export function validatePrototype(record, file) {
   if (!record || record.version !== 1 || typeof record.programme !== "string" || !slugPattern.test(record.programme) ||
@@ -89,10 +120,14 @@ export function validatePrototype(record, file) {
   }
   if (record.sessions !== undefined && (!Array.isArray(record.sessions) || record.sessions.some(s =>
     !s || !nonempty(s.session) || !["active", "released"].includes(s.state) ||
-    !Array.isArray(s.writes) || s.writes.some(p => !nonempty(p)) ||
+    !Array.isArray(s.writes) || s.writes.some(p => !writePath(p)) ||
     !Array.isArray(s.resources) || s.resources.some(p => !nonempty(p)) ||
     !Array.isArray(s.files) || s.files.some(e => !Array.isArray(e) || e.length !== 3 || !nonempty(e[0]) || !digestPattern.test(e[2] ?? ""))))) {
     throw new Error(`${file}: malformed prototype session checkpoint`);
+  }
+  if ((record.reviewScope !== undefined && (!Array.isArray(record.reviewScope) || !record.reviewScope.length || record.reviewScope.some(p => !writePath(p)))) ||
+      record.history.some(e => e.checkpoint && (!Array.isArray(e.checkpoint.writes) || e.checkpoint.writes.some(p => !writePath(p))))) {
+    throw new Error(`${file}: malformed prototype review scope`);
   }
   if (record.deliveryAttempts !== undefined && !Array.isArray(record.deliveryAttempts)) throw new Error(`${file}: malformed delivery attempts`);
   if (record.completionRequest !== undefined) {
@@ -154,8 +189,7 @@ function checkpoint(root, record, session, evidence) {
   if (!session || !evidence) throw new Error("checkpoint requires --session and --evidence JSON with writes, state, and note");
   const input = JSON.parse(fs.readFileSync(path.resolve(root, evidence), "utf8"));
   const writes = input.writes;
-  if (!Array.isArray(writes) || writes.some(p => !nonempty(p) || p.includes("\\") || /[*?\[\]\x00-\x1f]/.test(p) ||
-      p.split("/").some(part => !part || part === "." || part === "..")) ||
+  if (!Array.isArray(writes) || writes.some(p => !writePath(p)) ||
       !["active", "released"].includes(input.state) || !nonempty(input.note) ||
       (input.resources !== undefined && (!Array.isArray(input.resources) || input.resources.some(r => !nonempty(r))))) {
     throw new Error("checkpoint needs repository-relative file/directory writes (no globs), active/released state, note, and optional resource names");
@@ -172,13 +206,67 @@ function checkpoint(root, record, session, evidence) {
     .map(s => ({ programme: s.programme, session: s.session, context: s.context,
       overlappingWrites: writes.filter(p => s.writes.some(w => intersects(p, w))),
       sharedResources: resources.filter(r => s.resources.includes(r)) }));
-  const dirty = [...new Set([git(root, ["diff", "--name-only", "-z", "HEAD"]),
-    git(root, ["ls-files", "--others", "--exclude-standard", "-z"])].join("\0").split("\0").filter(Boolean))].sort();
+  const dirty = dirtyPaths(root);
   const entry = { session, state: input.state, writes, resources, note: input.note, context: context(root),
     at: new Date().toISOString(), snapshot: prototypeSnapshot(root), files, observedChanges, dirty, peers,
     unregisteredProgrammes: records.filter(r => r.programme !== record.programme && r.status !== "Closed" && !r.sessions?.length).map(r => r.programme) };
   record.sessions = [...(record.sessions ?? []).filter(s => s.session !== session), entry];
   return entry;
+}
+
+const STARTER_PHASES = "Finalise delivery phases after prototype acceptance.";
+const STARTER_GATE = "Name the repository delivery gate before handoff.";
+const STARTER_GAPS = "List deferred tests and known gaps, or explicitly state none with a reason.";
+
+/** Check the minimum authored handoff structure, not whether the plan will deliver its outcome. */
+function validateRoadmap(plan) {
+  const sections = new Map([["", { lines: [], prose: [] }]]);
+  let section = sections.get(""), fence = null;
+  for (const line of plan.replace(/<!--[\s\S]*?-->/g, "").split(/\r?\n/)) {
+    const marker = /^\s*(`{3,}|~{3,})/.exec(line)?.[1];
+    if (marker) {
+      if (!fence) fence = marker;
+      else if (marker[0] === fence[0] && marker.length >= fence.length) fence = null;
+      continue;
+    }
+    const heading = !fence && /^##\s+(.+?)\s*#*\s*$/.exec(line);
+    if (heading) {
+      if (sections.has(heading[1])) throw new Error(`roadmap has duplicate ${heading[1]} sections`);
+      section = { lines: [], prose: [] };
+      sections.set(heading[1], section);
+    } else {
+      section.lines.push(line);
+      if (!fence) section.prose.push(line);
+    }
+  }
+  const meaningful = value => {
+    const text = value.replace(/[`*_]/g, "").trim().replace(/^(?:[-+] |\d+[.)] )/, "").trim();
+    return /[\p{L}\p{N}]/u.test(text) && !/<[^>]+>/.test(text) &&
+      !/^(?:todo|tbd|pending|placeholder|\.\.\.|…|phase|user\/system result|command\/evidence)(?:[.!:]|$)/i.test(text) &&
+      ![STARTER_PHASES, STARTER_GATE, STARTER_GAPS].includes(text);
+  };
+  const statuses = sections.get("").prose.filter(line => /^Status:/.test(line));
+  if (statuses.length !== 1 || !/^Status: Active\s*$/.test(statuses[0])) {
+    throw new Error("finalise the roadmap with programme Status: Active before its sections; phase statuses belong in the Phase map");
+  }
+  const rows = (sections.get("Phase map")?.prose ?? []).filter(line => /^\s*\|/.test(line))
+    .map(line => line.trim().replace(/^\||\|$/g, "").split("|").map(cell => cell.trim()));
+  const header = ["phase", "observable outcome", "prerequisites", "scope", "acceptance gate", "status"];
+  const hasHeader = rows.some(row => row.length === header.length && row.every((cell, i) => cell.toLowerCase() === header[i]));
+  if (!hasHeader || !rows.some(row => row.length === 6 && row.slice(0, 4).every(meaningful) &&
+      meaningful(row[4]) && /^(Current|Blocked|Complete|Future)$/.test(row[5]))) {
+    throw new Error("finalise the Phase map with at least one named phase, observable outcome, and acceptance gate in the roadmap phase table; remove starter placeholders");
+  }
+  for (const name of ["Programme completion gate", "Deferred tests and known gaps"]) {
+    const lines = sections.get(name)?.lines ?? [];
+    if (!lines.some(line => !/^\s*#/.test(line) && meaningful(line)) ||
+        lines.some(line => [STARTER_GATE, STARTER_GAPS].includes(line.trim()))) {
+      throw new Error(`finalise the roadmap ${name} section with non-placeholder content before handoff`);
+    }
+  }
+  if (sections.get("Phase map").lines.some(line => line.trim() === STARTER_PHASES)) {
+    throw new Error("remove starter placeholders from the roadmap Phase map before handoff");
+  }
 }
 
 /** CLI actions require actual user authority to be supplied by the invoking skill.
@@ -226,7 +314,7 @@ function performAction(root, action, { programme: name, evidence, gate, session 
     const target = ownedPath(root, roadmap);
     if (!fs.existsSync(target)) {
       fs.mkdirSync(path.dirname(target), { recursive: true });
-      fs.writeFileSync(target, `# ${name}\nStatus: Proposed\n\n## Final outcome\nDescribe the intended experience as it becomes clear.\n\n## Prototype\nRecord scope, launch instructions, current changes, feedback, review conditions, and known gaps here.\n\n## Assumptions and decisions\nRecord consequential choices and the actual user responses.\n\n## Measured baseline\nInitial source snapshot: ${snapshot}\n\n## Phase map\nFinalise delivery phases after prototype acceptance.\n\n## Dependencies and risks\nRecord unresolved prerequisites and deferred verification.\n\n## Programme completion gate\nName the repository delivery gate before handoff.\n`);
+      fs.writeFileSync(target, `# ${name}\nStatus: Proposed\n\n## Final outcome\nDescribe the intended experience as it becomes clear.\n\n## Prototype\nRecord scope, launch instructions, current changes, feedback, review conditions, and known gaps here.\n\n## Assumptions and decisions\nRecord consequential choices and the actual user responses.\n\n## Measured baseline\nInitial source snapshot: ${snapshot}\n\n## Phase map\n${STARTER_PHASES}\n\n## Deferred tests and known gaps\n${STARTER_GAPS}\n\n## Dependencies and risks\nRecord unresolved prerequisites and deferred verification.\n\n## Programme completion gate\n${STARTER_GATE}\n`);
     }
     return persist("Iterating");
   }
@@ -249,28 +337,33 @@ function performAction(root, action, { programme: name, evidence, gate, session 
   if (!allowed[action]?.includes(record.status)) throw new Error(`cannot ${action} prototype in ${record.status}`);
   if (action === "resume") {
     const previousEvidence = { approval: record.approval ?? null, closure: record.closure ?? null, completionRequest: record.completionRequest ?? null };
-    delete record.approval; delete record.closure; delete record.review; delete record.completionRequest;
+    delete record.approval; delete record.closure; delete record.review; delete record.reviewScope; delete record.reviewUnscopedDirty; delete record.completionRequest;
     return persist("Iterating", { previousEvidence });
   }
   if (action === "review") {
-    record.review = prototypeSnapshot(root);
-    return persist("Awaiting review");
+    const writes = reviewWrites(record);
+    if (writes.length) record.reviewScope = writes;
+    record.review = prototypeReviewSnapshot(root, record);
+    const docs = prototypeDocs(root);
+    // Informational review evidence, not a wider fingerprint or an approval blocker.
+    record.reviewUnscopedDirty = writes.length ? dirtyPaths(root)
+      .filter(file => isSnapshotPath(file, docs) && !writes.some(p => intersects(file, p))) : [];
+    return persist("Awaiting review", { review: record.review, reviewUnscopedDirty: record.reviewUnscopedDirty,
+      ...(record.reviewScope ? { reviewScope: record.reviewScope } : {}) });
   }
   if (action === "approve") {
     if (!evidence) throw new Error("approve requires --evidence JSON with by, response, and scope from the user");
     const answer = JSON.parse(fs.readFileSync(path.resolve(root, evidence), "utf8"));
     if (![answer.by, answer.response, answer.scope].every(nonempty)) throw new Error("approval needs by, response, and scope");
-    const snapshot = prototypeSnapshot(root);
+    const snapshot = prototypeReviewSnapshot(root, record);
     if (record.review !== snapshot) throw new Error("prototype changed after review; resume and present the current result");
     record.approval = { by: answer.by, response: answer.response, scope: answer.scope, snapshot, at: new Date().toISOString() };
     return persist("Approved", { approval: record.approval });
   }
   if (action === "handoff") {
-    if (prototypeSnapshot(root) !== record.approval.snapshot) throw new Error("approved prototype changed; resume for affected human review");
+    if (prototypeReviewSnapshot(root, record) !== record.approval.snapshot) throw new Error("approved prototype changed; resume for affected human review");
     const plan = fs.readFileSync(ownedPath(root, roadmap), "utf8");
-    if (!/^Status: Active\s*$/m.test(plan) || !/^## Phase map\s*$/m.test(plan) || !/^## Programme completion gate\s*$/m.test(plan)) {
-      throw new Error("finalise the roadmap with Status: Active, Phase map, and Programme completion gate before handoff");
-    }
+    validateRoadmap(plan);
     return persist("Handed off");
   }
   if (action === "request-sign-off") {

@@ -10,9 +10,12 @@ agree at each layer, what gets written, and what is still true after the plan is
 
 When the desired experience needs hands-on exploration, start with `/cg-prototype`. It launches
 the application, makes small changes, and iterates through your manual feedback while deferring
-application test automation. Relevant contracts still guide placement and remain truthful.
+application test automation. Relevant contracts still guide placement and remain truthful; an
+iteration that edits contract YAML runs `cg verify` immediately.
 
-Explicit prototype acceptance leads to a roadmap and preparation of the actual provisional code.
+Explicit prototype acceptance leads to an Active roadmap and preparation of the actual provisional
+code, without another plan invocation. The programme’s top-level `Status:` is `Proposed`, `Active`,
+or `Complete`; phase-table statuses are `Current`, `Blocked`, `Complete`, or `Future`.
 Normal produce completes its implementation and coverage; sign-off closes delivery. Prototype
 acceptance never marks the initiative delivered. See [Prototype](prototype.md) for recovery,
 review evidence, and optional merge protection.
@@ -51,6 +54,7 @@ It does not rewrite existing purpose or P IDs, and it does not rewrite the produ
 
 | Stage | You are agreeing | You are not yet deciding |
 |---|---|---|
+| Prototype | The working experience after manual review, then the remaining delivery roadmap | Acceptance does not prove production readiness |
 | Plan | Ordered phase outcomes, dependencies, and what “done” looks like for each phase | Which files move, which branch, which implementation |
 | Prepare | The steps for **one** selected phase: paths, dependencies, and the command that proves each step | A new phase outcome — that is a return to plan |
 | Produce | The implementation of the current step, and contracts that describe **what is true now** | A new split the step did not name |

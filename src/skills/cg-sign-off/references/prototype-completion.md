@@ -32,7 +32,8 @@ or close it. Missing UX acceptance does not prevent independent assessment.
 
 As soon as a completion request is selected, before waiting for UX acceptance or delivery handoff,
 save the user's actual request under the selected plan and record it. Do not wait until
-preparation begins:
+preparation begins. Do not create a request at prototype start or speculatively for later; only
+the actual request to finish this selected prototype grants completion authority:
 
 ```json
 {"by":"the requesting user","response":"their actual request","scope":"the named prototype and requested outcome, including explicit exclusions"}
@@ -51,7 +52,10 @@ production admission, even though the next session can now recover the intended 
 Manual UX acceptance is separate. Use existing attributed acceptance when it still covers the
 implementation. If the current request approves the experience and asks for completion, record
 the same actual answer for both purposes. Invoking sign-off alone does not invent UX acceptance.
-Gather missing acceptance while independent readiness assessment continues. Suspended or abandoned
+During iteration, a bare “sign this off” records completion intent but still requires an explicit
+answer accepting the whole requested prototype UX. Ask for that missing acceptance while
+independent readiness assessment continues; keep production waiting even when a completion
+request is already Active. Suspended or abandoned
 exploration requires an actual request to resume, not an automatic restart.
 
 Follow [cg-prototype §3](../../cg-prototype/SKILL.md#3-record-acceptance-and-finalise-the-roadmap)
@@ -74,8 +78,7 @@ resolve overlaps, preserve other programmes, and arrange stable final inputs.
 1. Reconcile feedback and promised outcomes with implementation. Account for unfinished behavior,
    mocks, shortcuts, error states, contract drift, documentation, tests, and integration gaps.
    Limit obligations to accepted scope and retained repository requirements.
-2. Reuse existing delivery phases and queues. Finalise missing delivery planning using cg-plan's
-   shared planning requirements, then use cg-prepare for the smallest necessary remaining phases.
+2. Reuse existing delivery phases and queues. Finalise missing delivery planning using cg-prototype §3, then use cg-prepare for the smallest necessary remaining phases.
    Never rebuild accepted code by default, invent a test per file, or add empty delivery phases.
    Existing phases from other programmes become prerequisites only when their relevance to this
    prototype is established; their age or readiness alone is not a dependency or authority to run them.

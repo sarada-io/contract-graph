@@ -6,7 +6,7 @@ before writing. Use the host's actual task ID when available, otherwise choose a
 session label and record it in the roadmap. Never attribute older work to a newly assigned actor.
 Pass `--session <id>` to prototype lifecycle commands, including `close`.
 
-Before the first write, after changing scope, and at each review or delivery handoff, write a
+Before the first write and after changing scope or ownership, write a
 session-specific JSON file under `<docs>/plans/<programme>/sessions/<session-slug>.json`:
 
 ```json
@@ -27,7 +27,10 @@ state. Agree consistent names in the roadmaps: matching is literal, not inferred
 Run `cg prototype checkpoint --programme <programme> --session <id> --evidence <file>`.
 The checkpoint records the worktree, branch, commit, whole-source snapshot, dirty-path inventory,
 declared file fingerprints, observed changes since this session's previous checkpoint, and peer
-declarations in this worktree. History retains each checkpoint. Changes observed in a shared
+declarations in this worktree. History retains each checkpoint. At review, the CLI fingerprints the union of this programme’s
+current and earlier declared writes, including released writers. Approval and handoff reuse that
+scope; expansion or changed scoped files needs review. Unrelated source edits do not invalidate
+scoped review. No declaration means the older whole-repository review behavior. Changes observed in a shared
 checkout are not proof of authorship. A changed scope can also change this inventory. Keep the
 roadmap's short account of actual edits and feedback; do not claim pre-existing dirty files.
 

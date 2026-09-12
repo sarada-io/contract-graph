@@ -95,6 +95,12 @@ Read the returned `Next action` status, `$cg-` token, artifact, and
 Advance lifecycle work only when the block is well formed, no `Blocked by` is
 present, and the route is within authority and phase assignment.
 
+An `Exploration needed` handoff with `$cg-prototype` returns to the human, even without a
+`Blocked by` line. Never dispatch `cg-prototype` at any authority level or infer UX acceptance.
+The Engineer returns the handoff to the Manager; the Manager preserves the known scope and
+`User action: invoke /cg-prototype with the known scope` for the user. Never rewrite that action
+as `None — auto-run continues` or substitute speculative planning for exploration.
+
 An incomplete phase with a runnable corrective route is advancing: dispatch
 `cg-prepare` or `cg-produce` to repair it rather than asking the user to add a
 Step or restart. A product failure does not itself block preparation of its

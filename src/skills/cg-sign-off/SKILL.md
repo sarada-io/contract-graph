@@ -33,13 +33,16 @@ flag, a recovery prompt, or instructions about other runs. Resolve those details
 
 Record prototype completion intent at admission, before awaiting acceptance or preparing delivery,
 as described in its procedure. An interrupted review then has a recoverable parent task. A
-readiness-only request does not create completion authority. Resume with one concise statement of
-the selected outcome and immediate next action; recovery must not require a special user prompt.
+readiness-only request does not create completion authority. Never record request-sign-off at
+prototype start or “just in case”; it requires an actual request to finish that prototype.
+Resume with one concise statement of the selected outcome and immediate next action; recovery must not require a special user prompt.
 
 ## Choose by the requested outcome
 
 Use the request and established scope to choose one case below. File presence and lifecycle state
-tell you what remains to be done after selection; they do not decide the type of sign-off.
+tell you what remains to be done after selection; they do not decide the type of sign-off. The
+CLI’s `entry` field admits assessment and is a routing hint, not user authority; an explicit
+phase-only request still wins. A Closed prototype receipt uses ordinary programme routing.
 
 ### Prototype completion — finish the working prototype
 

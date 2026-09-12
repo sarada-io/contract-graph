@@ -138,7 +138,8 @@ and host limitations, phases completed, what shipped, acceptance commands and
 results, decisions and outstanding answers, durable records, forward handovers,
 and which working ledgers were deleted or retained for recovery. Do not report
 measured token savings unless measured.
-End with one next action:
+For `Exploration needed`, return cg-plan §9's human handoff unchanged. Otherwise end with one
+next action:
 
 ```markdown
 ## Next action — <Run complete | Waiting for decision | Blocked | Authority required>

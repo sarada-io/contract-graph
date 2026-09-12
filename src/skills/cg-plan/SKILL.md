@@ -7,8 +7,12 @@ description: Create or revise a phase-wise Contract Graph roadmap from binding c
 
 Turn a broad outcome into an ordered phase roadmap. Do not prepare implementation Steps here.
 If the user needs a working experience to discover the outcome, route to cg-prototype with the
-known scope instead of elaborating speculative delivery phases. Prototype uses sections 2–7 as
-the shared roadmap contract and can hand an accepted complete roadmap directly to preparation.
+known scope instead of elaborating speculative delivery phases: emit the `Exploration needed`
+handoff in §9 and return to the user. Both paths share the six-column
+phase table in §3. [Prototype §3](../cg-prototype/SKILL.md#3-record-acceptance-and-finalise-the-roadmap)
+owns prototype roadmap finalisation and can hand the accepted roadmap directly to preparation.
+Its required `## Deferred tests and known gaps` section is specific to prototype handoff; the
+ordinary plan template does not require it.
 
 Read `.agents/skills/cg-unblock/SKILL.md` when a fork remains unresolved by the Plan, contracts
 and accepted decisions, or requires owner authority. Under auto-run, ask the Manager first;
@@ -16,7 +20,8 @@ otherwise ask the user directly under D-6. Record the answer and continue indepe
 
 ## Required outcome
 
-Finish with all eight true:
+When exploration is needed, emit the human handoff in §9 without inventing a roadmap to satisfy
+this checklist. Otherwise finish with all eight true:
 
 1. The roadmap names the final product or architecture outcome.
 2. Current repository truth and prerequisites are measured.
@@ -73,6 +78,8 @@ Each phase delivers one independently verifiable change in capability or archite
 | 1 | user/system result | decisions/phases | contract nodes | command/evidence | Future |
 
 Phase status is exactly one of: `Current` (selected or in delivery), `Blocked`, `Complete`, `Future`.
+These are phase-table cells. The separate programme `Status:` line before the roadmap sections
+is `Proposed`, `Active`, or `Complete`; never set a phase to `Active`.
 
 Rules:
 
@@ -182,17 +189,30 @@ receiving phase only after that phase exists.
 obvious the route is. The `Next action` block names the successor so a person can choose it and so
 `cg-auto-run` can follow it under a granted authority — naming it is not permission to take it.
 The single exception is a dispatch from `cg-auto-run`. If you were not dispatched by it, you are
-the last stage of this turn.
+the last stage of this turn. That exception covers only routes within the run's authority;
+`Exploration needed` always returns to the human and never auto-dispatches `cg-prototype`.
 
 ## 9. Next-action response
 
-Choose exactly one immediate route from the measured roadmap:
+Choose exactly one immediate route from measured state:
 
+- the intended experience needs exploration: use the human `cg-prototype` handoff below;
 - selected phase ready: use `cg-prepare` with that phase;
 - protected decision blocks selection: use `cg-unblock` with the exact decision-log entry;
 - programme outcome already complete: name no next skill.
 
-End the user-facing response with:
+For exploration, end the user-facing response with this block:
+
+```markdown
+## Next action — Exploration needed
+- **User action:** invoke /cg-prototype with the known scope
+- **Next input:** $cg-prototype — <known scope>
+```
+
+Keep the known scope concrete. `User action` names the human even under auto-run; never replace
+it with `None — auto-run continues`. Auto-run must not follow this token or invent UX acceptance.
+
+For the other routes, end the user-facing response with:
 
 ```markdown
 ## Next action — <Ready | Blocked | Programme complete>

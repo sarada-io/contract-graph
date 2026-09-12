@@ -14,7 +14,9 @@ and iterate with me until the experience is right.
 Give feedback normally. Within the agreed scope, the agent continues in the same working context.
 It defers application test authoring, test suites, and browser regression testing. It still runs
 what is needed to present the preview, keeps contracts truthful, and preserves binding detectors.
-Graph verification does not prove that the application behaves correctly.
+If an iteration changes contract YAML, the agent runs `cg verify` in that iteration; unchanged
+YAML does not trigger another graph check for each feedback turn. Graph verification does not
+prove that the application behaves correctly.
 
 ## What remains on disk
 
@@ -28,8 +30,18 @@ The snapshot includes tracked and non-ignored untracked files, file modes, and s
 Transient plan Markdown/JSON and prototype receipts are excluded so evidence can be recorded
 without invalidating itself. Do not put implementation in those excluded locations. Ignored
 assets, environment configuration outside Git, and external services require separate verification.
-Snapshots are conservative across the repository: unrelated source changes can require refreshing
-review evidence. Submodules are not supported by the snapshot command.
+Review and approval fingerprint the programme’s declared writes, including earlier declarations
+and released writers. Unrelated edits outside that scope do not invalidate review. Scope expansion
+or changes within it require affected review. Declarations must include relevant shared inputs;
+the CLI does not discover dependency closure. Older receipts without declarations keep their
+whole-repository review behavior. Final close and delivery verification always fingerprint the
+whole repository, so unrelated edits can still invalidate final integration evidence. Submodules
+are not supported by the snapshot command.
+
+At review, `reviewUnscopedDirty` lists dirty source paths outside the declared writes, using the
+same metadata exclusions. The agent expands scope for related edits or records why they are
+unrelated. This is an observation at review time; it does not infer who edited a file or block
+approval because unrelated work is dirty.
 
 ## Working side by side
 
@@ -66,9 +78,14 @@ combined branch, and subsequent source edits require refreshing final integratio
 
 When you approve the whole prototype, the agent records your actual response, its scope, and the
 reviewed source snapshot. This is attributed evidence; it does not authenticate your identity or
-machine-prove satisfaction. Changed source before handoff requires affected review.
+machine-prove satisfaction. Changed reviewed inputs before handoff require affected review.
 
-The agent then finalises the roadmap for the remaining work. Preparation uses the prototype code
+The agent then finalises the roadmap for the remaining work. Handoff requires the programme’s
+`Status: Active` before any sections, at least one concrete phase in the standard Phase map table,
+a non-placeholder Programme completion gate, and a populated Deferred tests and known gaps
+section (or an explicit account of why none remain). Phase table statuses are `Current`, `Blocked`,
+`Complete`, or `Future`. These checks reject starter placeholders; preparation still judges the
+plan’s coverage and substance. A Handed off prototype enters prepare directly. Preparation uses the prototype code
 that already exists, including relevant uncommitted files. It assigns incomplete behavior,
 integration gaps, and deferred tests to ordinary delivery Steps. It does not assume the prototype
 is green or rebuild it by default.
@@ -79,6 +96,11 @@ To finish the selected prototype, use the existing sign-off skill:
 /cg-sign-off
 I approve <programme-slug>'s prototype UX. Complete that prototype's remaining production work and sign it off.
 ```
+
+This example explicitly grants both UX acceptance and completion. A bare “sign this off” during
+iteration grants completion intent only; the agent still asks for acceptance of the whole
+prototype and waits for the actual answer before admitting delivery. An Active completion
+request cannot substitute for that answer.
 
 The prototype entry records UX acceptance and the completion request separately. It reconciles
 feedback and deferred work, finalises the same roadmap, drives necessary preparation and production,
@@ -106,7 +128,8 @@ admission, including while UX review is pending. Its JSON has `by`, `response`, 
 gate. Session history retains the request; suspension, resumption, or abandonment cancels its active
 state. A successful `close` completes it. On hosts using the optional dispatch hook, a sign-off
 entry plus an active request allows the scoped prepare/produce chain only after accepted handoff,
-while keeping queue checks. The agent handles these commands and evidence records.
+while keeping queue checks. The agent handles these commands and evidence records. It records a completion request only
+when you actually ask to finish the prototype, never at prototype start or as a precaution.
 
 To recover, the user can say "continue sign-off". The skill reads the recorded request; the CLI's
 `signOffRecovery` status identifies resumable completion work, and `cg next --for cg-sign-off`
@@ -168,9 +191,11 @@ additional recovery document to maintain.
 
 Updated skills install through `cg init`; repository workflow, root catalog, and phase policy stay
 preserved. Older maps and catalogs can omit the optional prototype entry without breaking ordinary
-verification. On explicit use, the prototype skill adopts only its scoped workflow exception and
-catalog/phase entries, preserving unrelated repository choices. A separately retained restriction
-requires a scoped resolution rather than a silent waiver.
+verification. If adoption needs preserved policy changes, the agent prepares and names the exact
+workflow, phase-map and catalog amendments and asks once for explicit approval before applying
+them. A request to prototype a dashboard alone does not authorize those amendments. Existing
+approval for the same edits remains valid. Unrelated choices stay preserved, and a separately
+retained restriction requires its own resolution.
 
 If several programmes are active, select one with `cg next --programme <slug>`. The optional host
 dispatch hook accepts `CG_PROGRAMME` from its environment for the same selection. It does not

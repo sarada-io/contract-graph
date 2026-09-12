@@ -1,6 +1,6 @@
 ---
 name: cg-prepare
-description: Prepare one selected Contract Graph phase as a prioritized queue of dependency-safe executable Steps. Use after cg-plan fixes the phase outcome and acceptance gate, or when cg-sign-off returns corrective work that changes the remaining queue. Measures affected source, tests, resources, dependencies, contracts and detectors; gives every Step explicit dependencies, blockers and state; defines one shared execution branch or worktree; and emits cold-start briefs that let cg-produce run ready Steps serially until completion or a genuine queue-wide block. Does not allocate parallel tracks, per-Step branches, merge order, or concurrent handoffs.
+description: Prepare one selected Contract Graph phase as a prioritized queue of dependency-safe executable Steps. Use after cg-plan fixes the phase outcome and acceptance gate, after a Handed off prototype supplies an Active roadmap, or when cg-sign-off returns corrective work that changes the remaining queue. Measures affected source, tests, resources, dependencies, contracts and detectors; gives every Step explicit dependencies, blockers and state; defines one shared execution branch or worktree; and emits cold-start briefs that let cg-produce run ready Steps serially until completion or a genuine queue-wide block. Does not allocate parallel tracks, per-Step branches, merge order, or concurrent handoffs.
 ---
 
 # CG Prepare
@@ -37,10 +37,18 @@ in scope. Once the queue file has a `Ready` Step, emit §9 so `cg-auto-run` can 
 
 ## 1. Admit one phase
 
-Preparation starts only when `cg-plan` has selected one phase whose outcome, scope, and acceptance
-gate are stable, its prerequisites are satisfied or explicitly blocked, and the repository's
-execution branch or worktree policy is known. If the outcome or gate must change, stop with
-`$cg-plan`.
+Admit one phase from either a cg-plan roadmap or a `Handed off` prototype with an `Active`
+roadmap and explicit human acceptance. Its outcome, scope, and acceptance gate must be stable,
+prerequisites satisfied or explicitly blocked, and execution branch or worktree policy known.
+A finalised prototype roadmap is sufficient planning input; do not send it through `$cg-plan`
+again. Use `$cg-plan` only for unresolved programme questions or a changed outcome or gate.
+
+For a prototype, run `cg next --programme <slug>` and read its durable record. Admit the exact
+worktree including relevant uncommitted files; do not reconstruct it from the plan or call it
+green. Assign retained code, incomplete behavior, deferred tests, and known failures to Steps
+that complete and verify them. The first corrective Step may start from this measured provisional
+baseline. Verification failures are work to repair, not automatic reasons to refuse preparation.
+Only record a verified handoff after the assigned gate passes.
 
 1. Load `.agents/cg/principles/architecture.yaml`. Apply `hierarchy.kinds` and `graph` before
    assigning any path.
@@ -87,16 +95,6 @@ later Step `Waiting` behind it. After writing the route, resume `cg-sign-off` fo
 do not begin destination execution yet.
 
 The roadmap is transient. Do not cite a plan path as the source of a rule.
-
-## Prototype admission
-
-For a prototype programme, use `cg next --programme <slug>` and read its durable prototype
-record. Delivery requires `Handed off`, explicit human acceptance, and a finalised roadmap. Admit
-the exact worktree including relevant uncommitted files; do not reconstruct it from the plan or
-call it green. Assign retained code, incomplete behavior, deferred tests, and known failures to
-Steps that complete and verify them. The first corrective Step may start from this measured
-provisional baseline. Existing verification failures are work to repair, not automatic reasons
-to refuse preparation. Only record a verified handoff after the assigned gate passes.
 
 ## 2. Define Steps
 

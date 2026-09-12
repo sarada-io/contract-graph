@@ -10,8 +10,7 @@ prepare → produce → sign-off lifecycle. The standard workflow should also av
 verification when evidence remains valid. Both changes serve the product's purpose: use the
 contract graph to find and confine work, then spend engineering effort on the outcome.
 
-The implementation is described in [Prototype](../prototype.md), including the conservative
-snapshot scope, durable receipt location, upgrade behavior, and limits of merge enforcement.
+The implementation is described in [Prototype](../prototype.md), including declared review scope and whole-repository final fingerprints, durable receipt location, upgrade behavior, and limits of merge enforcement.
 The tables below preserve the rationale and original acceptance objectives.
 
 ## Evidence and limits

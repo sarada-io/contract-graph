@@ -14,7 +14,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 import { profilePath } from "./profiles.js";
-import { readPrototypes, programmeName, prototypeSnapshot, signOffRecovery } from "./prototype.js";
+import { readPrototypes, programmeName, prototypeReviewSnapshot, signOffRecovery } from "./prototype.js";
 import { installationStatus } from "./runtime.js";
 
 /** The Step lifecycle, as `cg-prepare` and `cg-produce` write it into brief headers. */
@@ -224,7 +224,7 @@ function nextSelected(repoRoot, { docs, programme } = {}) {
   if (prototype && !["Handed off", "Closed"].includes(prototype.status)) {
     let stale = false;
     try {
-      if (prototype.status === "Approved") stale = prototype.approval.snapshot !== prototypeSnapshot(repoRoot);
+      if (prototype.status === "Approved") stale = prototype.approval.snapshot !== prototypeReviewSnapshot(repoRoot, prototype);
     } catch (error) { return { state: "unreadable", stage: null, problems: [error.message], briefs }; }
     return { state: "prototype", stage: "cg-prototype", programme: selected, prototype, briefs, problems: [],
       reason: stale ? "approved source changed; resume the prototype for affected review" : `${selected}: ${prototype.status} — prototype review and handoff precede delivery` };
@@ -319,11 +319,11 @@ export function permits(result, skill) {
     return { allowed: false, reason: `the Step queue does not parse:\n  ${result.problems.join("\n  ")}` };
   }
   if (result.state === "selection-required") return { allowed: false, reason: result.reason };
-  if (skill === "cg-sign-off" && result.prototype) {
-    return { allowed: true, entry: "prototype-completion", reason: `${result.prototype.programme}: admit the selected prototype for completion assessment; approval, prepared Steps, and passing final gates are still required to close` };
+  if (skill === "cg-sign-off" && result.prototype && result.prototype.status !== "Closed") {
+    return { allowed: true, entry: "prototype-completion", reason: `${result.prototype.programme}: admit assessment; the user’s requested scope selects the procedure, and approval, prepared Steps, and passing final gates are still required to close` };
   }
   if (result.state === "repair-required") return { allowed: ["cg-prepare", "cg-unblock", "cg-auto-run"].includes(skill), reason: result.reason };
-  if (result.state === "prototype" && ["cg-prepare", "cg-produce", "cg-sign-off"].includes(skill)) {
+  if (result.state === "prototype" && ["cg-prepare", "cg-produce"].includes(skill)) {
     return { allowed: false, reason: result.reason };
   }
   // Preparation repairs the plan of work, including when a failed evidence Step cannot run.

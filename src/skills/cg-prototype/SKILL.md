@@ -9,36 +9,26 @@ Reach a usable preview early. Iterate with the user until the intended result is
 hand the actual implementation and remaining delivery work to the standard lifecycle. Prototype
 approval is not final sign-off. Do not invent human acceptance or silently begin auto-run.
 
-## 1. Enter with the smallest useful context
+## 1. Route, start, launch — once per session
 
-Read the root contract and `.agents/cg/workflow.md`. Route the request through contract-owned
-routes, then descend to the smallest responsible boundary before reading implementation. Read
-`.agents/cg/principles/architecture.yaml`; apply `hierarchy.kinds` and `graph`: recurse,
-selfSufficient, surface, adapters, stay, add-child, or elsewhere. Resolve applicable P rules and
-product intent; consult E only for a remaining choice. Keep structural bindings and detectors.
+Read the root contract and `.agents/cg/workflow.md`. Route through contract-owned routes to the
+smallest responsible boundary before reading implementation. Apply `hierarchy.kinds` and `graph`
+from `.agents/cg/principles/architecture.yaml`; resolve applicable P rules and product intent.
+Consult E only for a remaining choice. Keep structural bindings and detectors.
 
-On an older installation, workflow, phase policy, and the root skill catalog may be preserved
-while this skill is new. Explain any conflict with prototype test timing. An explicit request to
-use this prototype workflow authorizes its scoped adoption; amend only the necessary workflow
-exception and add this skill's canonical catalog entry and prototype A/P/E phase row. Preserve all
-other policy. If a separate explicit repository restriction remains unresolved, use cg-unblock;
-do not silently waive it or ask again for authority already granted.
+Resolve `<docs>` from `.agents/cg/profile.json`, select one programme, and inspect `cg prototype
+status` and `cg next`. Start with `cg prototype start --programme <slug>` or recover its existing
+record and roadmap. Use a Git worktree containing the intended starting changes; preserve unrelated
+work. The command creates the starter roadmap, not a branch or commit.
 
-Resolve `<docs>` from `.agents/cg/profile.json`. Select one programme slug. Inspect existing
-prototype records with `cg prototype status` and existing queues with `cg next`. Preserve unrelated
-changes. Record launch instructions, selected scope, and the current execution context. Apply
-[concurrent work](references/concurrent-work.md) when another programme or session is active.
-Declare this session's scope before editing; stop your own overlapping writes until ownership and
-affected evidence are resolved. Do not suspend another session's execution without authority.
+Read [session setup](references/session-setup.md) once to declare writes and resolve any older
+installation conflict. Load [concurrent work](references/concurrent-work.md) only when another
+writer or shared resource needs coordination. Revisit setup when scope, ownership, or policy
+changes; do not reload it for ordinary feedback turns.
 
-Start a new record with `cg prototype start --programme <slug>`. It creates the initial roadmap
-under `<docs>/plans/<slug>/roadmap.md` without replacing an existing one. The command requires a
-Git worktree; it does not create branches or commits. Choose an existing safe worktree or create
-one when repository policy requires isolation, preserving access to any starting changes.
-
-Do not prepare Steps, enumerate all future files, run application test suites, or require a full
-roadmap before launching. Use the existing application launch path. Fix launch problems inside
-scope; report a specific access or environment prerequisite when it prevents a usable preview.
+Use the existing application launch path. Do not prepare Steps, enumerate all future files, run
+application test suites, or finish the roadmap before showing a preview. Fix launch problems
+inside scope; report the exact access or environment prerequisite if the preview cannot run.
 
 ## 2. Implement and review in one continuing loop
 
@@ -49,22 +39,26 @@ Do not author application tests or run application suites or automated browser r
 during this loop. Commands needed to build and serve the preview still run. Browser navigation
 for presentation is not a browser test suite. Do not claim visual inspection without actual access.
 
-Maintain a short cumulative record in the roadmap: objective, scope, current implementation,
-feedback, accepted choices, review conditions, known failures, mocks or unfinished behavior, and
-deferred verification. Link supporting evidence. Exact edits remain in source control or the
-worktree; do not transcribe every CSS adjustment. Use cg-unblock only for consequential choices,
-unanswered prerequisites, or conflicts with retained authority. Ordinary feedback stays here.
+Keep one short cumulative note in the roadmap: what changed, feedback and accepted choices,
+review conditions, unfinished behavior, and deferred verification. Link evidence when useful;
+source control holds exact edits. Ordinary feedback does not need a new receipt or checkpoint.
+Use cg-unblock only for consequential choices, missing prerequisites, or retained-policy conflicts.
 
-Keep contracts truthful. Internal changes with unchanged contract facts need no YAML edit.
-Changed boundaries, surfaces, relations, routes, or invariants need corresponding contract changes.
-Run `cg verify` before handoff; an unchanged result can follow the evidence rules in
-[verification](../cg-prepare/references/verification.md). A known failure stays explicit and blocks
-verified delivery; prototype status never authorizes weakening a binding or hiding a violation.
+Keep contracts truthful in this iteration. Changes to boundaries, surfaces, relations, routes,
+or invariants need corresponding YAML edits. If contract YAML changed, run `cg verify` in this
+iteration and repair introduced graph failures before treating it as complete. If contract YAML
+did not change, do not rerun graph verification for an ordinary feedback turn. Record existing
+failures explicitly; prototype status never weakens a binding. Application tests stay deferred.
 
-At a review checkpoint, run `cg prototype review --programme <slug>`. Its snapshot includes tracked
-and non-ignored untracked files, including uncommitted changes. Do not place implementation in the
-transient plans tree or ignore production files to bypass the snapshot. Record ignored assets and
-external dependencies separately; the snapshot does not establish their correctness.
+Only when presenting a review checkpoint, run `cg prototype review --programme <slug> --session
+<id>`. Review fingerprints cover the programme's declared writes, including prior and released
+writers' declarations. Include affected shared inputs in that scope; declarations do not discover
+dependencies. New scope or changed reviewed files requires affected review. Records without write
+declarations retain whole-repository snapshots. Do not hide implementation in plans or ignored
+paths; ignored assets and external inputs require separate evidence.
+Inspect the receipt's `reviewUnscopedDirty` paths: expand the declaration and refresh review for
+related edits, or note briefly why they are unrelated in the existing roadmap. The list is a
+review-time observation, not authorship proof or an automatic approval blocker.
 
 After new feedback, `cg prototype resume --programme <slug>` clears acceptance and returns to
 iteration. If the user pauses, use `suspend`. If they abandon, use `abandon` without deleting code.
@@ -85,17 +79,32 @@ Use `cg prototype approve --programme <slug> --evidence <approval.json>`. The co
 source changed since the review checkpoint. This records attributed evidence, not authenticated
 identity or a machine judgment of satisfaction. Never generate an answer on the user's behalf.
 
-Finalise the existing roadmap using the outcome, phase, dependency, and acceptance requirements
-in [cg-plan sections 2–7](../cg-plan/SKILL.md). Read them as the shared planning contract, not as
-another stage invocation. Name concrete remaining phases and measurable gates; remove the starter
-placeholders and set `Status: Active`. Record retained prototype code, provisional choices,
-deferred tests, integration gaps, and the exact starting worktree. An accepted prototype is not
-a green prerequisite. Route through cg-plan only if programme questions remain unresolved.
+Finalise the existing roadmap from the accepted result. State the final observable outcome,
+retained code and provisional choices, exact starting worktree, and dependencies or decisions.
+Under `## Phase map`, use this shared roadmap table:
 
-Run `cg prototype handoff --programme <slug>`. It checks acceptance against current source and
-requires an active roadmap. Then `cg next --programme <slug>` selects preparation or an existing
-eligible queue. Preparation still assesses the roadmap's substance; header presence alone does
-not prove a complete plan. If approved source changes before handoff, return for affected review.
+| Phase | Observable outcome | Prerequisites | Scope | Acceptance gate | Status |
+|---|---|---|---|---|---|
+| 1 — <name> | <independently verifiable result> | <phases, decisions, or None> | <contract boundaries> | <command or objective evidence> | Current |
+
+Name concrete remaining phases and measurable gates. Include `## Deferred tests and known gaps`
+with tests, mocks, failures and integration obligations assigned to those phases, or an explicit
+account of why none remain. Give `## Programme completion gate` the final command or objective
+evidence. Remove starter placeholders. Set the programme's top-level `Status: Active` before
+any sections; phase table statuses are `Current`, `Blocked`, `Complete`, or `Future`.
+
+Select one phase with stable scope and gate whose prerequisites are satisfied or explicitly
+blocked. An accepted prototype is not a green prerequisite. Use cg-plan only for unresolved
+programme outcomes, dependencies, or acceptance questions; a settled prototype goes directly to
+prepare without another planning invocation.
+
+Establish `cg verify` before handoff, reusing unchanged evidence under
+[verification](../cg-prepare/references/verification.md) when applicable. Run `cg prototype handoff
+--programme <slug> --session <id>`. It checks acceptance against the reviewed scope and rejects
+missing or placeholder roadmap phases, completion gate, and deferred-work sections. These are
+minimum structure checks; preparation still judges whether the plan covers the accepted outcome.
+`cg next --programme <slug>` then selects preparation or an existing eligible queue. Changed
+reviewed inputs before handoff require affected human review.
 
 ## 4. Hand over without rebuilding the prototype
 
