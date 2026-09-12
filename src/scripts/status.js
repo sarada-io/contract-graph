@@ -17,6 +17,7 @@ export function status(repoRoot, options = {}) {
   return {
     programme,
     installation: current.installation,
+    signOffRecovery: current.signOffRecovery,
     state: current.state,
     nextAction: current.installation.requiresInit ? "cg init" : current.repairableQueue ? "cg-prepare" : current.stage,
     reason: current.reason ?? null,

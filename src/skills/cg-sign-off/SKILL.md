@@ -15,26 +15,26 @@ Use the global `cg` on PATH. `cg --version --json` identifies its actual executa
 `cg status` checks it against the installed framework. An unknown command or build mismatch is an
 installation problem, not evidence of a phase blocker. Restore the intended global build and
 re-init with the existing docs root/profiles; do not substitute a different lifecycle route.
-Resolve the target from the user's latest request or correction, supplied artifact, and ongoing
-conversation. Retain an established prototype-completion scope across interruptions and follow-ups
-such as "continue sign-off". A current explicit phase-only request narrows scope; a suspended
-auto-run ledger, prior assistant opening, or suggested resume prompt does not override a later
-user correction. Do not defend an earlier routing mistake as "established scope".
+Users can invoke this skill or say "continue sign-off". They do not need programme slugs, a mode
+flag, a recovery prompt, or instructions about other runs. Resolve those details yourself:
 
-An auto-run phase assignment selects ordinary phase sign-off only when this invocation is acting
-as that phase's assigned worker. Finding a suspended assignment on disk does not make the current
-invocation its worker. First identify the programme and whether the caller is the prototype
-completion coordinator or an explicitly assigned phase worker; only then consult that run's state.
+1. Apply the user's current explicit scope or correction. A current phase-worker assignment
+   limits that worker to its assigned phase; finding a suspended ledger does not create an assignment.
+2. For an unqualified continuation, read `cg status --json` and its `signOffRecovery` field.
+   Resume one matching recorded completion request. `cg next --for cg-sign-off --json` can resolve
+   a single active request without a programme flag. An explicit target always takes precedence.
+3. If no request is recorded yet, inspect the ongoing conversation, prototype receipts, and
+   roadmap summaries. Establish the intended outcome before reading a phase's repair records.
+   Phase readiness, branch names, recency, and prior assistant claims do not establish user intent.
+4. When multiple outcomes remain plausible or records conflict with the current request, ask one
+   plain-language question naming the outcomes. Resolve their internal identifiers yourself and
+   record the answer through the selected procedure. Do not ask the user which CLI, phase repair,
+   or internal mode to choose. Do not edit a guessed target while waiting.
 
-If the target is not established, inspect prototype status and roadmap summaries to identify
-candidates. A bare `/cg-sign-off` does not default to ordinary phase sign-off. Branch names,
-recency, and the only queue that currently reports `cg-sign-off` are not evidence of user intent.
-Do not select a programme by filtering for closure-ready queues: a prototype may have no queue yet.
-
-If several targets or sign-off types remain plausible, ask one concise question naming the
-candidates and wait for the selection before programme-specific checks or edits. Do not create a
-repair plan for a guessed target. A readiness diagnostic describes a selected target's state; it
-does not choose that target or grant completion authority.
+Record prototype completion intent at admission, before awaiting acceptance or preparing delivery,
+as described in its procedure. An interrupted review then has a recoverable parent task. A
+readiness-only request does not create completion authority. Resume with one concise statement of
+the selected outcome and immediate next action; recovery must not require a special user prompt.
 
 ## Choose by the requested outcome
 

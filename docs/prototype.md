@@ -101,11 +101,18 @@ return for affected human acceptance; tests and internal repairs that preserve i
 repeating the entire prototype review. Closing a prototype does not merge code or close your chat.
 
 The completion coordinator records the actual request with
-`cg prototype request-sign-off --programme <slug> --session <id> --evidence <request.json>` after
-accepted handoff. Its JSON has `by`, `response`, and `scope`. This records intent, not a successful
+`cg prototype request-sign-off --programme <slug> --session <id> --evidence <request.json>` at
+admission, including while UX review is pending. Its JSON has `by`, `response`, and `scope`. This records intent, not acceptance or a successful
 gate. Session history retains the request; suspension, resumption, or abandonment cancels its active
 state. A successful `close` completes it. On hosts using the optional dispatch hook, a sign-off
-entry plus an active request allows the scoped prepare/produce chain while keeping queue checks.
+entry plus an active request allows the scoped prepare/produce chain only after accepted handoff,
+while keeping queue checks. The agent handles these commands and evidence records.
+
+To recover, the user can say "continue sign-off". The skill reads the recorded request; the CLI's
+`signOffRecovery` status identifies resumable completion work, and `cg next --for cg-sign-off`
+selects a single active request without requiring a programme flag. A current explicit target
+overrides recovery. If several outcomes are plausible, the skill asks which outcome the user
+wants; it does not require internal identifiers or select an unrelated ready phase.
 
 | State | Meaning |
 |---|---|

@@ -145,7 +145,8 @@ try {
 } catch { /* Legacy repositories have no build handshake; a current CLI diagnoses them. */ }
 try {
   const [bin, prefix] = cgCommand();
-  const selection = process.env.CG_PROGRAMME ? ["--programme", process.env.CG_PROGRAMME] : [];
+  const programme = process.env.CG_PROGRAMME || store.completionProgramme;
+  const selection = programme ? ["--programme", programme] : [];
   const stdout = execFileSync(bin, [...prefix, "next", repoRoot, "--json", "--for", skill, ...selection], {
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],

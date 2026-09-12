@@ -135,7 +135,8 @@ test("sign-off admits prototype assessment without granting acceptance, producti
   assert.equal(permits(state, "cg-sign-off").entry, "prototype-completion");
   assert.equal(permits(state, "cg-prepare").allowed, false);
   assert.equal(permits(state, "cg-produce").allowed, false);
-  assert.throws(() => requestSignOff(f), /cannot request-sign-off/);
+  requestSignOff(f);
+  assert.equal(permits(next(f.root), "cg-produce").allowed, false);
   assert.throws(() => close(f), /cannot close/);
   assert.equal(readPrototypes(f.root)[0].approval, undefined);
   action(f, "start", {}, "other");
@@ -163,13 +164,55 @@ test("attributed completion requests persist separately from approval and finish
   assert.equal(resumed.history.at(-1).previousEvidence.completionRequest.state, "Completed");
 });
 
+test("cold sign-off recovers intent before acceptance despite an unrelated suspended phase", t => {
+  const f = fixture(t); action(f, "start"); requestSignOff(f);
+  queue(f, "legacy", "Complete");
+  write(f.root, "docs/plans/auto-run/legacy/phase.auto-run.md", "# Old phase\nStatus: Suspended\nSelected phase: legacy\n");
+  const call = (...args) => spawnSync(process.execPath, [CLI, ...args], { cwd: f.root, encoding: "utf8" });
+  const recovered = call("next", "--for", "cg-sign-off", "--json");
+  assert.equal(recovered.status, 0, recovered.stderr);
+  const state = JSON.parse(recovered.stdout);
+  assert.equal(state.programme, "dashboard");
+  assert.equal(state.selectionSource, "completion-request");
+  assert.equal(state.entry, "prototype-completion");
+  assert.equal(state.prototype.status, "Iterating");
+  assert.equal(status(f.root).signOffRecovery.candidates[0].programme, "dashboard");
+  assert.equal(next(f.root).state, "selection-required", "ordinary queue routing does not adopt sign-off intent");
+  const explicit = JSON.parse(call("next", "--programme", "legacy", "--for", "cg-sign-off", "--json").stdout);
+  assert.equal(explicit.programme, "legacy");
+  assert.equal(explicit.entry, undefined);
+  assert.equal(dispatch(f, "cg-sign-off", "").permissionDecision, "allow");
+  assert.equal(dispatch(f, "cg-prepare", "").permissionDecision, "deny", "recorded intent cannot supply acceptance");
+  accepted(f); queue(f, "dashboard", "Ready");
+  assert.equal(dispatch(f, "cg-prepare", "").permissionDecision, "allow", "handoffs recover the admitted programme without a user flag");
+  assert.equal(dispatch(f, "cg-produce", "").permissionDecision, "allow");
+});
+
+test("review interruption retains intent; multiple requests require a choice and cancellation removes recovery", t => {
+  const f = fixture(t); action(f, "start"); action(f, "review"); requestSignOff(f);
+  const recovered = next(f.root, { skill: "cg-sign-off" });
+  assert.equal(recovered.prototype.status, "Awaiting review");
+  assert.equal(recovered.prototype.approval, undefined);
+  action(f, "start", {}, "second"); requestSignOff(f, "second");
+  const ambiguous = next(f.root, { skill: "cg-sign-off" });
+  assert.equal(ambiguous.state, "selection-required");
+  assert.equal(ambiguous.signOffRecovery.candidates.length, 2);
+  assert.equal(permits(ambiguous, "cg-sign-off").allowed, false);
+  action(f, "suspend", {}, "second");
+  assert.equal(next(f.root, { skill: "cg-sign-off" }).programme, "dashboard");
+  action(f, "suspend");
+  assert.equal(next(f.root, { skill: "cg-sign-off" }).signOffRecovery.state, "none");
+});
+
 test("suspension cancels active completion authority and retains its original request", t => {
   const f = fixture(t); action(f, "start"); accepted(f); requestSignOff(f);
   const suspended = action(f, "suspend");
   assert.equal(suspended.completionRequest, undefined);
   assert.equal(suspended.history.at(-1).completionRequest.state, "Active");
-  action(f, "resume");
   assert.throws(() => requestSignOff(f), /cannot request-sign-off/);
+  action(f, "resume");
+  assert.equal(next(f.root).signOffRecovery.state, "none");
+  requestSignOff(f); // a fresh attributed request can be recorded before review
   assert.equal(readPrototypes(f.root)[0].approval, undefined);
 });
 

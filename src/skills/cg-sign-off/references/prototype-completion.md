@@ -30,6 +30,24 @@ For readiness assessment only, inspect and report the selected prototype's gaps 
 next route. Do not record a completion request, approve or hand off the prototype, start delivery,
 or close it. Missing UX acceptance does not prevent independent assessment.
 
+As soon as a completion request is selected, before waiting for UX acceptance or delivery handoff,
+save the user's actual request under the selected plan and record it. Do not wait until
+preparation begins:
+
+```json
+{"by":"the requesting user","response":"their actual request","scope":"the named prototype and requested outcome, including explicit exclusions"}
+```
+
+Run `cg prototype request-sign-off --programme <slug> --session <actual-session-id> --evidence <file>`.
+This records completion intent, not approval or closure. Reuse an active request after a context
+break; do not replace or expand it. Pause, resume, or abandonment cancels this active request while
+preserving its history; re-establish authority from the actual conversation.
+
+The CLI accepts this request during iteration, review, approval, or delivery. Its receipt leaves
+the prototype status unchanged. The agent writes and supplies the evidence file and session ID;
+the user does not need to run this command or compose JSON. Missing acceptance still prevents
+production admission, even though the next session can now recover the intended completion task.
+
 Manual UX acceptance is separate. Use existing attributed acceptance when it still covers the
 implementation. If the current request approves the experience and asks for completion, record
 the same actual answer for both purposes. Invoking sign-off alone does not invent UX acceptance.
@@ -42,17 +60,6 @@ history; use `review`, `approve`, and `handoff` as appropriate. Do not fake hist
 prototype iterations. Changed review fingerprints require inspecting differences and affected
 review as required; never rewrite the old approval fingerprint. Acceptance permits planning from
 provisional code, not claiming a green baseline.
-
-Once Handed off, save the request under the selected plan:
-
-```json
-{"by":"the requesting user","response":"their actual request","scope":"the named prototype and accepted outcome, including explicit exclusions"}
-```
-
-Run `cg prototype request-sign-off --programme <slug> --session <actual-session-id> --evidence <file>`.
-This records completion intent, not approval or closure. Reuse an active request after a context
-break; do not replace or expand it. Pause, resume, or abandonment cancels this active request while
-preserving its history; re-establish authority from the actual conversation.
 
 ## Complete the remaining delivery
 

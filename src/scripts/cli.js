@@ -735,6 +735,7 @@ async function main(argv) {
       process.stdout.write(`cg status: ${result.programme ?? "selection unresolved"} — ${result.state}\n`);
       process.stdout.write(`  installation: ${result.installation.state}; CLI: ${result.installation.runtime.executable}\n`);
       if (result.installation.reason) process.stdout.write(`  ${result.installation.reason}\n`);
+      for (const candidate of result.signOffRecovery.candidates) process.stdout.write(`  resumable sign-off: ${candidate.mode} for ${candidate.programme} — ${candidate.scope}\n`);
       if (result.reason) process.stdout.write(`  ${result.reason}\n`);
       if (result.programmes.length) process.stdout.write(`  programmes: ${result.programmes.join(", ")}\n`);
       if (result.prototype) process.stdout.write(`  prototype: ${result.prototype.status}; completion request: ${result.prototype.completionRequest?.state ?? "none"}\n`);
@@ -750,7 +751,7 @@ async function main(argv) {
   }
 
   if (command === "next") {
-    const result = next(repoRoot, { programme: flags.programme });
+    const result = next(repoRoot, { programme: flags.programme, skill: flags.for });
     if (flags.json) {
       process.stdout.write(`${JSON.stringify(
         {
@@ -764,6 +765,8 @@ async function main(argv) {
           findings: result.findings ?? [],
           repairableQueue: result.repairableQueue ?? false,
           installation: result.installation,
+          signOffRecovery: result.signOffRecovery,
+          selectionSource: result.selectionSource ?? null,
           ...(result.prototype ? { prototype: { programme: result.prototype.programme, status: result.prototype.status,
             completionRequest: result.prototype.completionRequest ? { state: result.prototype.completionRequest.state } : null } } : {}),
           ...(flags.for ? { for: flags.for, ...permits(result, flags.for) } : {}),

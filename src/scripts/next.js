@@ -14,7 +14,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 import { profilePath } from "./profiles.js";
-import { readPrototypes, programmeName, prototypeSnapshot } from "./prototype.js";
+import { readPrototypes, programmeName, prototypeSnapshot, signOffRecovery } from "./prototype.js";
 import { installationStatus } from "./runtime.js";
 
 /** The Step lifecycle, as `cg-prepare` and `cg-produce` write it into brief headers. */
@@ -189,8 +189,14 @@ export function readQueue(repoRoot, docsRoot = "docs") {
  * are all `Complete`. It lives here rather than only in prose so something other than a model
  * can check it was followed.
  */
-export function next(repoRoot, { docs, programme } = {}) {
-  return { ...nextSelected(repoRoot, { docs, programme }), installation: installationStatus(repoRoot) };
+export function next(repoRoot, { docs, programme, skill } = {}) {
+  let recovery;
+  try { recovery = signOffRecovery(repoRoot); }
+  catch (error) { recovery = { state: "unreadable", candidates: [], reason: error.message }; }
+  const recovered = !programme && skill === "cg-sign-off" && recovery.state === "resumable";
+  const target = recovered ? recovery.candidates[0].programme : programme;
+  return { ...nextSelected(repoRoot, { docs, programme: target }), installation: installationStatus(repoRoot),
+    signOffRecovery: recovery, ...(recovered ? { selectionSource: "completion-request" } : {}) };
 }
 
 function nextSelected(repoRoot, { docs, programme } = {}) {

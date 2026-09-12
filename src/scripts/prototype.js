@@ -10,6 +10,7 @@ export const PROTOTYPE_STATES = ["Iterating", "Awaiting review", "Approved", "Ha
 const sha = (value) => crypto.createHash("sha256").update(value).digest("hex");
 const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const digestPattern = /^[a-f0-9]{64}$/;
+const COMPLETION_REQUEST_STATES = ["Iterating", "Awaiting review", "Approved", "Handed off"];
 
 export function programmeName(value) {
   if (typeof value !== "string" || !slugPattern.test(value)) throw new Error("--programme must be a lowercase programme slug");
@@ -99,7 +100,7 @@ export function validatePrototype(record, file) {
     if (!request || !["Active", "Completed"].includes(request.state) ||
         ![request.by, request.response, request.scope, request.at, request.session].every(nonempty) ||
         !digestPattern.test(request.snapshot ?? "") ||
-        (request.state === "Active" && record.status !== "Handed off") ||
+        (request.state === "Active" && !COMPLETION_REQUEST_STATES.includes(record.status)) ||
         (request.state === "Completed" && record.status !== "Closed")) {
       throw new Error(`${file}: malformed prototype completion request`);
     }
@@ -119,6 +120,14 @@ export function readPrototypes(root) {
     if (name !== `${record.programme}.json`) throw new Error(`${file}: programme differs from filename`);
     return { ...record, file };
   }).filter(Boolean);
+}
+
+/** Recovery reads attributed intent, never infers it from phase readiness or ledger recency. */
+export function signOffRecovery(root) {
+  const candidates = readPrototypes(root).filter(record => record.completionRequest?.state === "Active")
+    .map(record => ({ programme: record.programme, mode: "prototype-completion", record: record.file,
+      scope: record.completionRequest.scope }));
+  return { state: candidates.length === 1 ? "resumable" : candidates.length > 1 ? "selection-required" : "none", candidates };
 }
 
 function save(root, record, status, event = {}) {
@@ -232,7 +241,7 @@ function performAction(root, action, { programme: name, evidence, gate, session 
   }
   const allowed = {
     review: ["Iterating"], approve: ["Awaiting review"], handoff: ["Approved"],
-    "request-sign-off": ["Handed off"],
+    "request-sign-off": COMPLETION_REQUEST_STATES,
     suspend: ["Iterating", "Awaiting review", "Approved", "Handed off"],
     resume: ["Suspended", "Abandoned", "Approved", "Awaiting review", "Handed off", "Closed"],
     abandon: ["Iterating", "Awaiting review", "Approved", "Suspended"], close: ["Handed off", "Closed"],
