@@ -77,7 +77,7 @@ To finish the selected prototype, use the existing sign-off skill:
 
 ```text
 /cg-sign-off
-I approve this prototype's UX. Complete its remaining production work and sign it off.
+I approve <programme-slug>'s prototype UX. Complete that prototype's remaining production work and sign it off.
 ```
 
 The prototype entry records UX acceptance and the completion request separately. It reconciles
@@ -86,6 +86,13 @@ updates affected contracts and documentation, completes tests and repairs, and p
 phase sign-off. You do not need to invoke each intervening skill. Existing code and applicable
 verification evidence are reused; the final required gate must pass before the prototype closes.
 A request for readiness assessment alone does not start production.
+
+Sign-off first selects the target and loads its procedure: prototype completion or phase sign-off.
+An established prototype conversation supplies that context; in a fresh conversation, name the
+programme as above. When the target remains ambiguous, the agent asks instead of choosing an
+older queue because it is ready for closure. Missing prototype acceptance or preparation stays
+within the selected prototype's completion path. Shared closure checks return repair findings to
+that coordinator, which continues the authorized work.
 
 Normal phase sign-off keeps its existing behaviour. A worker assigned one phase under auto-run
 retains that scope; it cannot grant itself permission to finish an entire prototype. Existing
@@ -140,6 +147,17 @@ evade them. Do not use this check as an adversarial security boundary or a subst
 required review. Removing never-committed metadata leaves no Git evidence to detect.
 
 ## Existing installations
+
+Prototype commands retain paths to evidence files inside their programme's plans directory as
+explicit receipt references. Residue traversal follows those references, including JSON approval
+and session files. An older receipt can register an existing consumer with
+`cg prototype evidence --programme <slug> --evidence <owned-plan-file>`. Registration preserves
+approval and completion state; it neither accepts a prototype nor proves an evidence claim.
+Markdown consumer links remain available for ordinary phase evidence and files outside that scope.
+
+Use `cg status --programme <slug>` to locate a stopped run's current Step, blocker, completion
+request, and residue owners before resuming. This is a read-only view of current records, not an
+additional recovery document to maintain.
 
 Updated skills install through `cg init`; repository workflow, root catalog, and phase policy stay
 preserved. Older maps and catalogs can omit the optional prototype entry without breaking ordinary

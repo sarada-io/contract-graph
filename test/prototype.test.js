@@ -7,6 +7,8 @@ import test from "node:test";
 import { fileURLToPath } from "node:url";
 import { prototypeAction, prototypeSnapshot, readPrototypes, deliveryReadiness as checkDelivery, PROTOTYPE_ROOT } from "../src/scripts/prototype.js";
 import { next, permits } from "../src/scripts/next.js";
+import { residue } from "../src/scripts/residue.js";
+import { status } from "../src/scripts/status.js";
 import { init } from "../src/scripts/init.js";
 import { sync } from "../src/scripts/sync.js";
 import { verify } from "../src/scripts/verify.js";
@@ -63,6 +65,40 @@ function dispatch(f, skill, programme = "dashboard", session = "completion-hook-
 function queue(f, programme, state, dependency = "None", number = 1) {
   write(f.root, `${f.docs}/plans/${programme}/phase_detailed_preparation.md`, `## Step ${number}: useful change\nPriority: ${number}\nDepends on: ${dependency}\nBlocked by: None\nStatus: ${state}\n\n### Goal\nA scoped change\n`);
 }
+
+test("prototype evidence references preserve useful JSON without claiming sibling files", t => {
+  const f = fixture(t, "handbook");
+  action(f, "start"); accepted(f); requestSignOff(f);
+  const before = readPrototypes(f.root)[0];
+  assert.ok(before.history.some(event => event.evidence === "handbook/plans/dashboard/approval.json"));
+  const evidence = "handbook/plans/dashboard/review.json";
+  write(f.root, evidence, "{}");
+  write(f.root, "handbook/plans/dashboard/unused.json", "{}");
+  const snapshot = prototypeSnapshot(f.root);
+  action(f, "evidence", { evidence });
+  const after = readPrototypes(f.root)[0];
+  assert.equal(after.status, before.status);
+  assert.deepEqual(after.approval, before.approval);
+  assert.deepEqual(after.completionRequest, before.completionRequest);
+  assert.equal(prototypeSnapshot(f.root), snapshot);
+  assert.deepEqual(residue(f.root, { programme: "dashboard" }).residue.map(r => r.path), ["handbook/plans/dashboard/unused.json"]);
+  assert.equal(status(f.root, { programme: "dashboard" }).prototype.completionRequest.state, before.completionRequest.state);
+  write(f.root, "handbook/plans/other/evidence.json", "{}");
+  assert.throws(() => action(f, "evidence", { evidence: "handbook/plans/other/evidence.json" }), /this programme/);
+  assert.equal(readPrototypes(f.root)[0].history.length, after.history.length);
+});
+
+test("evidence registration retains a closed receipt without reopening delivery", t => {
+  const f = fixture(t); action(f, "start"); accepted(f); close(f);
+  const before = readPrototypes(f.root)[0];
+  const evidence = "docs/plans/dashboard/retained-review.json";
+  write(f.root, evidence, "{}");
+  action(f, "evidence", { evidence });
+  const after = readPrototypes(f.root)[0];
+  assert.equal(after.status, "Closed");
+  assert.deepEqual(after.closure, before.closure);
+  assert.deepEqual(deliveryReadiness(f.root).failures, []);
+});
 
 test("prototype reaches review without a queue and resumes from recorded state", t => {
   const f = fixture(t, "handbook");
@@ -340,6 +376,8 @@ test("new skill installs and upgrades preserve repository-owned policy and recor
   assert.ok(fs.existsSync(path.join(f.root, ".agents/skills/cg-prototype/SKILL.md")));
   assert.ok(fs.existsSync(path.join(f.root, ".agents/skills/cg-prototype/references/concurrent-work.md")));
   assert.ok(fs.existsSync(path.join(f.root, ".agents/skills/cg-sign-off/references/prototype-completion.md")));
+  assert.ok(fs.existsSync(path.join(f.root, ".agents/skills/cg-sign-off/references/phase-sign-off.md")));
+  assert.ok(fs.existsSync(path.join(f.root, ".agents/skills/cg-sign-off/references/closure-checks.md")));
   assert.deepEqual(verify(f.root).failures, []);
   action(f, "start");
   const workflow = path.join(f.root, ".agents/cg/workflow.md");
@@ -350,6 +388,20 @@ test("new skill installs and upgrades preserve repository-owned policy and recor
   assert.equal(fs.readFileSync(workflow, "utf8"), before);
   assert.equal(readPrototypes(f.root)[0].status, "Iterating");
   assert.equal(prototypeSnapshot(f.root), snapshot);
+});
+
+test("installed sign-off procedures retain usable local reference links", t => {
+  const f = fixture(t); init(f.root, { docs: "docs" });
+  const skill = path.join(f.root, ".agents/skills/cg-sign-off");
+  const files = [path.join(skill, "SKILL.md"), ...fs.readdirSync(path.join(skill, "references"))
+    .filter(name => name.endsWith(".md")).map(name => path.join(skill, "references", name))];
+  for (const file of files) {
+    for (const match of fs.readFileSync(file, "utf8").matchAll(/\[[^\]]+\]\(([^)]+)\)/g)) {
+      const target = match[1].split("#")[0];
+      if (!target || /^[a-z]+:/i.test(target)) continue;
+      assert.ok(fs.existsSync(path.resolve(path.dirname(file), target)), `${file}: missing reference ${target}`);
+    }
+  }
 });
 
 test("an older preserved catalog and phase map can upgrade without a forced policy rewrite", t => {

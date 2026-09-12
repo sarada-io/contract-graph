@@ -52,7 +52,9 @@ execution branch or worktree policy is known. If the outcome or gate must change
    practice already cited on the selected phase is not remaining. An `E` disagreement is not
    `Blocked by` and not `$cg-unblock`.
 3. Resolve `<docs>` from `.agents/cg/profile.json` `docs` (default `docs`). Confirm with
-   `cg residue`. The queue file is `<docs>/plans/<programme>/<phase>_detailed_preparation.md`.
+   `cg status --programme <slug>` and inspect `cg residue --programme <slug>`. Findings are
+   baseline facts, not a prerequisite for preparing their correction. The queue file is
+   `<docs>/plans/<programme>/<phase>_detailed_preparation.md`.
 4. Inspect source, tests, resources, and the worktree inside the selected units only.
 5. Establish `cg verify` and the narrowest useful baseline; reuse applicable recorded evidence
    under [verification](../cg-prepare/references/verification.md), otherwise run the commands.
@@ -69,6 +71,14 @@ Step with a stable ID and explicit dependencies, keep dependent evidence Steps `
 return the earliest eligible repair Step to production. Do not make evidence `Ready` merely
 because a corrective Step was added; its verified completion is the prerequisite. Clear only
 failure labels replaced by that dependency, preserving genuine user or external blockers.
+
+For queue syntax errors or `repository-residue-in-step` findings, repair the selected preparation
+directly under the existing phase scope. Preserve Step IDs, completion evidence, dependencies,
+and the agreed final gate. Move a misplaced repository-wide residue check from Step prerequisites
+or `Done when` to the phase closure preamble; retain any repository policy that explicitly
+requires it earlier and report that policy as the unresolved conflict. Do not silently weaken it
+to a scoped check. Recalculate states after the repair. Refresh the existing repair note with a
+link to the current queue and mark resolved findings superseded; do not create another status file.
 
 After one batch acceptance, an accepted non-empty decision-harvest cohort may be prepared for its
 already-planned destination phase while the source phase is still completing. Reserve the first
@@ -221,6 +231,17 @@ tests that merely mirror class or file structure. Assign each check once per app
 In the phase preamble, name checks that only make sense after the full sequence: composition,
 residue, and the phase acceptance gate. Do not put those in a Step `Done when`. Emergent checks
 prove composition; they do not repair an incomplete Step.
+
+Use `cg residue --programme <slug>` for programme-local inspection: selected and shared/unassigned
+findings remain in check scope; other programmes are listed with owners. Unreferenced evidence
+may need a consumer link, not removal. Never assign another programme's cleanup to a Step merely
+to make repository-wide residue green. Keep any required repository-wide `cg residue` at final
+closure, and route foreign findings to their owner or the coordinating Manager.
+
+`cg next` detects direct repository-wide `cg residue` commands in fenced shell `Done when`
+blocks and reports `repair-required`. It does not parse arbitrary scripts or prose prerequisites;
+inspect those yourself. Queue syntax errors admit `cg-prepare` for repair while keeping production
+and closure gated. The stage boundary and existing completion authority still apply.
 
 ## 8. Write cold-start Step briefs
 

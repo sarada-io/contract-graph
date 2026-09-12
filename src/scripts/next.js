@@ -15,6 +15,7 @@ import path from "node:path";
 
 import { profilePath } from "./profiles.js";
 import { readPrototypes, programmeName, prototypeSnapshot } from "./prototype.js";
+import { installationStatus } from "./runtime.js";
 
 /** The Step lifecycle, as `cg-prepare` and `cg-produce` write it into brief headers. */
 export const STEP_STATES = Object.freeze([
@@ -26,9 +27,55 @@ export const STEP_STATES = Object.freeze([
 ]);
 
 const HEADER = /^(Priority|Depends on|Blocked by|Status|Weight):[ \t]*(.*)$/;
-const STEP_ID = /\bStep\s+(\d+)\b/g;
 /** A Step section opens the queue document: `## Step 3: name`. */
 const STEP_HEADING = /^##[ \t]+Step[ \t]+(\d+)[ \t]*:?[ \t]*(.*)$/;
+
+/** Accept common authored lists/ranges, but never silently discard an unreadable dependency. */
+function dependencyIds(value, problems, file) {
+  if (!value || /^none$/i.test(value.trim())) return [];
+  const ids = [];
+  for (const part of value.replace(/\bSteps?\s+/gi, "").split(/\s*(?:,|\band\b)\s*/i)) {
+    const match = /^(\d+)(?:\s*[-–—]\s*(\d+))?$/.exec(part.trim());
+    const first = Number(match?.[1]), last = Number(match?.[2] ?? match?.[1]);
+    if (!match || first < 1 || last < first || last > 10000) {
+      problems.push(`${file}: unreadable Depends on \`${value}\` — use Step 1, Step 2 or Steps 1–2`);
+      return [];
+    }
+    for (let n = first; n <= last; n++) ids.push(n);
+  }
+  return [...new Set(ids)];
+}
+
+/** Detect direct repository-wide residue commands in Step gates, not arbitrary shell programs.
+ * Scope changes require preparation; the detector never edits or waives a retained final gate.
+ */
+function stepGateFindings(text, file) {
+  let section = false, fence = null;
+  const commands = [];
+  for (const line of text.split("\n")) {
+    const marker = /^\s*(`{3,}|~{3,})(.*)$/.exec(line);
+    if (marker) {
+      if (!fence) fence = { delimiter: marker[1], shell: /^(?:bash|sh|shell)?\s*$/.test(marker[2]) };
+      else if (marker[1][0] === fence.delimiter[0] && marker[1].length >= fence.delimiter.length) fence = null;
+      continue;
+    }
+    if (!fence && /^#{1,3}\s/.test(line)) section = /^###\s+Done when\s*$/i.test(line);
+    if (section && fence?.shell) commands.push(line);
+  }
+  // Literal arguments/comments cannot introduce command separators. Keep simple quoted command
+  // paths readable, but do not interpret nested shell programs, substitutions, or quoted prose.
+  const shell = commands.join("\n").replace(/\\\r?\n/g, " ")
+    .replace(/'(?:[^']*)'|"(?:\\.|[^"\\])*"|#[^\n]*/g, token => {
+      if (token.startsWith("#")) return "";
+      const value = token.slice(1, -1);
+      return /[\s;&|`$\\]/.test(value) ? "__quoted_argument__" : value;
+    });
+  const direct = /(?:^|&&|\|\||[;\n])\s*(?:cg|[^\s;|&]+\/cg|node\s+[^\s;|&]*cg\.js)\s+residue\b([^\n;&|]*)/g;
+  return [...shell.matchAll(direct)].filter(match => !/--programme(?:=|\s+)\S+/.test(match[1])).map(() => ({
+    code: "repository-residue-in-step", file,
+    reason: "repository-wide cg residue is a final closure check, not a Step prerequisite; re-prepare its placement while preserving the required final gate",
+  }));
+}
 
 /**
  * Parse one Step section's header block.
@@ -60,21 +107,22 @@ export function parseBrief(text, file, number = null, title = null) {
     problems.push(`${file}: unknown Status \`${status}\` — expected one of ${STEP_STATES.join(", ")}`);
   }
 
-  const priority = Number.parseInt(fields.Priority ?? "", 10);
-  if (!Number.isInteger(priority)) problems.push(`${file}: no integer \`Priority:\` header`);
+  const priority = /^\d+$/.test(fields.Priority ?? "") ? Number(fields.Priority) : NaN;
+  if (!Number.isSafeInteger(priority)) problems.push(`${file}: no integer \`Priority:\` header`);
 
   const none = (value) => !value || /^none$/i.test(value.trim());
-  const ids = (value) => (none(value) ? [] : [...value.matchAll(STEP_ID)].map((m) => Number(m[1])));
+  const dependsOn = dependencyIds(fields["Depends on"], problems, file);
 
   return {
     file,
     title,
     status,
     priority: Number.isInteger(priority) ? priority : null,
-    dependsOn: ids(fields["Depends on"]),
+    dependsOn,
     blockedBy: none(fields["Blocked by"]) ? null : fields["Blocked by"].trim(),
     number,
     problems,
+    gateFindings: status === "Complete" ? [] : stepGateFindings(text, file),
   };
 }
 
@@ -85,7 +133,15 @@ const isQueueDocument = (name) => /_detailed_preparation\.md$/i.test(name);
 export function parseQueueDocument(text, file) {
   const lines = text.split("\n");
   const starts = [];
+  let fence = null;
   lines.forEach((line, index) => {
+    const marker = /^\s*(`{3,}|~{3,})/.exec(line)?.[1];
+    if (marker) {
+      if (!fence) fence = marker;
+      else if (marker[0] === fence[0] && marker.length >= fence.length) fence = null;
+      return;
+    }
+    if (fence) return;
     const match = STEP_HEADING.exec(line);
     if (match) starts.push({ index, number: Number(match[1]), title: match[2].trim() || null });
   });
@@ -134,6 +190,10 @@ export function readQueue(repoRoot, docsRoot = "docs") {
  * can check it was followed.
  */
 export function next(repoRoot, { docs, programme } = {}) {
+  return { ...nextSelected(repoRoot, { docs, programme }), installation: installationStatus(repoRoot) };
+}
+
+function nextSelected(repoRoot, { docs, programme } = {}) {
   const docsRoot = docs ?? readDocsRoot(repoRoot);
   let prototypes;
   try {
@@ -144,11 +204,15 @@ export function next(repoRoot, { docs, programme } = {}) {
   }
   let briefs = readQueue(repoRoot, docsRoot);
   const active = prototypes.filter(r => !["Closed", "Abandoned"].includes(r.status));
-  const programmes = new Set([...active.map(r => r.programme), ...briefs.map(b => b.file.split("/")[2])]);
-  if (!programme && active.length && programmes.size > 1) {
-    return { state: "selection-required", stage: null, reason: "multiple programmes are active; pass --programme <slug>", briefs, problems: [] };
+  const programmes = new Set([...active.map(r => r.programme), ...briefs.map(b => b.file.slice(`${docsRoot}/plans/`.length).split("/")[0])]);
+  if (!programme && programmes.size > 1) {
+    return { state: "selection-required", stage: null, reason: "multiple programmes are active; pass --programme <slug>", programmes: [...programmes].sort(), briefs, problems: [] };
   }
-  const selected = programme ?? (active.length === 1 ? active[0].programme : null);
+  const selected = programme ?? (programmes.size === 1 ? [...programmes][0] : null);
+  if (programme && !prototypes.some(r => r.programme === programme) &&
+      !fs.existsSync(path.join(repoRoot, docsRoot, "plans", programme))) {
+    return { state: "selection-required", stage: null, reason: `unknown programme: ${programme}`, programmes: [...programmes].sort(), briefs: [], problems: [] };
+  }
   if (selected) briefs = briefs.filter(b => b.file.startsWith(`${docsRoot}/plans/${selected}/`));
   const prototype = prototypes.find(r => r.programme === selected);
   if (prototype && !["Handed off", "Closed"].includes(prototype.status)) {
@@ -156,18 +220,20 @@ export function next(repoRoot, { docs, programme } = {}) {
     try {
       if (prototype.status === "Approved") stale = prototype.approval.snapshot !== prototypeSnapshot(repoRoot);
     } catch (error) { return { state: "unreadable", stage: null, problems: [error.message], briefs }; }
-    return { state: "prototype", stage: "cg-prototype", prototype, briefs, problems: [],
+    return { state: "prototype", stage: "cg-prototype", programme: selected, prototype, briefs, problems: [],
       reason: stale ? "approved source changed; resume the prototype for affected review" : `${selected}: ${prototype.status} — prototype review and handoff precede delivery` };
   }
-  return { ...nextQueue(briefs, docsRoot), ...(prototype ? { prototype } : {}) };
+  return { ...nextQueue(briefs, docsRoot), programme: selected, ...(prototype ? { prototype } : {}) };
 }
 
 function nextQueue(briefs, docsRoot) {
   const problems = briefs.flatMap((b) => b.problems);
 
   if (problems.length) {
-    return { state: "unreadable", stage: null, problems, briefs };
+    return { state: "unreadable", stage: null, problems, briefs, repairableQueue: true };
   }
+  const findings = briefs.flatMap(b => b.gateFindings ?? []);
+  if (findings.length) return { state: "repair-required", stage: "cg-prepare", reason: findings.map(f => `${f.file}: ${f.reason}`).join("; "), findings, briefs, problems };
   if (!briefs.length) {
     return {
       state: "no-queue",
@@ -223,7 +289,7 @@ function nextQueue(briefs, docsRoot) {
     stage: "cg-unblock",
     reason: blocked.length
       ? `no Step is Ready; blocked by ${blocked.map((b) => b.blockedBy ?? b.file).join("; ")}`
-      : "no Step is Ready and none is Complete — the queue cannot advance",
+      : "no Step is Ready — reconcile Waiting states and dependencies against completed handoffs",
     briefs,
     problems,
   };
@@ -241,13 +307,16 @@ function readDocsRoot(repoRoot) {
 
 /** Whether dispatching `skill` right now agrees with what the queue says. */
 export function permits(result, skill) {
+  if (result.installation?.requiresInit) return { allowed: false, reason: result.installation.reason };
   if (result.state === "unreadable") {
+    if (skill === "cg-prepare" && result.repairableQueue) return { allowed: true, reason: "preparation may repair the selected queue syntax; production and closure remain blocked" };
     return { allowed: false, reason: `the Step queue does not parse:\n  ${result.problems.join("\n  ")}` };
   }
   if (result.state === "selection-required") return { allowed: false, reason: result.reason };
   if (skill === "cg-sign-off" && result.prototype) {
     return { allowed: true, entry: "prototype-completion", reason: `${result.prototype.programme}: admit the selected prototype for completion assessment; approval, prepared Steps, and passing final gates are still required to close` };
   }
+  if (result.state === "repair-required") return { allowed: ["cg-prepare", "cg-unblock", "cg-auto-run"].includes(skill), reason: result.reason };
   if (result.state === "prototype" && ["cg-prepare", "cg-produce", "cg-sign-off"].includes(skill)) {
     return { allowed: false, reason: result.reason };
   }

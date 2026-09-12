@@ -27,6 +27,8 @@ import { moduleCoverage, openDescent } from "./modules.js";
 import { next, permits } from "./next.js";
 import { prototypeAction, deliveryReadiness } from "./prototype.js";
 import { residue } from "./residue.js";
+import { status } from "./status.js";
+import { runtimeIdentity } from "./runtime.js";
 import { multiSelect } from "./picker.js";
 import {
   expandProfileAliases,
@@ -51,9 +53,10 @@ Usage:
   cg build [dir] [--check]                         assemble the package target under build/
   cg init [--profile a,b] [--docs dir]             scaffold governance
   cg next [dir] [--json] [--for skill]            what runs next, computed from the Step queue
-  cg prototype <action> [dir] --programme slug   start, checkpoint, review, approve, handoff, request-sign-off, suspend, resume, abandon, close, status
+  cg prototype <action> [dir] --programme slug   start, checkpoint, review, approve, handoff, request-sign-off, suspend, resume, abandon, close, evidence, status
   cg delivery verify [dir] --base ref --gate cmd check prototype delivery receipts for a pull request
-  cg residue [dir] [--json]                       plan documents nothing points at any more
+  cg status [dir] [--programme slug] [--json]    current queue, blockers, recovery action, and residue owners
+  cg residue [dir] [--programme slug] [--json]   unreferenced plan files; scoped checks retain shared findings
   cg sync [dir] [--check]                         regenerate derived artifacts
   cg verify [dir] [--warn]                        verify governance
   cg modules [dir]                                list detected module roots, coverage, and unfinished descent
@@ -75,12 +78,12 @@ Options:
   --stage <name>    harvest stage: classify (default) or close
   --decision-log <path>  decision log to check cohort eligibility against (harvest only)
   --preparation <path>   prepared drain route to validate at --stage close (harvest only)
-  --json            machine-readable output (next, residue, contract, graph)
+  --json            machine-readable output (next, status, residue, contract, graph)
   --id <id>         contract id, governed unit, or repository-relative contract path
   --task <text>     task description to match against contract routes
   --format <name>   output format: markdown, tree, json, or mermaid
   --for <skill>     exit 0 only if dispatching that skill agrees with the queue (next only)
-  --programme <slug> select one programme (prototype or next)
+  --programme <slug> select one programme (prototype, next, status, residue)
   --evidence <file> checkpoint/approval/completion-request JSON or final sign-off document
   --session <id>    identify the acting session; required for prototype checkpoints
   --gate <command>  execute the repository delivery gate before closing a prototype
@@ -89,7 +92,7 @@ Options:
   --yes             accept replacing framework core without being asked (init only)
   --warn            report findings and exit 0 (verify only)
   --quiet           suppress successful build output
-  --version         print the installed package version
+  --version [--json] print version; JSON also identifies the executable and CLI/skills build
   -h, --help        show this message
 `;
 
@@ -376,7 +379,7 @@ async function main(argv) {
     return 0;
   }
   if (command === "--version") {
-    process.stdout.write(`${VERSION}\n`);
+    process.stdout.write(rest.includes("--json") ? `${JSON.stringify(runtimeIdentity(), null, 2)}\n` : `${VERSION}\n`);
     return 0;
   }
 
@@ -725,6 +728,27 @@ async function main(argv) {
     return 0;
   }
 
+  if (command === "status") {
+    const result = status(repoRoot, { programme: flags.programme });
+    if (flags.json) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+    else {
+      process.stdout.write(`cg status: ${result.programme ?? "selection unresolved"} — ${result.state}\n`);
+      process.stdout.write(`  installation: ${result.installation.state}; CLI: ${result.installation.runtime.executable}\n`);
+      if (result.installation.reason) process.stdout.write(`  ${result.installation.reason}\n`);
+      if (result.reason) process.stdout.write(`  ${result.reason}\n`);
+      if (result.programmes.length) process.stdout.write(`  programmes: ${result.programmes.join(", ")}\n`);
+      if (result.prototype) process.stdout.write(`  prototype: ${result.prototype.status}; completion request: ${result.prototype.completionRequest?.state ?? "none"}\n`);
+      for (const step of result.remainingSteps) process.stdout.write(`  ${step.file} — ${step.status}: ${step.title}\n${step.blockedBy ? `    blocked by: ${step.blockedBy}\n` : ""}`);
+      for (const finding of result.findings) process.stdout.write(`  repair: ${finding.file}: ${finding.reason}\n`);
+      for (const item of [...(result.residue?.blocking ?? []), ...(result.residue?.otherProgrammes ?? [])]) {
+        process.stdout.write(`  residue [${item.scope}; owner: ${item.programme ?? "shared/unassigned"}]: ${item.path}\n`);
+      }
+      process.stdout.write(`  next: ${result.nextAction ?? "resolve selection or reported errors"}${result.programme ? ` (programme ${result.programme})` : ""}\n`);
+      for (const problem of result.problems) process.stderr.write(`  ${problem}\n`);
+    }
+    return result.problems.length || result.state === "selection-required" || result.installation.requiresInit ? 1 : 0;
+  }
+
   if (command === "next") {
     const result = next(repoRoot, { programme: flags.programme });
     if (flags.json) {
@@ -735,6 +759,11 @@ async function main(argv) {
           reason: result.reason ?? null,
           step: result.step ? { file: result.step.file, title: result.step.title } : null,
           problems: result.problems,
+          programme: result.programme ?? null,
+          programmes: result.programmes ?? [],
+          findings: result.findings ?? [],
+          repairableQueue: result.repairableQueue ?? false,
+          installation: result.installation,
           ...(result.prototype ? { prototype: { programme: result.prototype.programme, status: result.prototype.status,
             completionRequest: result.prototype.completionRequest ? { state: result.prototype.completionRequest.state } : null } } : {}),
           ...(flags.for ? { for: flags.for, ...permits(result, flags.for) } : {}),
@@ -744,6 +773,7 @@ async function main(argv) {
       )}\n`);
     } else {
       process.stdout.write(`cg next: ${result.state} — ${result.stage ?? "nothing dispatchable"}\n`);
+      if (result.installation.reason) process.stderr.write(`  ${result.installation.reason}\n`);
       if (result.reason) process.stdout.write(`  ${result.reason}\n`);
       for (const problem of result.problems) process.stderr.write(`  ${problem}\n`);
     }
@@ -755,11 +785,11 @@ async function main(argv) {
       }
       return verdict.allowed ? 0 : 1;
     }
-    return result.state === "unreadable" ? 1 : 0;
+    return result.state === "unreadable" || result.installation.requiresInit ? 1 : 0;
   }
 
   if (command === "residue") {
-    const result = residue(repoRoot);
+    const result = residue(repoRoot, { programme: flags.programme });
     if (flags.json) {
       process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
     } else if (!result.residue.length) {
@@ -767,15 +797,15 @@ async function main(argv) {
         `cg residue: none — ${result.claimed} document(s) under ${result.docs}/plans/ are all reachable\n`,
       );
     } else {
-      process.stdout.write(`cg residue: ${result.residue.length} unclaimed under ${result.docs}/plans/\n`);
-      for (const item of result.residue) process.stdout.write(`  ${item.path}\n    ${item.why}\n`);
+      process.stdout.write(`cg residue: ${result.residue.length} unclaimed under ${result.docs}/plans/; ${result.blocking.length} in check scope\n`);
+      for (const item of result.residue) process.stdout.write(`  ${item.path} [${item.scope}; owner: ${item.programme ?? "shared/unassigned"}]\n    ${item.why}\n`);
       process.stdout.write(
         `  roots: ${result.roots.join(", ") || "none"}\n` +
-          "  Each of these is consumed work, superseded, or was never claimed. Archive what a reader\n" +
-          "  may audit, delete the rest — `archive/` is not a place to move things to avoid deciding.\n",
+          "  Unreferenced does not mean disposable. Link useful evidence to its consumer; inspect\n" +
+          "  superseded work before archiving or deleting it. Other programmes retain their owners.\n",
       );
     }
-    return result.residue.length ? 1 : 0;
+    return result.blocking.length ? 1 : 0;
   }
 
   if (command === "sync") {

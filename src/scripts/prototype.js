@@ -198,6 +198,16 @@ function performAction(root, action, { programme: name, evidence, gate, session 
   let record = readPrototypes(root).find(r => r.programme === name);
   if (record) { record = { ...record }; delete record.file; }
   const event = { action, session: session ?? null, context: context(root) };
+  // Preserve an explicit local evidence edge without editing the repository-owned roadmap.
+  // Only this programme's plan files may be claimed by its receipt.
+  if (evidence) {
+    const relative = path.relative(path.resolve(root), path.resolve(root, evidence)).split(path.sep).join("/");
+    if (relative.startsWith(`${prototypeDocs(root)}/plans/${name}/`)) {
+      const file = ownedPath(root, relative);
+      if (!fs.statSync(file).isFile()) throw new Error("prototype evidence must name a file");
+      event.evidence = relative;
+    }
+  }
   const persist = (status, extra = {}) => save(root, record, status, { ...event, ...extra });
   const roadmap = `${prototypeDocs(root)}/plans/${name}/roadmap.md`;
   if (action === "start") {
@@ -212,6 +222,10 @@ function performAction(root, action, { programme: name, evidence, gate, session 
     return persist("Iterating");
   }
   if (!record) throw new Error(`no prototype for ${name}; start it first`);
+  if (action === "evidence") {
+    if (!event.evidence) throw new Error("evidence registration requires a file under this programme's plans directory");
+    return persist(record.status);
+  }
   if (action === "checkpoint") {
     if (record.status === "Closed") throw new Error("resume a closed prototype before recording new session work");
     return persist(record.status, { checkpoint: checkpoint(root, record, session, evidence) });

@@ -17,13 +17,14 @@ phase. `cg-plan` is Manager work at `programme` authority only.
 ## Measure from disk
 
 Resolve `<docs>` from `.agents/cg/profile.json` `docs` (default `docs`); confirm
-with `cg residue`.
+with `cg status --programme <slug>`; inspect residue ownership without requiring global cleanup
+before preparing or producing its corrections.
 Read the root contract, the active Plan/roadmap, selected phase, relevant
 resolved and pending `DU-NN` decisions, preparation queue, prerequisite
 sign-offs, and existing auto-run ledgers.
 Read `.agents/cg/principles/architecture.yaml` for structural authority; the
 Engineer applies its `graph` walk through the stage skills before implementation.
-Use `cg next` to check queue state against the selected phase; if multiple
+Use `cg next --programme <slug>` to check queue state against the selected phase; if multiple
 active queues make the repository-wide result ambiguous, report that limitation
 rather than selecting another phase's Step. Record the checkout and pre-existing
 changes; a dirty tree alone is not a stop. Preserve unrelated work, and clarify
@@ -97,7 +98,7 @@ present, and the route is within authority and phase assignment.
 An incomplete phase with a runnable corrective route is advancing: dispatch
 `cg-prepare` or `cg-produce` to repair it rather than asking the user to add a
 Step or restart. A product failure does not itself block preparation of its
-repair. For a corrective preparation route, use `cg next --for cg-prepare` to
+repair. For a corrective preparation route, use `cg next --programme <slug> --for cg-prepare` to
 check permission; the queue's default execution stage need not be preparation.
 Stage permission does not grant wider run authority. If a handoff names an
 authorized repair but lists only the repairable defect as `Blocked by`, return

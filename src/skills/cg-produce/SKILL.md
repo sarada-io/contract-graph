@@ -40,9 +40,12 @@ state, editable paths, required contract changes, work, handoff, or `Done when`.
    specifications. Consult `E` only for a remaining design fork. A practice already cited on the
    phase or brief is not remaining. An `E` disagreement is not `Blocked by` and not `$cg-unblock`.
 3. Resolve `<docs>` from `.agents/cg/profile.json` `docs` (default `docs`). Confirm with
-   `cg residue`. Read `<docs>/plans/decision-log.md`: *Resolved* entries are authority; *Pending
+   `cg status --programme <slug>`. Inspect `cg residue --programme <slug>` as a baseline;
+   unrelated findings alone do not prevent this Step. Read `<docs>/plans/decision-log.md`: *Resolved* entries are authority; *Pending
    your review* entries are not, and a Step blocked on one stays blocked.
-4. Run `cg next`. Confirm this is the lowest-numbered `Ready` Step.
+4. Run `cg next --programme <slug>`. Confirm this is the lowest-numbered `Ready` Step.
+   For unreadable queue syntax or `repair-required`, return the exact file and finding to
+   `cg-prepare`. Do not work around a prepared gate or call routine plan repair a user decision.
 5. Confirm the branch or worktree and baseline match the preparation.
 6. Verify every declared prerequisite handoff and the latest accumulated phase state. The first
    prepared prototype repair may explicitly admit a measured provisional baseline; do not claim it

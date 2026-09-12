@@ -32,6 +32,11 @@ cg --version
 That installs the CLI, its YAML parser, the scaffold, and the eight lifecycle skills. Nothing in
 your repository changes until you run `cg init` there.
 
+Use that global `cg` for repository commands and hooks. `cg init` installs skills and context;
+it does not add Contract Graph to the adopting application's npm dependencies. To identify a
+development build precisely, run `cg --version --json`. `cg status` compares the running CLI's
+build identity with the installation record, including builds with the same version number.
+
 ## Use it in a repository
 
 ```bash
@@ -93,7 +98,8 @@ write product code.
 | `cg graph show` | Print the contract graph |
 | `cg contract route --task "…"` | Find which contracts a request should load |
 | `cg next` | See which stage owns the next move |
-| `cg residue` | Find plan files nothing still links to |
+| `cg status --programme <slug>` | Locate current Steps, blockers, recovery action, and residue owners |
+| `cg residue [--programme <slug>]` | Find unreferenced plan files globally or for one programme and shared scope |
 
 `cg --help` lists the rest.
 

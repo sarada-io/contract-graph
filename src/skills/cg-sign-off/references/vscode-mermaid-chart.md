@@ -1,70 +1,26 @@
-# VS Code Mermaid Chart reference
+# Optional Mermaid extension in VS Code
 
-Use these tools and commands only when the current harness exposes them. Do not invent a command,
-claim it ran, or block ordinary Mermaid work merely because the extension is unavailable.
+For diagram authoring, use [Mermaid diagrams](mermaid-diagrams.md). This file covers the optional
+VS Code integration only. Mermaid work does not require VS Code, GitHub Copilot, or a cloud account.
 
-## Extension tools
+## Discover before invoking
 
-- `mermaid-diagram-validator` — validate Mermaid syntax.
-- `mermaid-diagram-preview` — render a live preview in VS Code.
-- `get-syntax-docs-mermaid` — obtain syntax documentation for an unfamiliar diagram type.
+Inspect the tools and commands exposed by the installed extension version. Use its syntax
+validator and preview when available; never assume a tool name from an old example is callable.
+The extension's current documentation calls it **Mermaid** and uses `Mermaid:` command labels;
+the marketplace identifier remains `MermaidChart.vscode-mermaid-chart`.
 
-For extension-backed diagram work, validate before presentation and preview after generation.
+- **Preview Diagram:** inspect the authored diagram locally when the installed version permits it.
+- **Repair Diagram / Improve Diagram:** optional AI actions, not validation prerequisites. Prefer
+  direct source edits for ordinary fixes. Explain any credit use or external content transfer and
+  use these actions only within the user's existing authorization.
+- **Review Mermaid Sync:** review generated changes when the repository already uses that service.
+  Preserve connected-diagram metadata and follow the repository's established source ownership.
 
-## VS Code commands
+Do not infer permission to connect, sync, publish, or commit from a request to draw a diagram.
+Account requirements and Copilot capabilities vary by version. If access is unavailable, use the
+repository's renderer or a local Mermaid CLI and state which host was actually checked.
 
-### Editing and preview
-
-- **Preview** (`mermaidChart.preview`) — preview the active `.mmd` or `.mermaid` editor.
-- **Create Diagram** (`mermaidChart.createMermaidFile`) — create a demo flowchart and open preview.
-- **Repair Diagram** (`mermaidChart.repairDiagram`) — use Mermaid AI to repair the active diagram.
-  Warn the user first because this consumes Mermaid AI credits.
-- **Improve Diagram** (`mermaidChart.improveDiagram`) — suggest layout and styling variants through
-  Copilot/LM APIs.
-
-### Generation commands
-
-- **Generate Diagram from Code** (`mermaidChart.generateDiagramFromCode`)
-- **Generate Cloud Diagram** (`mermaidChart.generateCloudDiagram`)
-- **Generate ER Diagram** (`mermaidChart.generateERDiagram`)
-- **Generate Docker Diagram** (`mermaidChart.generateDockerDiagram`)
-- **Open AI Chat** (`mermaidChart.openCopilotChat`)
-
-These commands require GitHub Copilot. Prefer editing a `.mmd` file directly when unavailable.
-
-### Mermaid Chart cloud
-
-- **Login** (`mermaidChart.login`) / **Logout** (`mermaidChart.logout`)
-- **Connect Diagram** (`mermaidChart.connectDiagramToMermaidChart`)
-- **Sync Diagram** (`mermaidChart.syncDiagramWithMermaid`) — only for a connected diagram carrying
-  Mermaid Chart frontmatter:
-
-```yaml
----
-id: cbd9e9ba-a2cb-47c5-a98e-8c28a753428d
----
-```
-
-### Sync review
-
-- **Review Mermaid Sync** (`mermaidChart.reviewAppCommits`) — open the review flow.
-- **Regenerate with Mermaid AI** (`mermaidChart.regenerateDiagramWithMermaidAI`) — regenerate from
-  source references.
-
-Do not manually rewrite diagrams managed by Mermaid Chart GitHub Sync.
-
-## `@mermaid-chart` slash commands
-
-| Command | Purpose |
-|---|---|
-| `/generate_diagram_from_code` | General diagram from source files |
-| `/generate_execution_sequence` | Sequence diagram from an execution flow |
-| `/generate_er_diagram` | ER diagram from schemas or models |
-| `/generate_cloud_architecture_diagram` | Cloud or CI/CD architecture |
-| `/generate_docker_diagram` | Architecture from Dockerfiles |
-| `/generate_c4_topdown_architecture` | Top-down C4 architecture |
-| `/analyze_code_ownership` | Code-ownership diagram |
-| `/generate_dependency_diagram` | Dependency or security visualization |
-
-Extension documentation:
-<https://marketplace.visualstudio.com/items?itemName=MermaidChart.vscode-mermaid-chart>
+Verify version-specific names and requirements against the installed command list and the
+[official extension documentation](https://github.com/Mermaid-Chart/vscode-mermaid-chart).
+[Marketplace listing](https://marketplace.visualstudio.com/items?itemName=MermaidChart.vscode-mermaid-chart).

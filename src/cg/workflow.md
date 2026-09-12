@@ -113,6 +113,13 @@ Incomplete or Blocked and must not be archived as Complete.
 
 ## Completing a prototype with cg-sign-off
 
+`cg-sign-off/SKILL.md` is the entry point: establish the target and sign-off type from the request
+or unambiguous session context, then load either `references/prototype-completion.md` or
+`references/phase-sign-off.md`. A bare invocation does not default to phase sign-off, and the only
+queue ready for closure does not identify the user's intended programme. Ask for selection when
+it remains ambiguous. Both procedures use `references/closure-checks.md` for evidence and archival;
+the selected procedure retains continuation authority when those checks return a repair finding.
+
 A direct request to finish a selected prototype enters cg-sign-off's prototype-completion path.
 It records the user's completion request separately from UX acceptance, reconciles deferred work,
 finalises the same roadmap, and coordinates prepare, sequential produce, repairs, documentation,
@@ -146,6 +153,20 @@ resumes from the recalculated earliest `Ready` Step. Completion requires every p
 `Complete`.
 
 Do not create per-Step branches, merge or rebase Steps, or run prepared Steps concurrently.
+
+For recovery, run `cg status --programme <slug>`. The current preparation and prototype receipt
+supply the state; historical repair notes and ledgers must be reconciled against them. Report the
+exact Step path, current blocker, owner, and next action. Repair selected queue syntax through
+`cg-prepare`; retain completed evidence and the phase's agreed final gate. Routine status and
+consumer-link corrections within assigned paths use existing authority. Changed acceptance,
+disputed ownership, and unavailable external prerequisites require their proper decision owner.
+
+Separate Step prerequisites from final closure checks. Inspect programme-local residue with
+`cg residue --programme <slug>`: other programmes remain visible with owners, and shared/unassigned
+findings remain in scope. Useful evidence needs a real consumer link, not automatic disposal.
+Keep any required repository-wide `cg residue` at final closure and coordinate foreign findings
+with their owner; a scoped clean result does not waive the global gate. Preparation corrects a
+misplaced final gate without weakening its obligation.
 
 Independently enforced module roots may become a future
 low-context parallel execution extension, but that extension is not part of core Contract Graph yet. It
@@ -205,8 +226,10 @@ authority, or a failure for which no authorized corrective route can proceed.
 
 Under auto-run, `User action` is `None — auto-run continues with the corrective route` when the
 Engineer can perform that work. Do not ask the user to add a Step or restart an already-authorized
-repair. Outside auto-run, name the next skill for the user to invoke as usual. Evidence work that
-depends on a repair stays `Waiting` on the corrective Step; it becomes `Ready` only after the
+repair. During prototype completion, use `None — prototype completion continues` for authorized
+prepare/produce handoffs. Outside either continuation scope, name the next skill for the user
+to invoke as usual. Evidence work that depends on a repair stays `Waiting` on the corrective Step;
+it becomes `Ready` only after the
 repair's verified handoff and all other prerequisites pass.
 
 Select the immediate route from measured state. Do not list several possible skills, say only

@@ -91,3 +91,10 @@ assigns deferred tests and repairs; prototype acceptance is not a verified hando
 authority limits and final sign-off. Do not dispatch cg-prototype automatically or infer human
 approval. If the accepted experience must change, record the affected question and continue only
 independent authorized work until it is resolved.
+
+When resuming an interrupted run, read `cg status --programme <slug>` before trusting a suspended
+ledger or old repair report. Reconcile the existing ledger against the current Step and receipt.
+Dispatch queue syntax or misplaced Step-gate repairs to `cg-prepare` under the existing run
+authority. Keep foreign residue with its programme owner; coordinate it only when a required
+global closure gate depends on it. Report the exact file, owner, blocking condition, and next
+action. Do not turn routine bookkeeping into a request for a new user decision.

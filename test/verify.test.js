@@ -3488,7 +3488,7 @@ test("unblock, plan, warmup and the adapter itself are never gated", () => {
   }
 });
 
-test("an unreadable queue denies every gated stage", () => {
+test("an unreadable queue denies production", () => {
   const dir = makeRepo();
   queue(dir, { 1: { status: "Ready" } });
   write(dir, "docs/plans/prog/phase-1_detailed_preparation.md", "no step sections at all\n");
@@ -3833,19 +3833,21 @@ test("auto-run can prepare a repair without authorizing blocked production or pr
   assert.equal(gate(dir, "cg-sign-off", session).permissionDecision, "allow");
 });
 
-test("corrective preparation remains available after completion but cannot bypass an unreadable queue", () => {
+test("corrective preparation repairs queue syntax without admitting production or closure", () => {
   const dir = makeRepo();
   queue(dir, { 1: { status: "Complete" } });
   assert.equal(permits(next(dir), "cg-prepare").allowed, true);
   queue(dir, { 1: { status: "Unknown" } });
-  assert.equal(permits(next(dir), "cg-prepare").allowed, false);
+  assert.equal(permits(next(dir), "cg-prepare").allowed, true);
+  assert.equal(permits(next(dir), "cg-produce").allowed, false);
+  assert.equal(permits(next(dir), "cg-sign-off").allowed, false);
 });
 
-test("every stage skill states the yield rule", () => {
-  for (const name of ["cg-plan", "cg-prepare", "cg-produce", "cg-sign-off"]) {
-    const text = fs.readFileSync(path.join(SOURCE_ROOT, "skills", name, "SKILL.md"), "utf8");
-    assert.match(text, /## Stage boundary — yield here/, `${name} must tell the model to stop`);
-    assert.match(text, /Do not invoke the next skill yourself/, name);
+test("ordinary stage procedures state the yield rule", () => {
+  for (const relative of ["cg-plan/SKILL.md", "cg-prepare/SKILL.md", "cg-produce/SKILL.md", "cg-sign-off/references/phase-sign-off.md"]) {
+    const text = fs.readFileSync(path.join(SOURCE_ROOT, "skills", relative), "utf8");
+    assert.match(text, /## Stage boundary — yield here/, `${relative} must tell the model to stop`);
+    assert.match(text, /Do not invoke the next skill yourself/, relative);
   }
 });
 

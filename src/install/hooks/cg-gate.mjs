@@ -10,7 +10,7 @@
  * This runs before the Skill tool and answers the same question from `cg next`, which reads the
  * Step briefs instead. Production and phase closure require agreement with queue readiness.
  * Sign-off can also admit a selected prototype for completion assessment.
- * Preparation may amend any parseable queue, including one awaiting repair; this does not release
+ * Preparation may repair selected queue syntax and misplaced Step gates; this does not release
  * production blockers. The separate stage boundary still requires an authorized auto-run chain
  * or a new user instruction before crossing stages.
  *
@@ -85,17 +85,12 @@ function sessionStore(repoRoot, sessionId) {
 }
 
 /**
- * Where to find `cg`, most specific first.
- *
- * PATH alone is not enough. A globally installed `cg` may predate `cg next` entirely, in which
- * case it exits with "unknown command" and the gate silently stops gating — the failure mode
- * that matters most, because nothing looks wrong. `CG_BIN` lets a repository point at the build
- * it actually governs itself with.
+ * Use the same `cg` on PATH as ordinary skill commands. Do not silently prefer a repository
+ * npm dependency. CG_BIN is an explicit development/test override; installed build identity
+ * must still agree with the selected executable.
  */
-function cgCommand(repoRoot) {
+function cgCommand() {
   if (process.env.CG_BIN) return [process.execPath, [process.env.CG_BIN]];
-  const local = path.join(repoRoot, "node_modules", ".bin", "cg");
-  if (fs.existsSync(local)) return [local, []];
   return ["cg", []];
 }
 
@@ -144,8 +139,12 @@ if (!GATED.test(skill)) {
 
 
 let result;
+let expectedBuild = null;
 try {
-  const [bin, prefix] = cgCommand(repoRoot);
+  expectedBuild = JSON.parse(fs.readFileSync(path.join(repoRoot, ".agents/cg/manifest.json"), "utf8")).runtime?.buildId ?? null;
+} catch { /* Legacy repositories have no build handshake; a current CLI diagnoses them. */ }
+try {
+  const [bin, prefix] = cgCommand();
   const selection = process.env.CG_PROGRAMME ? ["--programme", process.env.CG_PROGRAMME] : [];
   const stdout = execFileSync(bin, [...prefix, "next", repoRoot, "--json", "--for", skill, ...selection], {
     encoding: "utf8",
@@ -157,11 +156,16 @@ try {
   try {
     result = JSON.parse(error.stdout ?? "");
   } catch {
+    if (expectedBuild) deny("Blocked by cg-gate: the selected cg could not report its build identity. Update the global CLI and re-run cg init with the existing docs root and profiles; do not interpret this as a product or phase blocker.");
     allow(
       `cg-gate: NOT GATING — \`cg next\` did not run. Install a Contract Graph build that has it, ` +
         `or set CG_BIN to one. (${error.message.split("\n")[0]})`,
     );
   }
+}
+
+if (expectedBuild && result.installation?.runtime?.buildId !== expectedBuild) {
+  deny("Blocked by cg-gate: the selected cg differs from the build that installed these skills, or is too old to identify itself. Update the global CLI and re-run cg init with the existing docs root and profiles. Do not switch programmes or waive gates to bypass an installation mismatch.");
 }
 
 // Entering sign-off admits only this programme. Chaining additionally requires an attributed,

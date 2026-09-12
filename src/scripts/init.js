@@ -22,6 +22,7 @@ import {
   selectedModulePointers,
 } from "./model.js";
 import { loadContract, stringifyContractYaml } from "./contracts.js";
+import { runtimeIdentity } from "./runtime.js";
 import {
   expandProfileAliases,
   loadProfileSelection,
@@ -201,7 +202,7 @@ const sha256 = (file) =>
 /**
  * Record what this version scaffolded, and the hash each file had on the way in.
  *
- * No command reads this yet. It cannot be captured retroactively: telling a file you edited
+ * File baselines cannot be captured retroactively: telling a file you edited
  * from one still exactly as shipped needs a baseline recorded when the file arrived. A release
  * that omits it forces its users through a manual migration later, so the record ships whether
  * or not a verb consumes it.
@@ -210,6 +211,7 @@ const sha256 = (file) =>
  * install, so their hash is evidence of what is there, not of what was shipped.
  */
 function writeManifest(repoRoot, version, out, docsRoot) {
+  const { buildId } = runtimeIdentity();
   const file = manifestPath(repoRoot);
   const files = {};
   const record = (target, adopted) => {
@@ -236,7 +238,7 @@ function writeManifest(repoRoot, version, out, docsRoot) {
     if (files[key]) merged[key] = files[key];
   }
   const desired = `${JSON.stringify(
-    { version, docs: docsRoot, files: Object.fromEntries(Object.keys(merged).sort().map((k) => [k, merged[k]])) },
+    { version, runtime: { version, buildId }, docs: docsRoot, files: Object.fromEntries(Object.keys(merged).sort().map((k) => [k, merged[k]])) },
     null,
     2,
   )}\n`;

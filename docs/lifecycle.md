@@ -68,7 +68,10 @@ adopting repository whose installed catalog is missing a key is stale; copy the 
 
 The delivery sequence is plan → prepare → produce → sign-off. `/cg-sign-off` also accepts a
 request to finish a selected prototype: it coordinates the remaining delivery through these
-stages and closes only on passing requirements. See [prototype completion](prototype.md).
+stages and closes only on passing requirements. Its entry point selects the programme and loads
+separate prototype-completion or phase-sign-off instructions; it asks when the intended target
+is ambiguous. Shared closure checks supply evidence requirements without changing who owns
+continuation. See [prototype completion](prototype.md).
 For an uncertain experience,
 prototype → manual acceptance supplies the roadmap and provisional implementation before prepare. Warmup runs at adoption before
 that sequence, and again as an additive reseed after a package upgrade when the graph already
@@ -145,6 +148,21 @@ work.
 Each programme keeps `roadmap.md` and one `<phase>_detailed_preparation.md` queue under
 `docs/plans/<programme>/` by default. `cg init --docs` records a different root in
 `.agents/cg/profile.json`; `cg residue` prints the plans directory that is actually in use.
+
+`cg status --programme <slug>` reads the current queue and prototype receipt and shows remaining
+Steps, exact file locations, recorded blockers, recovery action, and residue owners. It creates no
+new status document. Older repair reports can explain history but do not override those records.
+
+`cg residue --programme <slug>` checks selected and shared/unassigned files while listing other
+programmes separately. An unreferenced file may be useful evidence awaiting a consumer link.
+The unfiltered command still checks the whole repository. A scoped result does not replace a
+repository-wide gate required by policy; coordinate other owners before final closure.
+
+Repository-wide residue belongs at phase closure, not as a prerequisite for an individual Step.
+`cg next` reports `repair-required` for direct global residue commands in fenced shell `Done when`
+blocks. Preparation corrects their placement while retaining the final obligation. This detector
+does not interpret arbitrary shell wrappers or prose prerequisites. Preparation can also repair
+unreadable queue headers; production and closure remain gated until the queue is valid.
 
 ## Contract updates belong with the change
 

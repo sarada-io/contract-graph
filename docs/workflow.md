@@ -74,8 +74,8 @@ Engineer prepares that repair, implements it, and reruns the evidence. The phase
 but its corrective route advances. A handoff's `Blocked by` field is reserved for a condition
 that prevents the next action itself, such as an unanswered user decision or unavailable access.
 Dependent evidence waits for the verified repair; adding the Step alone does not make it ready.
-The optional stage gate permits preparation to amend a parseable queue even when that queue
-cannot execute yet. Production and sign-off remain gated by readiness, and standalone skills
+The optional stage gate permits preparation to repair selected queue syntax and misplaced Step
+gates even when that queue cannot execute yet. Production and phase sign-off remain gated by readiness, and standalone skills
 still yield at their stage boundary unless auto-run or the selected prototype's recorded
 sign-off completion path is authorized. That prototype entry coordinates remaining delivery;
 it does not waive UX acceptance, queue readiness, or final gates. See [prototype](prototype.md).
@@ -193,7 +193,8 @@ These commands inspect the same disk state the stages use. They do not require t
 | Command | What it tells you |
 |---|---|
 | `cg next` | Which stage owns the next move, from the step headers on disk |
-| `cg residue` | Plan files nothing still links to (your docs root, default `docs/plans/`) |
+| `cg status --programme <slug>` | Current Steps, blockers, recovery action, and residue owners, read from disk |
+| `cg residue [--programme <slug>]` | Unreferenced plan files; scoped checks include shared/unassigned files and list other owners |
 | `cg verify` | Whether the authored graph is closed — not yet whether every import matches it |
 | `cg graph show` | A projection of the contract graph |
 | `cg contract route --task "…"` | Which contracts a request should load first |

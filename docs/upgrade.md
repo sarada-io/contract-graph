@@ -57,6 +57,18 @@ adoption corrective set are left in place. The delta is
 
 ## What init replaces
 
+The supported default is one global CLI, followed by `cg init` in each adopting repository.
+Do not add a local npm dependency merely to refresh that repository's skills. When testing an
+unpublished build, pack it and install the tarball globally, then run that global `cg init`.
+The hook uses `cg` on PATH, matching ordinary skill commands; `CG_BIN` is an explicit test override.
+
+`cg --version --json` reports the CLI path and a content identity for its runtime, skills, hooks,
+and schemas. Init records that identity alongside the existing file baselines. `cg status` reports
+a mismatch or an older unrecorded installation, and lifecycle dispatch requires re-init with the
+intended CLI. This catches different development builds sharing a release version. It does not
+prove that an already-running agent reread a skill or that repository-owned policies are identical
+to vendor defaults. After updating, reload the skills and preserve the user's current task scope.
+
 `cg init` **replaces** skills, schemas, and hooks. It **preserves** contracts,
 `architecture.yaml`, `product.yaml`, `engineering.yaml`, `enforcement.yaml`, `workflow.md`,
 `phases.json`, and docs. It does not merge catalogs, and it does not delete leftover
