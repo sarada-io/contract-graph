@@ -9,137 +9,158 @@
 
 **Scale model-driven development with contracts, not shared context.**
 
-Faster code generation is not the hard part. Keeping the result understandable, bounded, and
-maintainable is. Contract Graph records a repository as a traversable hierarchy of contracts —
-project → module → sub-module → component or library — so a person or a coding agent can find
-where a change belongs before reading implementation.
+Contract Graph makes software understandable to coding agents as a traversable context graph:
+repository → module → sub-module → component or library → relevant implementation. Each contract
+explains what its unit owns, how its parent uses it, and where to read next. Agents follow that
+map before reading the code needed for a change.
 
-Each contract explains how its parent uses the unit, what it owns, where the boundary is, and
-which contract to read next.
+You can work in two modes: **Product Prototyping** and **Detailed Plan-Based Delivery**. Both keep
+that graph truthful as the software changes and finish through the same verified delivery process.
 
-| Start here | What you get |
-|---|---|
-| [Quick Introduction Video](https://sarada.io/cg/#watch) | Plays on the public page |
-| [Vision](https://sarada.io/community/contract-graph/vision/) | Why contracts, and what problem they are for |
-| [Contracts](https://sarada.io/community/contract-graph/contracts/) | What one YAML node is, and what verification proves |
-| [Workflow](https://sarada.io/community/contract-graph/workflow/) | How work is split, run, and left on disk |
-| [Lifecycle](https://sarada.io/community/contract-graph/lifecycle/) | The stages you run after install |
-| [Upgrade](https://sarada.io/community/contract-graph/upgrade/) | 0.3.0 / 0.4.0 → 0.5.0: init, then adoption or reseed |
-| [Source](https://github.com/sarada-io/contract-graph) | CLI, schemas, skills, and issues |
+## Choose how to work
 
-## Install
+| Mode | Start here when… | Your involvement |
+|---|---|---|
+| **Product Prototyping** | You need to try a working experience before deciding exactly what to build. | Use the preview, give feedback, approve the experience, then ask the agent to finish it. |
+| **Detailed Plan-Based Delivery** | The outcome is understood, and you want an explicit implementation roadmap. | Agree on phases and acceptance gates, then run delivery stage by stage or opt into auto-run. |
 
-Requires Node.js 18.17 or newer. Install globally so `cg` is available in later sessions:
+### Product Prototyping
+
+Start with `/cg-prototype` and describe the experience you want to explore:
+
+```text
+/cg-prototype
+Improve the dashboard layout and interactions. Launch the application
+and iterate with me until the experience is right.
+```
+
+The agent routes to the relevant contracts, launches the application, and makes small changes.
+Give feedback in the same conversation. You do not need a detailed implementation plan or a new
+skill invocation for every adjustment. The roadmap keeps the objective, feedback, accepted
+choices, and known gaps available for later sessions.
+
+During this loop, application test authoring, test suites, and browser regression testing are
+deferred. Build and launch commands still run, contracts stay truthful, and changes to contract
+YAML require `cg verify` in that iteration. Trying the preview establishes what you want;
+delivery checks establish whether the resulting implementation meets its requirements.
+
+When you accept the whole experience, ask the agent to complete the selected prototype:
+
+```text
+/cg-sign-off
+I approve the dashboard prototype's UX. Complete its remaining
+production work and sign it off.
+```
+
+The agent finalises the roadmap from the accepted result, carries the existing code into delivery,
+and coordinates preparation, implementation, deferred tests, repairs, documentation, and sign-off.
+You do not need to invoke each intervening skill. Changes to the accepted experience return for
+affected human review; final closure requires the delivery checks to pass.
+
+UX acceptance and the request to finish are separate decisions. “Sign this off” alone does not
+supply UX acceptance. See the [prototype guide](docs/prototype.md) for recovery and working across
+sessions.
+
+### Detailed Plan-Based Delivery
+
+Start with `/cg-plan` when you can describe the outcome and its constraints:
+
+```text
+/cg-plan
+Add export and import for saved dashboards. Plan the work around
+backward compatibility, validation, and recovery from invalid files.
+```
+
+Delivery proceeds through four stages:
+
+1. **Plan — `/cg-plan`:** establish the current baseline, divide the outcome into ordered phases,
+   and define scope, dependencies, risks, and acceptance gates.
+2. **Prepare — `/cg-prepare`:** turn one selected phase into a detailed queue of executable steps,
+   with concrete changes, dependencies, and verification commands.
+3. **Produce — `/cg-produce`:** execute ready steps sequentially, updating code, tests, and
+   affected contracts together.
+4. **Sign off — `/cg-sign-off`:** verify the selected phase, repair defects, and close it only
+   when its requirements pass.
+
+Each standalone stage names the next action for you. For an accepted roadmap, `/cg-auto-run`
+can coordinate delivery within the scope you grant, using one Engineer per phase where the host
+supports fresh workers. It records unresolved decisions and asks you when an answer is needed.
+
+If planning reveals that the experience still needs exploration, the agent returns the known
+scope to you for `/cg-prototype`. Auto-run does not start prototyping or supply human approval.
+An accepted prototype already supplies its delivery roadmap; it does not need a second planning
+pass merely to enter preparation.
+
+## Install and set up
+
+Requires Node.js 18.17 or newer. Install the CLI globally, then initialise your repository:
 
 ```bash
 npm install --global contract-graph
-cg --version
-```
-
-That installs the CLI, its YAML parser, the scaffold, and the eight lifecycle skills. Nothing in
-your repository changes until you run `cg init` there.
-
-Use that global `cg` for repository commands and hooks. `cg init` installs skills and context;
-it does not add Contract Graph to the adopting application's npm dependencies. To identify a
-development build precisely, run `cg --version --json`. `cg status` compares the running CLI's
-build identity with the installation record, including builds with the same version number.
-
-## Use it in a repository
-
-```bash
 cd your-repository
 cg init
 ```
 
-In a terminal, `init` confirms this directory, then lets you pick editor and agent support.
-Restart or reload the IDE so the `/cg-*` skills appear.
+`cg init` confirms the target directory and lets you select editor support. Reload your editor's
+skills after installation. The CLI installs, verifies, and inspects; the agent skills do the
+planning and implementation. Initialisation does not add an npm dependency to your application.
 
-**New repository.** Fill the root contract's purpose, boundaries, and routes, then start with
-`/cg-plan`.
+**New repository:** establish the root contract's purpose, boundaries, and routes, then choose
+prototyping or detailed planning.
 
-**Existing repository.** Run `cg modules` to see detected roots, then `/cg-warmup` in a new
-chat. If roots are still unmapped, that is adoption: warmup writes contracts for the code that
-exists. If every root is already governed, that is reseed: warmup adds missing children, product
-rules, and route targets without rewriting existing purpose or P IDs. Until adoption finishes,
-`cg verify: OK` means the scaffold is well-formed, not that this repository is governed.
+**Existing repository:** run `cg modules`, then `/cg-warmup` to map the code into contracts.
+Warmup adopts unmapped boundaries or additively extends an existing graph. Until adoption is
+complete, a passing scaffold check does not mean the implementation has been fully mapped.
 
-**Upgrade** from 0.3.0 or 0.4.0:
+**Updating an installation:** install the intended package version, then run `cg init --yes`
+with the repository's existing docs root and editor profiles. Skills, schemas, and hooks update;
+contracts, policy catalogs, workflow, and existing documentation are preserved. Use
+`cg --version --json` to identify the exact build. See [upgrade](docs/upgrade.md) for migration
+and deliberate adoption of changes to preserved policy.
 
-```bash
-npm install --global contract-graph@0.5.0
-cd <repo>
-cg init --yes --docs docs
-cg verify
-```
-
-Then `/cg-warmup` in a new chat (adoption if `cg modules` still has gaps, reseed if the graph is
-already connected). Framework skills and schemas update; contracts and catalogs stay yours.
-
-Supported discovery: [Cursor](https://cursor.com/docs/skills),
-[Codex](https://learn.chatgpt.com/docs/build-skills),
-[Claude Code](https://code.claude.com/docs/en/skills),
-[GitHub Copilot](https://docs.github.com/en/copilot/concepts/agents/about-agent-skills)
-(VS Code agent mode), and [Antigravity](https://antigravity.google/docs/cli/gcli-migration/).
+Supported editor profiles cover Cursor, Codex, Claude Code, GitHub Copilot, and Antigravity.
 Antigravity, Codex, and Cursor share the `agents` profile (`AGENTS.md` and `.agents/skills/`).
+Host capabilities determine whether features such as fresh auto-run workers are available.
 
-## Day to day
+## Shared tools
 
-After init, delivery is the skills. The CLI installs, verifies, and inspects; it does not plan or
-write product code.
-
-| Skill | When |
-|---|---|
-| `/cg-warmup` | Adoption or additive reseed on existing code: discover boundaries, write or extend their contracts |
-| `/cg-plan` | Turn an outcome into ordered phases |
-| `/cg-prototype` | Launch and refine a working prototype with your feedback, then prepare the accepted result for delivery |
-| `/cg-prepare` | Turn one phase into a queue of steps |
-| `/cg-produce` | Run the next ready step: code, tests, and contracts together |
-| `/cg-sign-off` | Finish a selected prototype's production work, or verify and close a delivery phase |
-| `/cg-unblock` | Record a fork so other work can continue |
-| `/cg-auto-run` | Opt-in: Manager coordinates one Engineer per phase and asks unresolved decisions; never auto-runs warmup |
+Both modes use `/cg-unblock` to resolve consequential decisions and record answers. `/cg-warmup`
+builds or extends the repository's context graph; it is a separate adoption step and is never
+started automatically by auto-run.
 
 | Command | Purpose |
 |---|---|
-| `cg verify` | Check that the authored graph is closed |
-| `cg modules` | Show detected module roots and what still needs a contract |
-| `cg graph show` | Print the contract graph |
-| `cg contract route --task "…"` | Find which contracts a request should load |
-| `cg next` | See which stage owns the next move |
-| `cg status --programme <slug>` | Locate current Steps, blockers, recovery action, and residue owners |
-| `cg residue [--programme <slug>]` | Find unreferenced plan files globally or for one programme and shared scope |
+| `cg verify` | Verify the authored contract graph and installed structure. |
+| `cg modules` | Show detected module roots and mapping gaps. |
+| `cg graph show` | View the contract graph. |
+| `cg contract route --task "…"` | Find the contracts that own a request. |
+| `cg next --programme <slug>` | Identify the next stage for a selected programme. |
+| `cg status --programme <slug>` | Inspect remaining work, blockers, and recovery state. |
 
-`cg --help` lists the rest.
+Run `cg --help` for the full command list.
 
-## What a contract is for
+## What the graph guarantees
 
-A useful contract answers:
+Each boundary has one canonical YAML contract at `<unit>/.agents/cg/contract.yaml`. It describes
+ownership, public entry points, related contracts, invariants, and verification. Structural rules
+(`A`) govern the graph; repository-authored product rules (`P`) bind the contracts that list them;
+engineering guidelines (`E`) remain non-binding advice.
 
-- why this unit exists and how its parent uses it;
-- what it owns and what is outside its boundary;
-- which public entry points cross the boundary;
-- which child or sibling contracts carry the next context;
-- which invariants must remain true; and
-- how to verify a change confined to the unit.
-
-The YAML at `<unit>/.agents/cg/contract.yaml` is canonical. Structural bindings (`A`) apply
-everywhere. Product rules (`P`) bind only the contracts that list them. Engineering guidelines
-(`E`) are advice, not compliance. Details are in the [contracts](https://sarada.io/community/contract-graph/contracts/)
-and [vision](https://sarada.io/community/contract-graph/vision/) guides.
-
-## Honest limits
-
-Built today: schema-backed contracts, task routing, brownfield discovery, the eight skills, and
-verification that the authored graph is connected (reciprocal edges, no cycles, reachable from
-the root, declared surfaces and checks resolve).
-
-Not claimed: that every implementation import matches the graph, that every exported symbol is
-declared, or that two work areas are safe to edit in parallel. Those remain upcoming.
+Verification checks the authored graph's schema, reciprocal composition edges, root reachability,
+acyclicity, and declared surface paths and verification references. It does not yet prove that every
+implementation dependency or exported symbol matches the graph, or that parallel write scopes are
+independent. The intended benefit is precise routing followed by bounded code reading.
 
 ## Learn more
 
-- [Public schemas](https://sarada.io/contract-graph/schema/) — JSON Schema identities used by Contract Graph files.
-- [Contributing](https://github.com/sarada-io/contract-graph/blob/main/CONTRIBUTING.md) — tests, packing, and publication.
-- Preprint: [doi:10.5281/zenodo.22301753](https://doi.org/10.5281/zenodo.22301753)
+- [Quick Introduction Video](https://sarada.io/cg/#watch)
+- [Vision](docs/vision.md) — the problem and the context-graph model.
+- [Contracts](docs/contracts.md) — contract structure and verification limits.
+- [Prototype](docs/prototype.md) — the feedback loop, acceptance, and completion.
+- [Workflow](docs/workflow.md) and [Lifecycle](docs/lifecycle.md) — shared delivery stages.
+- [Public schemas](https://sarada.io/contract-graph/schema/) — JSON Schema identities.
+- [Contributing](CONTRIBUTING.md) — tests, packaging, and publication.
+- [Preprint](https://doi.org/10.5281/zenodo.22301753)
 
 ## Licence
 
