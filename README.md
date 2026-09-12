@@ -1,7 +1,7 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/contract-graph-mark-white.webp">
-    <img src="docs/assets/contract-graph-mark.webp" alt="Contract Graph logo" width="96" height="96">
+    <source media="(prefers-color-scheme: dark)" srcset="https://contractgraph.dev/assets/contract-graph-mark-white.webp">
+    <img src="https://contractgraph.dev/assets/contract-graph-mark.webp" alt="Contract Graph logo" width="96" height="96">
   </picture>
 </p>
 
@@ -150,6 +150,23 @@ Verification checks the authored graph's schema, reciprocal composition edges, r
 acyclicity, and declared surface paths and verification references. It does not yet prove that every
 implementation dependency or exported symbol matches the graph, or that parallel write scopes are
 independent. The intended benefit is precise routing followed by bounded code reading.
+
+## Schema URLs
+
+Use the matching URL below as the `$schema` value in each YAML document. Each JSON schema
+publishes that same URL as its `$id`.
+
+| Schema | Canonical URL |
+|---|---|
+| Contract | [contract-v1.schema.json](https://contractgraph.dev/schema/contract-v1.schema.json) |
+| Architecture | [architecture-v1.schema.json](https://contractgraph.dev/schema/architecture-v1.schema.json) |
+| Engineering | [engineering-v1.schema.json](https://contractgraph.dev/schema/engineering-v1.schema.json) |
+| Product | [product-v1.schema.json](https://contractgraph.dev/schema/product-v1.schema.json) |
+| Enforcement | [enforcement-v1.schema.json](https://contractgraph.dev/schema/enforcement-v1.schema.json) |
+
+Before upgrading an older installation, update declarations using any other host or path to
+these URLs. Keep the `v1` filenames and existing schema versions. `cg init` preserves authored
+YAML and does not migrate these values automatically; `cg verify` requires the canonical URLs.
 
 ## Learn more
 
