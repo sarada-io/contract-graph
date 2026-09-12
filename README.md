@@ -1,3 +1,10 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/contract-graph-mark-white.webp">
+    <img src="docs/assets/contract-graph-mark.webp" alt="Contract Graph logo" width="96" height="96">
+  </picture>
+</p>
+
 # Contract Graph
 
 **Scale model-driven development with contracts, not shared context.**
