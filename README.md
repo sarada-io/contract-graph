@@ -144,7 +144,7 @@ Run `cg --help` for the full command list.
 Each boundary has one canonical YAML contract at `<unit>/.agents/cg/contract.yaml`. It describes
 ownership, public entry points, related contracts, invariants, and verification. Structural rules
 (`A`) govern the graph; repository-authored product rules (`P`) bind the contracts that list them;
-engineering guidelines (`E`) remain non-binding advice.
+engineering guidelines (`E`) remain non-binding advice consulted when relevant.
 
 Verification checks the authored graph's schema, reciprocal composition edges, root reachability,
 acyclicity, and declared surface paths and verification references. It does not yet prove that every
@@ -159,14 +159,20 @@ publishes that same URL as its `$id`.
 | Schema | Canonical URL |
 |---|---|
 | Contract | [contract-v1.schema.json](https://contractgraph.dev/schema/contract-v1.schema.json) |
-| Architecture | [architecture-v1.schema.json](https://contractgraph.dev/schema/architecture-v1.schema.json) |
-| Engineering | [engineering-v1.schema.json](https://contractgraph.dev/schema/engineering-v1.schema.json) |
-| Product | [product-v1.schema.json](https://contractgraph.dev/schema/product-v1.schema.json) |
+| Principles | [principles-v1.schema.json](https://contractgraph.dev/schema/principles-v1.schema.json) |
 | Enforcement | [enforcement-v1.schema.json](https://contractgraph.dev/schema/enforcement-v1.schema.json) |
 
-Before upgrading an older installation, update declarations using any other host or path to
-these URLs. Keep the `v1` filenames and existing schema versions. `cg init` preserves authored
-YAML and does not migrate these values automatically; `cg verify` requires the canonical URLs.
+Architecture, engineering, and product catalogs share the principles schema. Each file declares
+`family` (`architecture`, `engineering`, or `product`) and `binding` (`global`, `advisory`, or
+`scoped`). Architecture catalogs also carry the graph-writing protocol (`hierarchy` and `graph`),
+which is not a principle.
+
+The principles schema is a new format: `principlesVersion: "1.0"`, a fixed family/binding
+pair, and `statement` plus `reason` on every principle leaf. Contract and enforcement remain v1.
+For legacy catalogs, run `cg migrate-principles` to preview conversion. Supply missing rationale
+with `--reasons <json-file>`, inspect the proposal with `--json`, then apply with `--write`.
+`cg init` preserves authored catalogs and never converts them implicitly. See
+[upgrade](https://contractgraph.dev/docs/upgrade/) for the complete sequence.
 
 ## Learn more
 

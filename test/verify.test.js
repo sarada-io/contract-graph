@@ -112,7 +112,11 @@ const BINDING = BINDING_FILENAME;
 
 function setProductEntries(dir, principleId, title, entries) {
   const entryYaml = entries
-    .map(({ id, text }) => `      - id: ${id}\n        text: ${JSON.stringify(text)}`)
+    .map(({ id, text, statement, reason }) => {
+      const value = statement ?? text;
+      const why = reason ?? "Test fixture.";
+      return `      - id: ${id}\n        statement: ${JSON.stringify(value)}\n        reason: ${JSON.stringify(why)}`;
+    })
     .join("\n");
   edit(
     dir,
@@ -723,7 +727,7 @@ test("[10] the structural binding catalog is required", () => {
 
 test("[10] a binding catalog without the graph node decision fails", () => {
   const dir = makeRepo();
-  edit(dir, BINDING, (text) => text.replace(/\ngraph:\n[\s\S]*?\nrules:\n/, "\nrules:\n"));
+  edit(dir, BINDING, (text) => text.replace(/\ngraph:\n[\s\S]*?\nprinciples:\n/, "\nprinciples:\n"));
   assertFails(dir, 10, "node decision is part of the binding catalog, not the delivery workflow");
 });
 
@@ -2400,21 +2404,29 @@ test("cg-warmup fills the repository contract that nothing else fills", () => {
 });
 
 const schemaCatalogs = [
-  ["contract", ROOT_CONTRACT],
-  ["architecture", BINDING],
-  ["engineering", ENGINEERING],
-  ["product", PRODUCT],
-  ["enforcement", ENFORCEMENT],
+  ["contract", ROOT_CONTRACT, "contract"],
+  ["architecture", BINDING, "principles"],
+  ["engineering", ENGINEERING, "principles"],
+  ["product", PRODUCT, "principles"],
+  ["enforcement", ENFORCEMENT, "enforcement"],
 ];
 
 test("all schemas and fresh YAML use the canonical contractgraph.dev v1 identities", (t) => {
   const dir = makeRepo();
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
-  for (const [name, file] of schemaCatalogs) {
-    const id = `https://contractgraph.dev/schema/${name}-v1.schema.json`;
-    const schema = JSON.parse(read(SOURCE_ROOT, `cg/schema/${name}.schema.json`));
-    assert.equal(schema.$id, id);
-    assert.equal(schema.properties.$schema.const, id);
+  const schemaFiles = new Set();
+  for (const [, file, schemaName] of schemaCatalogs) {
+    const id = `https://contractgraph.dev/schema/${schemaName}-v1.schema.json`;
+    if (!schemaFiles.has(schemaName)) {
+      const schema = JSON.parse(read(SOURCE_ROOT, `cg/schema/${schemaName}.schema.json`));
+      assert.equal(schema.$id, id);
+      if (schemaName === "principles") {
+        assert.equal(schema.$defs.schemaId.const, id);
+      } else {
+        assert.equal(schema.properties.$schema.const, id);
+      }
+      schemaFiles.add(schemaName);
+    }
     assert.equal(readObject(dir, file).$schema, id);
   }
   assert.equal(readObject(dir, CONTRACT).$schema, readObject(dir, ROOT_CONTRACT).$schema);
@@ -2553,10 +2565,10 @@ test("architecture keeps design advice separate from enforced structural binding
   const binding = loadBindingCatalog(path.join(SOURCE_ROOT, "cg", "principles", "architecture.yaml"), {
     repoRoot: SOURCE_ROOT,
   });
-  assert.match(architecture, /contains non-binding engineering advice/);
+  assert.match(architecture, /shipped engineering SHOULD family/);
   assert.match(architecture, /do not override repository choices/);
   assert.match(architecture, /contract\.yaml/);
-  assert.match(architecture, /Each entry is id, rule, and reason/);
+  assert.match(architecture, /Each entry is id, statement, and reason/);
   assert.match(architecture, /E01-01[\s\S]*Callers use only the paths, symbols, and types/);
   assert.match(architecture, /E01-02[\s\S]*preserves compatibility/);
   assert.match(architecture, /E02-02[\s\S]*The graph cannot record what the locator conceals/);
@@ -2598,15 +2610,15 @@ test("architecture keeps design advice separate from enforced structural binding
   assert.match(binding.graph.adapters.port, /graph.surface.encapsulate/);
   assert.match(binding.graph.adapters.option, /child node/);
   assert.match(binding.graph.adapters.mix, /add-child/);
-  assert.equal(binding.rules.find((rule) => rule.id === "A03")?.rule,
+  assert.equal(binding.principles.find((rule) => rule.id === "A03")?.statement,
     "Every governed boundary declares exactly one named responsibility.");
-  assert.equal(binding.rules.find((rule) => rule.id === "A14")?.rule,
+  assert.equal(binding.principles.find((rule) => rule.id === "A14")?.statement,
     "Every named responsibility is owned by exactly one contract node.");
-  assert.equal(binding.rules.find((rule) => rule.id === "A15")?.rule,
+  assert.equal(binding.principles.find((rule) => rule.id === "A15")?.statement,
     "Top-level modules represent domain or product capabilities, not horizontal technical layers.");
-  assert.equal(binding.rules.find((rule) => rule.id === "A16")?.rule,
+  assert.equal(binding.principles.find((rule) => rule.id === "A16")?.statement,
     "A contract node is named for its owned responsibility, not as a miscellaneous bag.");
-  assert.ok(binding.rules.every((rule) => rule.measure && rule.enforcedBy.length));
+  assert.ok(binding.principles.every((rule) => rule.measure && rule.reason && rule.enforcedBy.length));
   assert.doesNotMatch(architecture, /\*Contract|impl\//);
   const warmup = fs.readFileSync(path.join(SOURCE_ROOT, "skills", "cg-warmup", "SKILL.md"), "utf8");
   assert.match(warmup, /declares and mechanically protects an existing cohesive declared surface/);
@@ -2669,7 +2681,7 @@ test("architecture catalogue classifies the complete non-product inventory", () 
   ]);
 
   const rules = new Map(
-    [...architecture.matchAll(/^      - id: (E\d{2}-\d{2})\n        rule: "?([^\n"]+)/gm)]
+    [...architecture.matchAll(/^      - id: (E\d{2}-\d{2})\n        statement: "?([^\n"]+)/gm)]
       .map(([, id, text]) => [id, text]),
   );
   const expectedCounts = new Map([
@@ -2843,9 +2855,10 @@ test("parsePrinciples reads a folded YAML product rule as one line", () => {
     title: Wrapped
     entries:
       - id: P01-01
-        text: >-
+        statement: >-
           Every quoted amount uses the repository's declared
-          billing unit.`,
+          billing unit.
+        reason: Folded YAML must still parse as one principle statement.`,
     ),
   );
   const rules = parsePrinciples(path.join(dir, PRODUCT));
@@ -2867,9 +2880,11 @@ test("parsePrinciples rejects a duplicate rule id", () => {
     title: First
     entries:
       - id: P01-01
-        text: first.
+        statement: first.
+        reason: Duplicate ids are refused.
       - id: P01-01
-        text: second.`,
+        statement: second.
+        reason: Duplicate ids are refused.`,
     ),
   );
   assert.throws(() => parsePrinciples(path.join(dir, PRODUCT)), ContractError);
@@ -2896,7 +2911,7 @@ test("verify rejects a non-binding rule appearing before any heading", () => {
   const dir = makeRepo();
   edit(dir, ENGINEERING, (text) => text.replace(
     "principles:\n",
-    "principles:\n  - entries:\n      - id: E99-01\n        rule: Stray.\n        reason: Stray.\n",
+    "principles:\n  - entries:\n      - id: E99-01\n        statement: Stray.\n        reason: Stray.\n",
   ));
   assert.match(verify(dir).failures.join("\n"), /missing `id`|E99-01/);
 });
@@ -2950,7 +2965,7 @@ test("an architecture rule filed in the product file is refused by name", () => 
 
 test("a product rule filed in the architecture file is refused by name", () => {
   const dir = makeRepo();
-  edit(dir, ENGINEERING, (t) => `${t}\n  - id: P09\n    title: Wrong family\n    category: Broader Engineering Considerations\n    entries:\n      - id: P09-09\n        rule: wrong file for this family.\n        reason: wrong file for this family.\n`);
+  edit(dir, ENGINEERING, (t) => `${t}\n  - id: P09\n    title: Wrong family\n    category: Broader Engineering Considerations\n    entries:\n      - id: P09-09\n        statement: wrong file for this family.\n        reason: wrong file for this family.\n`);
   const { failures } = verify(dir);
   assert.ok(
     failures.some((f) => /P09/.test(f) && /engineering\.yaml/.test(f)),
@@ -3247,9 +3262,7 @@ test("the published tarball ships consumer sources and no maintainer tooling", (
     "agent/cg/schema/contract.schema.json",
     "agent/cg/guidelines/engineering.yaml",
     "agent/cg/guidelines/product.yaml",
-    "agent/cg/schema/architecture.schema.json",
-    "agent/cg/schema/engineering.schema.json",
-    "agent/cg/schema/product.schema.json",
+    "agent/cg/schema/principles.schema.json",
     "agent/profiles/all.scaffolding.conf.json",
     "agent/profiles/agents.scaffolding.conf.json",
     "agent/templates/module/CLAUDE.md",

@@ -79,11 +79,12 @@ The framework therefore has a hierarchy of authority:
    choices may be valuable defaults, but they are not Contract Graph requirements merely because
    they are good engineering advice.
 
-The authored surfaces mirror that hierarchy. The YAML architecture-principles catalog is the executable structural
-authority. The `engineering` catalog keeps Structural Best Practices and Broader Engineering
-Considerations together for review, but its `E` entries remain non-binding. `product` remains
-separate because its `P` rules exist only for the adopting product, are agent-managed after
-install, and may bind selected contracts.
+The authored surfaces mirror that hierarchy. The three principle catalogs share one schema.
+Architecture is global MUST plus the graph-writing protocol. Engineering is the shipped SHOULD
+family: consulted when relevant, with no compliance gate. Product remains a separate catalog because its `P`
+rules exist only for the adopting product, are agent-managed after install, and may bind selected
+contracts. Product ships empty. Engineering ships populated, but an adopter may deliberately
+retire its entries and retain an empty catalog. Architecture requires structural bindings.
 
 ## A structural layer, not a universal constitution
 
@@ -99,8 +100,9 @@ repository-owned. Contract Graph owns structural routing and structural integrit
 - the repository governs its chosen product and engineering policy;
 - optional repository-specific constraints may be expressed as scoped `P` bindings when they
   need to resolve through contract context; and
-- `E` remains advice unless a product-specific constraint is adopted as
-  `P` or a generic structural invariant is promoted by the verifier owner.
+- `E` remains SHOULD unless a product-specific constraint is adopted as
+  `P` or a generic structural invariant is promoted by the verifier owner. Departing from E
+  does not require a compliance exception.
 
 The separation prevents Contract Graph from imposing unrelated application preferences merely
 because they are good practice. Repository policy does not need to restate the graph protocol to

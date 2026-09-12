@@ -70,11 +70,12 @@ unused contract data.
 
 The package also installs the same schema at `.agents/cg/schema/contract.schema.json`, so local
 validation does not depend on network access. The contractgraph.dev URL is its public identity
-and must serve the matching schema bytes. The identity migration keeps the existing `v1` filenames
-and schema versions. Both `cg verify` and the JSON schemas require the canonical
-`https://contractgraph.dev/schema/<name>-v1.schema.json` identity. Declarations using any other
-host or path must be updated before verification. Re-initialisation preserves repository-owned
-YAML; it does not migrate those declarations automatically.
+and must serve the matching schema bytes. Both `cg verify` and the JSON schemas require the
+canonical `https://contractgraph.dev/schema/<name>-v1.schema.json` identity for contract,
+principles, and enforcement. Architecture, engineering, and product catalogs share
+`principles-v1`. Declarations using any other host or path must be updated before verification.
+Re-initialisation preserves repository-owned YAML; it does not migrate those declarations
+automatically.
 
 ## Declared surfaces are concrete promises
 
@@ -202,27 +203,36 @@ A detectors protect graph integrity.
 
 Architecture principles are authored YAML at `src/cg/principles/architecture.yaml`, analogous to
 `enforcement.yaml`. Product guidelines are authored YAML at `src/cg/guidelines/product.yaml` and
-ship empty. `cg build` validates both catalogs and copies them into the package target.
+ship empty. `cg build` validates all three catalogs and copies them into the package target.
 They appear at `agent/cg/principles/` and `agent/cg/guidelines/` inside the tarball. Leftover `engineering.md`,
 `product.md`, or compiled `engineering.json` / `product.json` fails verification the same way
 leftover `enforcement.md` does.
 
-There are three authored policy surfaces:
+There are three authored principle catalogs, one shared schema
+(`https://contractgraph.dev/schema/principles-v1.schema.json`):
 
-- `src/cg/principles/architecture.yaml` — recursive mapping (`hierarchy.kinds`), node decision (`graph` walk:
+- `src/cg/principles/architecture.yaml` — `family: architecture`, `binding: global`. Recursive
+  mapping (`hierarchy.kinds`), node decision (`graph` walk:
   node, recurse, selfSufficient, surface, decide, compose, stop, forbid, adapters), permitted
-  boundary hierarchy, and global `A` structural bindings with measures, registered detectors,
-  and negative fixtures. The walk is documented in [lifecycle](lifecycle.md). `graph.surface` is
-  declared entry and encapsulation behind the contract. `graph.surface.service` is the first way to
-  declare that entry: named operations `contract.yaml` points at. `graph.adapters` is the vendor and
-  consumer-adapter split of that encapsulation. These are not `A` detectors and do not scan imports;
-- `src/cg/guidelines/engineering.yaml` — the non-binding `E` engineering catalog; and
-- `product.yaml` — repository-owned `P` bindings specific to the adopting product, initially empty.
+  boundary hierarchy, and global `A` structural principles with statement, reason, measure,
+  registered detectors, and negative fixtures. The walk is documented in [lifecycle](lifecycle.md).
+  `graph.surface` is declared entry and encapsulation behind the contract.
+  `graph.surface.service` is the first way to declare that entry: named operations
+  `contract.yaml` points at. `graph.adapters` is the vendor and consumer-adapter split of that
+  encapsulation. The protocol fields are not `A` detectors and do not scan imports;
+- `src/cg/guidelines/engineering.yaml` — `family: engineering`, `binding: advisory`. The shipped
+  `E` advisory catalog; consulted when relevant, with no compliance gate; and
+- `product.yaml` — `family: product`, `binding: scoped`. Repository-owned `P` bindings specific
+  to the adopting product, initially empty.
 
 The engineering catalog uses two categories: **Structural Best Practices** and **Broader Engineering
-Considerations**. Each entry is `id`, `rule`, and `reason`: the practice, and why it exists.
-Family determines authority. `A` is globally binding, `P` is boundary-scoped binding, and `E` is
-the non-binding engineering catalog. A preference in that catalog may carry an explicit cost.
+Considerations**. Each principle leaf is `id`, `statement`, and `reason`: the practice, and why it
+exists. Optional `cost` is available on every family. Family determines authority. `A` is globally binding, `P` is boundary-scoped binding, and
+`E` is the shipped SHOULD family. A preference in that catalog may carry an explicit cost. The package
+ships populated A and E catalogs and an empty P catalog. Adopters may deliberately retire all E
+entries (`categories: []`, `principles: []`); architecture still requires a non-empty catalog.
+Catalog shape is validated even for advisory entries. An invalid E document fails format
+validation; disagreement with a valid E statement does not fail verification.
 
 The build manifest records the SHA-256 of every package file. Authored YAML catalogs are copied,
 not compiled to JSON. `cg build --check` verifies the complete target without changing it.
