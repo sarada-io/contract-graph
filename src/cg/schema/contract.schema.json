@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://sarada.io/contract-graph/schema/contract-v1.schema.json",
+  "$id": "https://contractgraph.dev/schema/contract-v1.schema.json",
   "title": "Contract Graph contract",
   "description": "The canonical, machine-readable contract for one governed software boundary. Descriptive strings may contain CommonMark.",
   "type": "object",
@@ -24,7 +24,7 @@
     "agent"
   ],
   "properties": {
-    "$schema": { "const": "https://sarada.io/contract-graph/schema/contract-v1.schema.json" },
+    "$schema": { "const": "https://contractgraph.dev/schema/contract-v1.schema.json" },
     "contractVersion": { "const": "1.0" },
     "id": {
       "type": "string",

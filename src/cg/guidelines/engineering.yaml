@@ -1,4 +1,4 @@
-$schema: https://sarada.io/contract-graph/schema/engineering-v1.schema.json
+$schema: https://contractgraph.dev/schema/engineering-v1.schema.json
 engineeringVersion: "1.0"
 
 # This catalog contains non-binding engineering advice. Its entries can inform an engineering

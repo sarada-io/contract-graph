@@ -69,13 +69,13 @@ export const PRINCIPLE_FILES = Object.freeze({
 });
 
 export const ARCHITECTURE_SCHEMA_ID =
-  "https://sarada.io/contract-graph/schema/architecture-v1.schema.json";
+  "https://contractgraph.dev/schema/architecture-v1.schema.json";
 export const ENGINEERING_SCHEMA_ID =
-  "https://sarada.io/contract-graph/schema/engineering-v1.schema.json";
+  "https://contractgraph.dev/schema/engineering-v1.schema.json";
 export const ENGINEERING_VERSION = "1.0";
 export const ENGINEERING_FILENAME = ".agents/cg/guidelines/engineering.yaml";
 export const PRODUCT_SCHEMA_ID =
-  "https://sarada.io/contract-graph/schema/product-v1.schema.json";
+  "https://contractgraph.dev/schema/product-v1.schema.json";
 export const PRODUCT_VERSION = "1.0";
 export const PRODUCT_FILENAME = ".agents/cg/guidelines/product.yaml";
 const PRINCIPLE_STALE = Object.freeze({
@@ -178,7 +178,7 @@ export const skillsRoot = (repoRoot) => path.join(repoRoot, ".agents", "skills")
 export const principlesRoot = (repoRoot) => path.join(cgRoot(repoRoot), "principles");
 export const guidelinesRoot = (repoRoot) => path.join(cgRoot(repoRoot), "guidelines");
 export const ENFORCEMENT_SCHEMA_ID =
-  "https://sarada.io/contract-graph/schema/enforcement-v1.schema.json";
+  "https://contractgraph.dev/schema/enforcement-v1.schema.json";
 export const ENFORCEMENT_VERSION = "1.0";
 export const ENFORCEMENT_FILENAME = ".agents/cg/enforcement.yaml";
 const ENFORCEMENT_RULE = /^P\d{2}-\d{2}$/;

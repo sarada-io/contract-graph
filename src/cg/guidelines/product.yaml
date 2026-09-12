@@ -1,4 +1,4 @@
-$schema: https://sarada.io/contract-graph/schema/product-v1.schema.json
+$schema: https://contractgraph.dev/schema/product-v1.schema.json
 productVersion: "1.0"
 
 # Repository-owned P guidelines. Empty at install; cg init preserves this file.

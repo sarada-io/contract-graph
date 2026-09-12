@@ -50,7 +50,7 @@ every contract must still be reachable from the root through composition edges.
 
 | Field | Meaning |
 |---|---|
-| `$schema` | Canonical schema URL: `https://sarada.io/contract-graph/schema/contract-v1.schema.json`. |
+| `$schema` | Canonical schema URL: `https://contractgraph.dev/schema/contract-v1.schema.json`. |
 | `contractVersion` | Contract format version. Current nodes use `"1.0"`. |
 | `id` | Stable graph identity. Reordering or moving presentation must not change it casually. |
 | `name`, `kind`, `unit` | Human name, boundary type, and repository-relative directory owned. |
@@ -69,8 +69,12 @@ in the core model. Unknown top-level fields are rejected so misspellings cannot 
 unused contract data.
 
 The package also installs the same schema at `.agents/cg/schema/contract.schema.json`, so local
-validation does not depend on network access. The Sarada URL is its stable public identity and must
-serve the matching schema bytes.
+validation does not depend on network access. The contractgraph.dev URL is its public identity
+and must serve the matching schema bytes. The identity migration keeps the existing `v1` filenames
+and schema versions. Both `cg verify` and the JSON schemas require the canonical
+`https://contractgraph.dev/schema/<name>-v1.schema.json` identity. Declarations using any other
+host or path must be updated before verification. Re-initialisation preserves repository-owned
+YAML; it does not migrate those declarations automatically.
 
 ## Declared surfaces are concrete promises
 

@@ -147,7 +147,7 @@ test("the product catalog rejects a non-P rule", () => {
   const dir = fixture();
   fs.writeFileSync(
     path.join(dir, "src", "cg", "guidelines", "product.yaml"),
-    `$schema: https://sarada.io/contract-graph/schema/product-v1.schema.json
+    `$schema: https://contractgraph.dev/schema/product-v1.schema.json
 productVersion: "1.0"
 principles:
   - id: P01

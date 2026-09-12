@@ -1,4 +1,4 @@
-$schema: https://sarada.io/contract-graph/schema/architecture-v1.schema.json
+$schema: https://contractgraph.dev/schema/architecture-v1.schema.json
 architectureVersion: "1.0"
 scope: structural-integrity
 promise: Repository code is represented by a canonical, recursively decomposed contract graph whose declared structure is internally measurable.

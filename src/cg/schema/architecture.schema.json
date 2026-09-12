@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://sarada.io/contract-graph/schema/architecture-v1.schema.json",
+  "$id": "https://contractgraph.dev/schema/architecture-v1.schema.json",
   "title": "Contract Graph architecture principles catalog",
   "type": "object",
   "additionalProperties": false,
   "required": ["$schema", "architectureVersion", "scope", "promise", "promotion", "hierarchy", "graph", "rules"],
   "properties": {
     "$schema": {
-      "const": "https://sarada.io/contract-graph/schema/architecture-v1.schema.json"
+      "const": "https://contractgraph.dev/schema/architecture-v1.schema.json"
     },
     "architectureVersion": { "const": "1.0" },
     "scope": { "const": "structural-integrity" },

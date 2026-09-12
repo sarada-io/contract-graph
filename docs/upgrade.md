@@ -1,5 +1,21 @@
 # Upgrade
 
+## Schema identity migration
+
+New packages publish schema identities at
+`https://contractgraph.dev/schema/<name>-v1.schema.json` for contract,
+architecture, engineering, product, and enforcement. Filenames and schema versions remain
+unchanged. The human index is `https://contractgraph.dev/schema/`; the JSON files are served
+directly below that path.
+
+`cg verify` requires the canonical identities above. `cg init` preserves existing YAML and its
+`$schema` values while installing the new schemas and skills. Declarations on any other host
+or path are no longer accepted. Before upgrading an older installation, update only its `$schema`
+values to the matching canonical URLs above, retaining each schema's name and `v1` filename.
+Preserve the remaining contract and policy content; re-init does not perform this migration.
+
+## Earlier release upgrades
+
 How to move an existing Contract Graph install from 0.3.0 or 0.4.0 to 0.5.0.
 
 This is the human path. After `cg init`, the agent procedure is `/cg-warmup` (adoption or

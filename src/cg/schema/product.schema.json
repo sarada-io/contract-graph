@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://sarada.io/contract-graph/schema/product-v1.schema.json",
+  "$id": "https://contractgraph.dev/schema/product-v1.schema.json",
   "title": "Contract Graph product catalog",
   "description": "Repository-owned P product guidelines. The catalog ships empty; cg init preserves the installed copy.",
   "type": "object",
@@ -8,7 +8,7 @@
   "required": ["$schema", "productVersion", "principles"],
   "properties": {
     "$schema": {
-      "const": "https://sarada.io/contract-graph/schema/product-v1.schema.json"
+      "const": "https://contractgraph.dev/schema/product-v1.schema.json"
     },
     "productVersion": { "const": "1.0" },
     "principles": {

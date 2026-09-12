@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://sarada.io/contract-graph/schema/enforcement-v1.schema.json",
+  "$id": "https://contractgraph.dev/schema/enforcement-v1.schema.json",
   "title": "Contract Graph repository enforcement map",
   "type": "object",
   "additionalProperties": false,
   "required": ["$schema", "enforcementVersion", "entries"],
   "properties": {
     "$schema": {
-      "const": "https://sarada.io/contract-graph/schema/enforcement-v1.schema.json"
+      "const": "https://contractgraph.dev/schema/enforcement-v1.schema.json"
     },
     "enforcementVersion": { "const": "1.0" },
     "entries": {

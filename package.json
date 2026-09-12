@@ -50,8 +50,8 @@
     "ai-agents"
   ],
   "author": {
-    "name": "Sarada.io",
-    "url": "https://sarada.io"
+    "name": "Contract Graph",
+    "url": "https://contractgraph.dev/"
   },
   "license": "Apache-2.0",
   "publishConfig": {
@@ -61,7 +61,7 @@
     "type": "git",
     "url": "git+https://github.com/sarada-io/contract-graph.git"
   },
-  "homepage": "https://sarada.io/cg/",
+  "homepage": "https://contractgraph.dev/",
   "bugs": {
     "url": "https://github.com/sarada-io/contract-graph/issues"
   },

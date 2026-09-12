@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://sarada.io/contract-graph/schema/engineering-v1.schema.json",
+  "$id": "https://contractgraph.dev/schema/engineering-v1.schema.json",
   "title": "Contract Graph engineering guidelines catalog",
   "description": "Non-binding E engineering guidelines. Each entry is id, rule, and reason; a preference may also carry cost. This catalog is advisory; cg verify does not enforce it.",
   "type": "object",
@@ -8,7 +8,7 @@
   "required": ["$schema", "engineeringVersion", "categories", "principles"],
   "properties": {
     "$schema": {
-      "const": "https://sarada.io/contract-graph/schema/engineering-v1.schema.json"
+      "const": "https://contractgraph.dev/schema/engineering-v1.schema.json"
     },
     "engineeringVersion": { "const": "1.0" },
     "categories": {

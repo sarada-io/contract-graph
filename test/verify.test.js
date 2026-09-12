@@ -661,12 +661,12 @@ test("the published README is a human landing page", () => {
   const pkg = JSON.parse(
     fs.readFileSync(path.join(SOURCE_ROOT, "..", "package.json"), "utf8"),
   );
-  assert.equal(pkg.homepage, "https://sarada.io/cg/");
-  assert.match(readme, /\[Quick Introduction Video\]\(https:\/\/sarada\.io\/cg\/#watch\)/);
-  assert.match(readme, /https:\/\/sarada\.io\/community\/contract-graph\/vision\//);
-  assert.match(readme, /https:\/\/sarada\.io\/community\/contract-graph\/workflow\//);
-  assert.match(readme, /https:\/\/sarada\.io\/community\/contract-graph\/upgrade\//);
-  assert.match(readme, /https:\/\/sarada\.io\/contract-graph\/schema\//);
+  assert.equal(pkg.homepage, "https://contractgraph.dev/");
+  assert.match(readme, /\[Quick Introduction Video\]\(https:\/\/contractgraph\.dev\/#watch\)/);
+  assert.match(readme, /https:\/\/contractgraph\.dev\/docs\/vision\//);
+  assert.match(readme, /https:\/\/contractgraph\.dev\/docs\/workflow\//);
+  assert.match(readme, /https:\/\/contractgraph\.dev\/docs\/upgrade\//);
+  assert.match(readme, /https:\/\/contractgraph\.dev\/schema\//);
   assert.match(readme, /## Learn more/);
   assert.match(readme, /cd your-repository/);
   assert.doesNotMatch(readme, /```mermaid/);
@@ -679,7 +679,7 @@ test("the public docs stay human-facing", () => {
   const index = fs.readFileSync(path.join(docsDir, "README.md"), "utf8");
   const lifecycle = fs.readFileSync(path.join(docsDir, "lifecycle.md"), "utf8");
   assert.match(index, /They are not the agent procedure/);
-  assert.match(index, /\[Quick Introduction Video\]\(https:\/\/sarada\.io\/cg\/#watch\)/);
+  assert.match(index, /\[Quick Introduction Video\]\(https:\/\/contractgraph\.dev\/#watch\)/);
   assert.match(index, /\[Upgrade\]\(upgrade\.md\)/);
   assert.doesNotMatch(lifecycle, /## Next action/);
   assert.doesNotMatch(lifecycle, /Enabling the Claude Code gate/);
@@ -2399,13 +2399,59 @@ test("cg-warmup fills the repository contract that nothing else fills", () => {
   }
 });
 
-test("the schema uses the stable Sarada-owned canonical identifier", () => {
-  const schema = JSON.parse(read(SOURCE_ROOT, "cg/schema/contract.schema.json"));
-  assert.equal(
-    schema.$id,
-    "https://sarada.io/contract-graph/schema/contract-v1.schema.json",
-  );
+const schemaCatalogs = [
+  ["contract", ROOT_CONTRACT],
+  ["architecture", BINDING],
+  ["engineering", ENGINEERING],
+  ["product", PRODUCT],
+  ["enforcement", ENFORCEMENT],
+];
+
+test("all schemas and fresh YAML use the canonical contractgraph.dev v1 identities", (t) => {
+  const dir = makeRepo();
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  for (const [name, file] of schemaCatalogs) {
+    const id = `https://contractgraph.dev/schema/${name}-v1.schema.json`;
+    const schema = JSON.parse(read(SOURCE_ROOT, `cg/schema/${name}.schema.json`));
+    assert.equal(schema.$id, id);
+    assert.equal(schema.properties.$schema.const, id);
+    assert.equal(readObject(dir, file).$schema, id);
+  }
+  assert.equal(readObject(dir, CONTRACT).$schema, readObject(dir, ROOT_CONTRACT).$schema);
 });
+
+test("re-init preserves authored YAML using canonical schema identities", (t) => {
+  const dir = makeRepo();
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  const originals = new Map();
+  for (const [, file] of [...schemaCatalogs, ["contract", CONTRACT]]) {
+    edit(dir, file, (text) => `# Repository-owned context\n${text}`);
+    originals.set(file, read(dir, file));
+    assert.deepEqual(verify(dir).failures, [], file);
+  }
+  init(dir, {});
+  sync(dir);
+  assert.deepEqual(verify(dir).failures, []);
+  for (const [file, text] of originals) assert.equal(read(dir, file), text, file);
+});
+
+for (const [name, file] of schemaCatalogs) {
+  test(`${name} rejects unrelated schema hosts, paths, versions, and types`, (t) => {
+    const dir = makeRepo();
+    t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+    for (const identity of [
+      `https://example.com/contract-graph/schema/${name}-v1.schema.json`,
+      `https://contractgraph.dev/schemas/${name}-v1.schema.json`,
+      `https://example.com/schema/${name}-v1.schema.json`,
+      `https://contractgraph.dev/schema/${name}-v2.schema.json`,
+      `https://contractgraph.dev/schema/other-v1.schema.json`,
+      null,
+    ]) {
+      editObject(dir, file, (value) => { value.$schema = identity; });
+      assert.match(verify(dir).failures.join("\n"), /\$schema/, String(identity));
+    }
+  });
+}
 
 /**
  * HTML comments do not nest: the first `-->` closes the outermost `<!--`, so the remainder of

@@ -1,7 +1,9 @@
 # Documentation
 
-Start with the [Quick Introduction Video](https://sarada.io/cg/#watch). This directory is the written guide
+Start with the [Quick Introduction Video](https://contractgraph.dev/#watch). This directory is the written guide
 that follows that page.
+
+Read the published guides at [contractgraph.dev/docs](https://contractgraph.dev/docs/).
 
 These pages are for people adopting or reviewing Contract Graph: what a contract is, how a
 programme of work is split and run, and what the lifecycle stages mean.
@@ -13,7 +15,7 @@ supposed to remain after a plan is deleted.
 
 | Read | What it answers |
 |---|---|
-| [Quick Introduction Video](https://sarada.io/cg/#watch) | Plays on the public page |
+| [Quick Introduction Video](https://contractgraph.dev/#watch) | Plays on the public page |
 | [Vision](vision.md) | Why contracts, and what problem they are for |
 | [Contracts](contracts.md) | What one YAML node is, and what verification currently proves |
 | [Workflow](workflow.md) | How an outcome becomes phases, steps, and a lasting graph |
@@ -23,7 +25,7 @@ supposed to remain after a plan is deleted.
 For exploratory work, read [Prototype](prototype.md). The
 [workflow review](proposals/prototype-workflow.md) records the source findings behind this extension.
 
-Watch the [Quick Introduction Video](https://sarada.io/cg/#watch) first. Start with vision if you are deciding
+Watch the [Quick Introduction Video](https://contractgraph.dev/#watch) first. Start with vision if you are deciding
 whether to adopt. Start with [upgrade](upgrade.md) if you already have 0.3.0 or 0.4.0 installed.
 Start with workflow if you already installed 0.5.0 and want to see how work is supposed to move.
 Use the skills when you are *doing* the work with an agent.

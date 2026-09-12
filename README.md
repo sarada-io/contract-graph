@@ -58,7 +58,7 @@ You do not need to invoke each intervening skill. Changes to the accepted experi
 affected human review; final closure requires the delivery checks to pass.
 
 UX acceptance and the request to finish are separate decisions. “Sign this off” alone does not
-supply UX acceptance. See the [prototype guide](docs/prototype.md) for recovery and working across
+supply UX acceptance. See the [prototype guide](https://contractgraph.dev/docs/prototype/) for recovery and working across
 sessions.
 
 ### Detailed Plan-Based Delivery
@@ -115,7 +115,7 @@ complete, a passing scaffold check does not mean the implementation has been ful
 **Updating an installation:** install the intended package version, then run `cg init --yes`
 with the repository's existing docs root and editor profiles. Skills, schemas, and hooks update;
 contracts, policy catalogs, workflow, and existing documentation are preserved. Use
-`cg --version --json` to identify the exact build. See [upgrade](docs/upgrade.md) for migration
+`cg --version --json` to identify the exact build. See [upgrade](https://contractgraph.dev/docs/upgrade/) for migration
 and deliberate adoption of changes to preserved policy.
 
 Supported editor profiles cover Cursor, Codex, Claude Code, GitHub Copilot, and Antigravity.
@@ -153,13 +153,14 @@ independent. The intended benefit is precise routing followed by bounded code re
 
 ## Learn more
 
-- [Quick Introduction Video](https://sarada.io/cg/#watch)
-- [Vision](docs/vision.md) — the problem and the context-graph model.
-- [Contracts](docs/contracts.md) — contract structure and verification limits.
-- [Prototype](docs/prototype.md) — the feedback loop, acceptance, and completion.
-- [Workflow](docs/workflow.md) and [Lifecycle](docs/lifecycle.md) — shared delivery stages.
-- [Public schemas](https://sarada.io/contract-graph/schema/) — JSON Schema identities.
-- [Contributing](CONTRIBUTING.md) — tests, packaging, and publication.
+- [Getting started](https://contractgraph.dev/start/) and [Docs hub](https://contractgraph.dev/docs/)
+- [Quick Introduction Video](https://contractgraph.dev/#watch)
+- [Vision](https://contractgraph.dev/docs/vision/) — the problem and the context-graph model.
+- [Contracts](https://contractgraph.dev/docs/contracts/) — contract structure and verification limits.
+- [Prototype](https://contractgraph.dev/docs/prototype/) — the feedback loop, acceptance, and completion.
+- [Workflow](https://contractgraph.dev/docs/workflow/) and [Lifecycle](https://contractgraph.dev/docs/lifecycle/) — shared delivery stages.
+- [Public schemas](https://contractgraph.dev/schema/) — JSON Schema identities.
+- [Contributing](https://github.com/sarada-io/contract-graph/blob/main/CONTRIBUTING.md) — tests, packaging, and publication.
 - [Preprint](https://doi.org/10.5281/zenodo.22301753)
 
 ## Licence

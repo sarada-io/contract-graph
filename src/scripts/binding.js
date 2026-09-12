@@ -6,7 +6,7 @@ import path from "node:path";
 import { ContractGraphError, parseContractYaml } from "./contracts.js";
 
 export const BINDING_SCHEMA_ID =
-  "https://sarada.io/contract-graph/schema/architecture-v1.schema.json";
+  "https://contractgraph.dev/schema/architecture-v1.schema.json";
 export const BINDING_VERSION = "1.0";
 export const BINDING_FILENAME = ".agents/cg/principles/architecture.yaml";
 

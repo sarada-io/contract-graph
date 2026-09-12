@@ -1,4 +1,4 @@
-$schema: https://sarada.io/contract-graph/schema/contract-v1.schema.json
+$schema: https://contractgraph.dev/schema/contract-v1.schema.json
 contractVersion: "1.0"
 id: repository
 name: Repository contract

@@ -44,7 +44,7 @@ the request, then descend to the smallest responsible boundary.
 Agent procedure lives in `src/skills/` and `src/cg/workflow.md` (installed as
 `.agents/cg/workflow.md`). Do not put turn-by-turn skill protocol, `$cg-` hop tokens, or
 host-specific hook JSON in `docs/` or in `README.md`. The README is the npm and GitHub landing
-page; written guides live in `docs/` and on [sarada.io/cg](https://sarada.io/cg/).
+page; written guides live in `docs/` and on [contractgraph.dev](https://contractgraph.dev/).
 
 ## Choose validation from the change surface
 
@@ -280,7 +280,7 @@ npm run pack
 under `script/`, the installable assets under `agent/`, `package.json`, `LICENSE`, and this exact
 `README.md`; npm therefore renders the same README that is reviewed in the repository. Keep that
 file a landing page for people: what the product is, how to install it, and absolute links to
-[the public introduction](https://sarada.io/cg/) and the written guides. Relative `docs/` links,
+[the public introduction](https://contractgraph.dev/) and the written guides. Relative `docs/` links,
 mermaid diagrams, skill protocol, and package-assembly internals do not belong there — the
 published tarball does not include `docs/`. The checkout's `bin/cg.js`, authoring `src/` tree,
 tests, docs tree, and developer helper are not part of the published artifact.
