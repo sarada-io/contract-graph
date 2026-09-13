@@ -33,6 +33,25 @@ npm test
 node bin/cg.js --help
 ```
 
+For an interactive menu of this repository's activities, install
+[PowerShell 7](https://learn.microsoft.com/powershell/scripting/install/installing-powershell)
+and run `./urun` on macOS/Linux or `.\urun.cmd` on Windows. In Windows Command Prompt,
+`urun` also works from the repository root. Use Up/Down to select, Enter to run, and
+Escape to go back or exit. After an activity finishes, Enter returns to the menu.
+
+The menu offers build, tests, a release archive at the current package version, build
+verification, editor integration fixtures, CLI help, environment checks, and cleanup.
+Editor selection uses the existing `npm run try` helper. Replacing an existing editor
+fixture and cleaning generated files require a second selection, defaulting to keeping
+files. Packaging uses `npm run pack`; it does not change versions or publish to npm.
+Long-running commands keep their normal terminal output and Ctrl-C behaviour.
+
+This menu is local to Contract Graph. Its two OS launchers call `scripts/urun.ps1`;
+there is no Task dependency, global CLI installation, or repository configuration file.
+Existing npm commands remain available for CI and terminals without PowerShell.
+Menu tests run as part of `npm test` when `pwsh` is on PATH and are explicitly skipped
+otherwise. The launchers do not change PowerShell execution policy.
+
 `npm test` runs tests with temporary files under the gitignored `tmp/tests/run-*` directory
 and removes its own run directory after success or failure. This also prevents a host-provided
 `TMPDIR` from scattering fixtures across the checkout. Use `npm test -- test/build.test.js`
