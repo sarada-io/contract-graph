@@ -131,7 +131,7 @@ export function validateBindingCatalog(catalog, { source = "rules.yaml" } = {}) 
   const detectorIds = new Set();
   for (const [index, rule] of catalog.principles.entries()) {
     const at = `${source}.principles[${index}]`;
-    if (!exactKeys(rule, ["id", "statement", "reason", "measure", "enforcedBy"], at, failures, ["cost"])) continue;
+    if (!exactKeys(rule, ["id", "statement", "reason", "measure", "enforcedBy"], at, failures)) continue;
     if (typeof rule.id !== "string" || !/^A\d{2}$/.test(rule.id)) {
       failures.push(`${at}.id: expected Ann`);
       continue;

@@ -144,7 +144,7 @@ Run `cg --help` for the full command list.
 Each boundary has one canonical YAML contract at `<unit>/.agents/cg/contract.yaml`. It describes
 ownership, public entry points, related contracts, invariants, and verification. Structural rules
 (`A`) govern the graph; repository-authored product rules (`P`) bind the contracts that list them;
-engineering guidelines (`E`) remain non-binding advice consulted when relevant.
+engineering guidelines (`E`) remain non-binding advice read on every lifecycle pass by default and applied when relevant.
 
 Verification checks the authored graph's schema, reciprocal composition edges, root reachability,
 acyclicity, and declared surface paths and verification references. It does not yet prove that every

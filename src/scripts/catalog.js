@@ -61,7 +61,7 @@ export function validateGuidelineCatalog(catalog, family, { source = `${family}.
     }
     for (const [entryIndex, entry] of group.entries.entries()) {
       const entryAt = `${at}.entries[${entryIndex}]`;
-      if (!exactKeys(entry, ["id", "statement", "reason"], entryAt, failures, ["cost"])) continue;
+      if (!exactKeys(entry, ["id", "statement", "reason"], entryAt, failures, engineering ? ["cost"] : [])) continue;
       if (typeof entry.id !== "string" || !new RegExp(`^${prefix}\\d{2}-\\d{2}$`).test(entry.id)) failures.push(`${entryAt}.id: \`${entry.id}\` does not belong in ${family}.yaml; expected ${prefix}nn-nn`);
       else if (!entry.id.startsWith(`${group.id}-`)) failures.push(`${entryAt}: \`${entry.id}\` does not belong under \`${group.id}\``);
       if (entries.has(entry.id)) failures.push(`${entryAt}: duplicate ${entry.id}`);

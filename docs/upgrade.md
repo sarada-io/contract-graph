@@ -15,7 +15,9 @@ not just a URL replacement. Contract and enforcement keep their existing v1 form
 All catalogs use `principlesVersion: "1.0"`. A IDs and detector registrations, E/P group IDs,
 leaf IDs, categories, and product enforcement references are retained. Architecture keeps
 `scope`, `promise`, `promotion`, `hierarchy`, and `graph` in the same file. Those protocol fields
-are unavailable on engineering and product catalogs. Optional `cost` is supported on any leaf.
+are unavailable on engineering and product catalogs. Optional `cost` is supported only on advisory E leaves. A/P catalogs containing `cost`
+are rejected; migration never silently drops it. Move that explanation into the rationale or a
+repository decision record deliberately before retrying.
 
 Install the intended CLI, then preview in the adopting repository before re-initialising:
 
@@ -71,10 +73,16 @@ vendor policy. Contract or enforcement declarations on obsolete hosts also need 
 
 After reviewing the migration and successful verification, retain backups outside the catalog
 directories or remove them deliberately. No contract or enforcement rewrite is required by this
-migration. Engineering remains advisory, with conditional loading by default; adopters can retire
+migration. Engineering remains advisory, read on every lifecycle pass by default; adopters can retire
 all its entries while retaining a valid empty catalog. The package still requires a populated E
 starter catalog. Publishing the release also requires serving the new principles schema at its
 canonical URL; generating a package alone does not publish that URL.
+
+To adopt the new loading default in an existing installation, deliberately amend each lifecycle
+row in `.agents/cg/phases.json` to `always: ["A", "P", "E"]` and `conditional: []`, then align
+the preserved workflow instructions to read E on every pass. `cg init` and catalog migration
+preserve both files; upgraded skills respect that retained loading policy. This changes context
+loading only, not contract rules or enforcement mappings. Empty adopter E remains valid.
 
 Init may leave the three legacy `architecture.schema.json`, `engineering.schema.json`, and
 `product.schema.json` files in an older installation. Converted catalogs use only

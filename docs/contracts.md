@@ -221,13 +221,17 @@ There are three authored principle catalogs, one shared schema
   `contract.yaml` points at. `graph.adapters` is the vendor and consumer-adapter split of that
   encapsulation. The protocol fields are not `A` detectors and do not scan imports;
 - `src/cg/guidelines/engineering.yaml` — `family: engineering`, `binding: advisory`. The shipped
-  `E` advisory catalog; consulted when relevant, with no compliance gate; and
+  `E` advisory catalog; read on every lifecycle pass by default and applied when relevant, with no compliance gate; and
 - `product.yaml` — `family: product`, `binding: scoped`. Repository-owned `P` bindings specific
   to the adopting product, initially empty.
 
+Catalog nesting is packaging: A keeps flat `A01` leaves so registered detector identities stay
+stable. E/P retain named groups with `entries` such as `E01-01` and `P01-01`. Sharing a schema
+does not renumber these identities or require identical nesting.
+
 The engineering catalog uses two categories: **Structural Best Practices** and **Broader Engineering
 Considerations**. Each principle leaf is `id`, `statement`, and `reason`: the practice, and why it
-exists. Optional `cost` is available on every family. Family determines authority. `A` is globally binding, `P` is boundary-scoped binding, and
+exists. Optional `cost` is available only on advisory E leaves. Family determines authority. `A` is globally binding, `P` is boundary-scoped binding, and
 `E` is the shipped SHOULD family. A preference in that catalog may carry an explicit cost. The package
 ships populated A and E catalogs and an empty P catalog. Adopters may deliberately retire all E
 entries (`categories: []`, `principles: []`); architecture still requires a non-empty catalog.

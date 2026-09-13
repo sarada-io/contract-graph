@@ -81,7 +81,7 @@ The framework therefore has a hierarchy of authority:
 
 The authored surfaces mirror that hierarchy. The three principle catalogs share one schema.
 Architecture is global MUST plus the graph-writing protocol. Engineering is the shipped SHOULD
-family: consulted when relevant, with no compliance gate. Product remains a separate catalog because its `P`
+family: read on every lifecycle pass by default and applied when relevant, with no compliance gate. Product remains a separate catalog because its `P`
 rules exist only for the adopting product, are agent-managed after install, and may bind selected
 contracts. Product ships empty. Engineering ships populated, but an adopter may deliberately
 retire its entries and retain an empty catalog. Architecture requires structural bindings.

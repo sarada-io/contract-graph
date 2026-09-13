@@ -236,7 +236,7 @@ An engineering guideline is advisory:
 
 ```yaml
 - id: E01-01
-  rule: <the practice>
+  statement: <the practice>
   reason: <why this practice exists>
 ```
 
@@ -244,7 +244,7 @@ A preference may also name its tradeoff:
 
 ```yaml
 - id: E12-01
-  rule: <the preference>
+  statement: <the preference>
   reason: <why this preference exists>
   cost: <what choosing this makes harder, slower, or unavailable>
 ```

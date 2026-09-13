@@ -18,6 +18,11 @@ Read `.agents/skills/cg-unblock/SKILL.md` when a fork remains unresolved by the 
 and accepted decisions, or requires owner authority. Under auto-run, ask the Manager first;
 otherwise ask the user directly under D-6. Record the answer and continue independent work.
 
+Read `.agents/cg/phases.json` and load the families selected for `plan`. Shipped defaults
+include `.agents/cg/guidelines/engineering.yaml` on every pass; retained repository phase policy
+controls loading. E remains advisory context: use relevant practices without reopening settled
+decisions or treating disagreement as a compliance failure.
+
 ## Required outcome
 
 When exploration is needed, emit the human handoff in §9 without inventing a roadmap to satisfy
@@ -40,7 +45,7 @@ Before writing or revising the roadmap:
    dividing work across boundaries.
 2. Load `.agents/cg/contract.yaml`. Run `cg contract route --task "<outcome>"`. Load only the
    matched contracts and their named children; then scoped `P` rules on those contracts, then the
-   repository constitution and specifications. Consult `E` only for a remaining design fork; it is
+   repository constitution and specifications. Apply relevant `E` guidance to a remaining design fork; it is
    not a compliance list and does not replace `graph`. Run `cg graph show` if composition is still
    unclear. If `<docs>/plans/warmup-corrective-set.md` is Unconsumed, that file is the restructure
    input: keep each row's Architecture target and Engineering guidance; do not invent phases from

@@ -72,6 +72,34 @@ npm run build:check
 npm run pack
 ```
 
+## 0.6.0 release tightening follow-up
+
+The release defaults now load A/P/E for all six lifecycle phases. Workflow, root read-first
+instructions, and each phase skill distinguish loading E from binding enforcement and respect
+retained repository phase policy. A remains global, P remains scoped, and E disagreement remains
+non-blocking. Empty adopter E is still legal.
+
+Optional `cost` now belongs only to engineering leaves in both schema and runtime. A/P cost is
+rejected, including during migration; it is never silently discarded. Documentation explains
+flat A versus grouped E/P packaging and retains existing IDs. Contributor and unblock authoring
+examples now use `statement` consistently.
+
+Validation after these changes:
+
+- **372/372 tests passed**, both on Node 26.3.0 and the supported Node 18.17.0 minimum.
+- **6,712 schema-invalid field mutations rejected**; the smaller corpus reflects removal of
+  product cost from the valid seed. Separate negative cases reject cost on A/P.
+- **10/10 targeted behavioral regressions detected** again.
+- New cases prove preservation of conditional adopter phase policy and refusal of A/P cost
+  during preview and write, with all catalog bytes unchanged and no backups created.
+- All six edited lifecycle skills pass the skill structural validator. These checks do not
+  demonstrate that a live model actually reads E; that needs an agent-host trial.
+- Build, the 79-file reproducibility check, package generation, and extracted-package tests pass.
+
+The previous coverage percentages above belong to the initial audit and were not remeasured
+for this follow-up. The public schema could not be retrieved through the browser tool, so its
+hosted bytes remain unverified. The tarball is rebuilt locally, not published.
+
 ## Remaining limits
 
 The adopting-repository trial still needs a repository path. Public hosting of the new schema

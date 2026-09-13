@@ -9,12 +9,17 @@ Reach a usable preview early. Iterate with the user until the intended result is
 hand the actual implementation and remaining delivery work to the standard lifecycle. Prototype
 approval is not final sign-off. Do not invent human acceptance or silently begin auto-run.
 
+Read `.agents/cg/phases.json` and load the families selected for `prototype`. Shipped defaults
+include `.agents/cg/guidelines/engineering.yaml` on every pass; retained repository phase policy
+controls loading. E remains advisory context: use relevant practices without reopening settled
+decisions or treating disagreement as a compliance failure.
+
 ## 1. Route, start, launch — once per session
 
 Read the root contract and `.agents/cg/workflow.md`. Route through contract-owned routes to the
 smallest responsible boundary before reading implementation. Apply `hierarchy.kinds` and `graph`
 from `.agents/cg/principles/architecture.yaml`; resolve applicable P rules and product intent.
-Consult E only for a remaining choice. Keep structural bindings and detectors.
+Apply relevant E guidance to a remaining choice. Keep structural bindings and detectors.
 
 Resolve `<docs>` from `.agents/cg/profile.json`, select one programme, and inspect `cg prototype
 status` and `cg next`. Start with `cg prototype start --programme <slug>` or recover its existing

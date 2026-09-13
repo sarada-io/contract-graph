@@ -12,6 +12,11 @@ Read `.agents/skills/cg-unblock/SKILL.md` when a fork remains unresolved by the 
 and accepted decisions, or requires owner authority. Under auto-run, ask the Manager first;
 otherwise ask the user directly under D-6. Record the answer and continue independent work.
 
+Read `.agents/cg/phases.json` and load the families selected for `produce`. Shipped defaults
+include `.agents/cg/guidelines/engineering.yaml` on every pass; retained repository phase policy
+controls loading. E remains advisory context: use relevant practices without reopening settled
+decisions or treating disagreement as a compliance failure.
+
 ## Required outcome
 
 Finish with all ten true:
@@ -37,7 +42,7 @@ state, editable paths, required contract changes, work, handoff, or `Done when`.
    selfSufficient, surface, adapters, stay, add-child, or elsewhere.
 2. Load the contracts named by the brief. Run `cg contract route --task "<Step goal>"` if
    placement is still unclear. Then scoped `P` rules, then the repository constitution and
-   specifications. Consult `E` only for a remaining design fork. A practice already cited on the
+   specifications. Apply relevant `E` guidance to a remaining design fork. A practice already cited on the
    phase or brief is not remaining. An `E` disagreement is not `Blocked by` and not `$cg-unblock`.
 3. Resolve `<docs>` from `.agents/cg/profile.json` `docs` (default `docs`). Confirm with
    `cg status --programme <slug>`. Inspect `cg residue --programme <slug>` as a baseline;

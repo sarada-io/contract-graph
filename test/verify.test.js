@@ -2837,7 +2837,7 @@ test("[11] a phase naming the same token twice fails", () => {
 
 test("[11] every phase always loads structural bindings", () => {
   const dir = makeRepo();
-  edit(dir, PHASES, (t) => t.replace('"always": ["A", "P"]', '"always": ["P"]'));
+  edit(dir, PHASES, (t) => t.replace('"always": ["A", "P", "E"]', '"always": ["P", "E"]'));
   assertFails(dir, 11, "A is ambient binding for every phase");
 });
 

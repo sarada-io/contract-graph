@@ -104,13 +104,13 @@ test("adopters may retire every engineering entry without a compliance exception
   assert.deepEqual(verify(dir).failures, []);
 });
 
-test("choosing to load advisory E in every phase does not grant binding authority", (t) => {
+test("default E loading does not grant binding authority", (t) => {
   const dir = fixture(t);
   const file = ".agents/cg/phases.json";
   const phases = JSON.parse(read(dir, file));
   for (const entry of Object.values(phases.phases)) {
-    entry.always.push("E");
-    entry.conditional = [];
+    assert.deepEqual(entry.always, ["A", "P", "E"]);
+    assert.deepEqual(entry.conditional, []);
   }
   write(dir, file, JSON.stringify(phases));
   sync(dir);
@@ -120,6 +120,40 @@ test("choosing to load advisory E in every phase does not grant binding authorit
   contract.rules = ["E01-01"];
   write(dir, contractFile, stringifyContractYaml(contract));
   assert.ok(verify(dir).failures.some((failure) => /rules/.test(failure)));
+});
+
+test("re-init preserves an adopter's conditional E loading policy", (t) => {
+  const dir = fixture(t);
+  const file = ".agents/cg/phases.json";
+  const phases = JSON.parse(read(dir, file));
+  for (const phase of Object.values(phases.phases)) {
+    phase.always = ["A", "P"];
+    phase.conditional = ["E"];
+  }
+  const policy = JSON.stringify(phases, null, 2) + "\n";
+  write(dir, file, policy);
+  init(dir);
+  sync(dir);
+  assert.equal(read(dir, file), policy);
+  assert.deepEqual(verify(dir).failures, []);
+});
+
+test("migration refuses A/P cost without dropping content or writing other catalogs", (t) => {
+  for (const family of ["architecture", "product"]) {
+    const { dir, reasons } = legacyFixture(t);
+    const value = parseContractYaml(read(dir, files[family]));
+    const entry = family === "architecture" ? value.rules[0] : value.principles[0].entries[0];
+    entry.cost = "An authored trade-off that must survive rejection.";
+    write(dir, files[family], stringifyContractYaml(value));
+    const originals = Object.fromEntries(Object.values(files).map(file => [file, read(dir, file)]));
+    for (const writeMode of [false, true]) {
+      const result = migratePrinciples(dir, { reasons, write: writeMode });
+      assert.ok(result.failures.some(f => /cost/.test(f)), JSON.stringify(result));
+      assert.deepEqual(result.written, []);
+      assert.deepEqual(result.backups, []);
+      for (const [file, text] of Object.entries(originals)) assert.equal(read(dir, file), text);
+    }
+  }
 });
 
 test("migration preview reports missing rationale and never writes partial conversions", (t) => {
@@ -228,7 +262,7 @@ test("every catalog field rejects schema-invalid types, missing keys, and unknow
     const original = parseContractYaml(read(dir, relative));
     // P ships empty: populate it so product leaf validation cannot escape this audit.
     if (family === "product") original.principles = [{ id: "P01", title: "Billing", entries: [
-      { id: "P01-01", statement: "Use minor units.", reason: "The product bills in minor units.", cost: "Convert at display." },
+      { id: "P01-01", statement: "Use minor units.", reason: "The product bills in minor units." },
     ] }];
     const validate = value => family === "architecture" ? validateBindingCatalog(value) : validateGuidelineCatalog(value, family);
     const paths = [];
@@ -273,16 +307,17 @@ test("every catalog field rejects schema-invalid types, missing keys, and unknow
   t.diagnostic(`${checked} schema-invalid catalog mutations rejected by runtime validation`);
 });
 
-test("non-empty product and architecture entries accept optional cost and retain rationale", (t) => {
+test("only advisory engineering entries accept optional cost", (t) => {
   const { dir, reasons } = legacyFixture(t);
   assert.deepEqual(migratePrinciples(dir, { reasons, write: true }).failures, []);
   for (const family of ["architecture", "engineering", "product"]) {
     const value = parseContractYaml(read(dir, files[family]));
     const entry = family === "architecture" ? value.principles[0] : value.principles[0].entries[0];
     entry.cost = "The chosen boundary requires explicit coordination.";
-    assert.equal(validateSchema(value), true, JSON.stringify(validateSchema.errors));
+    assert.equal(validateSchema(value), family === "engineering");
     write(dir, files[family], stringifyContractYaml(value));
-    assert.deepEqual(loadPrinciplesCatalog(path.join(dir, files[family])), value);
+    if (family === "engineering") assert.deepEqual(loadPrinciplesCatalog(path.join(dir, files[family])), value);
+    else assert.throws(() => loadPrinciplesCatalog(path.join(dir, files[family])), /cost/);
   }
 });
 
