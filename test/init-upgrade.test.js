@@ -81,15 +81,41 @@ test("init refreshes A/E and skills, converts legacy P, and preserves owned cont
   assert.deepEqual(init(dir).replaced, []);
 });
 
-test("missing or invalid product rationale blocks all init writes, including skill refresh", t => {
+test("invalid rationale blocks writes; absent rationale hands off without changing product", t => {
   const dir = fixture(t);
   const before = snapshot(dir);
   for (const dryRun of [true, false]) {
-    assert.throws(() => init(dir, { dryRun }), /P01-01[\s\S]*cg init --reasons/);
-    assert.deepEqual(snapshot(dir), before);
+
     assert.throws(() => init(dir, { dryRun, reasons: { ...reasons, unused: "Not a rule" } }), /unused/);
     assert.deepEqual(snapshot(dir), before);
   }
+});
+
+test("pending rationale installs warmup, preserves product, and resumes to verified upgrade", t => {
+  const dir = fixture(t);
+  const original = read(dir, paths.product);
+  const before = snapshot(dir);
+  assert.equal(init(dir, { dryRun: true }).pendingReasons[0].id, "P01-01");
+  assert.deepEqual(snapshot(dir), before);
+  const run = () => spawnSync(process.execPath, [path.join(root, "bin/cg.js"), "init", dir, "--yes"], { encoding: "utf8" });
+  const applied = run();
+  assert.equal(applied.status, 1);
+  assert.match(applied.stdout, /installation updated[\s\S]*Next:.*\/cg-warmup/);
+  assert.equal(read(dir, paths.product), original);
+  assert.match(read(dir, ".agents/skills/cg-warmup/SKILL.md"), /Finish any pending product upgrade first/);
+  assert.match(run().stdout, /product migration remains incomplete/);
+  init(dir, { reasons });
+  sync(dir);
+  assert.deepEqual(verify(dir).failures, []);
+  assert.deepEqual(init(dir).pendingReasons, []);
+});
+
+test("missing rationale does not hide malformed product content", t => {
+  const dir = fixture(t);
+  write(dir, paths.product, read(dir, paths.product) + "unexpected: true\n");
+  const before = snapshot(dir);
+  assert.throws(() => init(dir), /migration blocked/);
+  assert.deepEqual(snapshot(dir), before);
 });
 
 test("empty legacy product migrates with no extra user input", t => {

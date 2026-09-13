@@ -351,6 +351,7 @@ export function init(repoRoot, { profiles, docs, dryRun = false, reasons = {} } 
     ["architecture.yaml", "engineering.yaml"].includes(path.basename(target)),
   ).map(({ source, target }) => ({ relative: path.relative(repoRoot, target), text: fs.readFileSync(source, "utf8") }));
   const catalogPlan = planInitCatalogs(repoRoot, catalogDefaults, reasons);
+  out.pendingReasons = catalogPlan.pendingReasons;
   if (!dryRun) applyInitCatalogs(repoRoot, catalogPlan);
   for (const item of catalogPlan) {
     out.replaced.push(item.file);

@@ -174,7 +174,8 @@ pair, and `statement` plus `reason` on every principle leaf. Contract and enforc
 For legacy catalogs, run `cg migrate-principles` to preview conversion. Supply missing rationale
 with `--reasons <json-file>`, inspect the proposal with `--json`, then apply with `--write`.
 `cg init` updates A/E defaults and converts legacy product catalogs. If product rationale is
-missing, it stops before writing and accepts `--reasons <json-file>` on the same command. See
+missing, it updates the installation and preserves the original product catalog, then directs you
+to `/cg-warmup` to review reasons and finish the upgrade. No hand-written JSON is needed. See
 [upgrade](https://contractgraph.dev/docs/upgrade/) for the complete sequence.
 
 ## Learn more

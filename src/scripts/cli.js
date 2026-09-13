@@ -651,6 +651,10 @@ async function main(argv) {
     // written until the plan has been shown and accepted: `cg init` is the one verb a user is
     // likely to type from memory, and typing it must never be how they find out.
     const plan = init(repoRoot, { profiles, docs, reasons, dryRun: true });
+    if (plan.pendingReasons.length) {
+      process.stdout.write(`cg init: product migration needs /cg-warmup (${plan.pendingReasons.length} missing rationale). Original product.yaml will be preserved.\n`);
+      for (const item of plan.pendingReasons) process.stdout.write(`  ${item.id}: ${item.statement}\n`);
+    }
     if (plan.replaced.length) {
       process.stdout.write(
         `cg init: ${plan.replaced.length} file(s) will be updated with this version\n`,
@@ -686,10 +690,16 @@ async function main(argv) {
       process.stdout.write(
         `cg init: ${plan.written.length} file(s) would be written, 0 replaced\n`,
       );
-      return plan.written.length ? 1 : 0;
+      return plan.written.length || plan.pendingReasons.length ? 1 : 0;
     }
 
     const result = init(repoRoot, { profiles, docs, reasons });
+    if (result.pendingReasons.length) {
+      process.stdout.write(`cg init: installation updated; product migration remains incomplete.\n`);
+      for (const file of result.backups) process.stdout.write(`  upgrade backup: ${path.relative(repoRoot, file)}\n`);
+      process.stdout.write(`  Next: reload editor skills, then run /cg-warmup in your coding agent.\n  Warmup will review missing product reasons with you, finish migration, and run cg verify.\n  Sync and verification are deferred; this is not a verified upgrade.\n`);
+      return 1;
+    }
     const { changed } = sync(repoRoot);
     const { failures, advisories, counts } = verify(repoRoot);
 

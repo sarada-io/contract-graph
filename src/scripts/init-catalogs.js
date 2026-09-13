@@ -13,6 +13,7 @@ const posix = value => value.split(path.sep).join("/");
 export function planInitCatalogs(repoRoot, defaults, reasons = {}) {
   repoRoot = path.resolve(repoRoot);
   const changes = [];
+  changes.pendingReasons = [];
   const observe = (relative, text, action, expectedOriginal) => {
     const file = path.join(repoRoot, relative);
     if (!fs.existsSync(file)) return;
@@ -28,13 +29,20 @@ export function planInitCatalogs(repoRoot, defaults, reasons = {}) {
   if (fs.existsSync(path.join(repoRoot, PRODUCT))) {
     const original = fs.readFileSync(path.join(repoRoot, PRODUCT), "utf8");
     const migration = migratePrinciples(repoRoot, { reasons, families: ["product"] });
-    if (migration.failures.length) {
-      const missing = migration.missingReasons.map(item => `  ${item.id}: ${item.statement}`).join("\n");
-      throw new Error(`cg init: product catalog migration blocked; no installation files were changed.\n${
-        missing ? `Missing product rationale:\n${missing}\nSupply a JSON object mapping those IDs to their rationale, then rerun cg init --reasons <file>.\n` : ""
-      }${migration.failures.join("\n")}`);
+    // Probe only in memory to distinguish absent rationale from malformed content.
+    // Probe text is never installed, backed up, or presented as product rationale.
+    const probe = migration.missingReasons.length && !Object.keys(reasons).length
+      ? migratePrinciples(repoRoot, { families: ["product"], reasons: Object.fromEntries(
+        migration.missingReasons.map(item => [item.id, "Validation probe only"]),
+      ) }) : null;
+    if (migration.failures.length && probe && !probe.failures.length) {
+      changes.pendingReasons = migration.missingReasons;
+    } else {
+      if (migration.failures.length) {
+        throw new Error(`cg init: product catalog migration blocked; no installation files were changed.\n${migration.failures.join("\n")}`);
+      }
+      for (const item of migration.changed) observe(item.file, item.text, "migrate product format", original);
     }
-    for (const item of migration.changed) observe(item.file, item.text, "migrate product format", original);
   } else if (Object.keys(reasons).length) {
     throw new Error("cg init: --reasons was supplied but there is no product catalog to migrate");
   }

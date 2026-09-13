@@ -119,7 +119,7 @@ Contract Graph supplies current architecture principles and engineering advice s
 not invent structure locally. Later `cg init` runs refresh those two catalogs from the release,
 showing the replacements and retaining the previous files in backups. Teams can reapply deliberate
 amendments within the installed detector semantics. Product rules stay repository-owned: init
-converts their format while retaining IDs and statements, and requires explicit missing rationale.
+converts their format while retaining IDs and statements, and hands missing rationale to warmup for review before completing migration.
 Contracts and enforcement retain their content apart from known legacy schema identities; workflow
 and phase policy are preserved. New generic structural bindings still require a verifier-owning
 change; product-specific authority belongs in `P`. See [upgrade](upgrade.md).

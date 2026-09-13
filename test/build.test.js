@@ -294,8 +294,13 @@ test("an extracted tarball resolves shared exports and migrates a repository wit
   const before = new Map(files.map(file => [file, fs.readFileSync(path.join(repo, ".agents/cg", file), "utf8")]));
   const earlyInit = run("init", repo, "--yes", "--docs", "docs");
   assert.notEqual(earlyInit.status, 0);
-  assert.match(earlyInit.stderr, /cg init --reasons/);
-  for (const [file, text] of before) assert.equal(fs.readFileSync(path.join(repo, ".agents/cg", file), "utf8"), text);
+  assert.match(earlyInit.stdout, /cg-warmup/);
+  assert.equal(fs.readFileSync(path.join(repo, ".agents/cg/guidelines/product.yaml"), "utf8"), before.get("guidelines/product.yaml"));
+  for (const file of files.filter(file => !file.endsWith("product.yaml"))) {
+    assert.notEqual(fs.readFileSync(path.join(repo, ".agents/cg", file), "utf8"), before.get(file));
+    // Restore the legacy fixture to exercise the standalone preview independently.
+    fs.writeFileSync(path.join(repo, ".agents/cg", file), before.get(file));
+  }
   const reasons = path.join(legacy, "reasons.json");
   const preview = JSON.parse(success("migrate-principles", repo, "--reasons", reasons, "--json"));
   assert.equal(preview.changed.length, 3);

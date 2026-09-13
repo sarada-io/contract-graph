@@ -36,6 +36,23 @@ work while recording the response.
 
 ## Which entry — read this before §1
 
+**Finish any pending product upgrade first.** Inspect `.agents/cg/guidelines/product.yaml`
+before verification. If it still declares the supported legacy `productVersion`, init may have
+preserved it because required rationale was missing. Do not run whole-catalog migration: init
+already refreshed A/E defaults. Read the existing P statements and their consuming contracts,
+then bounded implementation and durable decisions to propose the missing reasons. Present them
+as proposals, distinguishing recorded rationale from inference; obtain the owner's confirmation
+before treating inferred rationale as policy. Do not invent placeholders, delete rules, or
+renumber IDs to make validation pass.
+
+Prepare a temporary JSON object mapping only missing P IDs to the confirmed reasons and run
+`cg init --yes --reasons <temporary-file>` from the repository root (saved docs/profile settings
+are reused). The agent prepares the file; the user need not author JSON. Remove the temporary
+file after success, run `cg verify`, and then continue adoption or reseed below. If init reports
+malformed or unsupported content, resolve that finding explicitly; never bypass schema validation.
+On interruption, inspect the actual product catalog again; an already-current catalog needs no
+migration or reasons file. Do not report the upgrade complete until verification passes.
+
 **Confirm the installed binding can recurse.** Run `cg verify`. If it fails because
 `.agents/cg/principles/architecture.yaml` is missing `hierarchy.kinds` or `graph.recurse`, the
 catalog is older than this skill. Refresh it with `cg init`, which previews A/E replacement and

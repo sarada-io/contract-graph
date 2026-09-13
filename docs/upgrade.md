@@ -34,15 +34,21 @@ than merging local preferences into the release. Catalog changes are staged toge
 rollback on an apply failure. Init as a whole is not a filesystem-wide transaction; a later
 sync or verification failure is reported for correction.
 
-Legacy product rules may lack the `reason` required by the new schema. Init names the missing
-IDs and stops before changing installation files. Create a JSON object containing the actual
-rationale for exactly those IDs, then use the same command:
+For the usual interactive upgrade, run `cg init`, reload editor skills, then invoke
+`/cg-warmup` in your coding agent. Keep the saved docs root and profiles.
 
-```bash
-cg init --check --docs docs --reasons reasons.json
-cg init --yes --docs docs --reasons reasons.json
-cg verify
-```
+Legacy product rules may lack the `reason` required by the new schema. Init updates installed
+files but leaves that product catalog byte-identical. It names the missing IDs and directs you
+to `/cg-warmup`. Sync and verification are deferred, and init returns exit code 1 to signal an
+incomplete upgrade. Repeating init retains the same handoff until the reasons are resolved.
+
+Warmup examines existing rules, contracts, implementation, and recorded decisions, proposes
+rationale for your confirmation, then prepares the migration input itself and finishes init,
+sync, and verification. You do not need to write JSON. It continues into adoption or reseed
+after the upgrade. Missing rationale is never replaced with invented placeholder policy.
+
+For automation or already-prepared rationale, `cg init --yes --reasons reasons.json` remains
+available. Malformed catalogs and invalid supplied reasons still block writes.
 
 An empty legacy product catalog needs no rationale input. Already-current valid product catalogs
 remain byte-identical; omit the reasons file on later runs. Unknown fields or schema identities
