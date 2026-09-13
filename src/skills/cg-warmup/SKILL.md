@@ -15,18 +15,20 @@ on disk is the baseline, not a predecessor.
 **Never delete this skill.** `cg verify` requires all eight skills, and a later module tree still
 needs these instructions. Auto-run never dispatches it.
 
-Warmup declares and mechanically protects an existing cohesive declared surface before proposing
-restructuring. Protect the named surface first; propose a split or merge only once that surface is
-named. It must not add wrapper types or move code solely to impose a source-layout convention.
-If the existing surface mixes distinct responsibilities, cannot be mechanically confined, exposes
-internals (`graph.surface.encapsulate`), mixes optional vendor clients (`graph.adapters`), puts
-consumer-specific workflow into a generic core, or has no small inbound surface, that is a
-restructure finding: write it into the corrective set for `cg-plan`. The owner validates that
-programme. Warmup does not rewrite the code.
+Warmup declares an existing cohesive surface and records the controls that protect it before
+proposing restructuring. Assess the named surface first; propose a split or merge only once
+its promise and ownership are clear. It must not add wrapper types or move code solely to impose a source-layout convention.
+If the existing surface mixes distinct responsibilities, exposes details outside its declared
+promise (`graph.surface.encapsulate`), or puts consumer-specific workflow into a consumer-independent
+core, record the structural finding for `cg-plan`. Apply `graph.adapters` to responsibility, not
+vendor count. Missing mechanical confinement is an explicit coverage gap; E03 alone does not
+authorize a blocking control or restructuring. The owner validates the corrective programme.
+Warmup does not rewrite the code.
 
-`graph.surface.service` is the inbound categorisation: a small set of services, not a node per
-file. If the service types exist, declare them. If they do not, record a corrective Step to
-introduce them. Folder wrappers to impose layout are forbidden.
+`graph.surface.service` describes one entry style. Declare an existing cohesive surface using
+its native functions, services, events, or other supported entry kinds. Missing service types
+alone do not justify a corrective Step. E01-03 is advice about a facade, not a node per file
+or a required rewrite.
 
 Read `.agents/skills/cg-unblock/SKILL.md` when a fork remains unresolved by contracts and
 accepted decisions or requires owner authority. Ask directly under D-6 and continue independent
@@ -298,27 +300,24 @@ still take `add-child`. If several packages form one boundary, `graph.stop` requ
 `Leaf rationale:` assumption that names them and says why they are inseparable.
 
 `graph.surface` is declared entry and encapsulation. Enter only through the contract surface.
-`graph.surface.service` is the first way to declare it: list the named services; `contract.yaml`
-`surface` points at those types. An undeclared entry or a bypass is a corrective Step, not stay.
+`graph.surface.service` permits service entry without requiring that style. Declare the actual
+entry paths and observable promises, including asynchronous or event behavior where applicable.
+An undeclared entry or a bypass requires a corrective action. Scattered functions call for a
+surface and placement review; neither file count nor absence of classes decides the outcome.
 
-If this unit is many functions across unmanaged files with no small inbound surface, do not create
-a node per file. Categorise the work into a small set of services. Declare them when the types
-exist; otherwise §8 a corrective Step to introduce them.
-
-`graph.adapters` is the vendor and consumer-adapter split of `graph.surface.encapsulate`. An
-optional external resource or consumer-specific implementation is a parent-owned port; each
-concrete option is `add-child`, not `stay`. Adding a consumer does not modify or branch the core
-while the port can express the required product-neutral promise. Two vendor clients in one unit
-is a corrective Step.
+For `graph.adapters`, create a child when an adapter owns a distinct responsibility and meets
+`selfSufficient` and `decide.add-child`. Multiple vendors alone do not imply a corrective Step.
+Keep consumer-specific behavior outside a consumer-independent core while the existing promise
+suffices. E02-06 recommends separate adapters without making them mandatory.
 
 The corrective set is driven by that walk, not by `cg verify` and not by preference. For every
 candidate, take exactly one row:
 
 | `graph` result | Code already has that shape | What warmup does |
 |---|---|---|
-| `stay` — cohesive surface, services exist, one vendor (or none), consumer-specific work behind adapters | yes | write the contract; **Restructure:** none |
+| `stay` — cohesive declared surface and one owned responsibility, with consumer-specific work outside a consumer-independent core | yes | write the contract; **Restructure:** none |
 | `add-child` and the child unit already exists as a separable directory or package | yes | write the child contract now; **Restructure:** none |
-| `add-child`, `elsewhere`, introduce services, or split vendor or consumer adapters | no — fulfilling it would move or add code | write the contract for the mixed unit that exists; **Restructure:** finding |
+| `add-child`, `elsewhere`, or a required surface correction | no — fulfilling it would move or add code | write the contract for the mixed unit that exists; **Restructure:** finding |
 | a nicer folder layout, a new wrapper type, or `graph.forbid` | — | not a finding |
 
 A **Restructure:** finding is the only input to the corrective set. Phase C merges those rows; it
@@ -462,7 +461,8 @@ be created by editing installed YAML.
 
 Separately, consolidate every Phase B **Restructure:** finding that is not `none` into
 `<docs>/plans/warmup-corrective-set.md`. Those rows are driven by the §4 graph walk. `cg verify`
-cannot see mixed vendors, missing services, or undeclared children that the walk already named.
+cannot establish semantic responsibility overlap, caller bypasses, or undeclared children.
+Vendor count and missing service classes alone do not create a finding.
 Do not add a row because a layout looks untidy. Do not omit a row because the contract already
 describes the mess.
 
@@ -478,7 +478,7 @@ Status: Unconsumed
 
 ## <finding>
 - **Evidence:** <unit, packages, surface, or vendor mix actually opened>
-- **Graph decision:** <add-child | elsewhere | introduce services | split vendor adapters>
+- **Graph decision:** <add-child | elsewhere | stay with a surface correction>
 - **Architecture target:** <hierarchy kind and graph.surface / graph.adapters keys that define the destination>
 - **Engineering guidance:** <E ids that apply to this move, each with reason; none if graph already specifies the outcome>
 - **Proposed programme outcome:** <the observable structure after the move>

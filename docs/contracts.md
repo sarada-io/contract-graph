@@ -89,22 +89,21 @@ Each non-repository boundary declares at least one surface (A10). A surface name
 - the guarantees callers may rely on.
 
 That list is the unit's promise to its parent and dependents, not “public” in the language, HTTP,
-or customer-facing sense. `graph.surface` is the protocol: enter only here. The first way to
-declare entry is a **service** (`kind: service`): one or two named types whose operations take
-parameters, do the work, and return the completed result. `contract.yaml` `surface` lists those
-services and points at the implementation they encapsulate. Constructor ports assemble a service
-behind the call; they are not how a parent talks to the node. Encapsulate algorithms, construction,
-mutable internals, persistence, framework types, vendor types, and a consumer's product-specific
-workflow behind the service. A new entry or a bypass is not stay. When the current surface already
-expresses the required promise, consumer-specific behavior stays behind its adapter and does not
-modify or branch the core. `graph.adapters.port` is the vendor and consumer-adapter case of that
-encapsulation.
+or customer-facing sense. `graph.surface` requires an explicit entry and promise, while
+`graph.surface.service` describes one possible entry style. Functions, events, services, streams,
+and asynchronous operations can all have declared surfaces; no fixed type count or synchronous
+completion model is required. Construction details and mutable implementation state stay internal
+unless explicitly part of the promise. Technology-specific APIs may deliberately expose those
+concepts. A consumer-independent core does not acquire a consumer's product-specific workflow
+when its existing promise already suffices. E01-03 recommends cohesive facades and E02-06
+recommends adapters; neither recommendation independently requires a rewrite or child contract.
 
 The code form remains language-native. A service may be a class, a module of functions, an HTTP
 resource, or another native export. TypeScript exports, Java interfaces, schemas, commands, events,
 and HTTP endpoints remain valid surfaces when they are that callable promise. The YAML contract
-declares the cohesive surface and the repository mechanically protects its internals; Contract Graph
-does not prescribe one source layout.
+declares the cohesive surface. Record which language, build, or repository controls protect its
+internals and where coverage is absent; Contract Graph does not supply universal import confinement
+or prescribe one source layout.
 
 `cg verify` currently proves that every non-repository node declares a surface and that every
 declared surface path exists (A10, A11). Language-specific detectors must additionally prove
@@ -217,7 +216,7 @@ There are three authored principle catalogs, one shared schema
   boundary hierarchy, and global `A` structural principles with statement, reason, measure,
   registered detectors, and negative fixtures. The walk is documented in [lifecycle](lifecycle.md).
   `graph.surface` is declared entry and encapsulation behind the contract.
-  `graph.surface.service` is the first way to declare that entry: named operations
+  `graph.surface.service` describes one way to declare that entry: named operations
   `contract.yaml` points at. `graph.adapters` is the vendor and consumer-adapter split of that
   encapsulation. The protocol fields are not `A` detectors and do not scan imports;
 - `src/cg/guidelines/engineering.yaml` — `family: engineering`, `binding: advisory`. The shipped

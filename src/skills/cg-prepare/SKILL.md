@@ -14,8 +14,9 @@ otherwise ask the user directly under D-6. Record the answer and continue indepe
 
 Read `.agents/cg/phases.json` and load the families selected for `prepare`. Shipped defaults
 include `.agents/cg/guidelines/engineering.yaml` on every pass; retained repository phase policy
-controls loading. E remains advisory context: use relevant practices without reopening settled
-decisions or treating disagreement as a compliance failure.
+controls loading. Consider applicable E practices as advisory context. They create no acceptance
+criteria, required changes, or blockers unless separately adopted through an authorized binding.
+Do not reopen settled decisions merely because an E preference differs.
 
 ## Required outcome
 
@@ -133,7 +134,8 @@ Blocked`. No later Step may be `Ready`, `In progress`, or `Complete` before the 
 Before assigning paths, apply `.agents/cg/principles/architecture.yaml` `graph`: recurse until the
 smallest node, then stay, add-child, or elsewhere. Size, reuse, or a new dependency is not a new
 node. `graph.surface` is declared entry; a new entry point is a surface amendment or `add-child`.
-`graph.adapters`: a second optional vendor client is `add-child` behind a parent-owned port.
+`graph.adapters`: use `add-child` when an adapter owns a distinct responsibility and meets
+`selfSufficient`; vendor count alone does not require a split.
 Consumer-specific behavior stays behind its adapter; do not modify or branch the core while the
 port can express the required product-neutral promise. If the phase already names an add-child,
 elsewhere, service, or adapter target, assign paths to deliver it. Mixed code that matches that target is the work, not a return to `$cg-plan`. A Step

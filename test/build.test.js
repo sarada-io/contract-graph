@@ -65,8 +65,13 @@ test("cg build copies architecture and product YAML catalogs", () => {
   assert.equal(engineering.principles[0].category, "Structural Best Practices");
   assert.equal(engineering.principles[0].rules[0].id, "E01-01");
   assert.equal(engineering.principles[0].rules[0].modality, "best-practice");
-  assert.match(engineering.principles[0].rules[0].rule, /Callers use only the paths/);
-  assert.match(engineering.principles[0].rules[0].reason, /undeclared caller is a bypass/);
+  for (const relative of ["principles/architecture.yaml", "guidelines/engineering.yaml", "guidelines/product.yaml"]) {
+    assert.equal(
+      fs.readFileSync(path.join(dir, BUILD_DIRECTORY, "agent/cg", relative), "utf8"),
+      fs.readFileSync(path.join(dir, "src/cg", relative), "utf8"),
+      `${relative} must ship byte-for-byte`,
+    );
+  }
   assert.equal(
     engineering.principles.find((principle) => principle.id === "E01").category,
     "Structural Best Practices",
@@ -118,6 +123,9 @@ test("a repeated build is byte-for-byte stable and removes stale generated files
     "utf8",
   );
   fs.writeFileSync(path.join(dir, BUILD_DIRECTORY, "stale.json"), "{}\n");
+  const archive = path.join(dir, "dist", "tar", "previous.tgz");
+  fs.mkdirSync(path.dirname(archive), { recursive: true });
+  fs.writeFileSync(archive, "retained release bytes");
 
   const second = build(dir);
   assert.deepEqual(second.changed, []);
@@ -127,6 +135,7 @@ test("a repeated build is byte-for-byte stable and removes stale generated files
     architecture,
   );
   assert.ok(!fs.existsSync(path.join(dir, BUILD_DIRECTORY, "stale.json")));
+  assert.equal(fs.readFileSync(archive, "utf8"), "retained release bytes", "rebuilding must preserve sibling release archives");
 });
 
 test("cg build --check detects drift without rewriting compiled output", () => {

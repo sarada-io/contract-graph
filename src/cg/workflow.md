@@ -52,7 +52,9 @@ During harvest, use `cg-unblock` D-5a: route a recurring decision once to a cont
 3. Read the repository's specification or constitution and resolve applicable P IDs from the
    selected contracts. Read the families selected by `.agents/cg/phases.json` for the current
    phase. Shipped defaults include `.agents/cg/guidelines/engineering.yaml` on every pass.
-   Read E as advisory context; apply relevant practices without reopening settled decisions.
+   Read E as advisory context; consider applicable practices without reopening settled decisions.
+   E creates no acceptance criteria, required changes, or blockers unless separately adopted
+   through an authorized binding.
    Departing from E requires no compliance exception and does not block delivery.
 4. Identify impacted boundaries with `cg contract route --task "<request>"` and contract-owned routes.
 5. Load those module contracts, then traverse their child-contract links until the smallest

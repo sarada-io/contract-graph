@@ -6,9 +6,13 @@ npm-debug.log*
 
 # Generated working trees — `npm run clean` deletes them
 plan/
+# Test scratch runs live under tmp/tests/ and are removed by the test runner.
 tmp/
+# Legacy generated targets
 build/
-compiled/   # leftover name for build/; keep ignored so it cannot be committed
+compiled/
+# Assembled package in dist/build/ and release archives in dist/tar/
+dist/
 
 # Test output when a host sets its temporary directory to the checkout.
 # mkdtemp appends six random characters; do not ignore all cg-* paths.

@@ -20,7 +20,7 @@ import {
 } from "./model.js";
 
 export const COMPILED_VERSION = "1.0";
-export const BUILD_DIRECTORY = "build";
+export const BUILD_DIRECTORY = "dist/build";
 export const PACKAGE_DATA_DIRECTORY = "agent/cg/guidelines";
 
 const PACKAGE_TREE_MAPPINGS = Object.freeze([
@@ -153,7 +153,7 @@ function packageSourceAssets(repoRoot) {
 export function build(repoRoot, { write = true } = {}) {
   const root = path.resolve(repoRoot);
   const outputRoot = path.resolve(root, BUILD_DIRECTORY);
-  if (path.relative(root, outputRoot) !== BUILD_DIRECTORY) {
+  if (posix(path.relative(root, outputRoot)) !== BUILD_DIRECTORY) {
     throw new BuildError(`refusing to build outside \`${BUILD_DIRECTORY}\``);
   }
 

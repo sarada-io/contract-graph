@@ -51,7 +51,7 @@ const VERSION = JSON.parse(fs.readFileSync(PACKAGE_JSON, "utf8")).version;
 const USAGE = `cg — Contract Graph
 
 Usage:
-  cg build [dir] [--check]                         assemble the package target under build/
+  cg build [dir] [--check]                         assemble the package target under dist/build/
   cg init [--profile a,b] [--docs dir]             scaffold governance
   cg migrate-principles [dir] [--reasons file] [--write]  preview or apply legacy catalog conversion
   cg next [dir] [--json] [--for skill]            what runs next, computed from the Step queue
@@ -537,7 +537,7 @@ async function main(argv) {
     if (flags.check) {
       if (result.changed.length || result.removed.length) {
         process.stderr.write(
-          `cg build --check: FAIL — build/ differs from its package sources\n`,
+          `cg build --check: FAIL — dist/build/ differs from its package sources\n`,
         );
         for (const file of result.changed) process.stderr.write(`  stale or missing ${file}\n`);
         for (const file of result.removed) process.stderr.write(`  unexpected ${file}\n`);

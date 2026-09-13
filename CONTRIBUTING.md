@@ -33,6 +33,12 @@ npm test
 node bin/cg.js --help
 ```
 
+`npm test` runs tests with temporary files under the gitignored `tmp/tests/run-*` directory
+and removes its own run directory after success or failure. This also prevents a host-provided
+`TMPDIR` from scattering fixtures across the checkout. Use `npm test -- test/build.test.js`
+for a focused run. Direct `node --test` bypasses this scratch-directory isolation. An abruptly
+killed process may leave a run directory under `tmp/tests/`; `npm run clean` removes it.
+
 The runtime dependency surface is deliberately limited to the YAML parser used for canonical
 contracts and rule catalogs. A pull request adding another runtime dependency must explain why the
 benefit justifies adding supply-chain surface to a verifier.
@@ -267,7 +273,7 @@ Prefer a paraphrase with project-specific reasoning over copied prose.
 
 ## Building and inspecting the npm package
 
-Never edit `build/` directly. It is a generated, gitignored package target. Build and verify it
+Never edit `dist/build/` directly. It is a generated, gitignored package target. Build and verify it
 with:
 
 ```bash
@@ -276,7 +282,10 @@ npm run build:check
 npm run pack
 ```
 
-`npm run pack` creates `contract-graph-<version>.tgz` from `build/`. The package contains the CLI
+`npm run pack` creates `dist/tar/contract-graph-<version>.tgz` from `dist/build/`.
+`dist/build/` is the assembled package; `dist/tar/` holds release archives. The entire `dist/` tree is
+gitignored and removed by `npm run clean`. Normal builds replace only `dist/build/`,
+preserving archives in `dist/tar/`. The package contains the CLI
 under `script/`, the installable assets under `agent/`, `package.json`, `LICENSE`, and this exact
 `README.md`; npm therefore renders the same README that is reviewed in the repository. Keep that
 file a landing page for people: what the product is, how to install it, and absolute links to
@@ -292,17 +301,17 @@ addition, existing instructions, an existing docs root, and `cg verify`.
 ## Publishing
 
 `package.json` `version` is the source of truth; the git tag and npm version follow it. Publish the
-tarball produced by `npm run pack`, not the repository root or `build/` directory:
+tarball produced by `npm run pack`, not the repository root or `dist/build/` directory:
 
 ```bash
 git status --short
 npm test
 npm run pack
 npm login
-npm publish contract-graph-<version>.tgz --access public
+npm publish dist/tar/contract-graph-<version>.tgz --access public
 ```
 
-The working tree must be clean because packing reads files from disk. `npm publish ./build` repacks
+The working tree must be clean because packing reads files from disk. `npm publish ./dist/build` repacks
 the directory, while publishing from the repository root would select the wrong package layout.
 
 ## Pull-request evidence and commit expectations

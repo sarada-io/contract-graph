@@ -15,14 +15,14 @@
     "./engineering-schema": "./src/cg/schema/principles.schema.json",
     "./product-schema": "./src/cg/schema/principles.schema.json",
     "./architecture-rules": "./src/cg/principles/architecture.yaml",
-    "./build": "./build/manifest.json",
-    "./build/*": "./build/*"
+    "./build": "./dist/build/manifest.json",
+    "./build/*": "./dist/build/*"
   },
   "files": [
     "bin",
     "src",
     "!src/scripts/dev.js",
-    "build",
+    "dist/build",
     "docs",
     "README.md",
     "LICENSE"
@@ -31,14 +31,14 @@
     "node": ">=18.17"
   },
   "scripts": {
-    "test": "node --test",
+    "test": "node scripts/test.mjs",
     "test:interaction": "node scripts/auto-run-interaction.mjs",
     "trial:interaction": "node scripts/create-auto-run-fixture.mjs",
     "try": "node src/scripts/dev.js",
     "build": "node bin/cg.js build",
     "build:check": "node bin/cg.js build --check",
-    "pack": "node bin/cg.js build --quiet && npm pack --ignore-scripts ./build",
-    "clean": "node --input-type=module -e \"import fs from 'node:fs'; for (const dir of ['build', 'tmp', 'compiled']) fs.rmSync(dir, { recursive: true, force: true })\""
+    "pack": "node bin/cg.js build --quiet && node --input-type=module -e \"import fs from 'node:fs'; fs.mkdirSync('dist/tar', { recursive: true })\" && npm pack --ignore-scripts --pack-destination dist/tar ./dist/build",
+    "clean": "node --input-type=module -e \"import fs from 'node:fs'; for (const dir of ['build', 'dist', 'tmp', 'compiled']) fs.rmSync(dir, { recursive: true, force: true })\""
   },
   "keywords": [
     "contract-graph",

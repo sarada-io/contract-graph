@@ -17,6 +17,7 @@ supposed to remain after a plan is deleted.
 |---|---|
 | [Quick Introduction Video](https://contractgraph.dev/#watch) | Plays on the public page |
 | [Vision](vision.md) | Why contracts, and what problem they are for |
+| [Architecture considerations](architecture-considerations.md) | What is mandatory, what is advisory, and what verification actually proves |
 | [Contracts](contracts.md) | What one YAML node is, and what verification currently proves |
 | [Workflow](workflow.md) | How an outcome becomes phases, steps, and a lasting graph |
 | [Lifecycle](lifecycle.md) | The stages you run, and the structural walk they share |

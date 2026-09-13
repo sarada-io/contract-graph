@@ -35,31 +35,29 @@ order; the YAML order is the walk used whenever a candidate is kept, split, or m
 
 Stay, add-child, and elsewhere remain the only three outcomes. The keys before `decide` say
 whether a unit deserves a node and how it is entered. The keys after it say how children relate,
-when to stop, what is not a node, and the vendor exception that forbids stay.
+when to stop, what is not a node, and how the same decision applies to adapters.
 
 | Order | Key | Role |
 |---|---|---|
 | 1 | `node` | Definition. One owned responsibility, one hierarchy kind, one `contract.yaml`. |
 | 2 | `recurse` | Walk. Apply the rest at every candidate. A module listed by `cg modules` is not a leaf until `selfSufficient` and `stop` have been applied inside it. |
 | 3 | `selfSufficient` | Fitness. Named function, small inbound surface, published outbound ports, own change reasons. |
-| 4 | `surface` | Declared entry and encapsulation. Enter only through the contract surface. The first way to declare it is a **service**: named operations that take parameters, do the work, and return the completed result; `contract.yaml` `surface` lists those services. Construction stays behind the call. Internals, algorithms, persistence, framework types, vendor types, and a consumer's product-specific workflow stay behind it. A new entry, a bypass, or a consumer-specific branch of a generic flow is not stay. |
+| 4 | `surface` | Declare entry paths and observable promises. Services are one option; functions, events, and asynchronous interfaces are valid. Keep undeclared implementation details internal. Amend the surface when its promise changes. |
 | 5 | `decide` | Fork. **stay**, **add-child**, or **elsewhere**. |
 | 6 | `compose` | Children. Parent owns orchestration; children decompose `owns`; no child-to-child internals. |
 | 7 | `stop` | Quit splitting. Not per file; depth is mixed and uncapped; inseparable packages need a named rationale. |
 | 8 | `forbid` | Anti-patterns. A new folder, file, or dependency is not a node; neither is `utils` or “it was already in the edit set”. |
-| 9 | `adapters` | Split of `surface.encapsulate` into child options. One parent-owned port; each optional store, cloud, transport, or consumer-specific implementation is its own child. Adding a consumer does not modify or branch the core while the port can express the required product-neutral promise. A second vendor client is add-child, not stay. |
+| 9 | `adapters` | Apply responsibility and self-sufficiency to each adapter. A distinct owned responsibility earns a child; vendor count alone does not. Keep consumer-specific behavior outside a consumer-independent core while its existing promise suffices. |
 
 `surface` sits before `decide` because encapsulation behind the contract is core, not an exception.
-`graph.surface.service` is the first declaration of that encapsulation: a list of services the YAML
-node points at, not constructor ports on the caller. Unmanaged scatter — many functions across
-files with no small inbound surface — becomes a small set of those services as a later step, not a
-node per file. `adapters` is last because it is not a fourth decide id. It overrides `forbid` for
-optional vendors and consumer-specific implementations. Mixed Mongo and PostgreSQL clients,
-a consumer-specific branch in a generic flow, an undeclared entry, or internals on the
-surface are a later step, not silent stay.
+`graph.surface.service` describes service entry without requiring a class or facade. Review
+scattered entry points against ownership and the declared promise before proposing a rewrite.
+`adapters` applies the same node decision to a vendor or consumer-specific implementation;
+it does not override that decision based on vendor count. Consumer-specific behavior does not
+modify or branch the core while its consumer-independent promise already suffices.
 
 That walk is a protocol the stages apply. It is not an `A` detector and does not scan imports;
-`cg verify` still only proves declared paths exist (A10, A11).
+A10 checks surface presence and A11 checks paths; neither proves exported symbols or caller confinement.
 
 Warmup, prepare, and produce walk this sequence before they keep work on the open node. An
 adopting repository whose installed catalog is missing a key is stale; copy the packaged binding.

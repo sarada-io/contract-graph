@@ -11,8 +11,9 @@ approval is not final sign-off. Do not invent human acceptance or silently begin
 
 Read `.agents/cg/phases.json` and load the families selected for `prototype`. Shipped defaults
 include `.agents/cg/guidelines/engineering.yaml` on every pass; retained repository phase policy
-controls loading. E remains advisory context: use relevant practices without reopening settled
-decisions or treating disagreement as a compliance failure.
+controls loading. Consider applicable E practices as advisory context. They create no acceptance
+criteria, required changes, or blockers unless separately adopted through an authorized binding.
+Do not reopen settled decisions merely because an E preference differs.
 
 ## 1. Route, start, launch — once per session
 

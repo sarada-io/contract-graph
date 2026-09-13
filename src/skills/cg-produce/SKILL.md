@@ -14,8 +14,9 @@ otherwise ask the user directly under D-6. Record the answer and continue indepe
 
 Read `.agents/cg/phases.json` and load the families selected for `produce`. Shipped defaults
 include `.agents/cg/guidelines/engineering.yaml` on every pass; retained repository phase policy
-controls loading. E remains advisory context: use relevant practices without reopening settled
-decisions or treating disagreement as a compliance failure.
+controls loading. Consider applicable E practices as advisory context. They create no acceptance
+criteria, required changes, or blockers unless separately adopted through an authorized binding.
+Do not reopen settled decisions merely because an E preference differs.
 
 ## Required outcome
 
@@ -68,11 +69,11 @@ behavior to the current boundary because its files were already in the brief. If
 outcome or remaining order must change, stop with `$cg-prepare` carrying that finding — do not
 emit `$cg-plan`; preparation returns to planning when the outcome moved.
 
-A new undeclared entry, internals on the surface, or a bypass of the declared service is not
-stay unless this Step's work is to declare or split that surface. `graph.adapters.mix` is
-`add-child`: do not land a second optional vendor client on the open node unless the brief is
-that split. Consumer-specific workflow is not stay on the core: keep it behind the adapter, or
-amend the port only with a product-neutral concept.
+An undeclared entry, exposure outside the declared promise, or a surface bypass requires an
+affected contract or implementation correction within the Step. Apply `graph.adapters.mix`
+and `selfSufficient` to adapter responsibilities; vendor count alone does not require a split.
+Consumer-specific workflow stays outside a consumer-independent core while its promise suffices;
+amend the port with a product-neutral concept when the promise needs to change.
 
 If the Step needs an undeclared path or a missing contract change, return to `cg-prepare`. Do not
 edit first and hope completion repairs it.
@@ -119,7 +120,8 @@ When creating a new boundary contract, use
 ### A new self-sufficient unit owes a contract in the Step that creates it
 
 A component, library, sub-module, or module is self-sufficient when it delivers a nameable
-functionality and reaches outside itself only rarely. The Step that creates one owes four things
+function with one owned responsibility, an explicit surface, and external dependencies through
+declared contracts and surfaces. The Step that creates one owes four things
 together:
 
 1. its own `.agents/cg/contract.yaml`, from the template;
