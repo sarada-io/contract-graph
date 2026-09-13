@@ -428,10 +428,9 @@ export function checkPhases(fail, repoRoot) {
       }
     }
     for (const family of entry.always) {
-      if (!binding.includes(family)) {
+      if (!binding.includes(family) && !BEST_PRACTICE_FAMILIES.includes(family) && !FORK_FAMILIES.includes(family)) {
         fail(
-          `[11] phases.json: ${phase}.always contains non-binding family \`${family}\`; ` +
-            "advisory families belong in conditional",
+          `[11] phases.json: ${phase}.always contains unknown non-binding family \`${family}\``,
         );
       }
     }

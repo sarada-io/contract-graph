@@ -1,0 +1,11 @@
+$schema: https://contractgraph.dev/schema/product-v1.schema.json
+productVersion: "1.0"
+principles:
+  - id: P01
+    title: Billing
+    entries:
+      # Repository pricing contract, not vendor policy.
+      - id: P01-01
+        text: >-
+          Every price is quoted
+          in minor units. # literal prose

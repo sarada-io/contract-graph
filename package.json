@@ -10,9 +10,10 @@
     ".": "./src/scripts/contracts.js",
     "./contracts": "./src/scripts/contracts.js",
     "./schema": "./src/cg/schema/contract.schema.json",
-    "./architecture-schema": "./src/cg/schema/architecture.schema.json",
-    "./engineering-schema": "./src/cg/schema/engineering.schema.json",
-    "./product-schema": "./src/cg/schema/product.schema.json",
+    "./principles-schema": "./src/cg/schema/principles.schema.json",
+    "./architecture-schema": "./src/cg/schema/principles.schema.json",
+    "./engineering-schema": "./src/cg/schema/principles.schema.json",
+    "./product-schema": "./src/cg/schema/principles.schema.json",
     "./architecture-rules": "./src/cg/principles/architecture.yaml",
     "./build": "./build/manifest.json",
     "./build/*": "./build/*"
@@ -67,5 +68,8 @@
   },
   "dependencies": {
     "yaml": "^2.9.0"
+  },
+  "devDependencies": {
+    "ajv": "^8.20.0"
   }
 }

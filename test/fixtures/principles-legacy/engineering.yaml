@@ -1,0 +1,24 @@
+$schema: https://contractgraph.dev/schema/engineering-v1.schema.json
+engineeringVersion: "1.0"
+categories: [Boundaries, Tradeoffs]
+principles:
+  - id: E01
+    title: Boundary access
+    category: Boundaries
+    entries:
+      # Repository-specific explanation survives conversion.
+      - id: E01-01
+        rule: >-
+          Consumers use the
+          declared surface.
+        reason: |-
+          Dependencies must remain visible.
+          The second line is significant.
+  - id: E12
+    title: Delivery choices
+    category: Tradeoffs
+    entries:
+      - id: E12-03
+        rule: 'Prefer a small batch: keep rollback understandable.'
+        reason: 'A small batch isolates a failure.'
+        cost: 'More frequent coordination.'

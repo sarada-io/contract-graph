@@ -8,7 +8,7 @@ contracts before reading implementation.
 
 The structural rules that bind every boundary are in `../.agents/cg/principles/architecture.yaml`.
 Repository product and engineering guidelines are under `../.agents/cg/guidelines/`; engineering entries there are
-non-binding.
+SHOULD, not a verify failure.
 For the lifecycle workflow, read `../.agents/cg/workflow.md`.
 
 Do not put instructions in this file.

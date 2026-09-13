@@ -1,0 +1,613 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contractgraph.dev/schema/principles-v1.schema.json",
+  "title": "Contract Graph principles catalog",
+  "description": "One catalog shape for architecture, engineering, and product principles. Family selects binding: architecture is global MUST, product is scoped MUST, engineering is SHOULD. Architecture catalogs also carry the graph-writing protocol (hierarchy and graph), which is not a principle.",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/architectureCatalog"
+    },
+    {
+      "$ref": "#/$defs/engineeringCatalog"
+    },
+    {
+      "$ref": "#/$defs/productCatalog"
+    }
+  ],
+  "$defs": {
+    "schemaId": {
+      "const": "https://contractgraph.dev/schema/principles-v1.schema.json"
+    },
+    "architectureCatalog": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "$schema",
+        "principlesVersion",
+        "family",
+        "binding",
+        "scope",
+        "promise",
+        "promotion",
+        "hierarchy",
+        "graph",
+        "principles"
+      ],
+      "properties": {
+        "$schema": {
+          "$ref": "#/$defs/schemaId"
+        },
+        "principlesVersion": {
+          "const": "1.0"
+        },
+        "family": {
+          "const": "architecture"
+        },
+        "binding": {
+          "const": "global"
+        },
+        "scope": {
+          "const": "structural-integrity"
+        },
+        "promise": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "promotion": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "requires",
+            "action"
+          ],
+          "properties": {
+            "requires": {
+              "const": [
+                "structural-impact",
+                "deterministic-measure",
+                "blocking-detector",
+                "negative-fixture"
+              ]
+            },
+            "action": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S"
+            }
+          }
+        },
+        "hierarchy": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "root",
+            "kinds",
+            "transitions"
+          ],
+          "properties": {
+            "root": {
+              "const": "repository"
+            },
+            "kinds": {
+              "$ref": "#/$defs/kindMap"
+            },
+            "transitions": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "repository",
+                "module",
+                "submodule",
+                "component",
+                "library"
+              ],
+              "properties": {
+                "repository": {
+                  "$ref": "#/$defs/kindList"
+                },
+                "module": {
+                  "$ref": "#/$defs/kindList"
+                },
+                "submodule": {
+                  "$ref": "#/$defs/kindList"
+                },
+                "component": {
+                  "$ref": "#/$defs/kindList"
+                },
+                "library": {
+                  "$ref": "#/$defs/kindList"
+                }
+              }
+            }
+          }
+        },
+        "graph": {
+          "$ref": "#/$defs/graph"
+        },
+        "principles": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/architecturePrinciple"
+          }
+        }
+      }
+    },
+    "engineeringCatalog": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "$schema",
+        "principlesVersion",
+        "family",
+        "binding",
+        "categories",
+        "principles"
+      ],
+      "properties": {
+        "$schema": {
+          "$ref": "#/$defs/schemaId"
+        },
+        "principlesVersion": {
+          "const": "1.0"
+        },
+        "family": {
+          "const": "engineering"
+        },
+        "binding": {
+          "const": "advisory"
+        },
+        "categories": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S"
+          }
+        },
+        "principles": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/engineeringPrinciple"
+          }
+        }
+      }
+    },
+    "productCatalog": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "$schema",
+        "principlesVersion",
+        "family",
+        "binding",
+        "principles"
+      ],
+      "properties": {
+        "$schema": {
+          "$ref": "#/$defs/schemaId"
+        },
+        "principlesVersion": {
+          "const": "1.0"
+        },
+        "family": {
+          "const": "product"
+        },
+        "binding": {
+          "const": "scoped"
+        },
+        "principles": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/productPrinciple"
+          }
+        }
+      }
+    },
+    "kindList": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "repository",
+          "module",
+          "submodule",
+          "component",
+          "library"
+        ]
+      }
+    },
+    "kindMap": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repository",
+        "module",
+        "submodule",
+        "component",
+        "library"
+      ],
+      "properties": {
+        "repository": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "module": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "submodule": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "component": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "library": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        }
+      }
+    },
+    "graph": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "node",
+        "recurse",
+        "selfSufficient",
+        "surface",
+        "decide",
+        "compose",
+        "stop",
+        "forbid",
+        "adapters"
+      ],
+      "properties": {
+        "node": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "recurse": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "selfSufficient": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "test",
+            "inbound",
+            "outbound",
+            "change"
+          ],
+          "properties": {
+            "test": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S"
+            },
+            "inbound": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S"
+            },
+            "outbound": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S"
+            },
+            "change": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S"
+            }
+          }
+        },
+        "surface": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "enter",
+            "service",
+            "promise",
+            "encapsulate",
+            "bypass"
+          ],
+          "properties": {
+            "enter": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S"
+            },
+            "service": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S"
+            },
+            "promise": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S"
+            },
+            "encapsulate": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S"
+            },
+            "bypass": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S"
+            }
+          }
+        },
+        "decide": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "when",
+              "do"
+            ],
+            "properties": {
+              "id": {
+                "enum": [
+                  "stay",
+                  "add-child",
+                  "elsewhere"
+                ]
+              },
+              "when": {
+                "type": "string",
+                "minLength": 1,
+                "pattern": "\\S"
+              },
+              "do": {
+                "type": "string",
+                "minLength": 1,
+                "pattern": "\\S"
+              }
+            }
+          }
+        },
+        "compose": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S"
+          }
+        },
+        "stop": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S"
+          }
+        },
+        "forbid": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S"
+          }
+        },
+        "adapters": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "port",
+            "option",
+            "mix"
+          ],
+          "properties": {
+            "port": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S"
+            },
+            "option": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S"
+            },
+            "mix": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S"
+            }
+          }
+        }
+      }
+    },
+    "architecturePrinciple": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "statement",
+        "reason",
+        "measure",
+        "enforcedBy"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^A[0-9]{2}$"
+        },
+        "statement": {
+          "$ref": "#/$defs/principleText"
+        },
+        "reason": {
+          "$ref": "#/$defs/principleText"
+        },
+        "measure": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "enforcedBy": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/detector"
+          }
+        }
+      }
+    },
+    "detector": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "implementation",
+        "negativeFixture"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^A[0-9]{2}-E-[0-9]{2}$"
+        },
+        "implementation": {
+          "type": "string",
+          "pattern": "^cg\\.verify\\.[a-z][a-z0-9-]*$"
+        },
+        "negativeFixture": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        }
+      }
+    },
+    "engineeringPrinciple": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "title",
+        "category",
+        "entries"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^E[0-9]{2}$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "category": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "entries": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/engineeringEntry"
+          }
+        }
+      }
+    },
+    "engineeringEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "statement",
+        "reason"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^E[0-9]{2}-[0-9]{2}$"
+        },
+        "statement": {
+          "$ref": "#/$defs/principleText"
+        },
+        "reason": {
+          "$ref": "#/$defs/principleText"
+        },
+        "cost": {
+          "$ref": "#/$defs/principleText"
+        }
+      }
+    },
+    "productPrinciple": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "title",
+        "entries"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^P[0-9]{2}$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "entries": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/productEntry"
+          }
+        }
+      }
+    },
+    "productEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "statement",
+        "reason"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^P[0-9]{2}-[0-9]{2}$"
+        },
+        "statement": {
+          "$ref": "#/$defs/principleText"
+        },
+        "reason": {
+          "$ref": "#/$defs/principleText"
+        }
+      }
+    },
+    "principleText": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S"
+    }
+  }
+}

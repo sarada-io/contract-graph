@@ -1,18 +1,93 @@
 # Upgrade
 
-## Schema identity migration
+## Shared principles format
 
-New packages publish schema identities at
-`https://contractgraph.dev/schema/<name>-v1.schema.json` for contract,
-architecture, engineering, product, and enforcement. Filenames and schema versions remain
-unchanged. The human index is `https://contractgraph.dev/schema/`; the JSON files are served
-directly below that path.
+Architecture, engineering, and product now use
+`https://contractgraph.dev/schema/principles-v1.schema.json`. This is a new catalog format,
+not just a URL replacement. Contract and enforcement keep their existing v1 formats and IDs.
 
-`cg verify` requires the canonical identities above. `cg init` preserves existing YAML and its
-`$schema` values while installing the new schemas and skills. Declarations on any other host
-or path are no longer accepted. Before upgrading an older installation, update only its `$schema`
-values to the matching canonical URLs above, retaining each schema's name and `v1` filename.
-Preserve the remaining contract and policy content; re-init does not perform this migration.
+| Catalog | Fixed family / binding | Conversion |
+|---|---|---|
+| Architecture | `architecture` / `global` | `architectureVersion` → `principlesVersion`; `rules` → `principles`; `rule` → `statement`; add `reason` |
+| Engineering | `engineering` / `advisory` | `engineeringVersion` → `principlesVersion`; `rule` → `statement`; preserve `reason` and `cost` |
+| Product | `product` / `scoped` | `productVersion` → `principlesVersion`; `text` → `statement`; add `reason` |
+
+All catalogs use `principlesVersion: "1.0"`. A IDs and detector registrations, E/P group IDs,
+leaf IDs, categories, and product enforcement references are retained. Architecture keeps
+`scope`, `promise`, `promotion`, `hierarchy`, and `graph` in the same file. Those protocol fields
+are unavailable on engineering and product catalogs. Optional `cost` is supported only on advisory E leaves. A/P catalogs containing `cost`
+are rejected; migration never silently drops it. Move that explanation into the rationale or a
+repository decision record deliberately before retrying.
+
+Install the intended CLI, then preview in the adopting repository before re-initialising:
+
+```bash
+cg migrate-principles
+cg migrate-principles --json
+```
+
+Preview writes nothing. It reports every missing reason and returns non-zero until all proposals
+validate. Legacy architecture and product entries did not require rationale: the tool cannot
+recover the author's intent from a statement. Supply a JSON object containing only the missing
+IDs and their actual rationale, for example:
+
+```json
+{
+  "A03": "One owner per boundary makes the route for a responsibility unambiguous.",
+  "P01-01": "This product's billing provider accepts amounts in integer minor units."
+}
+```
+
+This is an illustrative subset; supply every ID reported for your repository. Existing reasons
+are preserved. Unknown or unnecessary reason keys are rejected to catch typos. Review the proposed
+YAML and apply explicitly:
+
+```bash
+cg migrate-principles --reasons /path/to/reasons.json --json
+cg migrate-principles --reasons /path/to/reasons.json --write
+cg init --yes --docs docs
+cg verify
+```
+
+Use your existing docs root and profiles. `--reasons` paths are relative to the shell's working
+directory. Each converted file gets a byte-for-byte `<file>.pre-principles-v1.bak` backup. The
+conversion preserves authored values, comments, and IDs; YAML whitespace may change. All three
+catalogs are checked before writing any conversion. Unsupported versions, unknown fields,
+ambiguous partial conversions, missing reasons, and unregistered detectors prevent application.
+Already-converted files are validated and left byte-identical. Repeating the command without a
+reasons file is a no-op after successful conversion. Existing backup files are never overwritten.
+
+If a write fails, the tool attempts to restore files it already replaced and retains the original
+backups. If restoration also fails or another writer has edited a replaced file, the error names
+the file and backup; JSON output lists it in `recoveryRequired`. Preserve any concurrent edits,
+recover those files deliberately, and preview again before retrying. Do not continue to init
+while recovery is required. A process crash or power loss can interrupt a multi-file conversion;
+the backups support recovery, but conversion is not a filesystem-wide transaction.
+
+`cg init` continues to preserve repository-owned YAML, workflow, and phase policy. It does not
+migrate catalogs. If init was run first and fails on old catalogs, use the migration sequence
+above and rerun init. Older architecture protocols missing fields such as `graph.surface.service`
+need deliberate authoring before migration can validate; the tool does not replace them with
+vendor policy. Contract or enforcement declarations on obsolete hosts also need their canonical
+`https://contractgraph.dev/schema/<name>-v1.schema.json` identities restored separately.
+
+After reviewing the migration and successful verification, retain backups outside the catalog
+directories or remove them deliberately. No contract or enforcement rewrite is required by this
+migration. Engineering remains advisory, read on every lifecycle pass by default; adopters can retire
+all its entries while retaining a valid empty catalog. The package still requires a populated E
+starter catalog. Publishing the release also requires serving the new principles schema at its
+canonical URL; generating a package alone does not publish that URL.
+
+To adopt the new loading default in an existing installation, deliberately amend each lifecycle
+row in `.agents/cg/phases.json` to `always: ["A", "P", "E"]` and `conditional: []`, then align
+the preserved workflow instructions to read E on every pass. `cg init` and catalog migration
+preserve both files; upgraded skills respect that retained loading policy. This changes context
+loading only, not contract rules or enforcement mappings. Empty adopter E remains valid.
+
+Init may leave the three legacy `architecture.schema.json`, `engineering.schema.json`, and
+`product.schema.json` files in an older installation. Converted catalogs use only
+`principles.schema.json`; the legacy files can be removed after migration. Contract and
+enforcement schemas remain in use.
 
 ## Earlier release upgrades
 

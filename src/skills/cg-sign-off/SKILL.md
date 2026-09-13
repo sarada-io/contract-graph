@@ -8,6 +8,11 @@ description: Finish a selected prototype through preparation, implementation, re
 Select the intended scope and sign-off type first, then read only its procedure. This entry point
 routes work; it does not run closure checks or impose a stage-yield rule.
 
+Read `.agents/cg/phases.json` and load the families selected for `sign-off`. Shipped defaults
+include `.agents/cg/guidelines/engineering.yaml` on every pass; retained repository phase policy
+controls loading. E remains advisory context: use relevant practices without reopening settled
+decisions or treating disagreement as a compliance failure.
+
 ## Resolve the target before assessing readiness
 
 Read the root contract, `.agents/cg/workflow.md`, and `.agents/cg/profile.json` for the docs root.

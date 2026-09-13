@@ -1,7 +1,5 @@
-$schema: https://contractgraph.dev/schema/principles-v1.schema.json
-principlesVersion: "1.0"
-family: architecture
-binding: global
+$schema: https://contractgraph.dev/schema/architecture-v1.schema.json
+architectureVersion: "1.0"
 scope: structural-integrity
 promise: Repository code is represented by a canonical, recursively decomposed contract graph whose declared structure is internally measurable.
 
@@ -31,6 +29,7 @@ hierarchy:
 # Inside surface the walk is enter, service, promise, encapsulate, bypass. Service is the first
 # way to declare entry: named operations that encapsulate the implementation contract.yaml points at.
 graph:
+  # Our protocol comment survives migration.
   node: A contract node is one owned responsibility at one hierarchy kind, stored at <unit>/.agents/cg/contract.yaml.
   recurse: Apply decide at every node. A module listed by cg modules is not a leaf until selfSufficient and stop have been applied to every candidate inside it.
   selfSufficient:
@@ -74,10 +73,9 @@ graph:
     option: Each concrete option is its own child node that implements that port. Two stores, two clouds, or two transports are two children, not two clients inside one unit.
     mix: Importing a second optional vendor client into a node that already has one is add-child, not stay. A shared database file is not evidence they belong together.
 
-principles:
+rules:
   - id: A01
-    statement: Every contract node uses the canonical restricted YAML format.
-    reason: Ambiguous or executable YAML lets a node mean different things to different loaders, so the next session cannot trust the graph.
+    rule: Every contract node uses the canonical restricted YAML format.
     measure: Every discovered node parses as restricted YAML and satisfies the contract schema.
     enforcedBy:
       - id: A01-E-01
@@ -85,8 +83,7 @@ principles:
         negativeFixture: contract YAML rejects ambiguous or executable YAML features
 
   - id: A02
-    statement: Every contract node is stored at the canonical path declared by its unit.
-    reason: A contract stored off the canonical path is invisible to routing; the next session rediscovers the boundary by searching source.
+    rule: Every contract node is stored at the canonical path declared by its unit.
     measure: Every node occupies <unit>/.agents/cg/contract.yaml.
     enforcedBy:
       - id: A02-E-01
@@ -94,8 +91,7 @@ principles:
         negativeFixture: a contract stored outside its declared unit fails
 
   - id: A03
-    statement: Every governed boundary declares exactly one named responsibility.
-    reason: Two owned responsibilities in one node give two change reasons and no single route.
+    rule: Each governed boundary has exactly one named responsibility. # owner amendment
     measure: responsibilities.owns contains exactly one non-empty value in every contract node.
     enforcedBy:
       - id: A03-E-01
@@ -103,8 +99,7 @@ principles:
         negativeFixture: a contract with multiple owned responsibilities fails
 
   - id: A04
-    statement: Every parent-child pair follows the registered boundary hierarchy.
-    reason: A forbidden parent-child kind pair is a graph the walk cannot write and later sessions cannot navigate.
+    rule: Every parent-child pair follows the registered boundary hierarchy.
     measure: Each parent and child kind is registered, and every parent-child kind pair appears in hierarchy.transitions.
     enforcedBy:
       - id: A04-E-01
@@ -112,8 +107,7 @@ principles:
         negativeFixture: a forbidden parent-child boundary transition fails
 
   - id: A05
-    statement: Every node declares whether it is a leaf, composed, or the unmapped repository root.
-    reason: Composition state is how an agent knows whether to look for children or stop.
+    rule: Every node declares whether it is a leaf, composed, or the unmapped repository root.
     measure: A leaf has no children, a composed node has children, and only a childless repository root may be unmapped.
     enforcedBy:
       - id: A05-E-01
@@ -121,8 +115,7 @@ principles:
         negativeFixture: a composed contract with no children fails verification
 
   - id: A06
-    statement: Declared composition forms one rooted tree.
-    reason: An unreachable or cyclic composition graph has no top-down route from the repository.
+    rule: Declared composition forms one rooted tree.
     measure: There is one repository root; every other node has one reciprocal parent; every node is root-reachable; no composition cycle exists.
     enforcedBy:
       - id: A06-E-01
@@ -130,8 +123,7 @@ principles:
         negativeFixture: composition cycles are rejected
 
   - id: A07
-    statement: Every child unit is structurally contained by its declared parent unit.
-    reason: Keeping declared child units under their parent makes composition agree with filesystem ownership; this does not prove worker write confinement.
+    rule: Every child unit is structurally contained by its declared parent unit.
     measure: Each child unit is a directory descendant of its parent unit.
     enforcedBy:
       - id: A07-E-01
@@ -139,8 +131,7 @@ principles:
         negativeFixture: a child unit outside its parent fails
 
   - id: A08
-    statement: Every declared dependency resolves to another contract node.
-    reason: A dangling dependency is a promised edge that leads nowhere.
+    rule: Every declared dependency resolves to another contract node.
     measure: Every relations.dependencies target exists and no node depends on itself.
     enforcedBy:
       - id: A08-E-01
@@ -148,8 +139,7 @@ principles:
         negativeFixture: a dangling dependency reference fails
 
   - id: A09
-    statement: The declared dependency graph is acyclic.
-    reason: A dependency cycle makes change order undefined.
+    rule: The declared dependency graph is acyclic.
     measure: Dependency traversal finds no cycle.
     enforcedBy:
       - id: A09-E-01
@@ -157,8 +147,7 @@ principles:
         negativeFixture: dependency cycles are rejected
 
   - id: A10
-    statement: Every non-repository boundary declares a public surface.
-    reason: A boundary without a declared surface has no legal entry, so callers invent one.
+    rule: Every non-repository boundary declares a public surface.
     measure: Each non-repository node has at least one surface entry.
     enforcedBy:
       - id: A10-E-01
@@ -166,8 +155,7 @@ principles:
         negativeFixture: a non-root contract without a public surface fails
 
   - id: A11
-    statement: Every declared public-surface path exists inside its boundary.
-    reason: A declared path that does not exist is a lie the next session will follow.
+    rule: Every declared public-surface path exists inside its boundary.
     measure: Every surface path resolves within the declaring unit and exists.
     enforcedBy:
       - id: A11-E-01
@@ -175,8 +163,7 @@ principles:
         negativeFixture: declared surface paths must exist inside their unit
 
   - id: A12
-    statement: Every invariant and verification declaration is reciprocal.
-    reason: One-sided invariant/verification links leave truth unproven or checks that prove nothing named.
+    rule: Every invariant and verification declaration is reciprocal.
     measure: Each invariant names existing verification or explicit debt, and each verification covers exactly the invariants that name it.
     enforcedBy:
       - id: A12-E-01
@@ -184,8 +171,7 @@ principles:
         negativeFixture: invariant and verification references must agree in both directions
 
   - id: A13
-    statement: Every binding rule has registered blocking enforcement.
-    reason: A binding without a registered detector is a rule nobody can fail.
+    rule: Every binding rule has registered blocking enforcement.
     measure: Every rule names at least one detector ID whose implementation is registered by the installed Contract Graph verifier.
     enforcedBy:
       - id: A13-E-01
@@ -193,8 +179,7 @@ principles:
         negativeFixture: an unregistered binding detector fails verification
 
   - id: A14
-    statement: Every named responsibility is owned by exactly one contract node.
-    reason: Two nodes claiming the same owns hide which contract to route to.
+    rule: Every named responsibility is owned by exactly one contract node.
     measure: Normalized responsibilities.owns values are unique across the graph.
     enforcedBy:
       - id: A14-E-01
@@ -202,8 +187,7 @@ principles:
         negativeFixture: duplicate owned responsibilities across contracts fail
 
   - id: A15
-    statement: Top-level modules represent domain or product capabilities, not horizontal technical layers.
-    reason: A technical-layer module name is a horizontal slice, not a capability an agent can own.
+    rule: Top-level modules represent domain or product capabilities, not horizontal technical layers.
     measure: Each repository child of kind module has an id, name, and unit basename other than controller(s), service(s), repository/repositories, or model(s).
     enforcedBy:
       - id: A15-E-01
@@ -211,8 +195,7 @@ principles:
         negativeFixture: a top-level module named as a technical layer fails
 
   - id: A16
-    statement: A contract node is named for its owned responsibility, not as a miscellaneous bag.
-    reason: A utils or helpers name is a bag, not a responsibility, so routing cannot terminate.
+    rule: A contract node is named for its owned responsibility, not as a miscellaneous bag.
     measure: Each non-repository node's id, name, and unit basename is other than common, shared, utils, helpers, util, or helper.
     enforcedBy:
       - id: A16-E-01

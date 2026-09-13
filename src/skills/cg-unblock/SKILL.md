@@ -8,6 +8,11 @@ description: Resolve Contract Graph forks through recorded authority and direct 
 Decide from contracts first. Escalate only when the owner must accept the blast radius. An `E`
 disagreement is not `Blocked by`.
 
+Read `.agents/cg/phases.json` and load the families selected for `unblock`. Shipped defaults
+include `.agents/cg/guidelines/engineering.yaml` on every pass; retained repository phase policy
+controls loading. E remains advisory context: use relevant practices without reopening settled
+decisions or treating disagreement as a compliance failure.
+
 ## Required outcome
 
 Finish with all five true:
@@ -126,7 +131,7 @@ Classify each candidate once. Do not promote a one-off merely because it was dif
 | Destination | Use when | Delivery obligation |
 |---|---|---|
 | Boundary `contract.yaml` | The rule binds one owned implementation boundary, behavior, interface, or operating assumption. | State it in the structured contract and deliver its detector in the same execution change. |
-| Engineering guideline (`E`) | The recurring structural advice is useful but is not yet a measurable invariant. | Add `id`, `rule`, and `reason`. A preference between workable designs may also carry `cost`. A later verifier-owning change may promote it when all `A` obligations can ship together. |
+| Engineering guideline (`E`) | The recurring structural advice is useful but is not yet a measurable invariant. | Add `id`, `statement`, and `reason`. A preference between workable designs may also carry `cost`. A later verifier-owning change may promote it when all `A` obligations can ship together. |
 | Architecture Principle (`A`) | The structural invariant is generic, deterministic, and the destination change owns the verifier that can enforce it. | In the verifier-owning change, register the blocking detector, add its negative fixture, assign the next permanent ID in `principles/architecture.yaml`, and remove any equivalent `E` practice. An adopting repository cannot create built-in enforcement through YAML alone. |
 | Product guideline (`P`) | The binding rule exists because of this product's market, pricing, or shape. | Add the binding rule, `.agents/cg/enforcement.yaml` row, detector, and affected contracts' rule IDs together. |
 | Drop | The result is case-specific, superseded, duplicated, or cannot stand without its originating case. | Leave no permanent rule, and record why beside the decision ID in the phase-close classification manifest. A resolved decision is binding authority until it is promoted or dropped, so one that vanishes from the log with no reason takes a rule the repository was following with it. The manifest is archived with the phase; the log still drains. |

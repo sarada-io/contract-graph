@@ -34,8 +34,8 @@ structural integrity.
    after recording an answer; resume only work whose dependencies and blockers are satisfied.
 
 After structural bindings, scoped product rules, the repository constitution, contracts, accepted
-decisions, durable requirements, and existing green patterns have been applied, load only the
-guidance relevant to the remaining fork from `.agents/cg/guidelines/`. Cite any preference used, its
+decisions, durable requirements, and existing green patterns have been applied, use the
+engineering guidance relevant to the remaining fork. Cite any preference used, its
 reason, and its stated cost into the assumption or decision. `E` practices are
 decision inputs, never inherited ambient rules and never compliance findings. The recursive
 mapping and node decision — kinds, self-sufficiency, stay, add a child, or route elsewhere —
@@ -50,7 +50,10 @@ During harvest, use `cg-unblock` D-5a: route a recurring decision once to a cont
 2. Read `.agents/cg/principles/architecture.yaml`; its `hierarchy.kinds` and `graph` sections are the
    recursive mapping and node decision, and its A rules bind every governed boundary.
 3. Read the repository's specification or constitution and resolve applicable P IDs from the
-   selected contracts. Consult `E` only when it is relevant to a decision.
+   selected contracts. Read the families selected by `.agents/cg/phases.json` for the current
+   phase. Shipped defaults include `.agents/cg/guidelines/engineering.yaml` on every pass.
+   Read E as advisory context; apply relevant practices without reopening settled decisions.
+   Departing from E requires no compliance exception and does not block delivery.
 4. Identify impacted boundaries with `cg contract route --task "<request>"` and contract-owned routes.
 5. Load those module contracts, then traverse their child-contract links until the smallest
    responsible boundary is clear. Before reading or editing implementation, apply

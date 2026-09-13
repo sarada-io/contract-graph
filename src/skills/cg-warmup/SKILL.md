@@ -524,10 +524,10 @@ suite.
 
 | The rule is… | Family |
 |---|---|
-| structural advice without complete enforcement | `E` — a non-binding best practice |
+| structural advice without complete enforcement | `E` — a SHOULD practice (`cg verify` does not fail) |
 | generic structural invariant that could satisfy a deterministic measure, blocking detector, and negative fixture | `A` candidate — route it to the verifier-owning repository; do not assign a local ID |
 | true because of *this* product's market, pricing, shape, or tenancy | `P` |
-| a lean between two workable designs | `E` — a non-binding preference, with `cost` when the trade-off is not obvious |
+| a lean between two workable designs | `E` — a SHOULD preference, with `cost` when the trade-off is not obvious |
 
 - **Do not file a product rule as an engineering guideline.** The test is whether a repository
   building something else would be *wrong* to adopt it.
@@ -537,7 +537,7 @@ suite.
 ### What each harvested rule owes
 
 Every `A` candidate records the proposed invariant, deterministic measure, blocking detector,
-and negative fixture, then becomes delivery work in the repository that owns the verifier. Every `P` rule needs exactly one repository `.agents/cg/enforcement.yaml` row and is listed in the
+and negative fixture, then becomes delivery work in the repository that owns the verifier. Every `P` rule needs exactly one repository `.agents/cg/enforcement.yaml` row, plus `statement` and `reason`, and is listed in the
 affected contracts' `rules` arrays. A detector recipe without working enforcement is not a binding.
 
 ### When a harvested rule contradicts a binding

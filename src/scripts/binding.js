@@ -5,9 +5,10 @@ import path from "node:path";
 
 import { ContractGraphError, parseContractYaml } from "./contracts.js";
 
-export const BINDING_SCHEMA_ID =
-  "https://contractgraph.dev/schema/architecture-v1.schema.json";
-export const BINDING_VERSION = "1.0";
+import { PRINCIPLES_SCHEMA_ID, PRINCIPLES_VERSION, exactKeys, nonEmpty, validateCatalogHeader, validatePrincipleText } from "./catalog.js";
+export { PRINCIPLES_SCHEMA_ID } from "./catalog.js";
+export const BINDING_SCHEMA_ID = PRINCIPLES_SCHEMA_ID;
+export const BINDING_VERSION = PRINCIPLES_VERSION;
 export const BINDING_FILENAME = ".agents/cg/principles/architecture.yaml";
 
 export const BUILT_IN_DETECTORS = Object.freeze({
@@ -31,32 +32,16 @@ export const BUILT_IN_DETECTORS = Object.freeze({
 
 export class BindingError extends Error {}
 
-const object = (value) => value !== null && typeof value === "object" && !Array.isArray(value);
-const nonEmpty = (value) => typeof value === "string" && value.trim().length > 0;
-const exactKeys = (value, required, at, failures) => {
-  if (!object(value)) {
-    failures.push(`${at}: expected an object`);
-    return false;
-  }
-  const allowed = new Set(required);
-  for (const key of required) if (!(key in value)) failures.push(`${at}: missing \`${key}\``);
-  for (const key of Object.keys(value)) if (!allowed.has(key)) failures.push(`${at}: unknown \`${key}\``);
-  return true;
-};
-
 /** Validate the catalog and its exact correspondence with detectors built into this package. */
 export function validateBindingCatalog(catalog, { source = "rules.yaml" } = {}) {
   const failures = [];
-  if (!exactKeys(catalog, ["$schema", "architectureVersion", "scope", "promise", "promotion", "hierarchy", "graph", "rules"], source, failures)) {
-    return failures;
-  }
-  if (catalog.$schema !== BINDING_SCHEMA_ID) failures.push(`${source}.$schema: expected ${BINDING_SCHEMA_ID}`);
-  if (catalog.architectureVersion !== BINDING_VERSION) failures.push(`${source}.architectureVersion: expected ${BINDING_VERSION}`);
+  if (!validateCatalogHeader(catalog, "architecture", source, failures, ["scope", "promise", "promotion", "hierarchy", "graph"])) return failures;
   if (catalog.scope !== "structural-integrity") failures.push(`${source}.scope: expected structural-integrity`);
   if (!nonEmpty(catalog.promise)) failures.push(`${source}.promise: expected a non-empty string`);
   if (exactKeys(catalog.promotion, ["requires", "action"], `${source}.promotion`, failures)) {
     const required = ["structural-impact", "deterministic-measure", "blocking-detector", "negative-fixture"];
-    if (!Array.isArray(catalog.promotion.requires) || catalog.promotion.requires.join(",") !== required.join(",")) {
+    if (!Array.isArray(catalog.promotion.requires) || catalog.promotion.requires.length !== required.length ||
+        catalog.promotion.requires.some((item, index) => item !== required[index])) {
       failures.push(`${source}.promotion.requires: expected ${required.join(", ")}`);
     }
     if (!nonEmpty(catalog.promotion.action)) failures.push(`${source}.promotion.action: expected a non-empty string`);
@@ -138,19 +123,22 @@ export function validateBindingCatalog(catalog, { source = "rules.yaml" } = {}) 
     }
   }
 
-  if (!Array.isArray(catalog.rules) || !catalog.rules.length) {
-    failures.push(`${source}.rules: expected a non-empty array`);
+  if (!Array.isArray(catalog.principles) || !catalog.principles.length) {
+    failures.push(`${source}.principles: expected a non-empty array`);
     return failures;
   }
   const ruleIds = new Set();
   const detectorIds = new Set();
-  for (const [index, rule] of catalog.rules.entries()) {
-    const at = `${source}.rules[${index}]`;
-    if (!exactKeys(rule, ["id", "rule", "measure", "enforcedBy"], at, failures)) continue;
-    if (!/^A\d{2}$/.test(rule.id ?? "")) failures.push(`${at}.id: expected Ann`);
+  for (const [index, rule] of catalog.principles.entries()) {
+    const at = `${source}.principles[${index}]`;
+    if (!exactKeys(rule, ["id", "statement", "reason", "measure", "enforcedBy"], at, failures)) continue;
+    if (typeof rule.id !== "string" || !/^A\d{2}$/.test(rule.id)) {
+      failures.push(`${at}.id: expected Ann`);
+      continue;
+    }
     else if (ruleIds.has(rule.id)) failures.push(`${at}.id: duplicate ${rule.id}`);
     else ruleIds.add(rule.id);
-    if (!nonEmpty(rule.rule)) failures.push(`${at}.rule: expected a non-empty string`);
+    validatePrincipleText(rule, at, failures);
     if (!nonEmpty(rule.measure)) failures.push(`${at}.measure: expected a non-empty string`);
     if (!Array.isArray(rule.enforcedBy) || !rule.enforcedBy.length) {
       failures.push(`${at}.enforcedBy: expected at least one detector`);
@@ -159,7 +147,7 @@ export function validateBindingCatalog(catalog, { source = "rules.yaml" } = {}) 
     for (const [detectorIndex, detector] of rule.enforcedBy.entries()) {
       const detectorAt = `${at}.enforcedBy[${detectorIndex}]`;
       if (!exactKeys(detector, ["id", "implementation", "negativeFixture"], detectorAt, failures)) continue;
-      if (!new RegExp(`^${rule.id}-E-\\d{2}$`).test(detector.id ?? "")) {
+      if (typeof detector.id !== "string" || !new RegExp(`^${rule.id}-E-\\d{2}$`).test(detector.id)) {
         failures.push(`${detectorAt}.id: expected an enforcement ID owned by ${rule.id}`);
       } else if (detectorIds.has(detector.id)) {
         failures.push(`${detectorAt}.id: duplicate ${detector.id}`);
@@ -202,5 +190,5 @@ export function loadCoreBindingRules(repoRoot) {
   const file = path.join(repoRoot, BINDING_FILENAME);
   if (!fs.existsSync(file)) throw new BindingError(`missing architecture catalog: ${BINDING_FILENAME}`);
   const catalog = loadBindingCatalog(file, { repoRoot });
-  return new Map(catalog.rules.map((rule) => [rule.id, rule.rule]));
+  return new Map(catalog.principles.map((rule) => [rule.id, rule.statement]));
 }

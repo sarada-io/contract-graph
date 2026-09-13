@@ -22,6 +22,7 @@ import {
 } from "./contracts.js";
 import { build, BuildError } from "./build.js";
 import { init } from "./init.js";
+import { migratePrinciples } from "./migrate-principles.js";
 import { HarvestError, checkHarvest } from "./harvest.js";
 import { moduleCoverage, openDescent } from "./modules.js";
 import { next, permits } from "./next.js";
@@ -52,6 +53,7 @@ const USAGE = `cg — Contract Graph
 Usage:
   cg build [dir] [--check]                         assemble the package target under build/
   cg init [--profile a,b] [--docs dir]             scaffold governance
+  cg migrate-principles [dir] [--reasons file] [--write]  preview or apply legacy catalog conversion
   cg next [dir] [--json] [--for skill]            what runs next, computed from the Step queue
   cg prototype <action> [dir] --programme slug   start, checkpoint, review, approve, handoff, request-sign-off, suspend, resume, abandon, close, evidence, status
   cg delivery verify [dir] --base ref --gate cmd check prototype delivery receipts for a pull request
@@ -90,6 +92,8 @@ Options:
   --base <ref>      trusted target ref with fetched history (delivery verify)
   --check           verify build/init/sync output without changing it
   --yes             accept replacing framework core without being asked (init only)
+  --write           apply a validated principles migration, with backups (migration only)
+  --reasons <file>  JSON object of missing rationale by principle ID (migration only)
   --warn            report findings and exit 0 (verify only)
   --quiet           suppress successful build output
   --version [--json] print version; JSON also identifies the executable and CLI/skills build
@@ -103,6 +107,8 @@ Options:
  * nothing quietly is exactly the upgrade failure this tool should not have.
  */
 const KNOWN_FLAGS = new Set([
+  "write",
+  "reasons",
   "profile",
   "docs",
   "stage",
@@ -132,7 +138,7 @@ function parseArgs(argv) {
   // options consume values (in either `--name x` or `--name=x` form).
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
-    const extraValue = /^--(programme|session|evidence|gate|base)(?:=(.*))?$/.exec(arg);
+    const extraValue = /^--(programme|session|evidence|gate|base|reasons)(?:=(.*))?$/.exec(arg);
     if (extraValue) {
       flags[extraValue[1]] = extraValue[2] ?? argv[++i];
       if (typeof flags[extraValue[1]] !== "string" || !flags[extraValue[1]].trim() || flags[extraValue[1]].startsWith("--")) throw new Error(`${extraValue[1]} requires a value`);
@@ -500,6 +506,26 @@ async function main(argv) {
   // All repository commands accept an optional directory as their first positional argument.
   const repoRoot = path.resolve(positional[0] ?? ".");
 
+  if (command === "migrate-principles") {
+    if (positional.length > 1) throw new Error("usage: cg migrate-principles [dir] [--reasons file] [--write] [--json]");
+    for (const flag of Object.keys(flags)) {
+      if (!["write", "reasons", "json"].includes(flag)) throw new Error(`migrate-principles does not accept --${flag}`);
+    }
+    const reasons = flags.reasons ? JSON.parse(fs.readFileSync(path.resolve(flags.reasons), "utf8")) : {};
+    const result = migratePrinciples(repoRoot, { write: Boolean(flags.write), reasons });
+    if (flags.json) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+    else {
+      process.stdout.write(`cg migrate-principles: ${flags.write ? "apply" : "preview"} — ${result.changed.length} catalog(s) need conversion, ${result.written.length} written\n`);
+      for (const item of result.changed) process.stdout.write(`  ${item.file}\n`);
+      for (const item of result.missingReasons) process.stdout.write(`  needs reason: ${item.id} — ${item.statement}\n`);
+      for (const file of result.backups) process.stdout.write(`  backup: ${file}\n`);
+      for (const failure of result.failures) process.stderr.write(`  ${failure}\n`);
+      if (!flags.write && result.changed.length) process.stdout.write("  Use --json to inspect proposed YAML; provide missing rationale with --reasons <json-file>, then --write to apply.\n");
+      if (result.written.length && !result.failures.length) process.stdout.write("  Next: cg init --yes with the repository's existing docs root and profiles, then cg verify.\n");
+    }
+    return result.failures.length ? 1 : 0;
+  }
+
   if (command === "build") {
     let result;
     try {
@@ -847,8 +873,9 @@ async function main(argv) {
 }
 
 try {
-  process.exit(await main(process.argv.slice(2)));
+  // Allow buffered output (especially full migration previews) to drain before exiting.
+  process.exitCode = await main(process.argv.slice(2));
 } catch (error) {
   process.stderr.write(`cg: ${error.message}\n`);
-  process.exit(1);
+  process.exitCode = 1;
 }

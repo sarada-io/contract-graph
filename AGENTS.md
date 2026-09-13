@@ -46,9 +46,12 @@ corrective Step, or an explicit owner-approved exception. Architecture practices
 guidance. After installation, the principle, guideline, and workflow files are repository-owned and
 preserved so a team can amend them deliberately.
 
-Keep the rule families distinct: `A` is the global architecture-principles catalog; `P` contains repository-authored product guidelines and is the only family contracts list in `rules`; `E` contains non-binding engineering guidelines. A generally good security, operations, data, or deployment preference remains guidance or constitution policy. It becomes `P` only when it is specific to
-the adopting product, or `A` when it satisfies the complete structural promotion gate in the
-verifier-owning codebase.
+Keep the rule families distinct in authority, not in document kind: `A`, `E`, and `P` are
+principle catalogs sharing one schema. `A` is global MUST; `P` is scoped MUST and the only family
+contracts list in `rules`; `E` is shipped SHOULD. A generally good security, operations, data, or
+deployment preference remains guidance or constitution policy. It becomes `P` only when it is
+specific to the adopting product, or `A` when it satisfies the complete structural promotion gate
+in the verifier-owning codebase.
 
 `docs/` is written for people adopting or reviewing the product. Agents may read it; it is not
 the turn-by-turn procedure. After `cg init`, that lives in the `/cg-*` skills and

@@ -12,13 +12,14 @@ agent follows. This directory is not that procedure.
 
 ## What binds a change
 
-Three families stay distinct on every pass:
+Three families stay distinct on every pass. They are one kind of thing — principles — with
+different binding:
 
 | Family | What it is | What happens if you disagree |
 |---|---|---|
-| `A` | Structural bindings in `.agents/cg/principles/architecture.yaml` | `cg verify` fails on a measurable violation. The same file's `hierarchy.kinds` and `graph` walk decide whether a unit is a node. |
-| `P` | Product rules the adopting repository authored | They bind only the contracts that list them. |
-| `E` | Engineering guidelines in `.agents/cg/guidelines/engineering.yaml` | Useful judgement. Not a compliance failure, and not a reason to invent a node the `graph` walk would not write. |
+| `A` | Structural principles in `.agents/cg/principles/architecture.yaml` (`binding: global`) | `cg verify` fails on a measurable violation. The same file's `hierarchy.kinds` and `graph` walk decide whether a unit is a node. |
+| `P` | Product principles the adopting repository authored (`binding: scoped`) | They bind only the contracts that list them. |
+| `E` | Engineering principles in `.agents/cg/guidelines/engineering.yaml` (`binding: advisory`) | SHOULD hold; not a compliance failure, and not a reason to invent a node the `graph` walk would not write. Consult relevant entries for engineering decisions. |
 
 A new generic `A` rule is a change in the codebase that owns the verifier: a permanent ID, a
 deterministic measure, a blocking detector, a fail-on-demand fixture, and removal of the overlapping
