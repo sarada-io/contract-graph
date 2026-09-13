@@ -1,8 +1,8 @@
 @echo off
-where pwsh >nul 2>&1
+where node >nul 2>&1
 if errorlevel 1 (
-  echo urun needs PowerShell 7. Install it with: winget install --id Microsoft.PowerShell --source winget 1>&2
+  echo urun needs Node.js 18.17 or newer. 1>&2
   exit /b 1
 )
-pwsh -NoLogo -NoProfile -File "%~dp0scripts\urun.ps1" %*
+node "%~dp0scripts\urun.mjs" %*
 exit /b %errorlevel%

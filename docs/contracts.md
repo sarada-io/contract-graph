@@ -74,8 +74,9 @@ and must serve the matching schema bytes. Both `cg verify` and the JSON schemas 
 canonical `https://contractgraph.dev/schema/<name>-v1.schema.json` identity for contract,
 principles, and enforcement. Architecture, engineering, and product catalogs share
 `principles-v1`. Declarations using any other host or path must be updated before verification.
-Re-initialisation preserves repository-owned YAML; it does not migrate those declarations
-automatically.
+Re-initialisation refreshes A/E catalogs, migrates legacy P catalogs, and updates the known
+`sarada.io/contract-graph/schema/` v1 contract/enforcement declarations without changing their
+other bytes. Unrecognized schema identities still require explicit correction.
 
 ## Declared surfaces are concrete promises
 
@@ -177,12 +178,15 @@ Contract Graph separates framework mechanics from repository policy:
 
 - schemas, contract tooling, verification code, and lifecycle skills are framework-owned and may
   be replaced by a later `cg init`;
-- authored contracts, the architecture-principles catalog, guideline catalogs, enforcement mappings,
-  and workflow context are repository-owned and are preserved after their first installation.
+- architecture and engineering are refreshed from the release, with the previous files backed up;
+- product principles are repository-owned and format-migrated, preserving IDs, statements, and comments;
+- contract and enforcement content is preserved apart from known legacy schema URLs, while
+  workflow and phase policy remain unchanged.
 
 The shipped architecture principles are strong starting constraints, not immutable vendor policy.
 Engineering guidelines are strong recommendations, but remain non-binding. After installation,
-the repository owner may deliberately retain, amend, replace, or retire either catalog. An
+the repository owner may deliberately amend or retire defaults, but a later init refreshes A/E
+and keeps those amendments in its backups for review. An
 architecture-principle amendment remains limited to semantics the installed verifier can detect. Creating a new
 generic `A` binding requires a verifier change; repository-specific authority belongs in `P`.
 Every amendment remains explicit because silently changing structural authority would make one
@@ -244,9 +248,9 @@ the tarball cannot select files from different sources.
 
 This is a source/runtime distinction, not a rejection of Markdown. Architecture principles, engineering
 guidelines, product guidelines, and enforcement remain YAML in both source and package because humans amend
-them and the verifier consumes their structure directly. After `cg init`, `architecture.yaml`,
-`engineering.yaml`, and
-`product.yaml` are repository-owned and preserved. Agent procedures remain Markdown where reading
+them and the verifier consumes their structure directly. After `cg init`, `architecture.yaml` and
+`engineering.yaml` reflect the installed release; prior versions remain in backups. `product.yaml`
+retains repository-authored rules through schema conversion. Agent procedures remain Markdown where reading
 prose is their runtime behavior, including `workflow.md` and each `SKILL.md`.
 
 ## Routing belongs to contracts

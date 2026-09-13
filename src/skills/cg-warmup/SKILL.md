@@ -38,8 +38,8 @@ work while recording the response.
 
 **Confirm the installed binding can recurse.** Run `cg verify`. If it fails because
 `.agents/cg/principles/architecture.yaml` is missing `hierarchy.kinds` or `graph.recurse`, the
-catalog is older than this skill (`cg init` preserves catalogs). Stop. Ask the owner to copy the
-packaged binding or confirm a deliberate amendment. Do not write nodes against a catalog that
+catalog is older than this skill. Refresh it with `cg init`, which previews A/E replacement and
+backs up previous catalogs, or confirm a deliberate amendment. Do not write nodes against a catalog that
 cannot recurse.
 
 Resolve `<docs>` from `.agents/cg/profile.json` `docs` (default `docs`). Confirm with `cg residue`.

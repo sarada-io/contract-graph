@@ -1,9 +1,8 @@
 #!/bin/sh
-# Repository-local menu. All behaviour lives in scripts/urun.ps1.
+# Repository-local menu. All behaviour lives in scripts/urun.mjs.
 root="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)" || exit 1
-if ! command -v pwsh >/dev/null 2>&1; then
-  echo 'urun needs PowerShell 7. Install it with: brew install --cask powershell' >&2
-  echo 'Installation guide: https://learn.microsoft.com/powershell/scripting/install/installing-powershell' >&2
+if ! command -v node >/dev/null 2>&1; then
+  echo 'urun needs Node.js 18.17 or newer.' >&2
   exit 1
 fi
-exec pwsh -NoLogo -NoProfile -File "$root/scripts/urun.ps1" "$@"
+exec node "$root/scripts/urun.mjs" "$@"

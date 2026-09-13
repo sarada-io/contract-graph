@@ -115,15 +115,14 @@ the rule instead selects one generally desirable application design, the rule be
 repository-owned guidance unless the repository adopts it as `P` or the verifier owner promotes
 it to `A`.
 
-Contract Graph is opinionated at installation time and non-possessive after installation. It gives
-a repository's architecture principles and strong design advice so an agent does not invent
-structure locally. The installed contracts, architecture principles, and guidelines then belong to that
-repository: later `cg init` runs preserve them, and the owner may deliberately keep, amend,
-replace, or retire a default within the enforcement semantics its installed verifier supports.
-New generic structural bindings are promoted through a verifier-owning change; product-specific
-authority can be adopted locally as `P`. Framework-owned schemas, tools, and skills may be
-upgraded; repository-owned architectural choices are not silently reset. See
-[upgrade](upgrade.md) for the 0.3.0 / 0.4.0 path.
+Contract Graph supplies current architecture principles and engineering advice so an agent does
+not invent structure locally. Later `cg init` runs refresh those two catalogs from the release,
+showing the replacements and retaining the previous files in backups. Teams can reapply deliberate
+amendments within the installed detector semantics. Product rules stay repository-owned: init
+converts their format while retaining IDs and statements, and requires explicit missing rationale.
+Contracts and enforcement retain their content apart from known legacy schema identities; workflow
+and phase policy are preserved. New generic structural bindings still require a verifier-owning
+change; product-specific authority belongs in `P`. See [upgrade](upgrade.md).
 
 ## Route first; read code second
 

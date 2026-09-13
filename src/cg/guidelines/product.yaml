@@ -3,7 +3,7 @@ principlesVersion: "1.0"
 family: product
 binding: scoped
 
-# Repository-owned P principles. Empty at install; cg init preserves this file.
+# Repository-owned P principles. Empty at install; cg init preserves rules while migrating format.
 # A P principle exists because of this product's market, pricing, shape, or tenancy.
 # List each id on the contracts it governs and add one matching row in
 # `.agents/cg/enforcement.yaml`.

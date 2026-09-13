@@ -364,9 +364,11 @@ can choose different loading. P is the place for deliberately adopted product-sp
 
 ## 7. What changes after installation?
 
-`cg init` installs opinionated defaults, then preserves the repository's catalogs, contracts,
-workflow, and phase policy. An upgrade does not silently replace the team's architectural choices.
-This guide describes the shipped policy; an existing installation may retain an older or amended one.
+`cg init` installs opinionated defaults and refreshes architecture and engineering on upgrade,
+showing the updates and backing up previous files. Product rules retain their content through
+format migration. Contracts and enforcement retain their content apart from known legacy schema
+identities; workflow and phase policy are preserved. Review backed-up A/E amendments before
+reapplying them to the new release defaults.
 
 Repository ownership does not make installed detector behavior editable through prose. Amendments
 must remain within registered semantics. Changing YAML or removing an entry does not create a new

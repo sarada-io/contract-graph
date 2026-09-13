@@ -52,7 +52,7 @@ const USAGE = `cg — Contract Graph
 
 Usage:
   cg build [dir] [--check]                         assemble the package target under dist/build/
-  cg init [--profile a,b] [--docs dir]             scaffold governance
+  cg init [--profile a,b] [--docs dir] [--reasons file]  install or update CG
   cg migrate-principles [dir] [--reasons file] [--write]  preview or apply legacy catalog conversion
   cg next [dir] [--json] [--for skill]            what runs next, computed from the Step queue
   cg prototype <action> [dir] --programme slug   start, checkpoint, review, approve, handoff, request-sign-off, suspend, resume, abandon, close, evidence, status
@@ -91,9 +91,9 @@ Options:
   --gate <command>  execute the repository delivery gate before closing a prototype
   --base <ref>      trusted target ref with fetched history (delivery verify)
   --check           verify build/init/sync output without changing it
-  --yes             accept replacing framework core without being asked (init only)
+  --yes             accept the displayed installation and catalog updates (init only)
   --write           apply a validated principles migration, with backups (migration only)
-  --reasons <file>  JSON object of missing rationale by principle ID (migration only)
+  --reasons <file>  JSON object of missing rationale by principle ID (init or migration)
   --warn            report findings and exit 0 (verify only)
   --quiet           suppress successful build output
   --version [--json] print version; JSON also identifies the executable and CLI/skills build
@@ -631,6 +631,7 @@ async function main(argv) {
     if (!(await confirmInitLocation(repoRoot, positional[0] !== undefined, flags))) return 1;
     const profiles = await chooseProfiles(repoRoot, flags);
     const docs = await chooseDocsRoot(repoRoot, flags);
+    const reasons = flags.reasons ? JSON.parse(fs.readFileSync(path.resolve(flags.reasons), "utf8")) : {};
 
     const instructionNotices = rootInstructionNotices(repoRoot, profiles);
     if (instructionNotices.length) {
@@ -649,21 +650,26 @@ async function main(argv) {
     // Framework core is replaced, so a re-run can discard local edits to a skill. Nothing is
     // written until the plan has been shown and accepted: `cg init` is the one verb a user is
     // likely to type from memory, and typing it must never be how they find out.
-    const plan = init(repoRoot, { profiles, docs, dryRun: true });
+    const plan = init(repoRoot, { profiles, docs, reasons, dryRun: true });
     if (plan.replaced.length) {
       process.stdout.write(
-        `cg init: ${plan.replaced.length} framework file(s) will be replaced with this version\n`,
+        `cg init: ${plan.replaced.length} file(s) will be updated with this version\n`,
       );
       for (const file of plan.replaced) {
         process.stdout.write(`  ${path.relative(repoRoot, file)}\n`);
       }
+      for (const item of plan.catalogUpdates) {
+        process.stdout.write(`  ${item.action}: ${path.relative(repoRoot, item.file)}\n    backup: ${item.backup}\n`);
+      }
       process.stdout.write(
-        `  Your own context under \`.agents/cg/\`, \`${plan.docs}/\`, and any module contracts is not touched.\n`,
+        `  Architecture and engineering use this release's defaults. Product rules retain their content during format conversion.\n` +
+        `  Contract and enforcement content is preserved; known legacy schema URLs are updated.\n` +
+        `  Workflow, phase policy, and \`${plan.docs}/\` are preserved.\n`,
       );
       if (flags.check) return 1;
       if (!flags.yes) {
         if (!process.stdin.isTTY) {
-          throw new Error("refusing to replace framework files without confirmation — re-run with --yes");
+          throw new Error("refusing to update installation files without confirmation — re-run with --yes");
         }
         const rl = prompter();
         try {
@@ -683,7 +689,7 @@ async function main(argv) {
       return plan.written.length ? 1 : 0;
     }
 
-    const result = init(repoRoot, { profiles, docs });
+    const result = init(repoRoot, { profiles, docs, reasons });
     const { changed } = sync(repoRoot);
     const { failures, advisories, counts } = verify(repoRoot);
 
@@ -696,8 +702,9 @@ async function main(argv) {
     );
 
     for (const message of advisories) process.stdout.write(`  ${message}\n`);
+    for (const file of result.backups) process.stdout.write(`  upgrade backup: ${path.relative(repoRoot, file)}\n`);
     if (result.skipped.some(file => file.endsWith("workflow.md"))) {
-      process.stdout.write("  prototype: repository workflow and catalogs were preserved. /cg-prototype can adopt its scoped workflow exception; existing policy is not silently replaced.\n");
+      process.stdout.write("  prototype: repository workflow was preserved. /cg-prototype can adopt its scoped workflow exception.\n");
     }
 
     const rivals = detectRivalDocTrees(repoRoot, result.docs);

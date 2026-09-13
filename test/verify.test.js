@@ -2432,7 +2432,7 @@ test("all schemas and fresh YAML use the canonical contractgraph.dev v1 identiti
   assert.equal(readObject(dir, CONTRACT).$schema, readObject(dir, ROOT_CONTRACT).$schema);
 });
 
-test("re-init preserves authored YAML using canonical schema identities", (t) => {
+test("re-init refreshes A/E and preserves other authored YAML using canonical schema identities", (t) => {
   const dir = makeRepo();
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
   const originals = new Map();
@@ -2444,7 +2444,9 @@ test("re-init preserves authored YAML using canonical schema identities", (t) =>
   init(dir, {});
   sync(dir);
   assert.deepEqual(verify(dir).failures, []);
-  for (const [file, text] of originals) assert.equal(read(dir, file), text, file);
+  for (const [file, text] of originals) {
+    assert.equal(read(dir, file), [BINDING, ENGINEERING].includes(file) ? text.replace("# Repository-owned context\n", "") : text, file);
+  }
 });
 
 for (const [name, file] of schemaCatalogs) {
@@ -3236,8 +3238,7 @@ test("re-running init never touches the repository's own context", () => {
   const owned = {
     ".agents/cg/contract.yaml": "{\"ourGraph\":true}\n",
     "src/.agents/cg/contract.yaml": "{\"ourModule\":true}\n",
-    ".agents/cg/principles/architecture.yaml": "our architecture rules\n",
-    ".agents/cg/guidelines/product.yaml": "our product rules\n",
+    ".agents/cg/guidelines/product.yaml": `# Our product rules\n${read(dir, ".agents/cg/guidelines/product.yaml")}`,
     ".agents/cg/workflow.md": "our workflow\n",
     "docs/plans/decision-log.md": "our decisions\n",
   };

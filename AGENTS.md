@@ -26,10 +26,11 @@ deterministically measurable invariant, names a blocking detector, and has a fai
 fixture. In the verifier-owning change, promotion registers that detector, assigns a permanent
 `A` ID, and removes the overlapping `E` practice together.
 
-Hard at installation does not mean vendor-owned forever. `cg init` preserves repository contracts,
-the architecture principles, guidelines, enforcement mappings, and workflow context after
-installing them. The adopting repository may deliberately keep, amend, replace, or retire a
-default. Contract Graph must not silently overwrite that choice on upgrade. A catalog amendment
+`cg init` refreshes architecture and engineering from the installed release, showing the update
+and retaining backups before replacement. Product principles remain repository-owned and are
+converted to the current schema without changing their IDs or statements; missing rationale
+requires explicit input. Contracts and enforcement retain their content, with known legacy schema
+URLs updated. Workflow and phase policy remain preserved. A catalog amendment
 must remain within its registered detector semantics; a new generic `A` rule requires a verifier
 change, while repository-specific binding belongs in `P`.
 
@@ -43,8 +44,9 @@ When reviewing an architecture rule, classify it explicitly:
 Machine-expressible bindings owe build-breaking detectors and fail-on-demand fixtures. A detector
 recipe is not enforcement. Brownfield warmup must resolve a binding finding to a real detector, a
 corrective Step, or an explicit owner-approved exception. Architecture practices remain optional
-guidance. After installation, the principle, guideline, and workflow files are repository-owned and
-preserved so a team can amend them deliberately.
+guidance. A team may amend installed defaults, but later init runs refresh A/E from the release;
+review the preserved backups when reapplying deliberate amendments. Product and workflow choices
+remain repository-owned.
 
 Keep the rule families distinct in authority, not in document kind: `A`, `E`, and `P` are
 principle catalogs sharing one schema. `A` is global MUST; `P` is scoped MUST and the only family

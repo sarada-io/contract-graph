@@ -20,7 +20,10 @@ function rename(map, oldKey, newKey, source) {
 }
 
 /** No writes occur unless every proposed catalog validates and every missing reason is supplied. */
-export function migratePrinciples(repoRoot, { write = false, reasons = {} } = {}) {
+export function migratePrinciples(repoRoot, { write = false, reasons = {}, families = Object.keys(FILES) } = {}) {
+  if (!Array.isArray(families) || !families.length || new Set(families).size !== families.length || families.some(family => !Object.hasOwn(FILES, family))) {
+    throw new Error("migration families must be distinct known principle families");
+  }
   if (!object(reasons) || Object.values(reasons).some((reason) => !nonEmpty(reason))) {
     throw new Error("migration reasons must be a JSON object mapping principle IDs to non-empty rationale strings");
   }
@@ -29,6 +32,7 @@ export function migratePrinciples(repoRoot, { write = false, reasons = {} } = {}
   const pending = [];
   const observed = [];
   for (const [family, relative] of Object.entries(FILES)) {
+    if (!families.includes(family)) continue;
     const file = path.join(repoRoot, relative);
     try {
       const original = fs.readFileSync(file, "utf8");
@@ -44,7 +48,8 @@ export function migratePrinciples(repoRoot, { write = false, reasons = {} } = {}
         continue;
       }
       const legacyId = `https://contractgraph.dev/schema/${family}-v1.schema.json`;
-      if (data?.$schema !== legacyId || data?.[`${family}Version`] !== "1.0") {
+      const historicalId = `https://sarada.io/contract-graph/schema/${family}-v1.schema.json`;
+      if (![legacyId, historicalId].includes(data?.$schema) || data?.[`${family}Version`] !== "1.0") {
         throw new Error(`${relative}: unsupported legacy schema/version; expected ${legacyId} and ${family}Version: "1.0"`);
       }
       const doc = parseDocument(original);

@@ -204,7 +204,10 @@ test("migration preserves comments, amendments, IDs, references and re-init owne
   sync(dir);
   assert.deepEqual(verify(dir).failures, []);
   for (const file of untouched) assert.equal(read(dir, file), originals[file]);
-  for (const item of preview.changed) assert.equal(read(dir, item.file), item.text);
+  assert.equal(read(dir, files.product), preview.changed.find(item => item.file === files.product).text);
+  for (const family of ["architecture", "engineering"]) {
+    assert.equal(read(dir, files[family]), read(root, `src/cg/${family === "architecture" ? "principles" : "guidelines"}/${family}.yaml`));
+  }
 });
 
 test("migration rejects unknown fields, malformed YAML and wrong versions before any write", (t) => {

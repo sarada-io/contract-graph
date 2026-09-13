@@ -294,15 +294,18 @@ test("an extracted tarball resolves shared exports and migrates a repository wit
   const before = new Map(files.map(file => [file, fs.readFileSync(path.join(repo, ".agents/cg", file), "utf8")]));
   const earlyInit = run("init", repo, "--yes", "--docs", "docs");
   assert.notEqual(earlyInit.status, 0);
-  assert.match(earlyInit.stderr, /migrate-principles/);
+  assert.match(earlyInit.stderr, /cg init --reasons/);
   for (const [file, text] of before) assert.equal(fs.readFileSync(path.join(repo, ".agents/cg", file), "utf8"), text);
   const reasons = path.join(legacy, "reasons.json");
   const preview = JSON.parse(success("migrate-principles", repo, "--reasons", reasons, "--json"));
   assert.equal(preview.changed.length, 3);
   assert.deepEqual(preview.written, []);
   for (const [file, text] of before) assert.equal(fs.readFileSync(path.join(repo, ".agents/cg", file), "utf8"), text);
-  const applied = JSON.parse(success("migrate-principles", repo, "--reasons", reasons, "--write", "--json"));
-  assert.equal(applied.written.length, 3);
+  const productReasons = path.join(consumer, "init-reasons.json");
+  fs.writeFileSync(productReasons, JSON.stringify({ "P01-01": JSON.parse(fs.readFileSync(reasons, "utf8"))["P01-01"] }));
+  const applied = success("init", repo, "--yes", "--docs", "docs", "--reasons", productReasons);
+  assert.match(applied, /migrate product format/);
+  assert.match(applied, /upgrade backup:/);
   for (const name of ["architecture", "engineering", "product"]) {
     fs.writeFileSync(path.join(repo, `.agents/cg/schema/${name}.schema.json`), "invalid legacy schema; must never be read");
   }
@@ -313,5 +316,9 @@ test("an extracted tarball resolves shared exports and migrates a repository wit
   success("sync", repo, "--check");
   assert.equal(JSON.parse(success("migrate-principles", repo, "--write", "--json")).changed.length, 0);
   for (const [file, text] of preserved) assert.equal(fs.readFileSync(path.join(repo, ".agents/cg", file), "utf8"), text);
-  for (const item of preview.changed) assert.equal(fs.readFileSync(path.join(repo, item.file), "utf8"), item.text);
+  const productPreview = preview.changed.find(item => item.file.endsWith("/product.yaml"));
+  assert.equal(fs.readFileSync(path.join(repo, productPreview.file), "utf8"), productPreview.text);
+  for (const file of files.slice(0, 2)) {
+    assert.equal(fs.readFileSync(path.join(repo, ".agents/cg", file), "utf8"), fs.readFileSync(path.join(packageRoot, "agent/cg", file), "utf8"));
+  }
 });

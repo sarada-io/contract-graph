@@ -114,7 +114,9 @@ complete, a passing scaffold check does not mean the implementation has been ful
 
 **Updating an installation:** install the intended package version, then run `cg init --yes`
 with the repository's existing docs root and editor profiles. Skills, schemas, and hooks update;
-contracts, policy catalogs, workflow, and existing documentation are preserved. Use
+architecture and engineering refresh from the release with backups; product rules migrate to the
+current schema without losing their content. Contracts and enforcement keep their content while
+known legacy schema URLs update; workflow and existing documentation are preserved. Use
 `cg --version --json` to identify the exact build. See [upgrade](https://contractgraph.dev/docs/upgrade/) for migration
 and deliberate adoption of changes to preserved policy.
 
@@ -171,7 +173,8 @@ The principles schema is a new format: `principlesVersion: "1.0"`, a fixed famil
 pair, and `statement` plus `reason` on every principle leaf. Contract and enforcement remain v1.
 For legacy catalogs, run `cg migrate-principles` to preview conversion. Supply missing rationale
 with `--reasons <json-file>`, inspect the proposal with `--json`, then apply with `--write`.
-`cg init` preserves authored catalogs and never converts them implicitly. See
+`cg init` updates A/E defaults and converts legacy product catalogs. If product rationale is
+missing, it stops before writing and accepts `--reasons <json-file>` on the same command. See
 [upgrade](https://contractgraph.dev/docs/upgrade/) for the complete sequence.
 
 ## Learn more

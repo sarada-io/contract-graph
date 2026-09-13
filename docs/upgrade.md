@@ -1,5 +1,59 @@
 # Upgrade
 
+## Update an existing repository with cg init
+
+Install the intended CLI build, then run init in your adopting repository. For an unpublished
+0.6.0 build, run `npm run pack` in the Contract Graph checkout, then
+`npm install --global ./dist/tar/contract-graph-0.6.0.tgz`.
+
+```bash
+cd <your-repository>
+cg --version --json
+cg init --check --docs docs
+cg init --yes --docs docs
+cg verify
+```
+
+Keep your existing docs root and profiles. `--check` previews without writing and returns 1
+when an update is needed. Without `--yes`, init asks before replacing existing files.
+
+Init now performs the upgrade itself:
+
+| File | Upgrade behavior |
+| --- | --- |
+| Skills, hooks, schemas | Refresh from the installed release |
+| `architecture.yaml`, `engineering.yaml` | Back up the previous files, then install release defaults |
+| `product.yaml` | Convert legacy format, retaining IDs, statements, groups, and comments |
+| Contracts and enforcement | Preserve content; update only known legacy schema URL declarations |
+| Workflow, phase policy, docs | Preserve repository choices |
+
+Backups for updated catalogs and schema declarations are stored under
+`.agents/cg/backups/init/<content-hash>/`. Repeated unchanged init runs do not add backups.
+Review backed-up A/E amendments before reapplying them; init refreshes those catalogs rather
+than merging local preferences into the release. Catalog changes are staged together with
+rollback on an apply failure. Init as a whole is not a filesystem-wide transaction; a later
+sync or verification failure is reported for correction.
+
+Legacy product rules may lack the `reason` required by the new schema. Init names the missing
+IDs and stops before changing installation files. Create a JSON object containing the actual
+rationale for exactly those IDs, then use the same command:
+
+```bash
+cg init --check --docs docs --reasons reasons.json
+cg init --yes --docs docs --reasons reasons.json
+cg verify
+```
+
+An empty legacy product catalog needs no rationale input. Already-current valid product catalogs
+remain byte-identical; omit the reasons file on later runs. Unknown fields or schema identities
+block conversion rather than dropping content. The older
+`https://sarada.io/contract-graph/schema/` catalog identities are recognized, and known v1
+contract/enforcement `$schema` values are updated to the canonical host without reformatting
+the rest of those files. Init never rewrites rule IDs, graph edges, or verification commands.
+
+After verification, review the Git diff and reload the editor's skills. The new skills do not
+automatically replace your repository-owned workflow; see the auto-run section below.
+
 ## Shared principles format
 
 Architecture, engineering, and product now use
@@ -19,7 +73,8 @@ are unavailable on engineering and product catalogs. Optional `cost` is supporte
 are rejected; migration never silently drops it. Move that explanation into the rationale or a
 repository decision record deliberately before retrying.
 
-Install the intended CLI, then preview in the adopting repository before re-initialising:
+For a separate format-only migration that retains local A/E content instead of refreshing
+release defaults, use `cg migrate-principles`. This remains available independently of init:
 
 ```bash
 cg migrate-principles
@@ -45,7 +100,6 @@ YAML and apply explicitly:
 ```bash
 cg migrate-principles --reasons /path/to/reasons.json --json
 cg migrate-principles --reasons /path/to/reasons.json --write
-cg init --yes --docs docs
 cg verify
 ```
 
@@ -64,12 +118,11 @@ recover those files deliberately, and preview again before retrying. Do not cont
 while recovery is required. A process crash or power loss can interrupt a multi-file conversion;
 the backups support recovery, but conversion is not a filesystem-wide transaction.
 
-`cg init` continues to preserve repository-owned YAML, workflow, and phase policy. It does not
-migrate catalogs. If init was run first and fails on old catalogs, use the migration sequence
-above and rerun init. Older architecture protocols missing fields such as `graph.surface.service`
-need deliberate authoring before migration can validate; the tool does not replace them with
-vendor policy. Contract or enforcement declarations on obsolete hosts also need their canonical
-`https://contractgraph.dev/schema/<name>-v1.schema.json` identities restored separately.
+The standalone migration retains local A/E content and therefore requires deliberate authoring
+if its old architecture protocol lacks required fields. Init instead refreshes A/E from the
+release and migrates product rules. Its preflight blocks before any installation writes if product
+conversion needs input. Both commands preserve workflow and phase policy. Unrecognized contract
+or enforcement schema identities still need explicit correction.
 
 After reviewing the migration and successful verification, retain backups outside the catalog
 directories or remove them deliberately. No contract or enforcement rewrite is required by this
@@ -113,8 +166,8 @@ selection expands to `agents`, `claude`, and `copilot`. Non-interactive init nee
 
 `cg init` prints the next step: **adoption** while roots are unmapped or still need descent,
 **reseed** when `cg modules` exits 0. A 0.3.0 graph that is already connected takes reseed.
-After init, git should show skills, schemas, hooks, and first-line pointers changing;
-`architecture.yaml` and existing contracts stay clean until `/cg-warmup` runs.
+With the current CLI, init also refreshes A/E, migrates legacy P, and updates known old schema
+declarations. Existing contract content stays intact until `/cg-warmup` runs.
 
 Adding a harness later is another `cg init --yes --profile claude` (keep `--docs`), not warmup.
 `cg sync` copies each module `AGENTS.md` to `CLAUDE.md`.
@@ -160,10 +213,11 @@ intended CLI. This catches different development builds sharing a release versio
 prove that an already-running agent reread a skill or that repository-owned policies are identical
 to vendor defaults. After updating, reload the skills and preserve the user's current task scope.
 
-`cg init` **replaces** skills, schemas, and hooks. It **preserves** contracts,
-`architecture.yaml`, `product.yaml`, `engineering.yaml`, `enforcement.yaml`, `workflow.md`,
-`phases.json`, and docs. It does not merge catalogs, and it does not delete leftover
-`.agents/rules` from older installs. There is no `cg upgrade` verb.
+`cg init` **refreshes** skills, schemas, hooks, architecture, and engineering. It **migrates**
+legacy product format while retaining authored rules and requiring any missing rationale.
+Contracts and enforcement keep their content apart from known legacy schema declarations.
+Workflow, phase policy, and docs are preserved. Init does not merge A/E amendments or delete
+leftover `.agents/rules` from older installs. There is no separate `cg upgrade` verb.
 
 ## Adopting the 0.6.0 auto-run workflow
 
@@ -199,8 +253,7 @@ Consecutive reseed with unchanged cues should write no file and stop.
 
 Typical 0.3.0 and 0.4.0 installs already have `hierarchy.kinds`, `graph.recurse`,
 `graph.surface`, and `graph.adapters`. If `cg verify` reports the catalog is older than this
-verifier, copy the packaged architecture catalog or amend it deliberately. `cg init` will not
-overwrite it.
+verifier, run `cg init` to refresh the release defaults with a backup, or amend it deliberately.
 
 ## What reseed will not do
 
