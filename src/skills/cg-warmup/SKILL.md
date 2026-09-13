@@ -12,30 +12,51 @@ tree — not a graph to copy. After adoption, `cg-plan`, `cg-prepare`, `cg-produ
 have real contracts to work against. An already-governed tree uses **Reseed** instead: the graph
 on disk is the baseline, not a predecessor.
 
-**Never delete this skill.** `cg verify` requires all seven skills, and a later module tree still
+**Never delete this skill.** `cg verify` requires all eight skills, and a later module tree still
 needs these instructions. Auto-run never dispatches it.
 
-Warmup declares and mechanically protects an existing cohesive declared surface before proposing
-restructuring. Protect the named surface first; propose a split or merge only once that surface is
-named. It must not add wrapper types or move code solely to impose a source-layout convention.
-If the existing surface mixes distinct responsibilities, cannot be mechanically confined, exposes
-internals (`graph.surface.encapsulate`), mixes optional vendor clients (`graph.adapters`), or has
-no small inbound surface, that is a restructure finding: write it into the corrective set for
-`cg-plan`. The owner validates that programme. Warmup does not rewrite the code.
+Warmup declares an existing cohesive surface and records the controls that protect it before
+proposing restructuring. Assess the named surface first; propose a split or merge only once
+its promise and ownership are clear. It must not add wrapper types or move code solely to impose a source-layout convention.
+If the existing surface mixes distinct responsibilities, exposes details outside its declared
+promise (`graph.surface.encapsulate`), or puts consumer-specific workflow into a consumer-independent
+core, record the structural finding for `cg-plan`. Apply `graph.adapters` to responsibility, not
+vendor count. Missing mechanical confinement is an explicit coverage gap; E03 alone does not
+authorize a blocking control or restructuring. The owner validates the corrective programme.
+Warmup does not rewrite the code.
 
-`graph.surface.service` is the inbound categorisation: a small set of services, not a node per
-file. If the service types exist, declare them. If they do not, record a corrective Step to
-introduce them. Folder wrappers to impose layout are forbidden.
+`graph.surface.service` describes one entry style. Declare an existing cohesive surface using
+its native functions, services, events, or other supported entry kinds. Missing service types
+alone do not justify a corrective Step. E01-03 is advice about a facade, not a node per file
+or a required rewrite.
 
-Read `.agents/skills/cg-unblock/SKILL.md` only when a fork fails D-1: unresolvable from contracts
-and accepted decisions, material, costly to reverse, and nothing else can proceed.
+Read `.agents/skills/cg-unblock/SKILL.md` when a fork remains unresolved by contracts and
+accepted decisions or requires owner authority. Ask directly under D-6 and continue independent
+work while recording the response.
 
 ## Which entry — read this before §1
 
+**Finish any pending product upgrade first.** Inspect `.agents/cg/guidelines/product.yaml`
+before verification. If it still declares the supported legacy `productVersion`, init may have
+preserved it because required rationale was missing. Do not run whole-catalog migration: init
+already refreshed A/E defaults. Read the existing P statements and their consuming contracts,
+then bounded implementation and durable decisions to propose the missing reasons. Present them
+as proposals, distinguishing recorded rationale from inference; obtain the owner's confirmation
+before treating inferred rationale as policy. Do not invent placeholders, delete rules, or
+renumber IDs to make validation pass.
+
+Prepare a temporary JSON object mapping only missing P IDs to the confirmed reasons and run
+`cg init --yes --reasons <temporary-file>` from the repository root (saved docs/profile settings
+are reused). The agent prepares the file; the user need not author JSON. Remove the temporary
+file after success, run `cg verify`, and then continue adoption or reseed below. If init reports
+malformed or unsupported content, resolve that finding explicitly; never bypass schema validation.
+On interruption, inspect the actual product catalog again; an already-current catalog needs no
+migration or reasons file. Do not report the upgrade complete until verification passes.
+
 **Confirm the installed binding can recurse.** Run `cg verify`. If it fails because
 `.agents/cg/principles/architecture.yaml` is missing `hierarchy.kinds` or `graph.recurse`, the
-catalog is older than this skill (`cg init` preserves catalogs). Stop. Ask the owner to copy the
-packaged binding or confirm a deliberate amendment. Do not write nodes against a catalog that
+catalog is older than this skill. Refresh it with `cg init`, which previews A/E replacement and
+backs up previous catalogs, or confirm a deliberate amendment. Do not write nodes against a catalog that
 cannot recurse.
 
 Resolve `<docs>` from `.agents/cg/profile.json` `docs` (default `docs`). Confirm with `cg residue`.
@@ -296,25 +317,24 @@ still take `add-child`. If several packages form one boundary, `graph.stop` requ
 `Leaf rationale:` assumption that names them and says why they are inseparable.
 
 `graph.surface` is declared entry and encapsulation. Enter only through the contract surface.
-`graph.surface.service` is the first way to declare it: list the named services; `contract.yaml`
-`surface` points at those types. An undeclared entry or a bypass is a corrective Step, not stay.
+`graph.surface.service` permits service entry without requiring that style. Declare the actual
+entry paths and observable promises, including asynchronous or event behavior where applicable.
+An undeclared entry or a bypass requires a corrective action. Scattered functions call for a
+surface and placement review; neither file count nor absence of classes decides the outcome.
 
-If this unit is many functions across unmanaged files with no small inbound surface, do not create
-a node per file. Categorise the work into a small set of services. Declare them when the types
-exist; otherwise §8 a corrective Step to introduce them.
-
-`graph.adapters` is the vendor split of `graph.surface.encapsulate`. An optional external resource
-is a parent-owned port; each concrete option is `add-child`, not `stay`. Two vendor clients in one
-unit is a corrective Step.
+For `graph.adapters`, create a child when an adapter owns a distinct responsibility and meets
+`selfSufficient` and `decide.add-child`. Multiple vendors alone do not imply a corrective Step.
+Keep consumer-specific behavior outside a consumer-independent core while the existing promise
+suffices. E02-06 recommends separate adapters without making them mandatory.
 
 The corrective set is driven by that walk, not by `cg verify` and not by preference. For every
 candidate, take exactly one row:
 
 | `graph` result | Code already has that shape | What warmup does |
 |---|---|---|
-| `stay` — cohesive surface, services exist, one vendor (or none) | yes | write the contract; **Restructure:** none |
+| `stay` — cohesive declared surface and one owned responsibility, with consumer-specific work outside a consumer-independent core | yes | write the contract; **Restructure:** none |
 | `add-child` and the child unit already exists as a separable directory or package | yes | write the child contract now; **Restructure:** none |
-| `add-child`, `elsewhere`, introduce services, or split vendor adapters | no — fulfilling it would move or add code | write the contract for the mixed unit that exists; **Restructure:** finding |
+| `add-child`, `elsewhere`, or a required surface correction | no — fulfilling it would move or add code | write the contract for the mixed unit that exists; **Restructure:** finding |
 | a nicer folder layout, a new wrapper type, or `graph.forbid` | — | not a finding |
 
 A **Restructure:** finding is the only input to the corrective set. Phase C merges those rows; it
@@ -458,7 +478,8 @@ be created by editing installed YAML.
 
 Separately, consolidate every Phase B **Restructure:** finding that is not `none` into
 `<docs>/plans/warmup-corrective-set.md`. Those rows are driven by the §4 graph walk. `cg verify`
-cannot see mixed vendors, missing services, or undeclared children that the walk already named.
+cannot establish semantic responsibility overlap, caller bypasses, or undeclared children.
+Vendor count and missing service classes alone do not create a finding.
 Do not add a row because a layout looks untidy. Do not omit a row because the contract already
 describes the mess.
 
@@ -474,7 +495,7 @@ Status: Unconsumed
 
 ## <finding>
 - **Evidence:** <unit, packages, surface, or vendor mix actually opened>
-- **Graph decision:** <add-child | elsewhere | introduce services | split vendor adapters>
+- **Graph decision:** <add-child | elsewhere | stay with a surface correction>
 - **Architecture target:** <hierarchy kind and graph.surface / graph.adapters keys that define the destination>
 - **Engineering guidance:** <E ids that apply to this move, each with reason; none if graph already specifies the outcome>
 - **Proposed programme outcome:** <the observable structure after the move>
@@ -520,10 +541,10 @@ suite.
 
 | The rule is… | Family |
 |---|---|
-| structural advice without complete enforcement | `E` — a non-binding best practice |
+| structural advice without complete enforcement | `E` — a SHOULD practice (`cg verify` does not fail) |
 | generic structural invariant that could satisfy a deterministic measure, blocking detector, and negative fixture | `A` candidate — route it to the verifier-owning repository; do not assign a local ID |
 | true because of *this* product's market, pricing, shape, or tenancy | `P` |
-| a lean between two workable designs | `E` — a non-binding preference, with `cost` when the trade-off is not obvious |
+| a lean between two workable designs | `E` — a SHOULD preference, with `cost` when the trade-off is not obvious |
 
 - **Do not file a product rule as an engineering guideline.** The test is whether a repository
   building something else would be *wrong* to adopt it.
@@ -533,7 +554,7 @@ suite.
 ### What each harvested rule owes
 
 Every `A` candidate records the proposed invariant, deterministic measure, blocking detector,
-and negative fixture, then becomes delivery work in the repository that owns the verifier. Every `P` rule needs exactly one repository `.agents/cg/enforcement.yaml` row and is listed in the
+and negative fixture, then becomes delivery work in the repository that owns the verifier. Every `P` rule needs exactly one repository `.agents/cg/enforcement.yaml` row, plus `statement` and `reason`, and is listed in the
 affected contracts' `rules` arrays. A detector recipe without working enforcement is not a binding.
 
 ### When a harvested rule contradicts a binding
@@ -571,9 +592,10 @@ Owner questions go in `<docs>/plans/decision-log.md` under *Pending your review*
 [the decision entry template](../cg-unblock/assets/decision-entry.template.md). Keep each as its
 own stable `DU-NN` entry, and never renumber one.
 
-A logged question never pauses unrelated work. Present the set once, at the end. Stop and ask in
-chat only if nothing else can proceed — which, for warmup, means the repository has no
-discoverable modules at all.
+Use `cg-unblock` D-6 to present concrete questions directly in chat or interaction mode, with
+options and a typed-answer path, and record responses against the same entries. A logged question
+never pauses unrelated work when asynchronous interaction is available. If the repository has no
+discoverable modules, ask before inventing a boundary.
 
 ## 11. Report coverage honestly
 
@@ -678,5 +700,5 @@ End the user-facing response with:
 ## Next action — <Warmup complete | Answers pending | Findings need delivery | Empty reseed>
 - **User action:** <one concrete action — when answers are pending, "answer the N entries under *Pending your review*"; always say what happened to warmup-findings, warmup-corrective-set, warmup-report, and warmup-reseed-delta>
 - **Next input:** <$cg-plan | $cg-unblock | None — warmup complete | None — empty delta> — <exact decision-log entries, corrective set, delta, or gate evidence>
-- **Blocked by:** <exact decision, prerequisite, or failing gate>   <!-- omit unless the status is non-advancing -->
+- **Blocked by:** <condition preventing the named next action>   <!-- omit unless the status is non-advancing -->
 ```

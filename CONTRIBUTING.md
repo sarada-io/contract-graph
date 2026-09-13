@@ -33,6 +33,39 @@ npm test
 node bin/cg.js --help
 ```
 
+For an interactive menu of this repository's activities, run `./urun` on macOS/Linux
+or `.\urun.cmd` on Windows. In Windows Command Prompt, `urun` also works from the
+repository root. The menu is Node.js; it needs the same Node 18.17+ already required
+to develop Contract Graph. Use Up/Down to select, Enter to run, and Escape to go
+back or exit. After an activity finishes, Enter returns to the menu that launched it: the
+More list after a More command, otherwise the main menu. Escape on that prompt leaves the menu.
+
+The menu offers clean and build, clean build and test, a cleaned release tarball, installing the
+tarball to this machine, publishing that tarball to npm, and a **More** submenu for build check, editor
+fixtures, CLI help, tests without rebuilding, environment checks, and cleaning generated files.
+Editor selection uses the existing `npm run try` helper. Replacing an existing editor
+fixture, cleaning generated files, installing the release tarball to this machine, and publishing to npm
+require a second selection, defaulting to keeping the current state. Packaging asks for a
+release version (Enter keeps the current `package.json` value, Escape cancels). When the
+version changes it runs `npm version <version> --no-git-tag-version` so `package.json` and
+`package-lock.json` update without a git tag, then deletes `dist/build` and `npm run pack` replaces
+`dist/tar/contract-graph-<version>.tgz`. Installing the release tarball to this machine uses `npm install -g` with that
+tarball, building it first if it is missing. Publish checks `npm whoami`, runs `npm login`
+when that fails, then `npm publish dist/tar/contract-graph-<version>.tgz --access public`.
+Long-running commands keep their normal terminal output and Ctrl-C behaviour, including npm
+login prompts.
+
+This menu is local to Contract Graph. Its two OS launchers call `scripts/urun.mjs`;
+there is no Task dependency, global CLI installation, PowerShell requirement, or
+repository configuration file. Existing npm commands remain available for CI and
+non-interactive terminals. Menu tests run as part of `npm test`.
+
+`npm test` runs tests with temporary files under the gitignored `tmp/tests/run-*` directory
+and removes its own run directory after success or failure. This also prevents a host-provided
+`TMPDIR` from scattering fixtures across the checkout. Use `npm test -- test/build.test.js`
+for a focused run. Direct `node --test` bypasses this scratch-directory isolation. An abruptly
+killed process may leave a run directory under `tmp/tests/`; `npm run clean` removes it.
+
 The runtime dependency surface is deliberately limited to the YAML parser used for canonical
 contracts and rule catalogs. A pull request adding another runtime dependency must explain why the
 benefit justifies adding supply-chain surface to a verifier.
@@ -44,7 +77,7 @@ the request, then descend to the smallest responsible boundary.
 Agent procedure lives in `src/skills/` and `src/cg/workflow.md` (installed as
 `.agents/cg/workflow.md`). Do not put turn-by-turn skill protocol, `$cg-` hop tokens, or
 host-specific hook JSON in `docs/` or in `README.md`. The README is the npm and GitHub landing
-page; written guides live in `docs/` and on [sarada.io/cg](https://sarada.io/cg/).
+page; written guides live in `docs/` and on [contractgraph.dev](https://contractgraph.dev/).
 
 ## Choose validation from the change surface
 
@@ -61,6 +94,65 @@ request. Use this table as the minimum:
 
 Report the exact checks and outcomes in the pull request. “Tests pass” is not enough when the
 change affects interactive initialization or editor discovery.
+
+## Manager–Engineer interaction trial
+
+`npm test` includes regression tests for the interaction evidence verifier. Those tests exercise
+recorded-state checks and reject invalid histories; they do not launch models. A real host trial
+is separate so an ordinary test run needs neither model access nor a network connection.
+
+Create a disposable two-phase repository with `npm run --silent trial:interaction`. The command
+prints its absolute path, scaffolds the current source skills, writes an accepted Plan and a
+partially blocked queue, and leaves an unrelated dirty note to preserve. Use the source CLI or
+install the current packed package there without replacing its scaffold. Never point this trial
+at a working product repository. The independent acceptance checks under `checks/` are read-only
+for agents; do not reveal the synthetic owner answer before the recovery checkpoint.
+
+Run the actual Manager and Engineer with the host's agent tools and fresh, non-inherited contexts.
+The observer acts as the fixture's test owner through messages, not a real product approval.
+Collect observations from outside both roles:
+
+```bash
+npm run test:interaction -- observe <fixture> baseline <observer-id>
+npm run test:interaction -- observe <fixture> question <manager-id> <question-message-file>
+npm run test:interaction -- observe <fixture> recovered-question <new-manager-id> <question-message-file>
+npm run test:interaction -- observe <fixture> answer-recorded <new-manager-id> <message-file>
+npm run test:interaction -- observe <fixture> phase-1-complete <new-manager-id> <gate-envelope-file>
+npm run test:interaction -- observe <fixture> phase-2-complete <new-manager-id> <gate-envelope-file>
+npm run test:interaction -- observe <fixture> cleanup <new-manager-id> <message-file>
+npm run test:interaction -- verify <fixture>
+```
+
+Pause the first Manager after it saves and presents its question. Let the Engineer complete the
+independent count Step, then replace the Manager with a fresh session given only fixture paths
+and host identifiers. It must recover the same pending decision from disk. Supply this synthetic
+typed answer: `Use the stable node IDs in input order, and preserve each supplied label verbatim.`
+Capture the recorded answer before notifying the Engineer, using an observer barrier rather than
+another user authorization. Release that barrier and observe automatic resumption, corrective
+preparation for the hidden-node defect, sign-off, and a different Engineer for Phase 2. Pause at
+each completed-phase observation after acceptance but before ledger deletion, so the observer
+can run independent checks and retain the actual Engineer identity and handoff. Release that
+measurement barrier, delete the accepted phase ledger, and then start the successor Engineer.
+After the final handoff capture, reconcile and remove the remaining working ledgers and handoff
+files, then capture `cleanup`. Canonical decisions, source and archived evidence must survive
+unchanged. New observations use evidence version 2; historical version 1 traces remain
+readable under their original six-checkpoint contract and cannot be appended to.
+
+Question files contain the actual received messages. At completion, the external observer runs
+`node checks/check.mjs phase-1` or `phase-2` and `cg verify` and saves their real outputs as JSON:
+`{"text":"received handoff", "gates":[{"command":"node checks/check.mjs phase-1",
+"status":0,"stdout":"actual output","stderr":""}, ...]}`. Do not populate success values
+from an agent's claim. The observer snapshots files, queue state, graph findings, instruction
+hashes and messages into `<fixture>.evidence.jsonl`, outside the agents' writable repository.
+
+Keep the evidence and a concise result report, including failures and any changed instructions.
+The hash chain detects accidental changes, not forgery by someone controlling the observer.
+Snapshots do not prove every intervening write or model-internal context isolation. Report which
+host, actor identities, transport and recovery behavior were actually exercised; do not generalize
+one successful host run to all hosts or claim measured token savings.
+
+The [2026-09-06 live trial report](docs/testing/auto-run-interaction.md) records the actors,
+recovery transport, observed behavior and evidence limits for the local 0.6.0 workflow.
 
 ## Installation scenarios
 
@@ -141,7 +233,10 @@ writes. Every consumer-facing source must match exactly one mapping rule.
 Each rule has an ownership policy:
 
 - `replace` is framework-owned and may be updated by a later `cg init`;
-- `preserve` becomes repository-owned after installation and is written only when absent; and
+- `preserve` becomes repository-owned after installation and is written only when absent;
+- init separately refreshes A/E with backups and migrates existing product catalogs, accepting
+  explicit missing rationale through `--reasons`; known legacy contract/enforcement schema URLs
+  are updated without changing their authored content; and
 - generated discovery artifacts are regenerated by `cg sync` from the selected profiles.
   Module `AGENTS.md` / `CLAUDE.md` pointers follow that same selection; adding a profile copies
   an existing module pointer rather than inventing a second body.
@@ -177,7 +272,7 @@ An engineering guideline is advisory:
 
 ```yaml
 - id: E01-01
-  rule: <the practice>
+  statement: <the practice>
   reason: <why this practice exists>
 ```
 
@@ -185,7 +280,7 @@ A preference may also name its tradeoff:
 
 ```yaml
 - id: E12-01
-  rule: <the preference>
+  statement: <the preference>
   reason: <why this preference exists>
   cost: <what choosing this makes harder, slower, or unavailable>
 ```
@@ -208,7 +303,7 @@ Prefer a paraphrase with project-specific reasoning over copied prose.
 
 ## Building and inspecting the npm package
 
-Never edit `build/` directly. It is a generated, gitignored package target. Build and verify it
+Never edit `dist/build/` directly. It is a generated, gitignored package target. Build and verify it
 with:
 
 ```bash
@@ -217,11 +312,14 @@ npm run build:check
 npm run pack
 ```
 
-`npm run pack` creates `contract-graph-<version>.tgz` from `build/`. The package contains the CLI
+`npm run pack` creates `dist/tar/contract-graph-<version>.tgz` from `dist/build/`.
+`dist/build/` is the assembled package; `dist/tar/` holds release archives. The entire `dist/` tree is
+gitignored and removed by `npm run clean`. Normal builds replace only `dist/build/`,
+preserving archives in `dist/tar/`. The package contains the CLI
 under `script/`, the installable assets under `agent/`, `package.json`, `LICENSE`, and this exact
 `README.md`; npm therefore renders the same README that is reviewed in the repository. Keep that
 file a landing page for people: what the product is, how to install it, and absolute links to
-[the public introduction](https://sarada.io/cg/) and the written guides. Relative `docs/` links,
+[the public introduction](https://contractgraph.dev/) and the written guides. Relative `docs/` links,
 mermaid diagrams, skill protocol, and package-assembly internals do not belong there — the
 published tarball does not include `docs/`. The checkout's `bin/cg.js`, authoring `src/` tree,
 tests, docs tree, and developer helper are not part of the published artifact.
@@ -232,19 +330,21 @@ addition, existing instructions, an existing docs root, and `cg verify`.
 
 ## Publishing
 
-`package.json` `version` is the source of truth; the git tag and npm version follow it. Publish the
-tarball produced by `npm run pack`, not the repository root or `build/` directory:
+`package.json` `version` is the source of truth; the git tag and npm version follow it. `./urun`
+**Clean, Build Release Tarball** can set that version before packing. Publish the tarball produced by
+`npm run pack`, not the repository root or `dist/build/` directory:
 
 ```bash
 git status --short
 npm test
 npm run pack
 npm login
-npm publish contract-graph-<version>.tgz --access public
+npm publish dist/tar/contract-graph-<version>.tgz --access public
 ```
 
-The working tree must be clean because packing reads files from disk. `npm publish ./build` repacks
+The working tree must be clean because packing reads files from disk. `npm publish ./dist/build` repacks
 the directory, while publishing from the repository root would select the wrong package layout.
+`./urun` can run the same tarball build, global install, login, and publish steps from the menu.
 
 ## Pull-request evidence and commit expectations
 

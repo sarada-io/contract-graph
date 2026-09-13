@@ -50,7 +50,7 @@ every contract must still be reachable from the root through composition edges.
 
 | Field | Meaning |
 |---|---|
-| `$schema` | Canonical schema URL: `https://sarada.io/contract-graph/schema/contract-v1.schema.json`. |
+| `$schema` | Canonical schema URL: `https://contractgraph.dev/schema/contract-v1.schema.json`. |
 | `contractVersion` | Contract format version. Current nodes use `"1.0"`. |
 | `id` | Stable graph identity. Reordering or moving presentation must not change it casually. |
 | `name`, `kind`, `unit` | Human name, boundary type, and repository-relative directory owned. |
@@ -69,8 +69,14 @@ in the core model. Unknown top-level fields are rejected so misspellings cannot 
 unused contract data.
 
 The package also installs the same schema at `.agents/cg/schema/contract.schema.json`, so local
-validation does not depend on network access. The Sarada URL is its stable public identity and must
-serve the matching schema bytes.
+validation does not depend on network access. The contractgraph.dev URL is its public identity
+and must serve the matching schema bytes. Both `cg verify` and the JSON schemas require the
+canonical `https://contractgraph.dev/schema/<name>-v1.schema.json` identity for contract,
+principles, and enforcement. Architecture, engineering, and product catalogs share
+`principles-v1`. Declarations using any other host or path must be updated before verification.
+Re-initialisation refreshes A/E catalogs, migrates legacy P catalogs, and updates the known
+`sarada.io/contract-graph/schema/` v1 contract/enforcement declarations without changing their
+other bytes. Unrecognized schema identities still require explicit correction.
 
 ## Declared surfaces are concrete promises
 
@@ -84,19 +90,21 @@ Each non-repository boundary declares at least one surface (A10). A surface name
 - the guarantees callers may rely on.
 
 That list is the unit's promise to its parent and dependents, not “public” in the language, HTTP,
-or customer-facing sense. `graph.surface` is the protocol: enter only here. The first way to
-declare entry is a **service** (`kind: service`): one or two named types whose operations take
-parameters, do the work, and return the completed result. `contract.yaml` `surface` lists those
-services and points at the implementation they encapsulate. Constructor ports assemble a service
-behind the call; they are not how a parent talks to the node. Encapsulate algorithms, construction,
-mutable internals, persistence, framework types, and vendor types behind the service. A new entry
-or a bypass is not stay. `graph.adapters.port` is the vendor case of that encapsulation.
+or customer-facing sense. `graph.surface` requires an explicit entry and promise, while
+`graph.surface.service` describes one possible entry style. Functions, events, services, streams,
+and asynchronous operations can all have declared surfaces; no fixed type count or synchronous
+completion model is required. Construction details and mutable implementation state stay internal
+unless explicitly part of the promise. Technology-specific APIs may deliberately expose those
+concepts. A consumer-independent core does not acquire a consumer's product-specific workflow
+when its existing promise already suffices. E01-03 recommends cohesive facades and E02-06
+recommends adapters; neither recommendation independently requires a rewrite or child contract.
 
 The code form remains language-native. A service may be a class, a module of functions, an HTTP
 resource, or another native export. TypeScript exports, Java interfaces, schemas, commands, events,
 and HTTP endpoints remain valid surfaces when they are that callable promise. The YAML contract
-declares the cohesive surface and the repository mechanically protects its internals; Contract Graph
-does not prescribe one source layout.
+declares the cohesive surface. Record which language, build, or repository controls protect its
+internals and where coverage is absent; Contract Graph does not supply universal import confinement
+or prescribe one source layout.
 
 `cg verify` currently proves that every non-repository node declares a surface and that every
 declared surface path exists (A10, A11). Language-specific detectors must additionally prove
@@ -170,12 +178,15 @@ Contract Graph separates framework mechanics from repository policy:
 
 - schemas, contract tooling, verification code, and lifecycle skills are framework-owned and may
   be replaced by a later `cg init`;
-- authored contracts, the architecture-principles catalog, guideline catalogs, enforcement mappings,
-  and workflow context are repository-owned and are preserved after their first installation.
+- architecture and engineering are refreshed from the release, with the previous files backed up;
+- product principles are repository-owned and format-migrated, preserving IDs, statements, and comments;
+- contract and enforcement content is preserved apart from known legacy schema URLs, while
+  workflow and phase policy remain unchanged.
 
 The shipped architecture principles are strong starting constraints, not immutable vendor policy.
 Engineering guidelines are strong recommendations, but remain non-binding. After installation,
-the repository owner may deliberately retain, amend, replace, or retire either catalog. An
+the repository owner may deliberately amend or retire defaults, but a later init refreshes A/E
+and keeps those amendments in its backups for review. An
 architecture-principle amendment remains limited to semantics the installed verifier can detect. Creating a new
 generic `A` binding requires a verifier change; repository-specific authority belongs in `P`.
 Every amendment remains explicit because silently changing structural authority would make one
@@ -195,27 +206,40 @@ A detectors protect graph integrity.
 
 Architecture principles are authored YAML at `src/cg/principles/architecture.yaml`, analogous to
 `enforcement.yaml`. Product guidelines are authored YAML at `src/cg/guidelines/product.yaml` and
-ship empty. `cg build` validates both catalogs and copies them into the package target.
+ship empty. `cg build` validates all three catalogs and copies them into the package target.
 They appear at `agent/cg/principles/` and `agent/cg/guidelines/` inside the tarball. Leftover `engineering.md`,
 `product.md`, or compiled `engineering.json` / `product.json` fails verification the same way
 leftover `enforcement.md` does.
 
-There are three authored policy surfaces:
+There are three authored principle catalogs, one shared schema
+(`https://contractgraph.dev/schema/principles-v1.schema.json`):
 
-- `src/cg/principles/architecture.yaml` — recursive mapping (`hierarchy.kinds`), node decision (`graph` walk:
+- `src/cg/principles/architecture.yaml` — `family: architecture`, `binding: global`. Recursive
+  mapping (`hierarchy.kinds`), node decision (`graph` walk:
   node, recurse, selfSufficient, surface, decide, compose, stop, forbid, adapters), permitted
-  boundary hierarchy, and global `A` structural bindings with measures, registered detectors,
-  and negative fixtures. The walk is documented in [lifecycle](lifecycle.md). `graph.surface` is
-  declared entry and encapsulation behind the contract. `graph.surface.service` is the first way to
-  declare that entry: named operations `contract.yaml` points at. `graph.adapters` is the vendor split of
-  that encapsulation. These are not `A` detectors and do not scan imports;
-- `src/cg/guidelines/engineering.yaml` — the non-binding `E` engineering catalog; and
-- `product.yaml` — repository-owned `P` bindings specific to the adopting product, initially empty.
+  boundary hierarchy, and global `A` structural principles with statement, reason, measure,
+  registered detectors, and negative fixtures. The walk is documented in [lifecycle](lifecycle.md).
+  `graph.surface` is declared entry and encapsulation behind the contract.
+  `graph.surface.service` describes one way to declare that entry: named operations
+  `contract.yaml` points at. `graph.adapters` is the vendor and consumer-adapter split of that
+  encapsulation. The protocol fields are not `A` detectors and do not scan imports;
+- `src/cg/guidelines/engineering.yaml` — `family: engineering`, `binding: advisory`. The shipped
+  `E` advisory catalog; read on every lifecycle pass by default and applied when relevant, with no compliance gate; and
+- `product.yaml` — `family: product`, `binding: scoped`. Repository-owned `P` bindings specific
+  to the adopting product, initially empty.
+
+Catalog nesting is packaging: A keeps flat `A01` leaves so registered detector identities stay
+stable. E/P retain named groups with `entries` such as `E01-01` and `P01-01`. Sharing a schema
+does not renumber these identities or require identical nesting.
 
 The engineering catalog uses two categories: **Structural Best Practices** and **Broader Engineering
-Considerations**. Each entry is `id`, `rule`, and `reason`: the practice, and why it exists.
-Family determines authority. `A` is globally binding, `P` is boundary-scoped binding, and `E` is
-the non-binding engineering catalog. A preference in that catalog may carry an explicit cost.
+Considerations**. Each principle leaf is `id`, `statement`, and `reason`: the practice, and why it
+exists. Optional `cost` is available only on advisory E leaves. Family determines authority. `A` is globally binding, `P` is boundary-scoped binding, and
+`E` is the shipped SHOULD family. A preference in that catalog may carry an explicit cost. The package
+ships populated A and E catalogs and an empty P catalog. Adopters may deliberately retire all E
+entries (`categories: []`, `principles: []`); architecture still requires a non-empty catalog.
+Catalog shape is validated even for advisory entries. An invalid E document fails format
+validation; disagreement with a valid E statement does not fail verification.
 
 The build manifest records the SHA-256 of every package file. Authored YAML catalogs are copied,
 not compiled to JSON. `cg build --check` verifies the complete target without changing it.
@@ -224,9 +248,9 @@ the tarball cannot select files from different sources.
 
 This is a source/runtime distinction, not a rejection of Markdown. Architecture principles, engineering
 guidelines, product guidelines, and enforcement remain YAML in both source and package because humans amend
-them and the verifier consumes their structure directly. After `cg init`, `architecture.yaml`,
-`engineering.yaml`, and
-`product.yaml` are repository-owned and preserved. Agent procedures remain Markdown where reading
+them and the verifier consumes their structure directly. After `cg init`, `architecture.yaml` and
+`engineering.yaml` reflect the installed release; prior versions remain in backups. `product.yaml`
+retains repository-authored rules through schema conversion. Agent procedures remain Markdown where reading
 prose is their runtime behavior, including `workflow.md` and each `SKILL.md`.
 
 ## Routing belongs to contracts

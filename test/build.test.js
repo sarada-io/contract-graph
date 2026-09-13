@@ -6,6 +6,7 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
+import { createRequire } from "node:module";
 
 import {
   BUILD_DIRECTORY,
@@ -41,6 +42,7 @@ test("cg build copies architecture and product YAML catalogs", () => {
   const dir = fixture();
   const output = execFileSync(process.execPath, [CLI, "build", dir], { encoding: "utf8" });
   assert.match(output, /file\(s\) from 1 compiler/);
+  assert.equal(readJson(dir, "package.json").devDependencies, undefined, "schema test tooling must not become package metadata");
 
   const architectureFile = path.join(dir, BUILD_DIRECTORY, "agent/cg/principles/architecture.yaml");
   assert.ok(fs.existsSync(architectureFile));
@@ -63,8 +65,13 @@ test("cg build copies architecture and product YAML catalogs", () => {
   assert.equal(engineering.principles[0].category, "Structural Best Practices");
   assert.equal(engineering.principles[0].rules[0].id, "E01-01");
   assert.equal(engineering.principles[0].rules[0].modality, "best-practice");
-  assert.match(engineering.principles[0].rules[0].rule, /Callers use only the paths/);
-  assert.match(engineering.principles[0].rules[0].reason, /undeclared caller is a bypass/);
+  for (const relative of ["principles/architecture.yaml", "guidelines/engineering.yaml", "guidelines/product.yaml"]) {
+    assert.equal(
+      fs.readFileSync(path.join(dir, BUILD_DIRECTORY, "agent/cg", relative), "utf8"),
+      fs.readFileSync(path.join(dir, "src/cg", relative), "utf8"),
+      `${relative} must ship byte-for-byte`,
+    );
+  }
   assert.equal(
     engineering.principles.find((principle) => principle.id === "E01").category,
     "Structural Best Practices",
@@ -116,6 +123,9 @@ test("a repeated build is byte-for-byte stable and removes stale generated files
     "utf8",
   );
   fs.writeFileSync(path.join(dir, BUILD_DIRECTORY, "stale.json"), "{}\n");
+  const archive = path.join(dir, "dist", "tar", "previous.tgz");
+  fs.mkdirSync(path.dirname(archive), { recursive: true });
+  fs.writeFileSync(archive, "retained release bytes");
 
   const second = build(dir);
   assert.deepEqual(second.changed, []);
@@ -125,6 +135,7 @@ test("a repeated build is byte-for-byte stable and removes stale generated files
     architecture,
   );
   assert.ok(!fs.existsSync(path.join(dir, BUILD_DIRECTORY, "stale.json")));
+  assert.equal(fs.readFileSync(archive, "utf8"), "retained release bytes", "rebuilding must preserve sibling release archives");
 });
 
 test("cg build --check detects drift without rewriting compiled output", () => {
@@ -147,17 +158,33 @@ test("the product catalog rejects a non-P rule", () => {
   const dir = fixture();
   fs.writeFileSync(
     path.join(dir, "src", "cg", "guidelines", "product.yaml"),
-    `$schema: https://sarada.io/contract-graph/schema/product-v1.schema.json
-productVersion: "1.0"
+    `$schema: https://contractgraph.dev/schema/principles-v1.schema.json
+principlesVersion: "1.0"
+family: product
+binding: scoped
 principles:
   - id: P01
     title: Wrong family
     entries:
       - id: E01-01
-        text: Prefer the smaller option.
+        statement: Prefer the smaller option.
+        reason: Wrong family ids are refused.
 `,
   );
   assert.throws(() => build(dir), /E01-01/);
+});
+
+test("the package still ships engineering defaults even though adopters may retire them", (t) => {
+  const dir = fixture();
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  fs.writeFileSync(path.join(dir, "src/cg/guidelines/engineering.yaml"), `$schema: https://contractgraph.dev/schema/principles-v1.schema.json
+principlesVersion: "1.0"
+family: engineering
+binding: advisory
+categories: []
+principles: []
+`);
+  assert.throws(() => build(dir), /package must ship a populated engineering catalog/);
 });
 
 test("the architecture catalog rejects an empty cost", () => {
@@ -206,4 +233,97 @@ test("the build rejects a structural binding without registered enforcement", ()
     fs.readFileSync(file, "utf8").replace("cg.verify.binding-enforcement", "cg.verify.ghost"),
   );
   assert.throws(() => build(dir), /implementation: expected cg\.verify\.binding-enforcement/);
+});
+
+test("the build refuses reintroduced legacy schemas and requires the shared schema", (t) => {
+  const dir = fixture();
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  for (const name of ["architecture", "engineering", "product"]) {
+    const file = path.join(dir, `src/cg/schema/${name}.schema.json`);
+    fs.writeFileSync(file, "{}");
+    assert.throws(() => build(dir), new RegExp(`${name}\\.schema\\.json`));
+    fs.rmSync(file);
+  }
+  fs.rmSync(path.join(dir, "src/cg/schema/principles.schema.json"));
+  assert.throws(() => build(dir), /missing catalog source: src\/cg\/schema\/principles.schema.json/);
+});
+
+test("an extracted tarball resolves shared exports and migrates a repository without source-tree fallbacks", (t) => {
+  const dir = fixture();
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  build(dir);
+  const packed = JSON.parse(execFileSync("npm", ["pack", path.join(dir, BUILD_DIRECTORY), "--pack-destination", dir, "--ignore-scripts", "--json"], { encoding: "utf8" }))[0];
+  const consumer = path.join(dir, "consumer");
+  const packageRoot = path.join(consumer, "node_modules/contract-graph");
+  fs.mkdirSync(packageRoot, { recursive: true });
+  fs.writeFileSync(path.join(consumer, "package.json"), '{"name":"independent-adopter","private":true}');
+  execFileSync("tar", ["-xzf", path.join(dir, packed.filename), "--strip-components=1", "-C", packageRoot]);
+  // Supply the already-installed runtime dependency without network or development dependencies.
+  fs.cpSync(path.join(REPO, "node_modules/yaml"), path.join(consumer, "node_modules/yaml"), { recursive: true });
+  fs.rmSync(path.join(dir, "src"), { recursive: true });
+  fs.rmSync(path.join(dir, BUILD_DIRECTORY), { recursive: true });
+  const require = createRequire(path.join(consumer, "consumer.cjs"));
+  for (const name of ["principles", "architecture", "engineering", "product"]) {
+    let resolved;
+    assert.doesNotThrow(() => { resolved = require.resolve(`contract-graph/${name}-schema`); }, `${name} schema export must resolve in the extracted package`);
+    assert.equal(resolved, fs.realpathSync(path.join(packageRoot, "agent/cg/schema/principles.schema.json")));
+  }
+  assert.equal(require.resolve("contract-graph/schema"), fs.realpathSync(path.join(packageRoot, "agent/cg/schema/contract.schema.json")));
+  assert.deepEqual(fs.readdirSync(path.join(packageRoot, "agent/cg/schema")).sort(), ["contract.schema.json", "enforcement.schema.json", "principles.schema.json"]);
+  assert.equal(fs.existsSync(path.join(packageRoot, "src")), false);
+  assert.equal(fs.existsSync(path.join(consumer, "node_modules/ajv")), false);
+  const repo = path.join(consumer, "adopter");
+  const run = (...args) => spawnSync(process.execPath, [path.join(packageRoot, "script/cli.js"), ...args], { cwd: consumer, encoding: "utf8" });
+  const success = (...args) => {
+    const result = run(...args);
+    assert.equal(result.status, 0, `${args.join(" ")}: ${result.stderr}`);
+    return result.stdout;
+  };
+  success("init", repo, "--yes", "--docs", "docs");
+  success("verify", repo);
+  const files = ["principles/architecture.yaml", "guidelines/engineering.yaml", "guidelines/product.yaml"];
+  const legacy = path.join(REPO, "test/fixtures/principles-legacy");
+  const preservedFiles = ["contract.yaml", "enforcement.yaml", "workflow.md", "phases.json"];
+  const preserved = new Map(preservedFiles.map(file => [file, fs.readFileSync(path.join(repo, ".agents/cg", file), "utf8")]));
+  // Give the frozen product fixture its existing P enforcement mapping.
+  const mapFile = path.join(repo, ".agents/cg/enforcement.yaml");
+  const map = preserved.get("enforcement.yaml").replace("entries: []", 'entries:\n  - rules: [P01-01]\n    detector: "billing-minor-units fixture"');
+  fs.writeFileSync(mapFile, map);
+  preserved.set("enforcement.yaml", map);
+  for (const file of files) fs.copyFileSync(path.join(legacy, path.basename(file)), path.join(repo, ".agents/cg", file));
+  const before = new Map(files.map(file => [file, fs.readFileSync(path.join(repo, ".agents/cg", file), "utf8")]));
+  const earlyInit = run("init", repo, "--yes", "--docs", "docs");
+  assert.notEqual(earlyInit.status, 0);
+  assert.match(earlyInit.stdout, /cg-warmup/);
+  assert.equal(fs.readFileSync(path.join(repo, ".agents/cg/guidelines/product.yaml"), "utf8"), before.get("guidelines/product.yaml"));
+  for (const file of files.filter(file => !file.endsWith("product.yaml"))) {
+    assert.notEqual(fs.readFileSync(path.join(repo, ".agents/cg", file), "utf8"), before.get(file));
+    // Restore the legacy fixture to exercise the standalone preview independently.
+    fs.writeFileSync(path.join(repo, ".agents/cg", file), before.get(file));
+  }
+  const reasons = path.join(legacy, "reasons.json");
+  const preview = JSON.parse(success("migrate-principles", repo, "--reasons", reasons, "--json"));
+  assert.equal(preview.changed.length, 3);
+  assert.deepEqual(preview.written, []);
+  for (const [file, text] of before) assert.equal(fs.readFileSync(path.join(repo, ".agents/cg", file), "utf8"), text);
+  const productReasons = path.join(consumer, "init-reasons.json");
+  fs.writeFileSync(productReasons, JSON.stringify({ "P01-01": JSON.parse(fs.readFileSync(reasons, "utf8"))["P01-01"] }));
+  const applied = success("init", repo, "--yes", "--docs", "docs", "--reasons", productReasons);
+  assert.match(applied, /migrate product format/);
+  assert.match(applied, /upgrade backup:/);
+  for (const name of ["architecture", "engineering", "product"]) {
+    fs.writeFileSync(path.join(repo, `.agents/cg/schema/${name}.schema.json`), "invalid legacy schema; must never be read");
+  }
+  success("init", repo, "--yes", "--docs", "docs");
+  success("verify", repo);
+  for (const name of ["architecture", "engineering", "product"]) fs.rmSync(path.join(repo, `.agents/cg/schema/${name}.schema.json`));
+  success("verify", repo);
+  success("sync", repo, "--check");
+  assert.equal(JSON.parse(success("migrate-principles", repo, "--write", "--json")).changed.length, 0);
+  for (const [file, text] of preserved) assert.equal(fs.readFileSync(path.join(repo, ".agents/cg", file), "utf8"), text);
+  const productPreview = preview.changed.find(item => item.file.endsWith("/product.yaml"));
+  assert.equal(fs.readFileSync(path.join(repo, productPreview.file), "utf8"), productPreview.text);
+  for (const file of files.slice(0, 2)) {
+    assert.equal(fs.readFileSync(path.join(repo, ".agents/cg", file), "utf8"), fs.readFileSync(path.join(packageRoot, "agent/cg", file), "utf8"));
+  }
 });

@@ -8,8 +8,10 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { BINDING_FILENAME, loadCoreBindingRules } from "./binding.js";
+import { BINDING_FILENAME, loadCoreBindingRules, validateBindingCatalog } from "./binding.js";
 import { parseContractYaml } from "./contracts.js";
+import { PRINCIPLES_SCHEMA_ID, PRINCIPLES_VERSION, validateGuidelineCatalog } from "./catalog.js";
+export { PRINCIPLES_SCHEMA_ID, PRINCIPLES_VERSION } from "./catalog.js";
 
 export const ROOT_BEGIN_MARKER = "<!-- BEGIN PRINCIPLES INDEX";
 export const ROOT_END_MARKER = "<!-- END PRINCIPLES INDEX -->";
@@ -42,9 +44,9 @@ export const PRINCIPLE_HEADING = new RegExp(
 );
 
 export const FAMILY_BLURB = {
-  A: "Architecture Principles — machine-enforced structural integrity supplied by Contract Graph.",
-  P: "Product Guidelines — exist because of *this* product's market, pricing, and shape.",
-  E: "Engineering Guidelines — non-binding software-engineering judgement.",
+  A: "Architecture Principles — machine-enforced structural integrity supplied by Contract Graph (global MUST).",
+  P: "Product Guidelines — exist because of *this* product's market, pricing, and shape (scoped MUST).",
+  E: "Engineering Guidelines — shipped software-engineering judgement that SHOULD hold; cg verify does not enforce them.",
 };
 
 /** Every authored guideline catalog, its families, and whether contracts may bind its rule IDs. */
@@ -68,25 +70,18 @@ export const PRINCIPLE_FILES = Object.freeze({
   },
 });
 
-export const ARCHITECTURE_SCHEMA_ID =
-  "https://sarada.io/contract-graph/schema/architecture-v1.schema.json";
-export const ENGINEERING_SCHEMA_ID =
-  "https://sarada.io/contract-graph/schema/engineering-v1.schema.json";
-export const ENGINEERING_VERSION = "1.0";
+export const ARCHITECTURE_SCHEMA_ID = PRINCIPLES_SCHEMA_ID;
+export const ENGINEERING_SCHEMA_ID = PRINCIPLES_SCHEMA_ID;
+export const ENGINEERING_VERSION = PRINCIPLES_VERSION;
 export const ENGINEERING_FILENAME = ".agents/cg/guidelines/engineering.yaml";
-export const PRODUCT_SCHEMA_ID =
-  "https://sarada.io/contract-graph/schema/product-v1.schema.json";
-export const PRODUCT_VERSION = "1.0";
+export const PRODUCT_SCHEMA_ID = PRINCIPLES_SCHEMA_ID;
+export const PRODUCT_VERSION = PRINCIPLES_VERSION;
 export const PRODUCT_FILENAME = ".agents/cg/guidelines/product.yaml";
 const PRINCIPLE_STALE = Object.freeze({
   "engineering.yaml": ["engineering.md", "engineering.json", "design.yaml", "design.md", "design.json"],
   "product.yaml": ["product.md", "product.json"],
 });
 const PRINCIPLE_STALE_NAMES = Object.freeze(Object.values(PRINCIPLE_STALE).flat());
-const E_HEADING = /^E\d{2}$/;
-const E_ENTRY = /^E\d{2}-\d{2}$/;
-const PRODUCT_PRINCIPLE = /^P\d{2}$/;
-const PRODUCT_ENTRY = /^P\d{2}-\d{2}$/;
 
 /** Map an installed catalog filename onto its PRINCIPLE_FILES key. */
 export function principleLogicalName(filename) {
@@ -178,7 +173,7 @@ export const skillsRoot = (repoRoot) => path.join(repoRoot, ".agents", "skills")
 export const principlesRoot = (repoRoot) => path.join(cgRoot(repoRoot), "principles");
 export const guidelinesRoot = (repoRoot) => path.join(cgRoot(repoRoot), "guidelines");
 export const ENFORCEMENT_SCHEMA_ID =
-  "https://sarada.io/contract-graph/schema/enforcement-v1.schema.json";
+  "https://contractgraph.dev/schema/enforcement-v1.schema.json";
 export const ENFORCEMENT_VERSION = "1.0";
 export const ENFORCEMENT_FILENAME = ".agents/cg/enforcement.yaml";
 const ENFORCEMENT_RULE = /^P\d{2}-\d{2}$/;
@@ -293,154 +288,43 @@ function assertNoStalePrinciples(repoRoot) {
   if (failures.length) throw new ContractError(failures.join("; "));
 }
 
-/** Validate and return an authored engineering catalog, with entries normalized to rules. */
-export function loadEngineeringCatalog(file, { repoRoot = path.dirname(file) } = {}) {
+/** Load any principle family through one entry point; semantic A checks stay verifier-owned. */
+export function loadPrinciplesCatalog(file, { repoRoot = path.dirname(file), family } = {}) {
   const source = path.relative(repoRoot, file).split(path.sep).join("/");
-  const spec = PRINCIPLE_FILES["engineering.yaml"];
   let catalog;
   try {
     catalog = parseContractYaml(fs.readFileSync(file, "utf8"), { source });
   } catch (error) {
     throw new ContractError(error.message);
   }
-  if (!object(catalog)) throw new ContractError(`${source}: expected an object`);
-  const failures = [];
-  for (const key of ["$schema", "engineeringVersion", "categories", "principles"]) {
-    if (!(key in catalog)) failures.push(`${source}: missing \`${key}\``);
-  }
-  for (const key of Object.keys(catalog)) {
-    if (!["$schema", "engineeringVersion", "categories", "principles"].includes(key)) {
-      failures.push(`${source}: unknown \`${key}\``);
-    }
-  }
-  if (catalog.$schema !== ENGINEERING_SCHEMA_ID) {
-    failures.push(`${source}.$schema: expected ${ENGINEERING_SCHEMA_ID}`);
-  }
-  if (catalog.engineeringVersion !== ENGINEERING_VERSION) {
-    failures.push(`${source}.engineeringVersion: expected ${ENGINEERING_VERSION}`);
-  }
-  if (
-    !Array.isArray(catalog.categories) ||
-    !catalog.categories.length ||
-    catalog.categories.some((category) => typeof category !== "string" || !category.trim()) ||
-    new Set(catalog.categories).size !== catalog.categories.length
-  ) {
-    failures.push(`${source}.categories: expected unique non-empty strings`);
-  }
-  const knownCategories = new Set(Array.isArray(catalog.categories) ? catalog.categories : []);
-  const seenPrinciples = new Set();
-  const seenEntries = new Set();
-  const parsedFamilies = new Set();
-  const principles = [];
-  if (!Array.isArray(catalog.principles) || !catalog.principles.length) {
-    failures.push(`${source}.principles: expected a non-empty array`);
-  } else {
-    for (const [index, principle] of catalog.principles.entries()) {
-      const at = `${source}.principles[${index}]`;
-      if (!object(principle)) {
-        failures.push(`${at}: expected an object`);
-        continue;
-      }
-      for (const key of ["id", "title", "category", "entries"]) {
-        if (!(key in principle)) failures.push(`${at}: missing \`${key}\``);
-      }
-      for (const key of Object.keys(principle)) {
-        if (!["id", "title", "category", "entries"].includes(key)) {
-          failures.push(`${at}: unknown \`${key}\``);
-        }
-      }
-      if (!E_HEADING.test(principle.id ?? "")) {
-        failures.push(`${at}.id: \`${principle.id ?? "<missing>"}\` is not an Enn id`);
-        continue;
-      }
-      const principleFamily = familyOf(principle.id);
-      if (!spec.families.includes(principleFamily)) {
-        failures.push(`${at}.id: \`${principle.id}\` does not belong in engineering.yaml`);
-      }
-      if (seenPrinciples.has(principle.id)) {
-        failures.push(`${at}: defines \`${principle.id}.\` more than once`);
-      }
-      seenPrinciples.add(principle.id);
-      if (typeof principle.title !== "string" || !principle.title.trim()) {
-        failures.push(`${at}.title: expected a non-empty string`);
-      }
-      if (typeof principle.category !== "string" || !knownCategories.has(principle.category)) {
-        failures.push(`${at}.category: expected one category declared by the catalog`);
-      }
-      if (!Array.isArray(principle.entries) || !principle.entries.length) {
-        failures.push(`${at}.entries: expected a non-empty array`);
-        continue;
-      }
-      const rules = [];
-      for (const [entryIndex, entry] of principle.entries.entries()) {
-        const entryAt = `${at}.entries[${entryIndex}]`;
-        if (!object(entry)) {
-          failures.push(`${entryAt}: expected an object`);
-          continue;
-        }
-        for (const key of ["id", "rule", "reason"]) {
-          if (!(key in entry)) failures.push(`${entryAt}: missing \`${key}\``);
-        }
-        for (const key of Object.keys(entry)) {
-          if (!["id", "rule", "reason", "cost"].includes(key)) {
-            failures.push(`${entryAt}: unknown \`${key}\``);
-          }
-        }
-        if (!E_ENTRY.test(entry.id ?? "")) {
-          failures.push(`${entryAt}.id: \`${entry.id ?? "<missing>"}\` is not an Enn-nn id`);
-          continue;
-        }
-        const family = familyOf(entry.id);
-        parsedFamilies.add(family);
-        if (!spec.families.includes(family)) {
-          failures.push(`${entryAt}: \`${entry.id}\` does not belong in engineering.yaml`);
-        }
-        if (entry.id.slice(0, entry.id.lastIndexOf("-")) !== principle.id) {
-          failures.push(`${entryAt}: \`${entry.id}\` does not belong under \`${principle.id}\``);
-        }
-        if (seenEntries.has(entry.id)) {
-          failures.push(`${entryAt}: duplicate ${entry.id}`);
-        }
-        seenEntries.add(entry.id);
-        if (typeof entry.rule !== "string" || !entry.rule.trim()) {
-          failures.push(`${entryAt}.rule: expected a non-empty string`);
-        }
-        if (typeof entry.reason !== "string" || !entry.reason.trim()) {
-          failures.push(`${entryAt}.reason: expected a non-empty string`);
-        }
-        if ("cost" in entry && (typeof entry.cost !== "string" || !entry.cost.trim())) {
-          failures.push(`${entryAt}.cost: expected a non-empty string`);
-        }
-        const rule = {
-          id: entry.id,
-          modality: "best-practice",
-          rule: entry.rule ?? "",
-          reason: entry.reason ?? "",
-        };
-        if (entry.cost) rule.cost = entry.cost;
-        rules.push(rule);
-      }
-      principles.push({
-        id: principle.id,
-        title: principle.title,
-        category: principle.category,
-        rules,
-      });
-    }
-  }
-  for (const family of spec.families) {
-    if (!parsedFamilies.has(family)) {
-      failures.push(`${source}: ${family} has no valid rules`);
-    }
-  }
+  const expected = family ?? catalog?.family;
+  const failures = expected === "architecture"
+    ? validateBindingCatalog(catalog, { source })
+    : validateGuidelineCatalog(catalog, expected, { source });
   if (failures.length) throw new ContractError(failures.join("; "));
+  return catalog;
+}
+
+function loadGuidelineCatalog(file, family, options) {
+  const catalog = loadPrinciplesCatalog(file, { ...options, family });
+  const engineering = family === "engineering";
   return {
-    $schema: catalog.$schema,
-    engineeringVersion: catalog.engineeringVersion,
-    families: spec.families,
-    categories: catalog.categories,
-    principles,
+    ...catalog,
+    families: PRINCIPLE_FILES[`${family}.yaml`].families,
+    principles: catalog.principles.map(({ entries, ...group }) => ({
+      ...group,
+      rules: entries.map((entry) => ({
+        ...entry,
+        modality: engineering ? "best-practice" : "binding",
+        // Preserve the existing rendering API while authored catalogs use statement.
+        [engineering ? "rule" : "text"]: entry.statement,
+      })),
+    })),
   };
+}
+
+export function loadEngineeringCatalog(file, options = {}) {
+  return loadGuidelineCatalog(file, "engineering", options);
 }
 
 /**
@@ -454,115 +338,8 @@ export function loadEngineeringMap(repoRoot) {
   return loadEngineeringCatalog(file, { repoRoot });
 }
 
-/** Validate and return an authored product catalog, with entries normalized to binding rules. */
-export function loadProductCatalog(file, { repoRoot = path.dirname(file) } = {}) {
-  const source = path.relative(repoRoot, file).split(path.sep).join("/");
-  const spec = PRINCIPLE_FILES["product.yaml"];
-  let catalog;
-  try {
-    catalog = parseContractYaml(fs.readFileSync(file, "utf8"), { source });
-  } catch (error) {
-    throw new ContractError(error.message);
-  }
-  if (!object(catalog)) throw new ContractError(`${source}: expected an object`);
-  const failures = [];
-  for (const key of ["$schema", "productVersion", "principles"]) {
-    if (!(key in catalog)) failures.push(`${source}: missing \`${key}\``);
-  }
-  for (const key of Object.keys(catalog)) {
-    if (!["$schema", "productVersion", "principles"].includes(key)) {
-      failures.push(`${source}: unknown \`${key}\``);
-    }
-  }
-  if (catalog.$schema !== PRODUCT_SCHEMA_ID) {
-    failures.push(`${source}.$schema: expected ${PRODUCT_SCHEMA_ID}`);
-  }
-  if (catalog.productVersion !== PRODUCT_VERSION) {
-    failures.push(`${source}.productVersion: expected ${PRODUCT_VERSION}`);
-  }
-  const seenPrinciples = new Set();
-  const seenEntries = new Set();
-  const principles = [];
-  if (!Array.isArray(catalog.principles)) {
-    failures.push(`${source}.principles: expected an array`);
-  } else {
-    for (const [index, principle] of catalog.principles.entries()) {
-      const at = `${source}.principles[${index}]`;
-      if (!object(principle)) {
-        failures.push(`${at}: expected an object`);
-        continue;
-      }
-      for (const key of ["id", "title", "entries"]) {
-        if (!(key in principle)) failures.push(`${at}: missing \`${key}\``);
-      }
-      for (const key of Object.keys(principle)) {
-        if (!["id", "title", "entries"].includes(key)) {
-          failures.push(`${at}: unknown \`${key}\``);
-        }
-      }
-      if (!PRODUCT_PRINCIPLE.test(principle.id ?? "")) {
-        failures.push(`${at}.id: \`${principle.id ?? "<missing>"}\` is not a Pnn id`);
-        continue;
-      }
-      if (!spec.families.includes(familyOf(principle.id))) {
-        failures.push(`${at}.id: \`${principle.id}\` does not belong in product.yaml`);
-      }
-      if (seenPrinciples.has(principle.id)) {
-        failures.push(`${at}: defines \`${principle.id}.\` more than once`);
-      }
-      seenPrinciples.add(principle.id);
-      if (typeof principle.title !== "string" || !principle.title.trim()) {
-        failures.push(`${at}.title: expected a non-empty string`);
-      }
-      if (!Array.isArray(principle.entries) || !principle.entries.length) {
-        failures.push(`${at}.entries: expected a non-empty array`);
-        continue;
-      }
-      const rules = [];
-      for (const [entryIndex, entry] of principle.entries.entries()) {
-        const entryAt = `${at}.entries[${entryIndex}]`;
-        if (!object(entry)) {
-          failures.push(`${entryAt}: expected an object`);
-          continue;
-        }
-        for (const key of ["id", "text"]) {
-          if (!(key in entry)) failures.push(`${entryAt}: missing \`${key}\``);
-        }
-        for (const key of Object.keys(entry)) {
-          if (!["id", "text"].includes(key)) {
-            failures.push(`${entryAt}: unknown \`${key}\``);
-          }
-        }
-        if (!PRODUCT_ENTRY.test(entry.id ?? "")) {
-          failures.push(`${entryAt}.id: \`${entry.id ?? "<missing>"}\` is not a Pnn-nn id`);
-          continue;
-        }
-        if (entry.id.slice(0, entry.id.lastIndexOf("-")) !== principle.id) {
-          failures.push(`${entryAt}: \`${entry.id}\` does not belong under \`${principle.id}\``);
-        }
-        if (seenEntries.has(entry.id)) {
-          failures.push(`${entryAt}: duplicate ${entry.id}`);
-        }
-        seenEntries.add(entry.id);
-        if (typeof entry.text !== "string" || !entry.text.trim()) {
-          failures.push(`${entryAt}.text: expected a non-empty string`);
-        }
-        rules.push({ id: entry.id, modality: "binding", text: entry.text ?? "" });
-      }
-      principles.push({
-        id: principle.id,
-        title: principle.title,
-        rules,
-      });
-    }
-  }
-  if (failures.length) throw new ContractError(failures.join("; "));
-  return {
-    $schema: catalog.$schema,
-    productVersion: catalog.productVersion,
-    families: spec.families,
-    principles,
-  };
+export function loadProductCatalog(file, options = {}) {
+  return loadGuidelineCatalog(file, "product", options);
 }
 
 /**
@@ -583,15 +360,16 @@ export function productHasHarvestedRules(repoRoot) {
 }
 
 /** Lifecycle phases a repository can scope principle loading to. */
-export const PHASE_NAMES = Object.freeze(["plan", "prepare", "produce", "sign-off", "unblock"]);
+export const PHASE_NAMES = Object.freeze(["plan", "prototype", "prepare", "produce", "sign-off", "unblock"]);
 
 /**
  * Read `phases.json`: which rule families each phase loads.
  *
  * Tokens, not filenames. `A`, `E`, and `P` survive any reorganisation of the
  * catalog files, which is the point — loading and layout should not be able to break
- * each other. `always` means *load if the repository selected it*, never *must exist*; a
+ * each other. `always` means *in view on every task*, never *must exist*; a
  * repository with no architecture catalog is invalid, but an empty product catalog is valid.
+ * Advisory E may sit in `always` without becoming a verify failure.
  */
 export function loadPhases(repoRoot) {
   const file = phasesPath(repoRoot);
@@ -608,7 +386,9 @@ export function loadPhases(repoRoot) {
     throw new ContractError(`${file}: expected a \`phases\` object`);
   }
 
-  const missing = PHASE_NAMES.filter((name) => !(name in phases));
+  // Existing repository-owned maps predate the optional prototype entry. Its skill reads A/P
+  // directly until the repository adopts a row; upgrades must not force a policy rewrite.
+  const missing = PHASE_NAMES.filter((name) => name !== "prototype" && !(name in phases));
   if (missing.length) throw new ContractError(`${file}: missing phase(s): ${missing.join(", ")}`);
   const extra = Object.keys(phases).filter((name) => !PHASE_NAMES.includes(name));
   if (extra.length) throw new ContractError(`${file}: unknown phase(s): ${extra.join(", ")}`);
@@ -640,8 +420,8 @@ export const governanceContractPath = (repoRoot) => path.join(cgRoot(repoRoot), 
 /**
  * The principle files, in filename order.
  *
- * `engineering.yaml` is the complete non-binding non-product inventory.
- * `product.yaml` stays separate because its P guidelines belong to the adopting product and ship
+ * `engineering.yaml` is the complete non-product SHOULD inventory.
+ * `product.yaml` stays separate because its P principles belong to the adopting product and ship
  * empty by design. An unrelated catalog filename is an error rather than policy that disappears
  * silently.
  */
@@ -780,7 +560,7 @@ export function parsePrinciples(file, { allowEmpty = false, families = RULE_FAMI
     for (const rule of catalog.principles.flatMap((principle) => principle.rules)) {
       if (rule.modality !== "binding" || !families.includes(familyOf(rule.id))) continue;
       if (rules.has(rule.id)) throw new ContractError(`duplicate rule id ${rule.id} in ${file}`);
-      rules.set(rule.id, rule.text);
+      rules.set(rule.id, rule.statement ?? rule.text);
     }
     if (!rules.size && !allowEmpty) throw new ContractError(`no XX-pp-nn rules parsed from ${file}`);
     return rules;
@@ -1266,7 +1046,7 @@ export function renderModulePointer(unit, name = unit) {
     "",
     `The structural rules that bind every boundary are in \`${prefix}.agents/cg/principles/architecture.yaml\`.`,
     `Repository product and engineering guidelines are under \`${prefix}.agents/cg/guidelines/\`; engineering entries there are`,
-    "non-binding.",
+    "SHOULD, not a verify failure.",
     `For the lifecycle workflow, read \`${prefix}.agents/cg/workflow.md\`.`,
     "",
     "Do not put instructions in this file.",

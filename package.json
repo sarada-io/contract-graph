@@ -1,6 +1,6 @@
 {
   "name": "contract-graph",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Record a repository as a traversable contract graph so people and coding agents can find where a change belongs before reading code.",
   "type": "module",
   "bin": {
@@ -10,18 +10,19 @@
     ".": "./src/scripts/contracts.js",
     "./contracts": "./src/scripts/contracts.js",
     "./schema": "./src/cg/schema/contract.schema.json",
-    "./architecture-schema": "./src/cg/schema/architecture.schema.json",
-    "./engineering-schema": "./src/cg/schema/engineering.schema.json",
-    "./product-schema": "./src/cg/schema/product.schema.json",
+    "./principles-schema": "./src/cg/schema/principles.schema.json",
+    "./architecture-schema": "./src/cg/schema/principles.schema.json",
+    "./engineering-schema": "./src/cg/schema/principles.schema.json",
+    "./product-schema": "./src/cg/schema/principles.schema.json",
     "./architecture-rules": "./src/cg/principles/architecture.yaml",
-    "./build": "./build/manifest.json",
-    "./build/*": "./build/*"
+    "./build": "./dist/build/manifest.json",
+    "./build/*": "./dist/build/*"
   },
   "files": [
     "bin",
     "src",
     "!src/scripts/dev.js",
-    "build",
+    "dist/build",
     "docs",
     "README.md",
     "LICENSE"
@@ -30,12 +31,14 @@
     "node": ">=18.17"
   },
   "scripts": {
-    "test": "node --test",
+    "test": "node scripts/test.mjs",
+    "test:interaction": "node scripts/auto-run-interaction.mjs",
+    "trial:interaction": "node scripts/create-auto-run-fixture.mjs",
     "try": "node src/scripts/dev.js",
     "build": "node bin/cg.js build",
     "build:check": "node bin/cg.js build --check",
-    "pack": "node bin/cg.js build --quiet && npm pack --ignore-scripts ./build",
-    "clean": "node --input-type=module -e \"import fs from 'node:fs'; for (const dir of ['build', 'tmp', 'compiled']) fs.rmSync(dir, { recursive: true, force: true })\""
+    "pack": "node bin/cg.js build --quiet && node --input-type=module -e \"import fs from 'node:fs'; fs.mkdirSync('dist/tar', { recursive: true })\" && npm pack --ignore-scripts --pack-destination dist/tar ./dist/build",
+    "clean": "node --input-type=module -e \"import fs from 'node:fs'; for (const dir of ['build', 'dist', 'tmp', 'compiled']) fs.rmSync(dir, { recursive: true, force: true })\""
   },
   "keywords": [
     "contract-graph",
@@ -48,8 +51,8 @@
     "ai-agents"
   ],
   "author": {
-    "name": "Sarada.io",
-    "url": "https://sarada.io"
+    "name": "Contract Graph",
+    "url": "https://contractgraph.dev/"
   },
   "license": "Apache-2.0",
   "publishConfig": {
@@ -59,11 +62,14 @@
     "type": "git",
     "url": "git+https://github.com/sarada-io/contract-graph.git"
   },
-  "homepage": "https://sarada.io/cg/",
+  "homepage": "https://contractgraph.dev/",
   "bugs": {
     "url": "https://github.com/sarada-io/contract-graph/issues"
   },
   "dependencies": {
     "yaml": "^2.9.0"
+  },
+  "devDependencies": {
+    "ajv": "^8.20.0"
   }
 }

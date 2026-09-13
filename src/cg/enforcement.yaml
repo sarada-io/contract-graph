@@ -1,4 +1,4 @@
-$schema: https://sarada.io/contract-graph/schema/enforcement-v1.schema.json
+$schema: https://contractgraph.dev/schema/enforcement-v1.schema.json
 enforcementVersion: "1.0"
 
 # P detector rows only. A lives in principles/architecture.yaml. E never appears.

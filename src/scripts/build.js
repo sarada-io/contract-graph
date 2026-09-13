@@ -20,7 +20,7 @@ import {
 } from "./model.js";
 
 export const COMPILED_VERSION = "1.0";
-export const BUILD_DIRECTORY = "build";
+export const BUILD_DIRECTORY = "dist/build";
 export const PACKAGE_DATA_DIRECTORY = "agent/cg/guidelines";
 
 const PACKAGE_TREE_MAPPINGS = Object.freeze([
@@ -55,12 +55,13 @@ export function compilePrincipleAssets(repoRoot) {
   const checks = [
     [path.join(repoRoot, "src", "cg", "guidelines"), new Set(Object.keys(PRINCIPLE_FILES))],
     [path.join(repoRoot, "src", "cg", "principles"), new Set(["architecture.yaml"])],
+    [path.join(repoRoot, "src", "cg", "schema"), new Set(["principles.schema.json", "contract.schema.json", "enforcement.schema.json"])],
   ];
   for (const [sourceRoot, expected] of checks) {
     const relative = posix(path.relative(repoRoot, sourceRoot));
     if (!fs.existsSync(sourceRoot)) throw new BuildError(`missing catalog source directory: ${relative}`);
     const unexpected = fs.readdirSync(sourceRoot, { withFileTypes: true })
-      .filter((entry) => entry.isFile() && /\.(?:md|ya?ml)$/.test(entry.name) && !expected.has(entry.name))
+      .filter((entry) => entry.isFile() && /\.(?:md|ya?ml|json)$/.test(entry.name) && !expected.has(entry.name))
       .map((entry) => entry.name)
       .sort();
     if (unexpected.length) {
@@ -130,15 +131,17 @@ function packageSourceAssets(repoRoot) {
       ".": "./script/contracts.js",
       "./contracts": "./script/contracts.js",
       "./schema": "./agent/cg/schema/contract.schema.json",
-      "./architecture-schema": "./agent/cg/schema/architecture.schema.json",
-      "./engineering-schema": "./agent/cg/schema/engineering.schema.json",
-      "./product-schema": "./agent/cg/schema/product.schema.json",
+      "./principles-schema": "./agent/cg/schema/principles.schema.json",
+      "./architecture-schema": "./agent/cg/schema/principles.schema.json",
+      "./engineering-schema": "./agent/cg/schema/principles.schema.json",
+      "./product-schema": "./agent/cg/schema/principles.schema.json",
       "./architecture-rules": "./agent/cg/principles/architecture.yaml",
       "./guidelines/*": "./agent/cg/guidelines/*.yaml",
     },
   };
   delete packaged.files;
   delete packaged.scripts;
+  delete packaged.devDependencies;
   assets.set("package.json", {
     content: Buffer.from(`${JSON.stringify(packaged, null, 2)}\n`),
     mode: 0o644,
@@ -150,7 +153,7 @@ function packageSourceAssets(repoRoot) {
 export function build(repoRoot, { write = true } = {}) {
   const root = path.resolve(repoRoot);
   const outputRoot = path.resolve(root, BUILD_DIRECTORY);
-  if (path.relative(root, outputRoot) !== BUILD_DIRECTORY) {
+  if (posix(path.relative(root, outputRoot)) !== BUILD_DIRECTORY) {
     throw new BuildError(`refusing to build outside \`${BUILD_DIRECTORY}\``);
   }
 
@@ -158,7 +161,8 @@ export function build(repoRoot, { write = true } = {}) {
   // compiled projections, but all must pass catalog validation before any package target is assembled.
   loadBindingCatalog(path.join(root, "src", "cg", "principles", "architecture.yaml"), { repoRoot: root });
   loadEnforcementCatalog(path.join(root, "src", "cg", "enforcement.yaml"), { repoRoot: root });
-  loadEngineeringCatalog(path.join(root, "src", "cg", "guidelines", "engineering.yaml"), { repoRoot: root });
+  const engineering = loadEngineeringCatalog(path.join(root, "src", "cg", "guidelines", "engineering.yaml"), { repoRoot: root });
+  if (!engineering.principles.length) throw new BuildError("the package must ship a populated engineering catalog; adopters may retire entries after installation");
   loadProductCatalog(path.join(root, "src", "cg", "guidelines", "product.yaml"), { repoRoot: root });
 
   const assets = packageSourceAssets(root);

@@ -19,6 +19,7 @@ import path from "node:path";
 import { productHasHarvestedRules } from "./model.js";
 import { loadContractGraph } from "./contracts.js";
 import { profilePath } from "./profiles.js";
+import { readPrototypes, programmeName } from "./prototype.js";
 
 /** Markdown inline links and reference definitions. Bare paths in prose are deliberately ignored. */
 const LINK = /\[[^\]]*\]\(<?([^)>\s]+)[^)]*\)|^\[[^\]]+\]:\s*(\S+)/gm;
@@ -26,8 +27,45 @@ const LINK = /\[[^\]]*\]\(<?([^)>\s]+)[^)]*\)|^\[[^\]]+\]:\s*(\S+)/gm;
 /** Always claimed: the log is permanent by design, the README is optional prose about the tree. */
 const NAMED_ROOTS = new Set(["decision-log.md", "README.md"]);
 
-/** Drained or ignored already — not this command's business. */
-const EXEMPT_DIRS = new Set(["archive", "auto-run"]);
+/** Drained already — not this command's business. Live auto-run ledgers are working state; Closed ones are residue. */
+const EXEMPT_DIRS = new Set(["archive"]);
+
+/** Auto-run ledgers and locks live under this plans subtree. */
+function isAutoRunPath(plansRoot, file) {
+  const rel = path.relative(plansRoot, file);
+  return rel === "auto-run" || rel.startsWith(`auto-run${path.sep}`);
+}
+
+/** Read explicit current status outside fenced history; support older bare Closed markers. */
+export function autoRunLedgerStatus(text) {
+  const lines = [];
+  let fence = null;
+  for (const line of text.split(/\r?\n/)) {
+    const marker = /^\s{0,3}(`{3,}|~{3,})/.exec(line)?.[1];
+    if (marker) {
+      if (!fence) fence = marker;
+      else if (marker[0] === fence[0] && marker.length >= fence.length) fence = null;
+      continue;
+    }
+    if (!fence) lines.push(line);
+  }
+  const statuses = lines.flatMap(line => {
+    const match = /^\s*(?:[-*]\s+)?(?:\*\*Status:\*\*|Status:)\s*(.*?)\s*$/i.exec(line);
+    return match ? [match[1].toLowerCase()] : [];
+  });
+  if (statuses.length) return new Set(statuses).size === 1 ? statuses[0] : null;
+  return lines.some(line => /^Closed\s*$/i.test(line)) ? "closed" : null;
+}
+
+/** A phase or manager ledger marked Closed — leftover working state, not history. */
+function isClosedAutoRunLedger(file) {
+  if (!/\.auto-run\.md$/i.test(file)) return false;
+  try {
+    return autoRunLedgerStatus(fs.readFileSync(file, "utf8")) === "closed";
+  } catch {
+    return false;
+  }
+}
 
 /** Warmup's outputs, which are legitimately unreferenced while warmup is still running. */
 const WARMUP_FILES = new Set([
@@ -106,7 +144,9 @@ function linksFrom(file, plansRoot) {
   return out;
 }
 
-export function residue(repoRoot, { docs } = {}) {
+export function residue(repoRoot, { docs, programme } = {}) {
+  repoRoot = path.resolve(repoRoot);
+  if (programme !== undefined) programmeName(programme);
   const docsRoot = docs ?? readDocsRoot(repoRoot);
   const plansRoot = path.join(repoRoot, docsRoot, "plans");
   const { files, dirs } = walk(plansRoot);
@@ -129,6 +169,18 @@ export function residue(repoRoot, { docs } = {}) {
     return WARMUP_FILES.has(name) && !finished;
   });
 
+  // Receipts are typed consumers of local evidence, including non-Markdown files. Never infer
+  // ownership from arbitrary JSON strings or exempt a whole active programme directory.
+  const prototypes = readPrototypes(repoRoot);
+  const evidenceRoots = prototypes.flatMap(record => record.history.flatMap(event => {
+    const p = event.evidence;
+    if (typeof p !== "string" || !p.startsWith(`${docsRoot}/plans/${record.programme}/`) ||
+        p.includes("\\") || p.split("/").some(part => !part || part === "." || part === "..")) return [];
+    const target = path.resolve(repoRoot, p);
+    return files.includes(target) && !fs.lstatSync(target).isSymbolicLink() ? [target] : [];
+  }));
+  roots.push(...new Set(evidenceRoots.filter(p => !roots.includes(p))));
+
   const reachable = new Set(roots);
   const queue = [...roots];
   while (queue.length) {
@@ -147,24 +199,41 @@ export function residue(repoRoot, { docs } = {}) {
   }
 
   const unreachable = files
-    .filter((file) => !reachable.has(file))
+    .filter((file) => !reachable.has(file) || (isAutoRunPath(plansRoot, file) && isClosedAutoRunLedger(file)))
+    .filter((file) => !isAutoRunPath(plansRoot, file) || isClosedAutoRunLedger(file))
     .map((file) => ({
       path: rel(file),
       why:
         WARMUP_FILES.has(path.basename(file)) && finished && path.basename(file) !== RESEED_DELTA
           ? "warmup finished; its working files have no reader left"
-          : "not reachable by a link from any root",
+          : isAutoRunPath(plansRoot, file) && isClosedAutoRunLedger(file)
+            ? "closed auto-run ledger remains; reconcile stale links and delete it, do not archive"
+            : "not reachable by a link from any root",
     }));
 
   const empty = dirs
     .filter((dir) => !fs.readdirSync(dir).length)
     .map((dir) => ({ path: rel(dir), why: "empty directory — git does not track it, so nothing else reports it" }));
 
+  const programmeNames = new Set(prototypes.map(r => r.programme));
+  for (const file of files) {
+    const parts = path.relative(plansRoot, file).split(path.sep);
+    if (parts.length === 2 && (/roadmap/i.test(parts[1]) || /_detailed_preparation\.md$/i.test(parts[1]))) programmeNames.add(parts[0]);
+  }
+  if (programme && !programmeNames.has(programme)) throw new Error(`unknown programme: ${programme}`);
+  const items = [...unreachable, ...empty].map(item => {
+    const parts = item.path.slice(`${docsRoot}/plans/`.length).split("/");
+    const owner = programmeNames.has(parts[0]) ? parts[0] : null;
+    return { ...item, programme: owner, scope: !programme ? "repository" : owner === programme ? "selected" : owner ? "other" : "shared" };
+  }).sort((a, b) => a.path.localeCompare(b.path));
   return {
     docs: docsRoot,
+    programme: programme ?? null,
     roots: roots.map(rel).sort(),
     claimed: reachable.size,
-    residue: [...unreachable, ...empty].sort((a, b) => a.path.localeCompare(b.path)),
+    residue: items,
+    // Unowned/shared findings require reconciliation; a programme filter cannot hide them.
+    blocking: items.filter(item => item.scope !== "other"),
   };
 }
 

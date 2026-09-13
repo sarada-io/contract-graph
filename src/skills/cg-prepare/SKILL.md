@@ -1,6 +1,6 @@
 ---
 name: cg-prepare
-description: Prepare one selected Contract Graph phase as a prioritized queue of dependency-safe executable Steps. Use after cg-plan fixes the phase outcome and acceptance gate, or when cg-sign-off returns corrective work that changes the remaining queue. Measures affected source, tests, resources, dependencies, contracts and detectors; gives every Step explicit dependencies, blockers and state; defines one shared execution branch or worktree; and emits cold-start briefs that let cg-produce run ready Steps serially until completion or a genuine queue-wide block. Does not allocate parallel tracks, per-Step branches, merge order, or concurrent handoffs.
+description: Prepare one selected Contract Graph phase as a prioritized queue of dependency-safe executable Steps. Use after cg-plan fixes the phase outcome and acceptance gate, after a Handed off prototype supplies an Active roadmap, or when cg-sign-off returns corrective work that changes the remaining queue. Measures affected source, tests, resources, dependencies, contracts and detectors; gives every Step explicit dependencies, blockers and state; defines one shared execution branch or worktree; and emits cold-start briefs that let cg-produce run ready Steps serially until completion or a genuine queue-wide block. Does not allocate parallel tracks, per-Step branches, merge order, or concurrent handoffs.
 ---
 
 # CG Prepare
@@ -8,8 +8,15 @@ description: Prepare one selected Contract Graph phase as a prioritized queue of
 Turn one accepted phase into one ordered execution queue. Do not implement the phase or edit
 permanent contracts here.
 
-Read `.agents/skills/cg-unblock/SKILL.md` only when a fork fails D-1: unresolvable from contracts
-and accepted decisions, material, costly to reverse, and nothing else can proceed.
+Read `.agents/skills/cg-unblock/SKILL.md` when a fork remains unresolved by the Plan, contracts
+and accepted decisions, or requires owner authority. Under auto-run, ask the Manager first;
+otherwise ask the user directly under D-6. Record the answer and continue independent work.
+
+Read `.agents/cg/phases.json` and load the families selected for `prepare`. Shipped defaults
+include `.agents/cg/guidelines/engineering.yaml` on every pass; retained repository phase policy
+controls loading. Consider applicable E practices as advisory context. They create no acceptance
+criteria, required changes, or blockers unless separately adopted through an authorized binding.
+Do not reopen settled decisions merely because an E preference differs.
 
 ## Required outcome
 
@@ -36,27 +43,56 @@ in scope. Once the queue file has a `Ready` Step, emit §9 so `cg-auto-run` can 
 
 ## 1. Admit one phase
 
-Preparation starts only when `cg-plan` has selected one phase whose outcome, scope, and acceptance
-gate are stable, its prerequisites are satisfied or explicitly blocked, and the repository's
-execution branch or worktree policy is known. If the outcome or gate must change, stop with
-`$cg-plan`.
+Admit one phase from either a cg-plan roadmap or a `Handed off` prototype with an `Active`
+roadmap and explicit human acceptance. Its outcome, scope, and acceptance gate must be stable,
+prerequisites satisfied or explicitly blocked, and execution branch or worktree policy known.
+A finalised prototype roadmap is sufficient planning input; do not send it through `$cg-plan`
+again. Use `$cg-plan` only for unresolved programme questions or a changed outcome or gate.
+
+For a prototype, run `cg next --programme <slug>` and read its durable record. Admit the exact
+worktree including relevant uncommitted files; do not reconstruct it from the plan or call it
+green. Assign retained code, incomplete behavior, deferred tests, and known failures to Steps
+that complete and verify them. The first corrective Step may start from this measured provisional
+baseline. Verification failures are work to repair, not automatic reasons to refuse preparation.
+Only record a verified handoff after the assigned gate passes.
 
 1. Load `.agents/cg/principles/architecture.yaml`. Apply `hierarchy.kinds` and `graph` before
    assigning any path.
-2. Load the selected phase from the roadmap. Run `cg contract route --task "<phase outcome>"`.
+2. Read the Plan directly: programme outcome and constraints, phase sequence, complete selected
+   phase and acceptance criteria, and necessary prerequisite evidence. A Manager brief does not
+   replace it. Run `cg contract route --task "<phase outcome>"`.
    Load only the matched contracts and their named children; then scoped `P` rules, then the
-   repository constitution and specifications. Consult `E` only for a remaining design fork. A
+   repository constitution and specifications. Apply relevant `E` guidance to a remaining design fork. A
    practice already cited on the selected phase is not remaining. An `E` disagreement is not
    `Blocked by` and not `$cg-unblock`.
 3. Resolve `<docs>` from `.agents/cg/profile.json` `docs` (default `docs`). Confirm with
-   `cg residue`. The queue file is `<docs>/plans/<programme>/<phase>_detailed_preparation.md`.
+   `cg status --programme <slug>` and inspect `cg residue --programme <slug>`. Findings are
+   baseline facts, not a prerequisite for preparing their correction. The queue file is
+   `<docs>/plans/<programme>/<phase>_detailed_preparation.md`.
 4. Inspect source, tests, resources, and the worktree inside the selected units only.
-5. Run `cg verify` and the narrowest useful baseline. Record existing failures as facts.
+5. Establish `cg verify` and the narrowest useful baseline; reuse applicable recorded evidence
+   under [verification](../cg-prepare/references/verification.md), otherwise run the commands.
+   Record existing failures as facts.
 
 When `cg-sign-off` returns corrective work, preserve its reproduction, expected and actual result,
 affected paths, contract and detector impact, dependencies, and `Done when` evidence. Re-prepare
 the remaining sequence only when the phase outcome and gate are unchanged. A successor-planning
 handover first goes through `cg-plan`.
+
+The same correction path applies when production finds a defect that requires new paths or a
+changed queue. A failing product check does not prevent preparing its repair. Add the corrective
+Step with a stable ID and explicit dependencies, keep dependent evidence Steps `Waiting`, and
+return the earliest eligible repair Step to production. Do not make evidence `Ready` merely
+because a corrective Step was added; its verified completion is the prerequisite. Clear only
+failure labels replaced by that dependency, preserving genuine user or external blockers.
+
+For queue syntax errors or `repository-residue-in-step` findings, repair the selected preparation
+directly under the existing phase scope. Preserve Step IDs, completion evidence, dependencies,
+and the agreed final gate. Move a misplaced repository-wide residue check from Step prerequisites
+or `Done when` to the phase closure preamble; retain any repository policy that explicitly
+requires it earlier and report that policy as the unresolved conflict. Do not silently weaken it
+to a scoped check. Recalculate states after the repair. Refresh the existing repair note with a
+link to the current queue and mark resolved findings superseded; do not create another status file.
 
 After one batch acceptance, an accepted non-empty decision-harvest cohort may be prepared for its
 already-planned destination phase while the source phase is still completing. Reserve the first
@@ -98,9 +134,11 @@ Blocked`. No later Step may be `Ready`, `In progress`, or `Complete` before the 
 Before assigning paths, apply `.agents/cg/principles/architecture.yaml` `graph`: recurse until the
 smallest node, then stay, add-child, or elsewhere. Size, reuse, or a new dependency is not a new
 node. `graph.surface` is declared entry; a new entry point is a surface amendment or `add-child`.
-`graph.adapters`: a second optional vendor client is `add-child` behind a parent-owned port. If
-the phase already names an add-child, elsewhere, service, or adapter target, assign paths to
-deliver it. Mixed code that matches that target is the work, not a return to `$cg-plan`. A Step
+`graph.adapters`: use `add-child` when an adapter owns a distinct responsibility and meets
+`selfSufficient`; vendor count alone does not require a split.
+Consumer-specific behavior stays behind its adapter; do not modify or branch the core while the
+port can express the required product-neutral promise. If the phase already names an add-child,
+elsewhere, service, or adapter target, assign paths to deliver it. Mixed code that matches that target is the work, not a return to `$cg-plan`. A Step
 whose editable paths sit on the wrong domain is a preparation defect.
 
 Inventory every affected item:
@@ -189,13 +227,26 @@ cross-branch handoffs. Prepare sequential Steps only.
 
 ## 7. Define verification
 
-Every Step has one runnable `Done when` command. It includes Step-specific positive and negative
-tests, `cg verify`, residue or ownership checks for moves, the full build when the repository
-requires it, and a clean or explicitly accounted-for worktree.
+Every Step has one runnable `Done when` command. Apply [verification](references/verification.md):
+cover changed promises with applicable positive and negative cases, `cg verify`, residue or
+ownership checks for moves, the full build when repository policy or impact requires it, and
+a clean or explicitly accounted-for worktree. Record existing sufficient coverage; do not create
+tests that merely mirror class or file structure. Assign each check once per applicable state.
 
 In the phase preamble, name checks that only make sense after the full sequence: composition,
 residue, and the phase acceptance gate. Do not put those in a Step `Done when`. Emergent checks
 prove composition; they do not repair an incomplete Step.
+
+Use `cg residue --programme <slug>` for programme-local inspection: selected and shared/unassigned
+findings remain in check scope; other programmes are listed with owners. Unreferenced evidence
+may need a consumer link, not removal. Never assign another programme's cleanup to a Step merely
+to make repository-wide residue green. Keep any required repository-wide `cg residue` at final
+closure, and route foreign findings to their owner or the coordinating Manager.
+
+`cg next` detects direct repository-wide `cg residue` commands in fenced shell `Done when`
+blocks and reports `repair-required`. It does not parse arbitrary scripts or prose prerequisites;
+inspect those yourself. Queue syntax errors admit `cg-prepare` for repair while keeping production
+and closure gated. The stage boundary and existing completion authority still apply.
 
 ## 8. Write cold-start Step briefs
 
@@ -254,10 +305,15 @@ After writing, run `cg next`. If it reports `unreadable`, fix the headers before
 
 ## Stage boundary — yield here
 
+When invoked by the [prototype completion coordinator](../cg-sign-off/references/prototype-completion.md),
+return the stage handoff to that coordinator so it can continue the selected prototype's recorded
+completion request. Preserve normal queue readiness, ownership, and Step verification. The ordinary
+standalone boundary below still applies outside that scope.
+
 **Finish your stage, then return to the user.** Do not invoke the next skill yourself, however
 obvious the route is. The `Next action` block names the successor so a person can choose it and so
 `cg-auto-run` can follow it under a granted authority — naming it is not permission to take it.
-The single exception is a dispatch from `cg-auto-run`. If you were not dispatched by it, you are
+Outside prototype completion, the exception is a dispatch from `cg-auto-run`. If you were not dispatched by it, you are
 the last stage of this turn.
 
 ## 9. Next-action response
@@ -277,7 +333,7 @@ End the user-facing response with:
 ## Next action — <Ready | Blocked | Returned to planning>
 - **User action:** <one concrete action>
 - **Next input:** <$cg-produce | $cg-sign-off | $cg-plan | $cg-unblock | None — waiting on prerequisite> — <exact preparation record and earliest Ready Step brief, finding, or blocker set>
-- **Blocked by:** <exact decision, prerequisite, or failing gate>   <!-- omit unless the status is non-advancing -->
+- **Blocked by:** <condition preventing the named next action>   <!-- omit unless the status is non-advancing -->
 ```
 
 Do not make the user choose among Steps. Name exactly the earliest `Ready` Step, or the consolidated

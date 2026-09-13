@@ -2,8 +2,8 @@
  * Scaffold Contract Graph governance into a target repository.
  *
  * Applies the explicit source-to-repository mapping. Framework core is replaced on every
- * run; the repository's own context under
- * `.agents/cg/` is copied only when absent — see `SCAFFOLD_MAPPING`. Install and re-install
+ * run; A/E catalogs refresh with backups and product rules are format-migrated.
+ * Other repository context is copied only when absent — see `SCAFFOLD_MAPPING`. Install and re-install
  * are the same verb, which is how a repository picks up a new release.
  */
 
@@ -22,6 +22,8 @@ import {
   selectedModulePointers,
 } from "./model.js";
 import { loadContract, stringifyContractYaml } from "./contracts.js";
+import { runtimeIdentity } from "./runtime.js";
+import { planInitCatalogs, applyInitCatalogs } from "./init-catalogs.js";
 import {
   expandProfileAliases,
   loadProfileSelection,
@@ -50,8 +52,8 @@ export const PACKAGE_VERSION = JSON.parse(
  *   up new skills by running the one verb it already knows.
  * - `preserve` — the repository's own context, copied only when absent. `.agents/cg/` is the
  *   contract graph this repository built: its root and boundary contracts, routes, bindings,
- *   harvested principle families. `cg-warmup` writes that, over hours, from real code. No
- *   release has a version of it to offer, so no run of `cg init` may overwrite it. The document
+ *   product principles. Product format migration preserves their authored content; release
+ *   A/E catalogs instead use `replace` with a recoverable backup. The document
  *   trees and the starter module are preserved for the same reason.
  */
 export const SCAFFOLD_MAPPING = Object.freeze([
@@ -61,16 +63,17 @@ export const SCAFFOLD_MAPPING = Object.freeze([
     target: ".agents/cg/principles",
     mode: "always",
     select: "tree",
-    install: "preserve",
+    install: "replace",
   },
   {
-    source: "cg/guidelines",
-    packageSource: "agent/cg/guidelines",
-    target: ".agents/cg/guidelines",
+    source: "cg/guidelines/engineering.yaml",
+    packageSource: "agent/cg/guidelines/engineering.yaml",
+    target: ".agents/cg/guidelines/engineering.yaml",
     mode: "always",
-    select: "top-level-principles",
-    install: "preserve",
+    select: "file",
+    install: "replace",
   },
+  { source: "cg/guidelines/product.yaml", packageSource: "agent/cg/guidelines/product.yaml", target: ".agents/cg/guidelines/product.yaml", mode: "always", select: "file", install: "preserve" },
   { source: "cg/contract.yaml", packageSource: "agent/cg/contract.yaml", target: ".agents/cg/contract.yaml", mode: "always", select: "file", install: "preserve" },
   { source: "cg/workflow.md", packageSource: "agent/cg/workflow.md", target: ".agents/cg/workflow.md", mode: "always", select: "file", install: "preserve" },
   { source: "cg/phases.json", packageSource: "agent/cg/phases.json", target: ".agents/cg/phases.json", mode: "always", select: "file", install: "preserve" },
@@ -121,6 +124,7 @@ export function resolveTarget(rule, docsRoot = DEFAULT_DOCS_ROOT) {
 function applyMappingRule(rule, repoRoot, out, docsRoot, dryRun, modulePointers) {
   if (rule.mode === "never") return;
   for (const { source, target } of enumerateRule(rule, repoRoot, docsRoot)) {
+    if (out.catalogUpdates.some(item => item.file === path.resolve(target))) continue;
     if (skipUnselectedStarterPointer(rule, target, modulePointers)) continue;
     copyFile(source, target, rule, out, dryRun);
   }
@@ -201,7 +205,7 @@ const sha256 = (file) =>
 /**
  * Record what this version scaffolded, and the hash each file had on the way in.
  *
- * No command reads this yet. It cannot be captured retroactively: telling a file you edited
+ * File baselines cannot be captured retroactively: telling a file you edited
  * from one still exactly as shipped needs a baseline recorded when the file arrived. A release
  * that omits it forces its users through a manual migration later, so the record ships whether
  * or not a verb consumes it.
@@ -210,6 +214,7 @@ const sha256 = (file) =>
  * install, so their hash is evidence of what is there, not of what was shipped.
  */
 function writeManifest(repoRoot, version, out, docsRoot) {
+  const { buildId } = runtimeIdentity();
   const file = manifestPath(repoRoot);
   const files = {};
   const record = (target, adopted) => {
@@ -231,12 +236,13 @@ function writeManifest(repoRoot, version, out, docsRoot) {
   // is no longer on disk.
   const merged = { ...files, ...previous };
   for (const target of out.replaced) {
-    record(target, false);
+    const migrated = out.catalogUpdates.some(item => item.file === target && item.action !== "refresh release defaults");
+    record(target, migrated);
     const key = path.relative(repoRoot, target).split(path.sep).join("/");
     if (files[key]) merged[key] = files[key];
   }
   const desired = `${JSON.stringify(
-    { version, docs: docsRoot, files: Object.fromEntries(Object.keys(merged).sort().map((k) => [k, merged[k]])) },
+    { version, runtime: { version, buildId }, docs: docsRoot, files: Object.fromEntries(Object.keys(merged).sort().map((k) => [k, merged[k]])) },
     null,
     2,
   )}\n`;
@@ -319,8 +325,9 @@ function clearStarterComposition(repoRoot, brownfield, written) {
 
 
 
-export function init(repoRoot, { profiles, docs, dryRun = false } = {}) {
-  const out = { written: [], replaced: [], skipped: [] };
+export function init(repoRoot, { profiles, docs, dryRun = false, reasons = {} } = {}) {
+  repoRoot = path.resolve(repoRoot);
+  const out = { written: [], replaced: [], skipped: [], backups: [], catalogUpdates: [] };
   const { written, skipped } = out;
 
   const previous = loadProfileSelection(repoRoot, { allowMissing: true });
@@ -340,7 +347,19 @@ export function init(repoRoot, { profiles, docs, dryRun = false } = {}) {
     SCAFFOLD_MAPPING.find((entry) => entry.mode === "starter").target,
   );
 
-  fs.mkdirSync(repoRoot, { recursive: true });
+  const catalogDefaults = scaffoldFiles(repoRoot, { docsRoot, brownfield }).filter(({ target }) =>
+    ["architecture.yaml", "engineering.yaml"].includes(path.basename(target)),
+  ).map(({ source, target }) => ({ relative: path.relative(repoRoot, target), text: fs.readFileSync(source, "utf8") }));
+  const catalogPlan = planInitCatalogs(repoRoot, catalogDefaults, reasons);
+  out.pendingReasons = catalogPlan.pendingReasons;
+  if (!dryRun) applyInitCatalogs(repoRoot, catalogPlan);
+  for (const item of catalogPlan) {
+    out.replaced.push(item.file);
+    out.backups.push(path.join(repoRoot, item.backup));
+    out.catalogUpdates.push({ file: item.file, action: item.action, backup: item.backup });
+  }
+
+  if (!dryRun) fs.mkdirSync(repoRoot, { recursive: true });
   for (const rule of SCAFFOLD_MAPPING.filter(
     (entry) => entry.mode === "always" || (entry.mode === "starter" && !brownfield),
   )) {

@@ -13,18 +13,27 @@ for autonomous decisions. Do not restart a family at `01` because the other fami
 **Raised:** <date> · <source>
 **Blocks:** <the smallest exact unit that cannot proceed>
 **Unblocks when:** <objective answer or prerequisite state>
+**Scope:** <affected programme, phases, boundaries, and Steps>
+**Depends on:** <accepted decision IDs and their relevant constraints, or None>
+**Supersedes:** <decision IDs within this scope, or None>
 
-**Context:** <why D-1 or D-3 applies>
+**Context:** <question, evidence checked by Engineer and Manager, and why D-1 or D-3 applies>
 
 **Options:**
 - **A) <option>** <recommendation and trade-off>
 - **B) <option>** <trade-off>
 - **Other:** type your own.
 
+Include every viable option; A and B do not limit the option count.
+**Recommendation:** <option and reason; pending until the user answers>
+**Asked:** <date and chat/interaction reference, or Not yet asked>
 **Your answer:** _(blank)_
 
-When answered, move the same `DU-NN` heading to *Resolved*. Add **Answered:** and **Reverses by:**.
-Do not duplicate or renumber.
+When answered, move the same `DU-NN` heading to *Resolved*. Preserve the selected option or typed
+solution verbatim under **Your answer**. Add **Answered:** (date and actor), **Decision:** (scoped
+interpretation), **Rationale:**, **Reverses by:** (actual cost, including irreversible), and
+**Applied to:** (updated artifacts and blockers cleared). Leave ambiguous responses pending while
+requesting clarification. Do not duplicate or renumber.
 
 ## Autonomous — paste under *Resolved*
 

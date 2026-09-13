@@ -6,13 +6,28 @@ description: Create or revise a phase-wise Contract Graph roadmap from binding c
 # CG Plan
 
 Turn a broad outcome into an ordered phase roadmap. Do not prepare implementation Steps here.
+If the user needs a working experience to discover the outcome, route to cg-prototype with the
+known scope instead of elaborating speculative delivery phases: emit the `Exploration needed`
+handoff in §9 and return to the user. Both paths share the six-column
+phase table in §3. [Prototype §3](../cg-prototype/SKILL.md#3-record-acceptance-and-finalise-the-roadmap)
+owns prototype roadmap finalisation and can hand the accepted roadmap directly to preparation.
+Its required `## Deferred tests and known gaps` section is specific to prototype handoff; the
+ordinary plan template does not require it.
 
-Read `.agents/skills/cg-unblock/SKILL.md` only when a fork fails D-1: unresolvable from contracts
-and accepted decisions, material, costly to reverse, and nothing else can proceed.
+Read `.agents/skills/cg-unblock/SKILL.md` when a fork remains unresolved by the Plan, contracts
+and accepted decisions, or requires owner authority. Under auto-run, ask the Manager first;
+otherwise ask the user directly under D-6. Record the answer and continue independent work.
+
+Read `.agents/cg/phases.json` and load the families selected for `plan`. Shipped defaults
+include `.agents/cg/guidelines/engineering.yaml` on every pass; retained repository phase policy
+controls loading. Consider applicable E practices as advisory context. They create no acceptance
+criteria, required changes, or blockers unless separately adopted through an authorized binding.
+Do not reopen settled decisions merely because an E preference differs.
 
 ## Required outcome
 
-Finish with all eight true:
+When exploration is needed, emit the human handoff in §9 without inventing a roadmap to satisfy
+this checklist. Otherwise finish with all eight true:
 
 1. The roadmap names the final product or architecture outcome.
 2. Current repository truth and prerequisites are measured.
@@ -31,7 +46,7 @@ Before writing or revising the roadmap:
    dividing work across boundaries.
 2. Load `.agents/cg/contract.yaml`. Run `cg contract route --task "<outcome>"`. Load only the
    matched contracts and their named children; then scoped `P` rules on those contracts, then the
-   repository constitution and specifications. Consult `E` only for a remaining design fork; it is
+   repository constitution and specifications. Apply relevant `E` guidance to a remaining design fork; it is
    not a compliance list and does not replace `graph`. Run `cg graph show` if composition is still
    unclear. If `<docs>/plans/warmup-corrective-set.md` is Unconsumed, that file is the restructure
    input: keep each row's Architecture target and Engineering guidance; do not invent phases from
@@ -40,7 +55,9 @@ Before writing or revising the roadmap:
    `cg residue`, which prints `<docs>/plans/`. Find the active roadmap by `Status: Proposed` or
    `Status: Active` under `<docs>/plans/*/roadmap.md`, not by filename.
 4. Inspect source, tests, resources, and the worktree inside the selected units only.
-5. Run `cg verify` and the narrowest useful baseline. Record existing failures as facts.
+5. Establish `cg verify` and the narrowest useful baseline; reuse applicable recorded evidence
+   under [verification](../cg-prepare/references/verification.md), otherwise run the commands.
+   Record existing failures as facts.
 6. Read accepted decisions in `<docs>/plans/decision-log.md`.
 7. If invoked from `cg-sign-off`, validate the handover against the fields in §8 before placing it.
 
@@ -67,6 +84,8 @@ Each phase delivers one independently verifiable change in capability or archite
 | 1 | user/system result | decisions/phases | contract nodes | command/evidence | Future |
 
 Phase status is exactly one of: `Current` (selected or in delivery), `Blocked`, `Complete`, `Future`.
+These are phase-table cells. The separate programme `Status:` line before the roadmap sections
+is `Proposed`, `Active`, or `Complete`; never set a phase to `Active`.
 
 Rules:
 
@@ -176,23 +195,36 @@ receiving phase only after that phase exists.
 obvious the route is. The `Next action` block names the successor so a person can choose it and so
 `cg-auto-run` can follow it under a granted authority — naming it is not permission to take it.
 The single exception is a dispatch from `cg-auto-run`. If you were not dispatched by it, you are
-the last stage of this turn.
+the last stage of this turn. That exception covers only routes within the run's authority;
+`Exploration needed` always returns to the human and never auto-dispatches `cg-prototype`.
 
 ## 9. Next-action response
 
-Choose exactly one immediate route from the measured roadmap:
+Choose exactly one immediate route from measured state:
 
+- the intended experience needs exploration: use the human `cg-prototype` handoff below;
 - selected phase ready: use `cg-prepare` with that phase;
 - protected decision blocks selection: use `cg-unblock` with the exact decision-log entry;
 - programme outcome already complete: name no next skill.
 
-End the user-facing response with:
+For exploration, end the user-facing response with this block:
+
+```markdown
+## Next action — Exploration needed
+- **User action:** invoke /cg-prototype with the known scope
+- **Next input:** $cg-prototype — <known scope>
+```
+
+Keep the known scope concrete. `User action` names the human even under auto-run; never replace
+it with `None — auto-run continues`. Auto-run must not follow this token or invent UX acceptance.
+
+For the other routes, end the user-facing response with:
 
 ```markdown
 ## Next action — <Ready | Blocked | Programme complete>
 - **User action:** <one concrete action>
 - **Next input:** <$cg-prepare | $cg-unblock | None — programme complete> — <exact roadmap, selected phase, handover, or decision entry>
-- **Blocked by:** <exact decision, prerequisite, or failing gate>   <!-- omit unless the status is non-advancing -->
+- **Blocked by:** <condition preventing the named next action>   <!-- omit unless the status is non-advancing -->
 ```
 
 Do not say only "continue" or list several possible next skills. Name the selected phase when

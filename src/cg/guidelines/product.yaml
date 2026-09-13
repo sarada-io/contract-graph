@@ -1,8 +1,10 @@
-$schema: https://sarada.io/contract-graph/schema/product-v1.schema.json
-productVersion: "1.0"
+$schema: https://contractgraph.dev/schema/principles-v1.schema.json
+principlesVersion: "1.0"
+family: product
+binding: scoped
 
-# Repository-owned P guidelines. Empty at install; cg init preserves this file.
-# A P rule exists because of this product's market, pricing, shape, or tenancy.
+# Repository-owned P principles. Empty at install; cg init preserves rules while migrating format.
+# A P principle exists because of this product's market, pricing, shape, or tenancy.
 # List each id on the contracts it governs and add one matching row in
 # `.agents/cg/enforcement.yaml`.
 #
@@ -11,6 +13,7 @@ productVersion: "1.0"
 #     title: Billing shape
 #     entries:
 #       - id: P01-01
-#         text: Every price is quoted in minor units.
+#         statement: Every price is quoted in minor units.
+#         reason: Float major-unit amounts hide rounding and make two sessions disagree on the charged value.
 
 principles: []

@@ -12,13 +12,14 @@ agent follows. This directory is not that procedure.
 
 ## What binds a change
 
-Three families stay distinct on every pass:
+Three families stay distinct on every pass. They are one kind of thing — principles — with
+different binding:
 
 | Family | What it is | What happens if you disagree |
 |---|---|---|
-| `A` | Structural bindings in `.agents/cg/principles/architecture.yaml` | `cg verify` fails on a measurable violation. The same file's `hierarchy.kinds` and `graph` walk decide whether a unit is a node. |
-| `P` | Product rules the adopting repository authored | They bind only the contracts that list them. |
-| `E` | Engineering guidelines in `.agents/cg/guidelines/engineering.yaml` | Useful judgement. Not a compliance failure, and not a reason to invent a node the `graph` walk would not write. |
+| `A` | Structural principles in `.agents/cg/principles/architecture.yaml` (`binding: global`) | `cg verify` fails on a measurable violation. The same file's `hierarchy.kinds` and `graph` walk decide whether a unit is a node. |
+| `P` | Product principles the adopting repository authored (`binding: scoped`) | They bind only the contracts that list them. |
+| `E` | Engineering principles in `.agents/cg/guidelines/engineering.yaml` (`binding: advisory`) | SHOULD hold; not a compliance failure, and not a reason to invent a node the `graph` walk would not write. Consult relevant entries for engineering decisions. |
 
 A new generic `A` rule is a change in the codebase that owns the verifier: a permanent ID, a
 deterministic measure, a blocking detector, a fail-on-demand fixture, and removal of the overlapping
@@ -34,38 +35,45 @@ order; the YAML order is the walk used whenever a candidate is kept, split, or m
 
 Stay, add-child, and elsewhere remain the only three outcomes. The keys before `decide` say
 whether a unit deserves a node and how it is entered. The keys after it say how children relate,
-when to stop, what is not a node, and the vendor exception that forbids stay.
+when to stop, what is not a node, and how the same decision applies to adapters.
 
 | Order | Key | Role |
 |---|---|---|
 | 1 | `node` | Definition. One owned responsibility, one hierarchy kind, one `contract.yaml`. |
 | 2 | `recurse` | Walk. Apply the rest at every candidate. A module listed by `cg modules` is not a leaf until `selfSufficient` and `stop` have been applied inside it. |
 | 3 | `selfSufficient` | Fitness. Named function, small inbound surface, published outbound ports, own change reasons. |
-| 4 | `surface` | Declared entry and encapsulation. Enter only through the contract surface. The first way to declare it is a **service**: named operations that take parameters, do the work, and return the completed result; `contract.yaml` `surface` lists those services. Construction stays behind the call. Internals, algorithms, persistence, framework types, and vendor types stay behind it. A new entry or a bypass is not stay. |
+| 4 | `surface` | Declare entry paths and observable promises. Services are one option; functions, events, and asynchronous interfaces are valid. Keep undeclared implementation details internal. Amend the surface when its promise changes. |
 | 5 | `decide` | Fork. **stay**, **add-child**, or **elsewhere**. |
 | 6 | `compose` | Children. Parent owns orchestration; children decompose `owns`; no child-to-child internals. |
 | 7 | `stop` | Quit splitting. Not per file; depth is mixed and uncapped; inseparable packages need a named rationale. |
 | 8 | `forbid` | Anti-patterns. A new folder, file, or dependency is not a node; neither is `utils` or “it was already in the edit set”. |
-| 9 | `adapters` | Vendor split of `surface.encapsulate`. One parent-owned port; each optional store, cloud, or transport is its own child. A second vendor client is add-child, not stay. |
+| 9 | `adapters` | Apply responsibility and self-sufficiency to each adapter. A distinct owned responsibility earns a child; vendor count alone does not. Keep consumer-specific behavior outside a consumer-independent core while its existing promise suffices. |
 
 `surface` sits before `decide` because encapsulation behind the contract is core, not an exception.
-`graph.surface.service` is the first declaration of that encapsulation: a list of services the YAML
-node points at, not constructor ports on the caller. Unmanaged scatter — many functions across
-files with no small inbound surface — becomes a small set of those services as a later step, not a
-node per file. `adapters` is last because it is not a fourth decide id. It overrides `forbid` for
-optional vendors. Mixed Mongo and PostgreSQL clients, an undeclared entry, or internals on the
-surface are a later step, not silent stay.
+`graph.surface.service` describes service entry without requiring a class or facade. Review
+scattered entry points against ownership and the declared promise before proposing a rewrite.
+`adapters` applies the same node decision to a vendor or consumer-specific implementation;
+it does not override that decision based on vendor count. Consumer-specific behavior does not
+modify or branch the core while its consumer-independent promise already suffices.
 
 That walk is a protocol the stages apply. It is not an `A` detector and does not scan imports;
-`cg verify` still only proves declared paths exist (A10, A11).
+A10 checks surface presence and A11 checks paths; neither proves exported symbols or caller confinement.
 
 Warmup, prepare, and produce walk this sequence before they keep work on the open node. An
 adopting repository whose installed catalog is missing a key is stale; copy the packaged binding.
 `cg init` will not overwrite the installed catalog.
 
-## The seven stages
+## The lifecycle skills
 
-The delivery sequence is plan → prepare → produce → sign-off. Warmup runs at adoption before
+The two entry paths are plan → prepare → produce → sign-off and
+prototype → manual acceptance and roadmap → prepare → produce → sign-off. `/cg-sign-off` also accepts a
+request to finish a selected prototype: it coordinates the remaining delivery through these
+stages and closes only on passing requirements. Its entry point selects the programme and loads
+separate prototype-completion or phase-sign-off instructions; it asks when the intended target
+is ambiguous. Shared closure checks supply evidence requirements without changing who owns
+continuation. See [prototype completion](prototype.md).
+For an uncertain experience,
+prototype → manual acceptance supplies the roadmap and provisional implementation before prepare. Warmup runs at adoption before
 that sequence, and again as an additive reseed after a package upgrade when the graph already
 exists. Unblock is entered from any stage when a choice is expensive or protected. Auto-run
 is optional and follows an already-planned roadmap; it does not invent the plan, and it never
@@ -74,17 +82,25 @@ dispatches warmup.
 | Skill | Responsibility |
 |---|---|
 | `cg-plan` | Traverse the current graph, convert a broad outcome into an ordered phase roadmap, and identify the boundaries likely to change. Owns programme shape, dependencies, phase acceptance, risk, and status — not which files move. |
+| `cg-prototype` | Launch a working application and iterate through manual human feedback before formal preparation. Keeps contract truth, records provisional changes and explicit acceptance, and hands the accepted implementation and remaining roadmap to normal delivery. |
 | `cg-prepare` | Select one phase and convert it into one prioritized queue of contract-complete steps. Each step names its owning boundary, expected graph changes, verification, explicit dependencies, blockers, and state in a single execution branch or worktree. |
 | `cg-produce` | Run the earliest ready step; deliver implementation, tests, YAML contract updates, and detectors as one independently valid structural change; continue through ready work. |
 | `cg-sign-off` | Verify every prepared step completed and that the resulting graph still describes the implemented system; drive current-phase defects through corrective steps; harvest decisions; close only on a green gate. Also owns the durable record — design records, product and operator guidance, and diagrams — and is entered standalone when only documentation is needed. Never repairs contract correctness as detached cleanup. |
 | `cg-unblock` | Govern forks across the lifecycle: apply contract-backed or reversible defaults, record assumptions, log blocked steps, keep independent work moving. |
-| `cg-auto-run` | **Opt-in.** Follow already-named next stages while measured state advances, then stop on blockers, owner decisions, failed gates, three closed phases, or its dispatch budget. It performs no lifecycle stage itself. |
-| `cg-warmup` | **Adoption, then additive reseed.** Discover an existing repository's real boundaries, write and connect their YAML contracts, add contract-owned routes, verify every applicable structural binding, and harvest product bindings or non-binding engineering guidelines. On a governed graph, reseed adds missing children, P rows, and route targets without rewriting existing purpose or P IDs. Raises what it cannot settle in the decision log rather than asking in chat. Never scores, never edits behaviour. |
+| `cg-auto-run` | **Opt-in.** Follow already-named next stages while measured state advances, route questions through the Manager to the user, and resume after recorded answers clear blockers. At `roadmap` authority it continues through remaining planned phases; it does not stop after a phase or dispatch count. One Engineer owns each phase through sign-off; the Manager coordinates using the stage skills. Roles do not apply to standalone `/cg-plan` or `/cg-produce`. Accepted, reconciled auto-run ledgers are deleted, not archived; interrupted runs retain needed recovery state. |
+| `cg-warmup` | **Adoption, then additive reseed.** Discover an existing repository's real boundaries, write and connect their YAML contracts, add contract-owned routes, verify every applicable structural binding, and harvest product bindings or non-binding engineering guidelines. On a governed graph, reseed adds missing children, P rows, and route targets without rewriting existing purpose or P IDs. Logs what it cannot settle, asks directly with options and free-text input, and records the response. Never scores, never edits behaviour. |
 
 ```mermaid
 flowchart TD
     Contracts["YAML contract graph"] --> Plan["cg-plan"]
-    Plan --> Prepare["cg-prepare<br/>(one selected phase)"]
+    Contracts --> Prototype["cg-prototype<br/>(launch + feedback)"]
+    Prototype -->|"feedback"| Prototype
+    Prototype --> Accept["Explicit UX acceptance<br/>+ Active roadmap + handoff"]
+    Accept --> Prepare["cg-prepare<br/>(one selected phase)"]
+    Plan --> Prepare
+    Prototype -.->|"finish this prototype"| Completion["cg-sign-off<br/>(prototype completion coordinator)"]
+    Completion -.->|"obtain acceptance + finalise roadmap"| Accept
+    Completion -.->|"coordinate remaining phases"| Prepare
     Prepare --> Produce["cg-produce<br/>(earliest ready step)"]
     Produce -->|"ready work remains"| Produce
     Produce -->|"all steps complete"| SignOff["cg-sign-off<br/>(close + durable record)"]
@@ -94,13 +110,16 @@ flowchart TD
     SignOff -->|"successor or roadmap handover"| Plan
     Docs["Documentation only"] -.->|"standalone entry"| SignOff
     Unblock["cg-unblock"] -.-> Plan
+    Unblock -.-> Prototype
     Unblock -.-> Prepare
     Unblock -.->|"answer recorded"| Produce
     Unblock -.-> SignOff
 ```
 
 Each stage finishes its own job and names what should happen next. It does not start the next
-stage on its own. Auto-run is the exception, because you grant it a budget to follow those names.
+stage on its own. Explicit auto-run authority or a request to complete the selected prototype
+allows continued delivery. Prototype completion records that request and coordinates the remaining
+stages; it still requires separate UX acceptance and passing final gates.
 
 ## Why plan and prepare are separate
 
@@ -139,6 +158,21 @@ work.
 Each programme keeps `roadmap.md` and one `<phase>_detailed_preparation.md` queue under
 `docs/plans/<programme>/` by default. `cg init --docs` records a different root in
 `.agents/cg/profile.json`; `cg residue` prints the plans directory that is actually in use.
+
+`cg status --programme <slug>` reads the current queue and prototype receipt and shows remaining
+Steps, exact file locations, recorded blockers, recovery action, and residue owners. It creates no
+new status document. Older repair reports can explain history but do not override those records.
+
+`cg residue --programme <slug>` checks selected and shared/unassigned files while listing other
+programmes separately. An unreferenced file may be useful evidence awaiting a consumer link.
+The unfiltered command still checks the whole repository. A scoped result does not replace a
+repository-wide gate required by policy; coordinate other owners before final closure.
+
+Repository-wide residue belongs at phase closure, not as a prerequisite for an individual Step.
+`cg next` reports `repair-required` for direct global residue commands in fenced shell `Done when`
+blocks. Preparation corrects their placement while retaining the final obligation. This detector
+does not interpret arbitrary shell wrappers or prose prerequisites. Preparation can also repair
+unreadable queue headers; production and closure remain gated until the queue is valid.
 
 ## Contract updates belong with the change
 

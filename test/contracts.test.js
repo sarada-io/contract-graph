@@ -63,7 +63,7 @@ test("a fresh graph resolves the root and module by id, unit, and path", () => {
   assert.equal(findContract(graph, "repository").relative, ROOT);
 });
 
-test("contracts must identify the canonical Sarada-hosted schema", () => {
+test("contracts must identify the canonical schema identity", () => {
   const dir = fixture();
   editContract(dir, MODULE, (contract) => {
     contract.$schema = "https://contract-graph.dev/schema/contract-v1.schema.json";

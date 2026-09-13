@@ -8,8 +8,15 @@ description: Execute a prepared Contract Graph queue continuously and sequential
 Run the prepared queue with one Step `In progress` at a time. Do not redesign the phase, create
 another execution branch, run Steps concurrently, or defer contract truth.
 
-Read `.agents/skills/cg-unblock/SKILL.md` only when a fork fails D-1: unresolvable from contracts
-and accepted decisions, material, costly to reverse, and nothing else can proceed.
+Read `.agents/skills/cg-unblock/SKILL.md` when a fork remains unresolved by the Plan, contracts
+and accepted decisions, or requires owner authority. Under auto-run, ask the Manager first;
+otherwise ask the user directly under D-6. Record the answer and continue independent work.
+
+Read `.agents/cg/phases.json` and load the families selected for `produce`. Shipped defaults
+include `.agents/cg/guidelines/engineering.yaml` on every pass; retained repository phase policy
+controls loading. Consider applicable E practices as advisory context. They create no acceptance
+criteria, required changes, or blockers unless separately adopted through an authorized binding.
+Do not reopen settled decisions merely because an E preference differs.
 
 ## Required outcome
 
@@ -22,7 +29,7 @@ Finish with all ten true:
    governing contract.
 5. A new or changed rule and its detector land with the implementation.
 6. The Step edits only its declared paths and preserves unrelated work.
-7. Its `Done when` command and repository full gate pass.
+7. Its assigned `Done when` gate passes, including broader checks when scope or policy requires them.
 8. Every handoff updates the Step report and all affected queue states.
 9. Execution continues through ready work until the queue drains or no `Ready` Step remains.
 10. The response ends with the `Next action` block in §9.
@@ -36,16 +43,23 @@ state, editable paths, required contract changes, work, handoff, or `Done when`.
    selfSufficient, surface, adapters, stay, add-child, or elsewhere.
 2. Load the contracts named by the brief. Run `cg contract route --task "<Step goal>"` if
    placement is still unclear. Then scoped `P` rules, then the repository constitution and
-   specifications. Consult `E` only for a remaining design fork. A practice already cited on the
+   specifications. Apply relevant `E` guidance to a remaining design fork. A practice already cited on the
    phase or brief is not remaining. An `E` disagreement is not `Blocked by` and not `$cg-unblock`.
 3. Resolve `<docs>` from `.agents/cg/profile.json` `docs` (default `docs`). Confirm with
-   `cg residue`. Read `<docs>/plans/decision-log.md`: *Resolved* entries are authority; *Pending
+   `cg status --programme <slug>`. Inspect `cg residue --programme <slug>` as a baseline;
+   unrelated findings alone do not prevent this Step. Read `<docs>/plans/decision-log.md`: *Resolved* entries are authority; *Pending
    your review* entries are not, and a Step blocked on one stays blocked.
-4. Run `cg next`. Confirm this is the lowest-numbered `Ready` Step.
+4. Run `cg next --programme <slug>`. Confirm this is the lowest-numbered `Ready` Step.
+   For unreadable queue syntax or `repair-required`, return the exact file and finding to
+   `cg-prepare`. Do not work around a prepared gate or call routine plan repair a user decision.
 5. Confirm the branch or worktree and baseline match the preparation.
-6. Verify every declared prerequisite handoff and the latest accumulated phase state.
+6. Verify every declared prerequisite handoff and the latest accumulated phase state. The first
+   prepared prototype repair may explicitly admit a measured provisional baseline; do not claim it
+   is green or refuse the repair solely because the assigned defects still exist.
 7. Inspect the worktree and preserve pre-existing unrelated changes.
-8. Run `cg verify` and the narrowest useful baseline. Record existing failures as facts.
+8. Establish `cg verify` and the narrowest useful baseline; reuse applicable recorded evidence
+   under [verification](../cg-prepare/references/verification.md), otherwise run the commands.
+   Record existing failures as facts.
 
 If `graph` decides `add-child` or `elsewhere`, compare it to the Step brief. If the brief already
 names that split, new child, service set, or vendor adapter as this Step's work, execute it:
@@ -55,10 +69,11 @@ behavior to the current boundary because its files were already in the brief. If
 outcome or remaining order must change, stop with `$cg-prepare` carrying that finding — do not
 emit `$cg-plan`; preparation returns to planning when the outcome moved.
 
-A new undeclared entry, internals on the surface, or a bypass of the declared service is not
-stay unless this Step's work is to declare or split that surface. `graph.adapters.mix` is
-`add-child`: do not land a second optional vendor client on the open node unless the brief is
-that split.
+An undeclared entry, exposure outside the declared promise, or a surface bypass requires an
+affected contract or implementation correction within the Step. Apply `graph.adapters.mix`
+and `selfSufficient` to adapter responsibilities; vendor count alone does not require a split.
+Consumer-specific workflow stays outside a consumer-independent core while its promise suffices;
+amend the port with a product-neutral concept when the promise needs to change.
 
 If the Step needs an undeclared path or a missing contract change, return to `cg-prepare`. Do not
 edit first and hope completion repairs it.
@@ -70,7 +85,7 @@ Within the Step:
 1. state the contract truth that changes;
 2. update or add its executable detector;
 3. implement the smallest end-to-end behavior;
-4. update or add functional tests;
+4. update or add functional tests where changed promises lack adequate coverage;
 5. update resources and dependencies;
 6. run the Step verification and `cg verify`;
 7. inspect the diff and residue scan; and
@@ -105,7 +120,8 @@ When creating a new boundary contract, use
 ### A new self-sufficient unit owes a contract in the Step that creates it
 
 A component, library, sub-module, or module is self-sufficient when it delivers a nameable
-functionality and reaches outside itself only rarely. The Step that creates one owes four things
+function with one owned responsibility, an explicit surface, and external dependencies through
+declared contracts and surfaces. The Step that creates one owes four things
 together:
 
 1. its own `.agents/cg/contract.yaml`, from the template;
@@ -164,8 +180,9 @@ satisfied by writing a document about it.
 ## 8. Verify and hand off accumulated state
 
 1. Run the Step's `Done when` verbatim.
-2. Run the full build-and-contract gate named in the preparation record — its build/test command
-   plus `cg verify`. If the command is not named, ask for it; do not invent one.
+2. Account for each assigned check once using [verification](../cg-prepare/references/verification.md).
+   Do not add a second unconditional full gate. Run broader checks when the preparation or retained
+   repository policy requires them; missing Step verification requires re-preparation.
 3. Compare the diff with the Step's expected starting state.
 4. Confirm only declared paths and preserved unrelated changes appear.
 5. Record the commit or exact worktree state that dependent Steps consume.
@@ -180,14 +197,24 @@ state in the phase's single execution context.
 
 ## Stage boundary — yield here
 
+When invoked by the [prototype completion coordinator](../cg-sign-off/references/prototype-completion.md),
+return the stage handoff to that coordinator so it can continue the selected prototype's recorded
+completion request. Preserve normal queue readiness, ownership, and Step verification. The ordinary
+standalone boundary below still applies outside that scope.
+
 Drain every `Ready` Step in this invocation. That is this stage, not a new one. Then return to the
 user. Do not invoke the next skill yourself, however obvious the route is. The `Next action` block
 names the successor so a person can choose it and so `cg-auto-run` can follow it under a granted
-authority — naming it is not permission to take it. The single exception is a dispatch from
+authority — naming it is not permission to take it. Outside prototype completion, the exception is a dispatch from
 `cg-auto-run`. If you were not dispatched by it, you are the last stage of this turn after the
 queue drains or no `Ready` Step remains.
 
 ## 9. Next-action response
+
+A fixable defect is work, not a run-wide blocker. If repair needs preparation, checkpoint the
+finding and yield `Re-preparation required` to `cg-prepare` without `Blocked by`, unless that
+preparation itself cannot proceed. Keep the affected Step incomplete. Under auto-run, set
+`User action` to `None — auto-run continues with the corrective route`; the Engineer handles it.
 
 Choose exactly one immediate route:
 
@@ -205,7 +232,7 @@ End the user-facing response with:
 ## Next action — <Queue complete | Ready handoff | Re-preparation required | Queue blocked>
 - **User action:** <one concrete action>
 - **Next input:** <$cg-produce | $cg-sign-off | $cg-prepare | $cg-unblock | None — waiting on prerequisite> — <earliest Ready Step brief, Step report set, preparation finding, or blocker set>
-- **Blocked by:** <exact decision, prerequisite, or failing gate>   <!-- omit unless the status is non-advancing -->
+- **Blocked by:** <condition preventing the named next action>   <!-- omit unless the status is non-advancing -->
 ```
 
 Do not stop for a user-facing response after every green Step while this run can safely continue.

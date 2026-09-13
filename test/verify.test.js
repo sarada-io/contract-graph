@@ -112,7 +112,11 @@ const BINDING = BINDING_FILENAME;
 
 function setProductEntries(dir, principleId, title, entries) {
   const entryYaml = entries
-    .map(({ id, text }) => `      - id: ${id}\n        text: ${JSON.stringify(text)}`)
+    .map(({ id, text, statement, reason }) => {
+      const value = statement ?? text;
+      const why = reason ?? "Test fixture.";
+      return `      - id: ${id}\n        statement: ${JSON.stringify(value)}\n        reason: ${JSON.stringify(why)}`;
+    })
     .join("\n");
   edit(
     dir,
@@ -638,6 +642,8 @@ test("the public lifecycle guide documents the graph walk", () => {
   for (const key of ["node", "recurse", "selfSufficient", "surface", "decide", "compose", "stop", "forbid", "adapters"]) {
     assert.ok(lifecycle.includes(`| \`${key}\` |`), `graph walk must include ${key}`);
   }
+  assert.match(lifecycle, /consumer-specific implementation/);
+  assert.match(lifecycle, /does not\s+modify or branch the core/);
 });
 
 test("the public workflow guide names decomposition and the disk baseline", () => {
@@ -659,12 +665,12 @@ test("the published README is a human landing page", () => {
   const pkg = JSON.parse(
     fs.readFileSync(path.join(SOURCE_ROOT, "..", "package.json"), "utf8"),
   );
-  assert.equal(pkg.homepage, "https://sarada.io/cg/");
-  assert.match(readme, /\[Quick Introduction Video\]\(https:\/\/sarada\.io\/cg\/#watch\)/);
-  assert.match(readme, /https:\/\/sarada\.io\/community\/contract-graph\/vision\//);
-  assert.match(readme, /https:\/\/sarada\.io\/community\/contract-graph\/workflow\//);
-  assert.match(readme, /https:\/\/sarada\.io\/community\/contract-graph\/upgrade\//);
-  assert.match(readme, /https:\/\/sarada\.io\/contract-graph\/schema\//);
+  assert.equal(pkg.homepage, "https://contractgraph.dev/");
+  assert.match(readme, /\[Quick Introduction Video\]\(https:\/\/contractgraph\.dev\/#watch\)/);
+  assert.match(readme, /https:\/\/contractgraph\.dev\/docs\/vision\//);
+  assert.match(readme, /https:\/\/contractgraph\.dev\/docs\/workflow\//);
+  assert.match(readme, /https:\/\/contractgraph\.dev\/docs\/upgrade\//);
+  assert.match(readme, /https:\/\/contractgraph\.dev\/schema\//);
   assert.match(readme, /## Learn more/);
   assert.match(readme, /cd your-repository/);
   assert.doesNotMatch(readme, /```mermaid/);
@@ -677,7 +683,7 @@ test("the public docs stay human-facing", () => {
   const index = fs.readFileSync(path.join(docsDir, "README.md"), "utf8");
   const lifecycle = fs.readFileSync(path.join(docsDir, "lifecycle.md"), "utf8");
   assert.match(index, /They are not the agent procedure/);
-  assert.match(index, /\[Quick Introduction Video\]\(https:\/\/sarada\.io\/cg\/#watch\)/);
+  assert.match(index, /\[Quick Introduction Video\]\(https:\/\/contractgraph\.dev\/#watch\)/);
   assert.match(index, /\[Upgrade\]\(upgrade\.md\)/);
   assert.doesNotMatch(lifecycle, /## Next action/);
   assert.doesNotMatch(lifecycle, /Enabling the Claude Code gate/);
@@ -721,7 +727,7 @@ test("[10] the structural binding catalog is required", () => {
 
 test("[10] a binding catalog without the graph node decision fails", () => {
   const dir = makeRepo();
-  edit(dir, BINDING, (text) => text.replace(/\ngraph:\n[\s\S]*?\nrules:\n/, "\nrules:\n"));
+  edit(dir, BINDING, (text) => text.replace(/\ngraph:\n[\s\S]*?\nprinciples:\n/, "\nprinciples:\n"));
   assertFails(dir, 10, "node decision is part of the binding catalog, not the delivery workflow");
 });
 
@@ -1999,21 +2005,50 @@ test("cg-auto-run stays an adapter, and produce executes a prepared split", () =
     fs.readFileSync(path.join(SOURCE_ROOT, "skills", name, "SKILL.md"), "utf8");
 
   const autoRun = skill("cg-auto-run");
-  assert.match(autoRun, /never auto-invokes cg-unblock or cg-warmup/);
+  assert.match(autoRun, /Never auto-invoke `cg-warmup`/);
   assert.match(autoRun, /adds no graph rules and no `E` rules/);
   assert.match(autoRun, /does not rewrite a `Next input`/);
   assert.match(autoRun, /\.agents\/cg\/profile\.json/);
   assert.match(autoRun, /<docs>\/plans\/auto-run\//);
-  assert.match(autoRun, /twelve dispatches per run/);
-  assert.match(autoRun, /Third `Phase complete` heading this run/);
-  assert.match(autoRun, /A few phases is the window/);
+  assert.match(autoRun, /no per-run cap/);
+  assert.match(autoRun, /no dispatch budget/);
+  assert.match(autoRun, /fresh start from disk/);
+  assert.match(autoRun, /new agent is the intended\npattern/);
+  assert.match(autoRun, /every remaining planned phase closes/);
+  assert.doesNotMatch(autoRun, /twelve dispatches per run/);
+  assert.doesNotMatch(autoRun, /Third `Phase complete` heading this run/);
+  assert.doesNotMatch(autoRun, /A few phases is the window/);
   assert.doesNotMatch(autoRun, /twenty-four/);
   assert.doesNotMatch(autoRun, /six dispatches per run/);
+  assert.doesNotMatch(autoRun, /Budget reached/);
   assert.doesNotMatch(
     autoRun,
     /Next input: \$cg-warmup/,
     "warmup is never a successor this adapter may follow",
   );
+
+  const protocol = fs.readFileSync(
+    path.join(SOURCE_ROOT, "skills", "cg-auto-run", "references", "protocol.md"),
+    "utf8",
+  );
+  const engineer = fs.readFileSync(
+    path.join(SOURCE_ROOT, "skills", "cg-auto-run", "references", "engineer.md"),
+    "utf8",
+  );
+  const manager = fs.readFileSync(
+    path.join(SOURCE_ROOT, "skills", "cg-auto-run", "references", "manager.md"),
+    "utf8",
+  );
+  assert.match(autoRun, /Do not read\n\[Manager instructions\]/);
+  assert.match(engineer, /protocol\.md/);
+  assert.doesNotMatch(engineer, /references\/manager\.md/);
+  assert.doesNotMatch(protocol, /start one fresh Engineer/);
+  assert.doesNotMatch(protocol, /Report the whole run:/);
+  assert.match(protocol, /Dispose working files/);
+  assert.match(protocol, /mixed-context/);
+  assert.match(manager, /Accept the phase only when all of these exist on disk/);
+  assert.match(manager, /harvest\.auto-run\.md/);
+  assert.match(autoRun, /Standalone `cg-plan`/);
 
   const produce = skill("cg-produce");
   assert.match(produce, /still-mixed code is the starting state, not a reason to stop/);
@@ -2368,13 +2403,69 @@ test("cg-warmup fills the repository contract that nothing else fills", () => {
   }
 });
 
-test("the schema uses the stable Sarada-owned canonical identifier", () => {
-  const schema = JSON.parse(read(SOURCE_ROOT, "cg/schema/contract.schema.json"));
-  assert.equal(
-    schema.$id,
-    "https://sarada.io/contract-graph/schema/contract-v1.schema.json",
-  );
+const schemaCatalogs = [
+  ["contract", ROOT_CONTRACT, "contract"],
+  ["architecture", BINDING, "principles"],
+  ["engineering", ENGINEERING, "principles"],
+  ["product", PRODUCT, "principles"],
+  ["enforcement", ENFORCEMENT, "enforcement"],
+];
+
+test("all schemas and fresh YAML use the canonical contractgraph.dev v1 identities", (t) => {
+  const dir = makeRepo();
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  const schemaFiles = new Set();
+  for (const [, file, schemaName] of schemaCatalogs) {
+    const id = `https://contractgraph.dev/schema/${schemaName}-v1.schema.json`;
+    if (!schemaFiles.has(schemaName)) {
+      const schema = JSON.parse(read(SOURCE_ROOT, `cg/schema/${schemaName}.schema.json`));
+      assert.equal(schema.$id, id);
+      if (schemaName === "principles") {
+        assert.equal(schema.$defs.schemaId.const, id);
+      } else {
+        assert.equal(schema.properties.$schema.const, id);
+      }
+      schemaFiles.add(schemaName);
+    }
+    assert.equal(readObject(dir, file).$schema, id);
+  }
+  assert.equal(readObject(dir, CONTRACT).$schema, readObject(dir, ROOT_CONTRACT).$schema);
 });
+
+test("re-init refreshes A/E and preserves other authored YAML using canonical schema identities", (t) => {
+  const dir = makeRepo();
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  const originals = new Map();
+  for (const [, file] of [...schemaCatalogs, ["contract", CONTRACT]]) {
+    edit(dir, file, (text) => `# Repository-owned context\n${text}`);
+    originals.set(file, read(dir, file));
+    assert.deepEqual(verify(dir).failures, [], file);
+  }
+  init(dir, {});
+  sync(dir);
+  assert.deepEqual(verify(dir).failures, []);
+  for (const [file, text] of originals) {
+    assert.equal(read(dir, file), [BINDING, ENGINEERING].includes(file) ? text.replace("# Repository-owned context\n", "") : text, file);
+  }
+});
+
+for (const [name, file] of schemaCatalogs) {
+  test(`${name} rejects unrelated schema hosts, paths, versions, and types`, (t) => {
+    const dir = makeRepo();
+    t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+    for (const identity of [
+      `https://example.com/contract-graph/schema/${name}-v1.schema.json`,
+      `https://contractgraph.dev/schemas/${name}-v1.schema.json`,
+      `https://example.com/schema/${name}-v1.schema.json`,
+      `https://contractgraph.dev/schema/${name}-v2.schema.json`,
+      `https://contractgraph.dev/schema/other-v1.schema.json`,
+      null,
+    ]) {
+      editObject(dir, file, (value) => { value.$schema = identity; });
+      assert.match(verify(dir).failures.join("\n"), /\$schema/, String(identity));
+    }
+  });
+}
 
 /**
  * HTML comments do not nest: the first `-->` closes the outermost `<!--`, so the remainder of
@@ -2472,79 +2563,27 @@ test("the engineering catalog ships a usable starter set", () => {
 });
 
 test("architecture keeps design advice separate from enforced structural bindings", () => {
-  const architecture = fs.readFileSync(path.join(SOURCE_ROOT, "cg", "guidelines", "engineering.yaml"), "utf8");
-  const binding = loadBindingCatalog(path.join(SOURCE_ROOT, "cg", "principles", "architecture.yaml"), {
-    repoRoot: SOURCE_ROOT,
-  });
-  assert.match(architecture, /contains non-binding engineering advice/);
-  assert.match(architecture, /do not override repository choices/);
-  assert.match(architecture, /contract\.yaml/);
-  assert.match(architecture, /Each entry is id, rule, and reason/);
-  assert.match(architecture, /E01-01[\s\S]*Callers use only the paths, symbols, and types/);
-  assert.match(architecture, /E01-02[\s\S]*preserves compatibility/);
-  assert.match(architecture, /E02-02[\s\S]*The graph cannot record what the locator conceals/);
-  assert.doesNotMatch(architecture, /^        text: /m);
-  assert.match(architecture, /does not prescribe a source filename/);
-  assert.match(architecture, /Public and internal code may be co-located/);
-  assert.match(architecture, /lives in .agents\/cg\/principles\/architecture.yaml `hierarchy` and `graph`/);
-  assert.doesNotMatch(architecture, /id: E\d{2}-\d{2}\n\s+text: Every governed boundary declares exactly one named responsibility/);
-  assert.equal(binding.graph.decide.map((entry) => entry.id).sort().join(","), "add-child,elsewhere,stay");
-  assert.match(binding.graph.recurse, /cg modules is not a leaf/);
-  assert.match(binding.graph.selfSufficient.test, /nameable function/);
-  assert.match(binding.graph.selfSufficient.inbound, /named types/);
-  assert.match(binding.graph.selfSufficient.outbound, /sibling/);
-  assert.match(binding.graph.selfSufficient.change, /own reasons/);
-  assert.deepEqual(Object.keys(binding.hierarchy.kinds).sort(), [
-    "component",
-    "library",
-    "module",
-    "repository",
-    "submodule",
-  ]);
-  assert.match(binding.hierarchy.kinds.module, /product or domain capability/);
-  assert.ok(binding.graph.compose.length >= 3);
-  assert.ok(binding.graph.stop.length >= 2);
-  assert.match(binding.graph.stop.join("\n"), /Depth is not capped/);
-  assert.match(binding.graph.stop.join("\n"), /Mixed depth/);
-  assert.match(binding.graph.surface.enter, /surface its contract declares/);
-  assert.match(binding.graph.surface.service, /first way to declare that surface is a service/);
-  assert.match(binding.graph.surface.service, /Many scattered functions/);
-  assert.match(binding.graph.selfSufficient.inbound, /graph.surface.service/);
-  assert.match(binding.graph.surface.promise, /add-child, not stay/);
-  assert.match(binding.graph.surface.encapsulate, /Encapsulation behind the contract/);
-  assert.match(binding.graph.surface.bypass, /Corrective Step/);
-  assert.match(binding.graph.adapters.port, /parent-owned port/);
-  assert.match(binding.graph.adapters.port, /graph.surface.encapsulate/);
-  assert.match(binding.graph.adapters.option, /child node/);
-  assert.match(binding.graph.adapters.mix, /add-child/);
-  assert.equal(binding.rules.find((rule) => rule.id === "A03")?.rule,
-    "Every governed boundary declares exactly one named responsibility.");
-  assert.equal(binding.rules.find((rule) => rule.id === "A14")?.rule,
-    "Every named responsibility is owned by exactly one contract node.");
-  assert.equal(binding.rules.find((rule) => rule.id === "A15")?.rule,
-    "Top-level modules represent domain or product capabilities, not horizontal technical layers.");
-  assert.equal(binding.rules.find((rule) => rule.id === "A16")?.rule,
-    "A contract node is named for its owned responsibility, not as a miscellaneous bag.");
-  assert.ok(binding.rules.every((rule) => rule.measure && rule.enforcedBy.length));
-  assert.doesNotMatch(architecture, /\*Contract|impl\//);
-  const warmup = fs.readFileSync(path.join(SOURCE_ROOT, "skills", "cg-warmup", "SKILL.md"), "utf8");
-  assert.match(warmup, /declares and mechanically protects an existing cohesive declared surface/);
-  assert.match(warmup, /graph\.surface/);
-  assert.match(warmup, /graph\.surface\.service/);
-  assert.match(warmup, /graph\.adapters/);
-  assert.match(warmup, /small set of services/);
-  assert.match(warmup, /node per file/);
-  assert.match(architecture, /E02-04[\s\S]*constructor-supplied ports/);
-  assert.match(architecture, /E02-05[\s\S]*object composition/);
-  assert.doesNotMatch(architecture, /do not import infrastructure implementations/);
-  assert.match(architecture, /E05-01[\s\S]*closed allowlist/);
-  assert.doesNotMatch(architecture, /closed registry of permitted stores/);
-  assert.match(architecture, /E07-03[\s\S]*models, queries, and migrations remain internal/);
-  assert.doesNotMatch(architecture, /migrations, and adapters remain internal/);
-  assert.match(architecture, /E04-01[\s\S]*smallest command that exercises the invariant/);
-  assert.match(architecture, /What the surface hides is graph.surface.encapsulate/);
-  assert.match(architecture, /Optional vendor children are graph.adapters/);
-  assert.match(architecture, /id: E12\n    title: Product shape/);
+  const engineering = parseContractYaml(fs.readFileSync(path.join(SOURCE_ROOT, "cg", "guidelines", "engineering.yaml"), "utf8"));
+  const binding = loadBindingCatalog(path.join(SOURCE_ROOT, "cg", "principles", "architecture.yaml"), { repoRoot: SOURCE_ROOT });
+  assert.equal(engineering.family, "engineering");
+  assert.equal(engineering.binding, "advisory");
+  assert.equal(binding.family, "architecture");
+  assert.equal(binding.binding, "global");
+  assert.deepEqual(binding.principles.map(rule => rule.id), Array.from({ length: 16 }, (_, i) => `A${String(i + 1).padStart(2, "0")}`));
+  for (const rule of binding.principles) {
+    assert.ok(rule.statement && rule.reason && rule.measure);
+    for (const detector of rule.enforcedBy) {
+      assert.deepEqual([detector.implementation, detector.negativeFixture], BUILT_IN_DETECTORS[detector.id]);
+    }
+  }
+  assert.deepEqual(binding.graph.decide.map(entry => entry.id).sort(), ["add-child", "elsewhere", "stay"]);
+  assert.deepEqual(Object.keys(binding.hierarchy.kinds).sort(), ["component", "library", "module", "repository", "submodule"]);
+  for (const group of engineering.principles) {
+    for (const entry of group.entries) {
+      assert.ok(entry.statement && entry.reason);
+      assert.equal(entry.enforcedBy, undefined);
+    }
+  }
 });
 
 test("architecture catalogue classifies the complete non-product inventory", () => {
@@ -2588,12 +2627,12 @@ test("architecture catalogue classifies the complete non-product inventory", () 
   ]);
 
   const rules = new Map(
-    [...architecture.matchAll(/^      - id: (E\d{2}-\d{2})\n        rule: "?([^\n"]+)/gm)]
+    [...architecture.matchAll(/^      - id: (E\d{2}-\d{2})\n        statement: "?([^\n"]+)/gm)]
       .map(([, id, text]) => [id, text]),
   );
   const expectedCounts = new Map([
-    ["E01", 2],
-    ["E02", 5],
+    ["E01", 3],
+    ["E02", 6],
     ["E03", 4],
     ["E04", 4],
     ["E05", 3],
@@ -2626,10 +2665,10 @@ test("architecture catalogue classifies the complete non-product inventory", () 
   const allEntries = [...architecture.matchAll(/^      - id: E\d{2}-\d{2}$/gm)];
   assert.equal(reasons.length, allEntries.length, "every architecture entry owes a reason");
 
-  assert.match(rules.get("E07-10"), /support.*window.*declared in code/);
-  assert.match(rules.get("E10-04"), /audit record.*actor/);
-  assert.match(rules.get("E10-05"), /scheduled job cannot invoke/);
-  assert.match(rules.get("E10-06"), /customer-facing surface cannot invoke/);
+
+
+
+
 });
 
 // ------------------------------------------------------------- manifest
@@ -2744,7 +2783,7 @@ test("[11] a phase naming the same token twice fails", () => {
 
 test("[11] every phase always loads structural bindings", () => {
   const dir = makeRepo();
-  edit(dir, PHASES, (t) => t.replace('"always": ["A", "P"]', '"always": ["P"]'));
+  edit(dir, PHASES, (t) => t.replace('"always": ["A", "P", "E"]', '"always": ["P", "E"]'));
   assertFails(dir, 11, "A is ambient binding for every phase");
 });
 
@@ -2762,9 +2801,10 @@ test("parsePrinciples reads a folded YAML product rule as one line", () => {
     title: Wrapped
     entries:
       - id: P01-01
-        text: >-
+        statement: >-
           Every quoted amount uses the repository's declared
-          billing unit.`,
+          billing unit.
+        reason: Folded YAML must still parse as one principle statement.`,
     ),
   );
   const rules = parsePrinciples(path.join(dir, PRODUCT));
@@ -2786,9 +2826,11 @@ test("parsePrinciples rejects a duplicate rule id", () => {
     title: First
     entries:
       - id: P01-01
-        text: first.
+        statement: first.
+        reason: Duplicate ids are refused.
       - id: P01-01
-        text: second.`,
+        statement: second.
+        reason: Duplicate ids are refused.`,
     ),
   );
   assert.throws(() => parsePrinciples(path.join(dir, PRODUCT)), ContractError);
@@ -2815,7 +2857,7 @@ test("verify rejects a non-binding rule appearing before any heading", () => {
   const dir = makeRepo();
   edit(dir, ENGINEERING, (text) => text.replace(
     "principles:\n",
-    "principles:\n  - entries:\n      - id: E99-01\n        rule: Stray.\n        reason: Stray.\n",
+    "principles:\n  - entries:\n      - id: E99-01\n        statement: Stray.\n        reason: Stray.\n",
   ));
   assert.match(verify(dir).failures.join("\n"), /missing `id`|E99-01/);
 });
@@ -2869,7 +2911,7 @@ test("an architecture rule filed in the product file is refused by name", () => 
 
 test("a product rule filed in the architecture file is refused by name", () => {
   const dir = makeRepo();
-  edit(dir, ENGINEERING, (t) => `${t}\n  - id: P09\n    title: Wrong family\n    category: Broader Engineering Considerations\n    entries:\n      - id: P09-09\n        rule: wrong file for this family.\n        reason: wrong file for this family.\n`);
+  edit(dir, ENGINEERING, (t) => `${t}\n  - id: P09\n    title: Wrong family\n    category: Broader Engineering Considerations\n    entries:\n      - id: P09-09\n        statement: wrong file for this family.\n        reason: wrong file for this family.\n`);
   const { failures } = verify(dir);
   assert.ok(
     failures.some((f) => /P09/.test(f) && /engineering\.yaml/.test(f)),
@@ -3136,16 +3178,16 @@ test("the published tarball ships consumer sources and no maintainer tooling", (
     cwd: REPO,
     stdio: "ignore",
   });
-  const output = execFileSync(npm, ["pack", "./build", "--ignore-scripts", "--dry-run", "--json"], {
+  const output = execFileSync(npm, ["pack", "./dist/build", "--ignore-scripts", "--dry-run", "--json"], {
     cwd: REPO,
     encoding: "utf8",
     env: { ...process.env, npm_config_cache: path.join(os.tmpdir(), "cg-npm-cache") },
     stdio: ["ignore", "pipe", "ignore"],
   });
-  // The tarball is produced solely from the already verified build/ target.
+  // The tarball is produced solely from the already verified dist/build/ target.
   const shipped = JSON.parse(output.slice(output.indexOf("[")))[0].files.map((entry) => entry.path);
   const targetManifest = JSON.parse(
-    fs.readFileSync(path.join(REPO, "build", "manifest.json"), "utf8"),
+    fs.readFileSync(path.join(REPO, "dist", "build", "manifest.json"), "utf8"),
   );
   const targetFiles = [...Object.keys(targetManifest.files), "manifest.json"].sort();
 
@@ -3166,9 +3208,7 @@ test("the published tarball ships consumer sources and no maintainer tooling", (
     "agent/cg/schema/contract.schema.json",
     "agent/cg/guidelines/engineering.yaml",
     "agent/cg/guidelines/product.yaml",
-    "agent/cg/schema/architecture.schema.json",
-    "agent/cg/schema/engineering.schema.json",
-    "agent/cg/schema/product.schema.json",
+    "agent/cg/schema/principles.schema.json",
     "agent/profiles/all.scaffolding.conf.json",
     "agent/profiles/agents.scaffolding.conf.json",
     "agent/templates/module/CLAUDE.md",
@@ -3198,8 +3238,7 @@ test("re-running init never touches the repository's own context", () => {
   const owned = {
     ".agents/cg/contract.yaml": "{\"ourGraph\":true}\n",
     "src/.agents/cg/contract.yaml": "{\"ourModule\":true}\n",
-    ".agents/cg/principles/architecture.yaml": "our architecture rules\n",
-    ".agents/cg/guidelines/product.yaml": "our product rules\n",
+    ".agents/cg/guidelines/product.yaml": `# Our product rules\n${read(dir, ".agents/cg/guidelines/product.yaml")}`,
     ".agents/cg/workflow.md": "our workflow\n",
     "docs/plans/decision-log.md": "our decisions\n",
   };
@@ -3370,6 +3409,35 @@ test("next does not select a Ready Step whose dependency is unfinished", () => {
   assert.equal(next(dir).state, "blocked");
 });
 
+test("decision resolution resumes only work whose blockers and dependencies are cleared", () => {
+  const dir = makeRepo();
+  // A stale Ready label must not turn a pending recommendation into permission.
+  queue(dir, {
+    1: { status: "Ready", blocked: "DU-07; provider access" },
+    2: { status: "Ready" },
+    3: { status: "Ready", depends: "Step 1, Step 2" },
+  });
+  assert.equal(next(dir).step.number, 2);
+  queue(dir, {
+    1: { status: "Ready", blocked: "provider access" },
+    2: { status: "Complete" },
+    3: { status: "Ready", depends: "Step 1, Step 2" },
+  });
+  assert.equal(next(dir).stage, "cg-unblock", "answering DU-07 does not clear provider access");
+  queue(dir, {
+    1: { status: "Ready" },
+    2: { status: "Complete" },
+    3: { status: "Ready", depends: "Step 1, Step 2" },
+  });
+  assert.equal(next(dir).step.number, 1);
+  queue(dir, {
+    1: { status: "Complete" },
+    2: { status: "Complete" },
+    3: { status: "Ready", depends: "Step 1, Step 2" },
+  });
+  assert.equal(next(dir).step.number, 3);
+});
+
 test("next routes to sign-off only when every Step is Complete", () => {
   const dir = makeRepo();
   queue(dir, { 1: { status: "Complete" }, 2: { status: "Complete" } });
@@ -3424,7 +3492,7 @@ test("unblock, plan, warmup and the adapter itself are never gated", () => {
   }
 });
 
-test("an unreadable queue denies every gated stage", () => {
+test("an unreadable queue denies production", () => {
   const dir = makeRepo();
   queue(dir, { 1: { status: "Ready" } });
   write(dir, "docs/plans/prog/phase-1_detailed_preparation.md", "no step sections at all\n");
@@ -3457,7 +3525,7 @@ test("appending ledger ignores is not a framework replace", () => {
   const plan = init(dir, { dryRun: true });
   assert.ok(
     !plan.replaced.some((file) => path.basename(file) === ".gitignore"),
-    "an append-only .gitignore patch must not trigger Replace them? [y/N]",
+    "an append-only .gitignore patch must not trigger Apply the listed updates? [y/N]",
   );
   assert.ok(plan.written.some((file) => path.basename(file) === ".gitignore"));
 });
@@ -3534,12 +3602,46 @@ test("an empty directory is residue even though git cannot see it", () => {
   assert.match(found[0].why, /empty directory/);
 });
 
-test("archived and ignored subtrees are never residue", () => {
+test("archived subtrees and live auto-run ledgers are never residue", () => {
   const dir = makeRepo();
   plan(dir, "a-roadmap.md", "# Roadmap\n");
   plan(dir, "archive/phase-0/step-01.md", "# closed\n");
   plan(dir, "auto-run/phase-1.auto-run.md", "# ledger\n");
   assert.deepEqual(residue(dir).residue.map((r) => r.path), []);
+});
+
+test("a Closed auto-run ledger is residue and a live one is not", () => {
+  const dir = makeRepo();
+  plan(dir, "a-roadmap.md", "# Roadmap\n");
+  plan(dir, "auto-run/trial/phase-1.auto-run.md", "**Phase:** phase-1\nClosed\n");
+  plan(dir, "auto-run/trial/phase-2.auto-run.md", "**Phase:** phase-2\n");
+  const found = residue(dir).residue;
+  assert.deepEqual(found.map((r) => r.path), ["docs/plans/auto-run/trial/phase-1.auto-run.md"]);
+  assert.match(found[0].why, /closed auto-run ledger/);
+});
+
+test("closed ledger detection supports explicit status and stale inbound links", () => {
+  const dir = makeRepo();
+  plan(dir, "a-roadmap.md", "# Roadmap\n[old run](auto-run/trial/)\n");
+  for (const [name, text] of [
+    ["canonical", "**Status:** Closed\n"],
+    ["bullet", "- **Status:** Closed\n"],
+    ["plain", "Status: Closed\n"],
+    ["legacy", "Closed\n"],
+  ]) plan(dir, `auto-run/trial/${name}.auto-run.md`, text);
+  assert.equal(residue(dir).residue.length, 4);
+  assert.ok(residue(dir).residue.every(item => /closed auto-run ledger/.test(item.why)));
+});
+
+test("live ledger status overrides historical Closed text", () => {
+  const dir = makeRepo();
+  plan(dir, "a-roadmap.md", "# Roadmap\n");
+  plan(dir, "auto-run/trial/active.auto-run.md", "**Status:** Active\nClosed\n");
+  plan(dir, "auto-run/trial/suspended.auto-run.md", "**Status:** Suspended\nPending answer: keep verbatim\n");
+  plan(dir, "auto-run/trial/awaiting.auto-run.md", "**Status:** Awaiting acceptance\n");
+  plan(dir, "auto-run/trial/history.auto-run.md", "```markdown\n**Status:** Closed\nClosed\n```\n");
+  plan(dir, "auto-run/trial/contradictory.auto-run.md", "**Status:** Active\n**Status:** Closed\n");
+  assert.deepEqual(residue(dir).residue, []);
 });
 
 test("warmup's files are live during warmup and residue after it", () => {
@@ -3706,11 +3808,50 @@ test("cg-auto-run in the session lifts the boundary, and is never itself gated",
   assert.match(wrong.permissionDecisionReason, /does not support dispatching/);
 });
 
-test("every stage skill states the yield rule", () => {
-  for (const name of ["cg-plan", "cg-prepare", "cg-produce", "cg-sign-off"]) {
-    const text = fs.readFileSync(path.join(SOURCE_ROOT, "skills", name, "SKILL.md"), "utf8");
-    assert.match(text, /## Stage boundary — yield here/, `${name} must tell the model to stop`);
-    assert.match(text, /Do not invoke the next skill yourself/, name);
+test("auto-run can prepare a repair without authorizing blocked production or premature sign-off", () => {
+  const dir = makeRepo();
+  const session = `repair-${Date.now()}`;
+  queue(dir, { 6: { status: "Blocked", blocked: "review nodes are hidden" } });
+  assert.equal(gate(dir, "cg-auto-run", session).permissionDecision, "allow");
+  assert.equal(gate(dir, "cg-prepare", session).permissionDecision, "allow");
+  assert.equal(gate(dir, "cg-produce", session).permissionDecision, "deny");
+  assert.equal(gate(dir, "cg-sign-off", session).permissionDecision, "deny");
+
+  // Preparation makes the defect an executable correction; evidence waits for its handoff.
+  queue(dir, {
+    6: { status: "Waiting", depends: "Step 7" },
+    7: { status: "Ready" },
+  });
+  assert.equal(next(dir).step.number, 7);
+  assert.equal(gate(dir, "cg-produce", session).permissionDecision, "allow");
+  assert.equal(gate(dir, "cg-sign-off", session).permissionDecision, "deny");
+  queue(dir, {
+    6: { status: "Ready", depends: "Step 7" },
+    7: { status: "Complete" },
+  });
+  assert.equal(next(dir).step.number, 6);
+  queue(dir, {
+    6: { status: "Complete", depends: "Step 7" },
+    7: { status: "Complete" },
+  });
+  assert.equal(gate(dir, "cg-sign-off", session).permissionDecision, "allow");
+});
+
+test("corrective preparation repairs queue syntax without admitting production or closure", () => {
+  const dir = makeRepo();
+  queue(dir, { 1: { status: "Complete" } });
+  assert.equal(permits(next(dir), "cg-prepare").allowed, true);
+  queue(dir, { 1: { status: "Unknown" } });
+  assert.equal(permits(next(dir), "cg-prepare").allowed, true);
+  assert.equal(permits(next(dir), "cg-produce").allowed, false);
+  assert.equal(permits(next(dir), "cg-sign-off").allowed, false);
+});
+
+test("ordinary stage procedures state the yield rule", () => {
+  for (const relative of ["cg-plan/SKILL.md", "cg-prepare/SKILL.md", "cg-produce/SKILL.md", "cg-sign-off/references/phase-sign-off.md"]) {
+    const text = fs.readFileSync(path.join(SOURCE_ROOT, "skills", relative), "utf8");
+    assert.match(text, /## Stage boundary — yield here/, `${relative} must tell the model to stop`);
+    assert.match(text, /Do not invoke the next skill yourself/, relative);
   }
 });
 

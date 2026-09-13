@@ -13,7 +13,7 @@ import { isScalar, parseDocument, stringify, visit } from "yaml";
 
 export const CONTRACT_FILENAME = ".agents/cg/contract.yaml";
 export const CONTRACT_VERSION = "1.0";
-export const CONTRACT_SCHEMA_ID = "https://sarada.io/contract-graph/schema/contract-v1.schema.json";
+export const CONTRACT_SCHEMA_ID = "https://contractgraph.dev/schema/contract-v1.schema.json";
 
 const CONTRACT_KINDS = new Set([
   "repository",

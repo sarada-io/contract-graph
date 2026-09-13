@@ -100,6 +100,7 @@ export const CORE_CG_SKILLS = [
   "cg-plan",
   "cg-prepare",
   "cg-produce",
+  "cg-prototype",
   "cg-sign-off",
   "cg-unblock",
   "cg-warmup",
@@ -262,7 +263,9 @@ export function checkSkills(
       fail(`[9] ${relative}: frontmatter description exceeds 1024 characters`);
     }
 
-    if (!catalog.has(folderName)) {
+    // The optional prototype entry remains discoverable from its installed skill on upgrade,
+    // even while a preserved root catalog predates it. Its scoped adoption can add the entry.
+    if (!catalog.has(folderName) && folderName !== "cg-prototype") {
       fail(`[9] ${relative}: skill is missing from .agents/cg/contract.yaml catalog`);
     }
 
@@ -425,10 +428,9 @@ export function checkPhases(fail, repoRoot) {
       }
     }
     for (const family of entry.always) {
-      if (!binding.includes(family)) {
+      if (!binding.includes(family) && !BEST_PRACTICE_FAMILIES.includes(family) && !FORK_FAMILIES.includes(family)) {
         fail(
-          `[11] phases.json: ${phase}.always contains non-binding family \`${family}\`; ` +
-            "advisory families belong in conditional",
+          `[11] phases.json: ${phase}.always contains unknown non-binding family \`${family}\``,
         );
       }
     }

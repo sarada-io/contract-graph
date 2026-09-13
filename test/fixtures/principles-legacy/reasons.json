@@ -1,0 +1,19 @@
+{
+  "A01": "Ambiguous or executable YAML lets a node mean different things to different loaders, so the next session cannot trust the graph.",
+  "A02": "A contract stored off the canonical path is invisible to routing; the next session rediscovers the boundary by searching source.",
+  "A03": "One explicit owner lets this repository route each responsibility consistently.",
+  "A04": "A forbidden parent-child kind pair is a graph the walk cannot write and later sessions cannot navigate.",
+  "A05": "Composition state is how an agent knows whether to look for children or stop.",
+  "A06": "An unreachable or cyclic composition graph has no top-down route from the repository.",
+  "A07": "Keeping declared child units under their parent makes composition agree with filesystem ownership; this does not prove worker write confinement.",
+  "A08": "A dangling dependency is a promised edge that leads nowhere.",
+  "A09": "A dependency cycle makes change order undefined.",
+  "A10": "A boundary without a declared surface has no legal entry, so callers invent one.",
+  "A11": "A declared path that does not exist is a lie the next session will follow.",
+  "A12": "One-sided invariant/verification links leave truth unproven or checks that prove nothing named.",
+  "A13": "A binding without a registered detector is a rule nobody can fail.",
+  "A14": "Two nodes claiming the same owns hide which contract to route to.",
+  "A15": "A technical-layer module name is a horizontal slice, not a capability an agent can own.",
+  "A16": "A utils or helpers name is a bag, not a responsibility, so routing cannot terminate.",
+  "P01-01": "This product's provider receives integer minor units."
+}

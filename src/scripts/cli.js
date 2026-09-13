@@ -22,10 +22,14 @@ import {
 } from "./contracts.js";
 import { build, BuildError } from "./build.js";
 import { init } from "./init.js";
+import { migratePrinciples } from "./migrate-principles.js";
 import { HarvestError, checkHarvest } from "./harvest.js";
 import { moduleCoverage, openDescent } from "./modules.js";
 import { next, permits } from "./next.js";
+import { prototypeAction, deliveryReadiness } from "./prototype.js";
 import { residue } from "./residue.js";
+import { status } from "./status.js";
+import { runtimeIdentity } from "./runtime.js";
 import { multiSelect } from "./picker.js";
 import {
   expandProfileAliases,
@@ -47,10 +51,14 @@ const VERSION = JSON.parse(fs.readFileSync(PACKAGE_JSON, "utf8")).version;
 const USAGE = `cg — Contract Graph
 
 Usage:
-  cg build [dir] [--check]                         assemble the package target under build/
-  cg init [--profile a,b] [--docs dir]             scaffold governance
+  cg build [dir] [--check]                         assemble the package target under dist/build/
+  cg init [--profile a,b] [--docs dir] [--reasons file]  install or update CG
+  cg migrate-principles [dir] [--reasons file] [--write]  preview or apply legacy catalog conversion
   cg next [dir] [--json] [--for skill]            what runs next, computed from the Step queue
-  cg residue [dir] [--json]                       plan documents nothing points at any more
+  cg prototype <action> [dir] --programme slug   start, checkpoint, review, approve, handoff, request-sign-off, suspend, resume, abandon, close, evidence, status
+  cg delivery verify [dir] --base ref --gate cmd check prototype delivery receipts for a pull request
+  cg status [dir] [--programme slug] [--json]    current queue, blockers, recovery action, and residue owners
+  cg residue [dir] [--programme slug] [--json]   unreferenced plan files; scoped checks retain shared findings
   cg sync [dir] [--check]                         regenerate derived artifacts
   cg verify [dir] [--warn]                        verify governance
   cg modules [dir]                                list detected module roots, coverage, and unfinished descent
@@ -72,16 +80,23 @@ Options:
   --stage <name>    harvest stage: classify (default) or close
   --decision-log <path>  decision log to check cohort eligibility against (harvest only)
   --preparation <path>   prepared drain route to validate at --stage close (harvest only)
-  --json            machine-readable output (next, residue, contract, graph)
+  --json            machine-readable output (next, status, residue, contract, graph)
   --id <id>         contract id, governed unit, or repository-relative contract path
   --task <text>     task description to match against contract routes
   --format <name>   output format: markdown, tree, json, or mermaid
   --for <skill>     exit 0 only if dispatching that skill agrees with the queue (next only)
+  --programme <slug> select one programme (prototype, next, status, residue)
+  --evidence <file> checkpoint/approval/completion-request JSON or final sign-off document
+  --session <id>    identify the acting session; required for prototype checkpoints
+  --gate <command>  execute the repository delivery gate before closing a prototype
+  --base <ref>      trusted target ref with fetched history (delivery verify)
   --check           verify build/init/sync output without changing it
-  --yes             accept replacing framework core without being asked (init only)
+  --yes             accept the displayed installation and catalog updates (init only)
+  --write           apply a validated principles migration, with backups (migration only)
+  --reasons <file>  JSON object of missing rationale by principle ID (init or migration)
   --warn            report findings and exit 0 (verify only)
   --quiet           suppress successful build output
-  --version         print the installed package version
+  --version [--json] print version; JSON also identifies the executable and CLI/skills build
   -h, --help        show this message
 `;
 
@@ -92,6 +107,8 @@ Options:
  * nothing quietly is exactly the upgrade failure this tool should not have.
  */
 const KNOWN_FLAGS = new Set([
+  "write",
+  "reasons",
   "profile",
   "docs",
   "stage",
@@ -103,6 +120,11 @@ const KNOWN_FLAGS = new Set([
   "task",
   "format",
   "for",
+  "programme",
+  "session",
+  "evidence",
+  "gate",
+  "base",
   "yes",
   "warn",
   "quiet",
@@ -116,7 +138,11 @@ function parseArgs(argv) {
   // options consume values (in either `--name x` or `--name=x` form).
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
-    if (arg === "--profile") {
+    const extraValue = /^--(programme|session|evidence|gate|base|reasons)(?:=(.*))?$/.exec(arg);
+    if (extraValue) {
+      flags[extraValue[1]] = extraValue[2] ?? argv[++i];
+      if (typeof flags[extraValue[1]] !== "string" || !flags[extraValue[1]].trim() || flags[extraValue[1]].startsWith("--")) throw new Error(`${extraValue[1]} requires a value`);
+    } else if (arg === "--profile") {
       flags.profile = argv[++i] ?? "";
     } else if (arg.startsWith("--profile=")) {
       flags.profile = arg.slice("--profile=".length);
@@ -359,7 +385,7 @@ async function main(argv) {
     return 0;
   }
   if (command === "--version") {
-    process.stdout.write(`${VERSION}\n`);
+    process.stdout.write(rest.includes("--json") ? `${JSON.stringify(runtimeIdentity(), null, 2)}\n` : `${VERSION}\n`);
     return 0;
   }
 
@@ -462,8 +488,43 @@ async function main(argv) {
     }
   }
 
+  if (command === "prototype" || command === "delivery") {
+    const action = positional[0];
+    const root = path.resolve(positional[1] ?? ".");
+    if (command === "delivery") {
+      if (action !== "verify" || !flags.base || !flags.gate) throw new Error("usage: cg delivery verify [dir] --base <trusted target ref> --gate <required command>");
+      const result = deliveryReadiness(root, { base: flags.base, gate: flags.gate });
+      if (flags.json) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      else process.stdout.write(`cg delivery: ${result.failures.length ? "FAIL" : "OK"}\n${result.failures.map(f => `  ${f}\n`).join("")}`);
+      return result.failures.length ? 1 : 0;
+    }
+    const result = prototypeAction(root, action, { programme: flags.programme, evidence: flags.evidence, gate: flags.gate, session: flags.session });
+    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+    return 0;
+  }
+
   // All repository commands accept an optional directory as their first positional argument.
   const repoRoot = path.resolve(positional[0] ?? ".");
+
+  if (command === "migrate-principles") {
+    if (positional.length > 1) throw new Error("usage: cg migrate-principles [dir] [--reasons file] [--write] [--json]");
+    for (const flag of Object.keys(flags)) {
+      if (!["write", "reasons", "json"].includes(flag)) throw new Error(`migrate-principles does not accept --${flag}`);
+    }
+    const reasons = flags.reasons ? JSON.parse(fs.readFileSync(path.resolve(flags.reasons), "utf8")) : {};
+    const result = migratePrinciples(repoRoot, { write: Boolean(flags.write), reasons });
+    if (flags.json) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+    else {
+      process.stdout.write(`cg migrate-principles: ${flags.write ? "apply" : "preview"} — ${result.changed.length} catalog(s) need conversion, ${result.written.length} written\n`);
+      for (const item of result.changed) process.stdout.write(`  ${item.file}\n`);
+      for (const item of result.missingReasons) process.stdout.write(`  needs reason: ${item.id} — ${item.statement}\n`);
+      for (const file of result.backups) process.stdout.write(`  backup: ${file}\n`);
+      for (const failure of result.failures) process.stderr.write(`  ${failure}\n`);
+      if (!flags.write && result.changed.length) process.stdout.write("  Use --json to inspect proposed YAML; provide missing rationale with --reasons <json-file>, then --write to apply.\n");
+      if (result.written.length && !result.failures.length) process.stdout.write("  Next: cg init --yes with the repository's existing docs root and profiles, then cg verify.\n");
+    }
+    return result.failures.length ? 1 : 0;
+  }
 
   if (command === "build") {
     let result;
@@ -476,7 +537,7 @@ async function main(argv) {
     if (flags.check) {
       if (result.changed.length || result.removed.length) {
         process.stderr.write(
-          `cg build --check: FAIL — build/ differs from its package sources\n`,
+          `cg build --check: FAIL — dist/build/ differs from its package sources\n`,
         );
         for (const file of result.changed) process.stderr.write(`  stale or missing ${file}\n`);
         for (const file of result.removed) process.stderr.write(`  unexpected ${file}\n`);
@@ -570,6 +631,7 @@ async function main(argv) {
     if (!(await confirmInitLocation(repoRoot, positional[0] !== undefined, flags))) return 1;
     const profiles = await chooseProfiles(repoRoot, flags);
     const docs = await chooseDocsRoot(repoRoot, flags);
+    const reasons = flags.reasons ? JSON.parse(fs.readFileSync(path.resolve(flags.reasons), "utf8")) : {};
 
     const instructionNotices = rootInstructionNotices(repoRoot, profiles);
     if (instructionNotices.length) {
@@ -588,25 +650,34 @@ async function main(argv) {
     // Framework core is replaced, so a re-run can discard local edits to a skill. Nothing is
     // written until the plan has been shown and accepted: `cg init` is the one verb a user is
     // likely to type from memory, and typing it must never be how they find out.
-    const plan = init(repoRoot, { profiles, docs, dryRun: true });
+    const plan = init(repoRoot, { profiles, docs, reasons, dryRun: true });
+    if (plan.pendingReasons.length) {
+      process.stdout.write(`cg init: product migration needs /cg-warmup (${plan.pendingReasons.length} missing rationale). Original product.yaml will be preserved.\n`);
+      for (const item of plan.pendingReasons) process.stdout.write(`  ${item.id}: ${item.statement}\n`);
+    }
     if (plan.replaced.length) {
       process.stdout.write(
-        `cg init: ${plan.replaced.length} framework file(s) will be replaced with this version\n`,
+        `cg init: ${plan.replaced.length} file(s) will be updated with this version\n`,
       );
       for (const file of plan.replaced) {
         process.stdout.write(`  ${path.relative(repoRoot, file)}\n`);
       }
+      for (const item of plan.catalogUpdates) {
+        process.stdout.write(`  ${item.action}: ${path.relative(repoRoot, item.file)}\n    backup: ${item.backup}\n`);
+      }
       process.stdout.write(
-        `  Your own context under \`.agents/cg/\`, \`${plan.docs}/\`, and any module contracts is not touched.\n`,
+        `  Architecture and engineering use this release's defaults. Product rules retain their content during format conversion.\n` +
+        `  Contract and enforcement content is preserved; known legacy schema URLs are updated.\n` +
+        `  Workflow, phase policy, and \`${plan.docs}/\` are preserved.\n`,
       );
       if (flags.check) return 1;
       if (!flags.yes) {
         if (!process.stdin.isTTY) {
-          throw new Error("refusing to replace framework files without confirmation — re-run with --yes");
+          throw new Error("refusing to update installation files without confirmation — re-run with --yes");
         }
         const rl = prompter();
         try {
-          const answer = await rl.ask("  Replace them? [y/N] ");
+          const answer = await rl.ask("  Apply the listed updates? [y/N] ");
           if (!/^y(es)?$/i.test(answer)) {
             process.stdout.write("cg init: cancelled, nothing was written\n");
             return 1;
@@ -619,10 +690,16 @@ async function main(argv) {
       process.stdout.write(
         `cg init: ${plan.written.length} file(s) would be written, 0 replaced\n`,
       );
-      return plan.written.length ? 1 : 0;
+      return plan.written.length || plan.pendingReasons.length ? 1 : 0;
     }
 
-    const result = init(repoRoot, { profiles, docs });
+    const result = init(repoRoot, { profiles, docs, reasons });
+    if (result.pendingReasons.length) {
+      process.stdout.write(`cg init: installation updated; product migration remains incomplete.\n`);
+      for (const file of result.backups) process.stdout.write(`  upgrade backup: ${path.relative(repoRoot, file)}\n`);
+      process.stdout.write(`  Next: reload editor skills, then run /cg-warmup in your coding agent.\n  Warmup will review missing product reasons with you, finish migration, and run cg verify.\n  Sync and verification are deferred; this is not a verified upgrade.\n`);
+      return 1;
+    }
     const { changed } = sync(repoRoot);
     const { failures, advisories, counts } = verify(repoRoot);
 
@@ -635,6 +712,10 @@ async function main(argv) {
     );
 
     for (const message of advisories) process.stdout.write(`  ${message}\n`);
+    for (const file of result.backups) process.stdout.write(`  upgrade backup: ${path.relative(repoRoot, file)}\n`);
+    if (result.skipped.some(file => file.endsWith("workflow.md"))) {
+      process.stdout.write("  prototype: repository workflow was preserved. /cg-prototype can adopt its scoped workflow exception.\n");
+    }
 
     const rivals = detectRivalDocTrees(repoRoot, result.docs);
     if (rivals.length) {
@@ -690,8 +771,30 @@ async function main(argv) {
     return 0;
   }
 
+  if (command === "status") {
+    const result = status(repoRoot, { programme: flags.programme });
+    if (flags.json) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+    else {
+      process.stdout.write(`cg status: ${result.programme ?? "selection unresolved"} — ${result.state}\n`);
+      process.stdout.write(`  installation: ${result.installation.state}; CLI: ${result.installation.runtime.executable}\n`);
+      if (result.installation.reason) process.stdout.write(`  ${result.installation.reason}\n`);
+      for (const candidate of result.signOffRecovery.candidates) process.stdout.write(`  resumable sign-off: ${candidate.mode} for ${candidate.programme} — ${candidate.scope}\n`);
+      if (result.reason) process.stdout.write(`  ${result.reason}\n`);
+      if (result.programmes.length) process.stdout.write(`  programmes: ${result.programmes.join(", ")}\n`);
+      if (result.prototype) process.stdout.write(`  prototype: ${result.prototype.status}; completion request: ${result.prototype.completionRequest?.state ?? "none"}\n`);
+      for (const step of result.remainingSteps) process.stdout.write(`  ${step.file} — ${step.status}: ${step.title}\n${step.blockedBy ? `    blocked by: ${step.blockedBy}\n` : ""}`);
+      for (const finding of result.findings) process.stdout.write(`  repair: ${finding.file}: ${finding.reason}\n`);
+      for (const item of [...(result.residue?.blocking ?? []), ...(result.residue?.otherProgrammes ?? [])]) {
+        process.stdout.write(`  residue [${item.scope}; owner: ${item.programme ?? "shared/unassigned"}]: ${item.path}\n`);
+      }
+      process.stdout.write(`  next: ${result.nextAction ?? "resolve selection or reported errors"}${result.programme ? ` (programme ${result.programme})` : ""}\n`);
+      for (const problem of result.problems) process.stderr.write(`  ${problem}\n`);
+    }
+    return result.problems.length || result.state === "selection-required" || result.installation.requiresInit ? 1 : 0;
+  }
+
   if (command === "next") {
-    const result = next(repoRoot);
+    const result = next(repoRoot, { programme: flags.programme, skill: flags.for });
     if (flags.json) {
       process.stdout.write(`${JSON.stringify(
         {
@@ -700,6 +803,15 @@ async function main(argv) {
           reason: result.reason ?? null,
           step: result.step ? { file: result.step.file, title: result.step.title } : null,
           problems: result.problems,
+          programme: result.programme ?? null,
+          programmes: result.programmes ?? [],
+          findings: result.findings ?? [],
+          repairableQueue: result.repairableQueue ?? false,
+          installation: result.installation,
+          signOffRecovery: result.signOffRecovery,
+          selectionSource: result.selectionSource ?? null,
+          ...(result.prototype ? { prototype: { programme: result.prototype.programme, status: result.prototype.status,
+            completionRequest: result.prototype.completionRequest ? { state: result.prototype.completionRequest.state } : null } } : {}),
           ...(flags.for ? { for: flags.for, ...permits(result, flags.for) } : {}),
         },
         null,
@@ -707,6 +819,7 @@ async function main(argv) {
       )}\n`);
     } else {
       process.stdout.write(`cg next: ${result.state} — ${result.stage ?? "nothing dispatchable"}\n`);
+      if (result.installation.reason) process.stderr.write(`  ${result.installation.reason}\n`);
       if (result.reason) process.stdout.write(`  ${result.reason}\n`);
       for (const problem of result.problems) process.stderr.write(`  ${problem}\n`);
     }
@@ -718,11 +831,11 @@ async function main(argv) {
       }
       return verdict.allowed ? 0 : 1;
     }
-    return result.state === "unreadable" ? 1 : 0;
+    return result.state === "unreadable" || result.installation.requiresInit ? 1 : 0;
   }
 
   if (command === "residue") {
-    const result = residue(repoRoot);
+    const result = residue(repoRoot, { programme: flags.programme });
     if (flags.json) {
       process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
     } else if (!result.residue.length) {
@@ -730,15 +843,15 @@ async function main(argv) {
         `cg residue: none — ${result.claimed} document(s) under ${result.docs}/plans/ are all reachable\n`,
       );
     } else {
-      process.stdout.write(`cg residue: ${result.residue.length} unclaimed under ${result.docs}/plans/\n`);
-      for (const item of result.residue) process.stdout.write(`  ${item.path}\n    ${item.why}\n`);
+      process.stdout.write(`cg residue: ${result.residue.length} unclaimed under ${result.docs}/plans/; ${result.blocking.length} in check scope\n`);
+      for (const item of result.residue) process.stdout.write(`  ${item.path} [${item.scope}; owner: ${item.programme ?? "shared/unassigned"}]\n    ${item.why}\n`);
       process.stdout.write(
         `  roots: ${result.roots.join(", ") || "none"}\n` +
-          "  Each of these is consumed work, superseded, or was never claimed. Archive what a reader\n" +
-          "  may audit, delete the rest — `archive/` is not a place to move things to avoid deciding.\n",
+          "  Unreferenced does not mean disposable. Link useful evidence to its consumer; inspect\n" +
+          "  superseded work before archiving or deleting it. Other programmes retain their owners.\n",
       );
     }
-    return result.residue.length ? 1 : 0;
+    return result.blocking.length ? 1 : 0;
   }
 
   if (command === "sync") {
@@ -777,8 +890,9 @@ async function main(argv) {
 }
 
 try {
-  process.exit(await main(process.argv.slice(2)));
+  // Allow buffered output (especially full migration previews) to drain before exiting.
+  process.exitCode = await main(process.argv.slice(2));
 } catch (error) {
   process.stderr.write(`cg: ${error.message}\n`);
-  process.exit(1);
+  process.exitCode = 1;
 }
