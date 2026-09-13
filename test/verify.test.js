@@ -3525,7 +3525,7 @@ test("appending ledger ignores is not a framework replace", () => {
   const plan = init(dir, { dryRun: true });
   assert.ok(
     !plan.replaced.some((file) => path.basename(file) === ".gitignore"),
-    "an append-only .gitignore patch must not trigger Replace them? [y/N]",
+    "an append-only .gitignore patch must not trigger Apply the listed updates? [y/N]",
   );
   assert.ok(plan.written.some((file) => path.basename(file) === ".gitignore"));
 });

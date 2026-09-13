@@ -677,7 +677,7 @@ async function main(argv) {
         }
         const rl = prompter();
         try {
-          const answer = await rl.ask("  Replace them? [y/N] ");
+          const answer = await rl.ask("  Apply the listed updates? [y/N] ");
           if (!/^y(es)?$/i.test(answer)) {
             process.stdout.write("cg init: cancelled, nothing was written\n");
             return 1;
