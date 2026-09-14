@@ -30,7 +30,7 @@ jobs:
           VERSION="$(node -p "require('./package.json').version")"
           PREFIX="$(mktemp -d)"
           TARGET="$(mktemp -d)"
-          npm install --global --prefix "$PREFIX" "$PWD/contract-graph-${VERSION}.tgz"
+          npm install --global --prefix "$PREFIX" "$PWD/dist/tar/contract-graph-${VERSION}.tgz"
           test "$("$PREFIX/bin/cg" --version)" = "$VERSION"
           "$PREFIX/bin/cg" init "$TARGET"
           "$PREFIX/bin/cg" sync "$TARGET"

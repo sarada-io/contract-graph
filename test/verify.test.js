@@ -671,9 +671,16 @@ test("the published README is a human landing page", () => {
   assert.match(readme, /https:\/\/contractgraph\.dev\/docs\/workflow\//);
   assert.match(readme, /https:\/\/contractgraph\.dev\/docs\/upgrade\//);
   assert.match(readme, /https:\/\/contractgraph\.dev\/schema\//);
-  assert.match(readme, /## Learn more/);
+  assert.match(readme, /## How it works/);
+  assert.match(readme, /## Get Started/);
+  assert.match(readme, /## Learn More/);
   assert.match(readme, /cd your-repository/);
-  assert.doesNotMatch(readme, /```mermaid/);
+  assert.match(readme, /cg modules/);
+  assert.match(readme, /cg verify/);
+  assert.match(readme, /```mermaid/);
+  assert.doesNotMatch(readme, /## Install and set up/);
+  assert.doesNotMatch(readme, /## Shared tools/);
+  assert.doesNotMatch(readme, /## Schema URLs/);
   assert.doesNotMatch(readme, /## How an agent uses it/);
   assert.doesNotMatch(readme, /## Building the package/);
 });
