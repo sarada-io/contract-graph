@@ -4,6 +4,7 @@ import path from "node:path";
 import crypto from "node:crypto";
 import { execFileSync, spawnSync } from "node:child_process";
 import { profilePath } from "./profiles.js";
+import { encodePrototype, decodePrototype } from "./prototype-storage.js";
 
 export const PROTOTYPE_ROOT = ".agents/cg/prototypes";
 export const PROTOTYPE_STATES = ["Iterating", "Awaiting review", "Approved", "Handed off", "Suspended", "Abandoned", "Closed"];
@@ -101,6 +102,7 @@ export function prototypeReviewSnapshot(root, record) {
 }
 
 export function validatePrototype(record, file) {
+  try { record = decodePrototype(record); } catch (error) { throw new Error(`${file}: ${error.message}`); }
   if (!record || record.version !== 1 || typeof record.programme !== "string" || !slugPattern.test(record.programme) ||
       !PROTOTYPE_STATES.includes(record.status) || !digestPattern.test(record.baseline ?? "") ||
       !Array.isArray(record.history) || !record.history.length ||
@@ -172,7 +174,10 @@ function save(root, record, status, event = {}) {
   fs.mkdirSync(path.dirname(file), { recursive: true });
   const temp = path.join(path.dirname(file), `.${record.programme}.${crypto.randomUUID()}.tmp`);
   try {
-    fs.writeFileSync(temp, `${JSON.stringify(record, null, 2)}\n`, { flag: "wx" });
+    // Existing v1 records migrate only through explicit compact; new and migrated records use v2.
+    const legacy = fs.existsSync(file) && JSON.parse(fs.readFileSync(file, "utf8")).version === 1;
+    const stored = legacy ? record : encodePrototype(record);
+    fs.writeFileSync(temp, `${JSON.stringify(stored)}\n`, { flag: "wx" });
     fs.renameSync(temp, file);
   } finally { fs.rmSync(temp, { force: true }); }
   return record;
@@ -319,6 +324,23 @@ function performAction(root, action, { programme: name, evidence, gate, session 
     return persist("Iterating");
   }
   if (!record) throw new Error(`no prototype for ${name}; start it first`);
+  if (action === "compact") {
+    if (record.status !== "Closed") throw new Error("only Closed receipts can be compacted; retain active recovery state");
+    const file = ownedPath(root, `${PROTOTYPE_ROOT}/${name}.json`);
+    const original = fs.readFileSync(file, "utf8");
+    const stored = encodePrototype(record);
+    const output = `${JSON.stringify(stored)}\n`;
+    const recovered = validatePrototype(JSON.parse(output), file);
+    if (JSON.stringify(recovered) !== JSON.stringify(record)) throw new Error("compaction changed receipt evidence");
+    const temp = path.join(path.dirname(file), `.${name}.${crypto.randomUUID()}.tmp`);
+    try {
+      fs.writeFileSync(temp, output, { flag: "wx", mode: fs.statSync(file).mode });
+      if (fs.readFileSync(temp, "utf8") !== output || fs.readFileSync(file, "utf8") !== original) throw new Error("receipt changed during compaction");
+      fs.renameSync(temp, file);
+    } finally { fs.rmSync(temp, { force: true }); }
+    return { programme: name, status: record.status, storageVersion: 2, bytesBefore: Buffer.byteLength(original),
+      bytesAfter: Buffer.byteLength(output), logicalEvidenceHash: sha(JSON.stringify(recovered)) };
+  }
   if (action === "evidence") {
     if (!event.evidence) throw new Error("evidence registration requires a file under this programme's plans directory");
     return persist(record.status);

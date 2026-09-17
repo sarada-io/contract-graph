@@ -55,7 +55,7 @@ Usage:
   cg init [--profile a,b] [--docs dir] [--reasons file]  install or update CG
   cg migrate-principles [dir] [--reasons file] [--write]  preview or apply legacy catalog conversion
   cg next [dir] [--json] [--for skill]            what runs next, computed from the Step queue
-  cg prototype <action> [dir] --programme slug   start, checkpoint, review, approve, handoff, request-sign-off, suspend, resume, abandon, close, evidence, status
+  cg prototype <action> [dir] --programme slug   start, checkpoint, review, approve, handoff, request-sign-off, suspend, resume, abandon, close, compact, evidence, status
   cg delivery verify [dir] --base ref --gate cmd check prototype delivery receipts for a pull request
   cg status [dir] [--programme slug] [--json]    current queue, blockers, recovery action, and residue owners
   cg residue [dir] [--programme slug] [--json]   unreferenced plan files; scoped checks retain shared findings
@@ -80,7 +80,7 @@ Options:
   --stage <name>    harvest stage: classify (default) or close
   --decision-log <path>  decision log to check cohort eligibility against (harvest only)
   --preparation <path>   prepared drain route to validate at --stage close (harvest only)
-  --json            machine-readable output (next, status, residue, contract, graph)
+  --json            machine-readable output; full prototype evidence (next, status, residue, prototype, contract, graph)
   --id <id>         contract id, governed unit, or repository-relative contract path
   --task <text>     task description to match against contract routes
   --format <name>   output format: markdown, tree, json, or mermaid
@@ -499,7 +499,15 @@ async function main(argv) {
       return result.failures.length ? 1 : 0;
     }
     const result = prototypeAction(root, action, { programme: flags.programme, evidence: flags.evidence, gate: flags.gate, session: flags.session });
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+    // Routine lifecycle output is a view, not another copy of the full evidence archive.
+    const summary = record => ({ programme: record.programme, status: record.status,
+      file: record.file ?? `.agents/cg/prototypes/${record.programme}.json`,
+      historyEvents: record.history.length, completionRequest: record.completionRequest ?? null,
+      sessions: (record.sessions ?? []).map(({ session, state, writes, resources, peers, unregisteredProgrammes }) =>
+        ({ session, state, writes, resources, peers, unregisteredProgrammes })),
+      latestDeliveryAttempt: record.deliveryAttempts?.at(-1) ?? null });
+    const output = flags.json || action === "compact" ? result : Array.isArray(result) ? result.map(summary) : summary(result);
+    process.stdout.write(`${JSON.stringify(output, null, 2)}\n`);
     return 0;
   }
 

@@ -67,11 +67,12 @@ provisional code, not claiming a green baseline.
 
 ## Complete the remaining delivery
 
-Keep a compact completion ledger in the same roadmap: request and acceptance evidence, actual
-worktree, retained prototype changes, remaining obligations, current phase/queue, last handoff,
-checks and stale evidence, pending decisions, and exact next action. Record that prototype
-completion owns continuation so a prepare/produce handoff cannot reset the session to ordinary
-phase sign-off. Update it at stage handoffs so a fresh session can continue. Apply
+Keep the roadmap's completion section limited to remaining programme obligations, links to the
+selected queue and receipt, and coordination facts that `cg status` cannot derive. The receipt owns
+request and acceptance evidence; the queue owns Step state and handoffs; the final phase acceptance
+record owns the evidence inventory. Reference those records instead of copying their contents.
+Record that prototype completion owns continuation so a stage handoff cannot reset its scope.
+Replace stale current-state notes at handoffs; do not append a narrative for every transition. Apply
 [concurrent work](../../cg-prototype/references/concurrent-work.md): declare the actual writer,
 resolve overlaps, preserve other programmes, and arrange stable final inputs.
 
@@ -116,7 +117,10 @@ This command executes the full gate and records a source-bound receipt. Use that
 final inventory result rather than running the gate twice. It rejects failed gates or gates that
 change source inputs; return those findings to this coordinator's repair loop. Keep the phase or
 prototype incomplete while its required gate fails. Keep `.agents/cg/prototypes/<slug>.json`
-tracked after plan cleanup. A PR still needs ordinary required CI and adopted branch protection.
+tracked after plan cleanup. New receipts use v2 storage, which shares repeated evidence by hash
+without dropping history. Read them through `cg prototype status --json`. To migrate a Closed v1 receipt,
+use `cg prototype compact --programme <slug>` after all writers use 0.7.0 or newer. This verifies
+complete logical evidence equality; it does not delete attached plan evidence or rerun delivery. A PR still needs ordinary required CI and adopted branch protection.
 The CLI cannot infer full requirements from a successful command, so also check the recorded
 completion obligations. Visible changes need affected human acceptance before closure.
 

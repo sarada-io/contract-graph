@@ -44,7 +44,7 @@ it is not phase completion.
 3. Run `cg next --programme <slug>` for the already selected programme.
    Closure starts only when every prepared Step in the exact selected phase is `Complete`.
    Run the repository's selected-phase guard when present; aggregate routing cannot override it.
-4. Build one final evidence inventory under [verification](../../cg-prepare/references/verification.md).
+4. Maintain one final evidence inventory in the existing phase acceptance record under [verification](../../cg-prepare/references/verification.md).
    Establish `cg verify`, Step checks, and the repository full gate for the final state; reuse only
    applicable evidence and execute missing or invalidated checks. Later sections consume this
    inventory rather than triggering duplicate runs.
@@ -253,7 +253,11 @@ Permanent documents must not depend on a transient phase path or ticket ID as th
 
 ## 8. Write the durable record
 
-Write durable non-contract documentation. Read contracts as evidence; never replace or defer them.
+Create or update durable non-contract documentation only when a named reader has a current need
+not already met by a contract, guide, or decision. Prefer updating the existing owner document.
+If no such need remains, record “No durable documentation change needed” in the existing closure
+record and continue. Do not create a guide, ADR, diagram, or report merely because a phase closes.
+Read contracts as evidence; never replace or defer them.
 Design records live under `<docs>/decisions/`. Product and operator guides live under
 `<docs>/guides/`. Both survive plan deletion. The roadmap is transient.
 
@@ -287,8 +291,8 @@ Guides (`<docs>/guides/`): current supported product — audience, happy path, a
 safety boundary, observable failure, recovery, and a runnable smoke test. Remove retired stores,
 modules, routes, and deployment paths.
 
-Name owner, forbidden owner, contract IDs, entry points, verification commands, and current paths
-so a later session can route without chat history.
+Link the owning contracts for boundaries, entry points, and verification. State only the
+rationale or reader procedure the document uniquely owns; do not copy the contract fields.
 
 ### 8.4 Mermaid diagrams
 
@@ -366,7 +370,8 @@ If the gate cannot become green, return Incomplete or Blocked to the invoking pr
 
 ## 11. Return the evidence and next route
 
-Return the report and immediate next route to the invoking procedure. It decides whether to
+Return a concise outcome, links to the canonical phase acceptance record and Step handoffs, and
+the immediate next route to the invoking procedure. Do not create another summary file. It decides whether to
 continue, yield to its caller, or ask the user. A failed gate keeps the phase incomplete; it does
 not cancel an authorized corrective route. Include a blocker only when something prevents that
 route itself, such as an unanswered decision or unavailable prerequisite.

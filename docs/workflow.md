@@ -172,6 +172,17 @@ class. Existing sufficient coverage can be retained. Internal edits with unchang
 need an impact assessment but no artificial YAML change. Repository-required gates remain binding;
 Contract Graph does not yet calculate safe implementation impact automatically.
 
+## Keeping documentation small
+
+Each fact has one home: contracts for structural truth, the roadmap for programme outcomes, the
+phase queue for Step state and inline handoffs, and one phase acceptance record for final evidence.
+Later stages link those records. They do not require another report that repeats them. Shared phase
+context appears once above the Step sections; current notes are updated rather than appended forever.
+
+A guide or decision is created only for an unmet reader need. Closing a phase can require no durable
+documentation change. Existing evidence remains available, but its preservation does not require
+copying the same narrative into every handoff.
+
 ## What the next session is supposed to trust
 
 A later session should not need the previous chat. It should be able to route through the

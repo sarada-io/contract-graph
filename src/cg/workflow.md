@@ -6,6 +6,18 @@ its sequence governs repository code tasks. The separate
 `.agents/cg/principles/architecture.yaml` remains the machine-enforced source for Contract Graph
 structural integrity.
 
+## One authoritative record per fact
+
+Contracts own current structural truth. The roadmap owns programme outcomes and remaining phases;
+the phase queue owns Step state and its inline Handoff reports. One phase acceptance record owns
+final verification evidence. Prototype receipts own attributed lifecycle evidence. `cg status`
+projects current recovery state; do not maintain another status document with the same facts.
+
+Reference these records instead of copying them. Shared phase context belongs once in the queue
+preamble. Update current notes in place and retain historical evidence in its owning record.
+Create durable guides or decisions only for a named reader's unmet need, preferring an existing
+document. Sign-off does not require a new durable document when there is nothing new to explain.
+
 ## Development Principles
 
 1. **Specs are the behavioral source of truth; contracts are the structural source of truth.**

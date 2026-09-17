@@ -20,8 +20,10 @@ composition and final acceptance for phase closure. If one command contains anot
 that execution once; never claim an omitted check passed. Do not rerun unchanged successful checks
 solely to populate another section of a report.
 
-Sign-off maintains one final evidence inventory covering all Step obligations, composition, graph
-verification, and the repository full gate. Repairs invalidate affected evidence. Reuse only what
+Sign-off maintains one final evidence inventory in the phase acceptance record covering all Step
+obligations, composition, graph verification, and the repository full gate. Link Step Handoff
+sections and captured outputs; add final-state results and invalidations without copying execution
+narratives. The roadmap and coordinator ledger link this inventory rather than reproducing it. Repairs invalidate affected evidence. Reuse only what
 remains applicable; rerun the full gate when the final state or relevant environment changed. If
 scope is uncertain, broaden verification rather than guessing that an earlier result still proves it.
 

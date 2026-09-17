@@ -30,7 +30,8 @@ Finish with all ten true:
 5. A new or changed rule and its detector land with the implementation.
 6. The Step edits only its declared paths and preserves unrelated work.
 7. Its assigned `Done when` gate passes, including broader checks when scope or policy requires them.
-8. Every handoff updates the Step report and all affected queue states.
+8. Every handoff updates that Step's existing Handoff section and all affected queue states.
+   This section is the Step report; do not create a separate report file.
 9. Execution continues through ready work until the queue drains or no `Ready` Step remains.
 10. The response ends with the `Next action` block in §9.
 
@@ -186,8 +187,9 @@ satisfied by writing a document about it.
 3. Compare the diff with the Step's expected starting state.
 4. Confirm only declared paths and preserved unrelated changes appear.
 5. Record the commit or exact worktree state that dependent Steps consume.
-6. Report commands/results, contracts/detectors changed, assumptions, decisions, residue, and
-   rollback information.
+6. Update the Step's Handoff section with commands/results and the consumed repository state.
+   Link changed contracts, decisions, and external evidence. Record only applicable unresolved
+   findings and rollback information; do not restate the Work section or add empty report sections.
 7. Mark the Step `Complete`, recalculate every `Waiting`, `Ready`, and `Blocked` Step, and select
    the new lowest-numbered `Ready` Step.
 8. Continue immediately when a Step is ready; otherwise emit the terminal handoff from §9.

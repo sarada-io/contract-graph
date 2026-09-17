@@ -471,7 +471,7 @@ test("a closing process cannot lose history to a second writer; other programmes
     const {spawnSync} = require('node:child_process');
     const assert = require('node:assert/strict');
     const call = (...args) => spawnSync(process.execPath, [${JSON.stringify(CLI)}, 'prototype', ...args], {encoding:'utf8'});
-    const state = call('status', '--programme', 'dashboard');
+    const state = call('status', '--programme', 'dashboard', '--json');
     assert.equal(JSON.parse(state.stdout)[0].deliveryAttempts.at(-1).result, 'Running');
     const same = call('resume', '--programme', 'dashboard', '--session', 'second-writer');
     assert.equal(same.status, 1);
@@ -511,7 +511,7 @@ test("deleting a record added and removed on the PR branch does not remove its o
 test("a status word without evidence and malformed records fail closed", t => {
   const f = fixture(t); action(f, "start");
   const file = path.join(f.root, PROTOTYPE_ROOT, "dashboard.json");
-  const record = JSON.parse(fs.readFileSync(file)); record.status = "Closed"; record.history.push({ status: "Closed", at: new Date().toISOString() });
+  const record = { ...readPrototypes(f.root)[0] }; delete record.file; record.status = "Closed"; record.history.push({ status: "Closed", at: new Date().toISOString() });
   fs.writeFileSync(file, JSON.stringify(record));
   assert.match(deliveryReadiness(f.root, { base: f.base }).failures[0], /missing attributed/);
   fs.writeFileSync(file, "{malformed");
@@ -627,4 +627,73 @@ test("an older preserved catalog and phase map can upgrade without a forced poli
   init(f.root, { docs: "docs" }); sync(f.root);
   assert.equal(fs.readFileSync(rootFile, "utf8"), before);
   assert.deepEqual(verify(f.root).failures, []);
+});
+
+test("explicit Closed v1 migration preserves evidence, foreign ownership, and delivery verification", t => {
+  const f = fixture(t, "handbook");
+  action(f, "start");
+  checkpoint(f, "dashboard", "writer", ["app.txt"]);
+  checkpoint(f, "dashboard", "writer", ["app.txt"], { state: "released" });
+  accepted(f); requestSignOff(f);
+  assert.throws(() => close(f, `${quote(process.execPath)} -e "process.exit(1)"`), /delivery gate failed/);
+  close(f);
+  const record = { ...readPrototypes(f.root)[0] }; delete record.file;
+  record.futureExtension = { retain: "unknown evidence", values: [null, 1, true] };
+  const file = path.join(f.root, PROTOTYPE_ROOT, "dashboard.json");
+  fs.writeFileSync(file, JSON.stringify(record, null, 2));
+  const source = prototypeSnapshot(f.root);
+  const readiness = deliveryReadiness(f.root, { base: f.base });
+  const plans = residue(f.root).roots;
+  const compact = action(f, "compact");
+  assert.equal(compact.storageVersion, 2);
+  assert.ok(compact.bytesAfter < compact.bytesBefore);
+  const decoded = { ...readPrototypes(f.root)[0] }; delete decoded.file;
+  assert.deepEqual(decoded, record);
+  assert.equal(prototypeSnapshot(f.root), source);
+  assert.deepEqual(deliveryReadiness(f.root, { base: f.base }), readiness);
+  assert.deepEqual(residue(f.root).roots, plans);
+  const bytes = fs.readFileSync(file, "utf8");
+  action(f, "compact");
+  assert.equal(fs.readFileSync(file, "utf8"), bytes);
+  action(f, "start", {}, "other");
+  const foreign = fs.readFileSync(path.join(f.root, PROTOTYPE_ROOT, "other.json"), "utf8");
+  action(f, "compact");
+  assert.equal(fs.readFileSync(path.join(f.root, PROTOTYPE_ROOT, "other.json"), "utf8"), foreign);
+  write(f.root, "app.txt", "changed after delivery");
+  assert.ok(deliveryReadiness(f.root, { base: f.base }).failures.some(failure => /source changed/.test(failure)));
+  action(f, "resume");
+  assert.equal(JSON.parse(fs.readFileSync(file)).version, 2);
+  assert.deepEqual(readPrototypes(f.root)[0].history.at(-1).previousEvidence.closure, record.closure);
+});
+
+test("v1 writers stay v1; active receipts cannot be compacted and corrupt v2 cannot admit delivery", t => {
+  const f = fixture(t); const original = action(f, "start");
+  const file = path.join(f.root, PROTOTYPE_ROOT, "dashboard.json");
+  assert.equal(JSON.parse(fs.readFileSync(file)).version, 2);
+  fs.writeFileSync(file, JSON.stringify(original));
+  action(f, "review");
+  assert.equal(JSON.parse(fs.readFileSync(file)).version, 1);
+  const before = fs.readFileSync(file, "utf8");
+  assert.throws(() => action(f, "compact"), /only Closed/);
+  assert.equal(fs.readFileSync(file, "utf8"), before);
+  action(f, "resume"); accepted(f); close(f); action(f, "compact");
+  const stored = JSON.parse(fs.readFileSync(file));
+  stored.programme = "foreign";
+  fs.writeFileSync(file, JSON.stringify(stored));
+  assert.equal(next(f.root).state, "unreadable");
+  assert.match(deliveryReadiness(f.root, { base: f.base }).failures[0], /invalid v2/);
+});
+
+test("routine CLI output projects current state while --json retains complete evidence", t => {
+  const f = fixture(t); action(f, "start");
+  checkpoint(f, "dashboard", "writer", ["app.txt"]);
+  const call = (...args) => spawnSync(process.execPath, [CLI, "prototype", "status", f.root, "--programme", "dashboard", ...args], { encoding: "utf8" });
+  const brief = call(), full = call("--json");
+  assert.equal(brief.status, 0, brief.stderr); assert.equal(full.status, 0, full.stderr);
+  const summary = JSON.parse(brief.stdout)[0], record = JSON.parse(full.stdout)[0];
+  assert.equal(summary.history, undefined);
+  assert.equal(summary.historyEvents, record.history.length);
+  assert.deepEqual(summary.sessions[0].writes, record.sessions[0].writes);
+  assert.equal(summary.sessions[0].files, undefined);
+  assert.ok(brief.stdout.length < full.stdout.length);
 });

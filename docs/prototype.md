@@ -43,6 +43,33 @@ same metadata exclusions. The agent expands scope for related edits or records w
 unrelated. This is an observation at review time; it does not infer who edited a file or block
 approval because unrelated work is dirty.
 
+## Receipt storage in 0.7.0
+
+New receipts use storage version 2: repeated large JSON values are stored once in a local evidence
+table and referenced by SHA-256. Readers reconstruct the complete logical record and check every
+reference, object hash, and reconstructed-record checksum before recovery, routing, residue, or
+delivery verification. Current snapshots,
+all historical checkpoints, acceptance, completion requests, failures, and sign-off remain intact.
+This reduces duplicate storage; it does not cap unique history or replace audit evidence with hashes.
+
+Use `cg prototype status --programme <slug> --json` to inspect the reconstructed record. Routine prototype commands return current-state summaries; `--json` returns full reconstructed evidence
+when inspection needs it. Existing v1
+receipts remain readable and stay v1 when updated. To explicitly migrate a Closed receipt:
+
+```sh
+cg prototype compact --programme <slug>
+```
+
+Compaction runs under the programme lock, verifies complete logical JSON equality, and replaces the
+canonical receipt atomically after checking its read-back and unchanged original. It appends no
+lifecycle event and reports sizes and a logical evidence digest. Small receipts may grow due to the versioned envelope. The canonical path stays tracked;
+external attachments remain untouched. Active receipts cannot be explicitly compacted. New v2
+receipts and migrated receipts continue using v2 on later updates, including resumption.
+
+Upgrade all writers and CI readers to 0.7.0 or newer before creating or migrating v2 receipts;
+older tooling cannot read them. Hashes detect damaged evidence, not deliberate forgery by someone
+able to rewrite the whole receipt. No history pruning or age-based deletion is supported.
+
 ## Working side by side
 
 You can explore the next prototype while an accepted programme goes through delivery. Keep a

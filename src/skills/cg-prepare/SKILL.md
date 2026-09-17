@@ -258,8 +258,9 @@ Write one document per phase, beside the roadmap that owns it, and link it from 
 
 Do not split Steps into separate files. `cg next` reads every `## Step <n>` section in that file.
 Put the phase context — outcome, acceptance gate, execution branch, ledger of affected items —
-above the first `## Step` heading. Each Step must be readable cold: a section that leans on a
-neighbouring Step is a diff, not a brief.
+above the first `## Step` heading. Each Step must be readable with the phase preamble and its explicit prerequisite handoffs.
+Keep shared context once in that preamble and reference it; do not repeat it in every Step or
+copy contract prose into the queue. Each Step states its own outcome, scope, and gate.
 
 Each Step's first lines are its header block. `cg next` parses exactly these keys:
 
