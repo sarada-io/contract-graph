@@ -51,7 +51,7 @@ flowchart TB
 | **Product Prototyping** | You need to try a working experience before deciding exactly what to build. | Use the preview, give feedback, approve the experience, then ask the agent to finish it. |
 | **Sprint and Epic Delivery** | The outcome is understood, and you want an agreed goal and reviewable increments. | Agree outcomes and criteria, review the working result, and let the agent finish within the requested sprint or epic scope. |
 
-###  Prototyping Mode
+###  Prototyping to Delivery Mode
 
 Use `/cg-prototype` when you want to discover the right experience by trying it:
 
@@ -63,7 +63,7 @@ Improve the dashboard layout and interactions. Launch it and iterate with me.
 Review the preview and give feedback in the same conversation. When the experience is right, explicitly approve it and ask the agent to complete it with `/cg-sign-off`. See the
 [prototype guide](https://contractgraph.dev/docs/prototype/) for the full workflow.
 
-### Delivery Mode
+### Plan to Delivery Mode
 
 Use `/cg-plan` when the outcome and its constraints are already clear:
 

@@ -1888,17 +1888,11 @@ test("a composed contract with no children fails verification", () => {
   );
 });
 
-/**
- * `cg-warmup` copies its own template rather than the scaffold's, so the two drift silently and
- * the drift only shows up in an adopted repository. It has happened once: the scaffold gained the
- * traversal fields and warmup kept writing contracts without them.
- */
-test("the warmup and produce templates conform to the same YAML contract shape", () => {
+/** The shared authoring aid and installed starter must remain schema-conformant. */
+test("the shared contract template and starter conform to the canonical YAML shape", () => {
   for (const file of [
     "install/templates/module/.agents/cg/contract.yaml",
-    "skills/cg-warmup/assets/contract.template.yaml",
-    "skills/cg-warmup/assets/component-contract.template.yaml",
-    "skills/cg-produce/assets/contract.template.yaml",
+    "cg/templates/contract.template.yaml",
   ]) {
     const contract = parseContractYaml(fs.readFileSync(path.join(SOURCE_ROOT, file), "utf8"), { source: file });
     assert.deepEqual(validateContract(contract, { source: file }), [], `${file} must satisfy the canonical shape`);
@@ -1924,6 +1918,9 @@ test("every governance path a skill names is a file init installs", () => {
   }
   for (const file of fs.readdirSync(path.join(SOURCE_ROOT, "cg"))) {
     if (/\.(?:md|json|yaml)$/.test(file)) installed.add(`.agents/cg/${file}`);
+  }
+  for (const folder of ["schema", "templates"]) {
+    for (const file of fs.readdirSync(path.join(SOURCE_ROOT, "cg", folder))) installed.add(`.agents/cg/${folder}/${file}`);
   }
   // Written by init, not shipped under src/cg.
   installed.add("docs/plans/decision-log.md");
@@ -2975,6 +2972,7 @@ test("init round trip writes exactly the canonical mapped file set", () => {
     { source: "cg/workflow.md", target: ".agents/cg/workflow.md", mode: "always", select: "file" },
     { source: "cg/phases.json", target: ".agents/cg/phases.json", mode: "always", select: "file" },
     { source: "cg/enforcement.yaml", target: ".agents/cg/enforcement.yaml", mode: "always", select: "file" },
+    { source: "cg/templates", target: ".agents/cg/templates", mode: "always", select: "tree" },
     { source: "cg/schema", target: ".agents/cg/schema", mode: "always", select: "tree" },
     { source: "skills/experts", target: ".agents/skills", mode: "always", select: "tree" },
     { source: "skills", target: ".agents/skills", mode: "always", select: "tree", exclude: ["experts"] },

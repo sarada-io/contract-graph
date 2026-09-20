@@ -53,6 +53,16 @@ test('0.7 installation retires known skills and wrappers with backups and preser
     write(dir, relative, text); originals.set(relative, text);
     manifest.files[relative] = { version: '0.6.0', sha256: 'old-release-hash' };
   }
+  for (const relative of [
+    '.agents/skills/cg-warmup/assets/contract.template.yaml',
+    '.agents/skills/cg-warmup/assets/component-contract.template.yaml',
+    '.agents/skills/cg-produce/assets/contract.template.yaml',
+  ]) {
+    const text = '# old contract template with local annotations\n';
+    write(dir, relative, text); originals.set(relative, text);
+    manifest.files[relative] = { version: '0.6.0', sha256: 'old-release-hash' };
+  }
+  write(dir, '.agents/skills/cg-warmup/assets/custom-contract.yaml', '# keep custom template');
   write(dir, '.agents/skills/cg-sign-off/references/custom-review.md', 'keep repository guidance');
   fs.writeFileSync(manifestPath, JSON.stringify(manifest));
   const contractPath = path.join(dir, '.agents/cg/contract.yaml');
@@ -80,6 +90,9 @@ test('0.7 installation retires known skills and wrappers with backups and preser
   assert.equal(updated.purpose, purpose);
   assert.ok(updated.extensions.contractGraph.skills.every(item => !names.includes(item.name)));
   assert.ok(Object.keys(JSON.parse(fs.readFileSync(manifestPath, 'utf8')).files).every(file => !originals.has(file)));
+  assert.equal(fs.readFileSync(path.join(dir, '.agents/cg/templates/contract.template.yaml'), 'utf8'),
+    fs.readFileSync(path.join(root, 'src/cg/templates/contract.template.yaml'), 'utf8'));
+  assert.equal(fs.readFileSync(path.join(dir, '.agents/skills/cg-warmup/assets/custom-contract.yaml'), 'utf8'), '# keep custom template');
   assert.deepEqual(verify(dir).failures, []);
   assert.deepEqual(init(dir).removed, []);
 });
@@ -154,4 +167,12 @@ test('upgrade is not a separate CLI entry point and cannot write files', t => {
   assert.equal(result.status, 2);
   assert.match(result.stderr, /unknown command/);
   assert.deepEqual(fs.readdirSync(dir), []);
+});
+
+test('re-init preserves unowned old contract templates', t => {
+  const dir = fixture(t);
+  const file = '.agents/skills/cg-warmup/assets/contract.template.yaml';
+  write(dir, file, '# repository-owned template');
+  init(dir); sync(dir);
+  assert.equal(fs.readFileSync(path.join(dir, file), 'utf8'), '# repository-owned template');
 });

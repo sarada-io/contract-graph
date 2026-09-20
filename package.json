@@ -65,6 +65,9 @@
     "url": "https://github.com/sarada-io/contract-graph/issues"
   },
   "dependencies": {
+    "tree-sitter-wasms": "0.1.11",
+    "typescript": "5.9.3",
+    "web-tree-sitter": "0.25.10",
     "yaml": "^2.9.0"
   },
   "devDependencies": {

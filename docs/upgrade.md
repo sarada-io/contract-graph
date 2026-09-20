@@ -17,6 +17,10 @@ cg init --yes
 
 The upgrade reuses init: current lifecycle skills and the four experts go into `.agents/skills/`, shared attribution goes alongside them, selected editor discovery wrappers and hooks are refreshed, and repository-owned context is preserved. Known framework-owned `cg-prepare` and `cg-auto-run` files and obsolete sign-off references are backed up under `.agents/cg/backups/retired-0.7.0/` before removal. Custom files and unknown legacy artifacts are not recursively deleted. Older principle schemas use the migration described below; missing product rationale requires owner input and leaves the upgrade incomplete. Successful migration runs sync and verification. Review the diff before resuming work.
 
+## Source-assisted contract inspection
+
+The 0.7.0 CLI includes `cg contract inspect` for JavaScript/TypeScript ESM, Java, Kotlin, Python, Go, .NET/C# and Dart/Flutter. It produces read-only evidence and proposed field values; it does not migrate or overwrite authored contracts. There is no contract-schema change or new adoption command. Re-run `cg init` through the existing preview/confirmation flow to refresh the authoring skills, then follow the [inspection guide](contracts.md#inspect-implementation-facts-before-authoring). Reports separate unknowns, language visibility and implementation imports from architectural promises. The packaged parsers require no adopter toolchains; unsupported syntax stays explicit.
+
 ## Intent approval and sprint delivery
 
 This iteration adds a preserved `<docs>/project-intent.md` and a separate approval-freshness gate. After installing the intended build and re-running init, use `/cg-warmup` to draft intent from existing documents and confirm it with the owner. New installations are not delivery-ready merely because the scaffold passes `cg verify`. Existing intent pages and `.agents/cg/intent.json` are preserved; changed binding sources require renewed review. See [intent approval](intent.md).
@@ -195,3 +199,5 @@ Re-init backs up manifest-owned prototype-completion, sprint-completion and phas
 Init now supplies `api-expert`, `mobile-expert`, `web-expert` and `ui-design-expert` alongside the six lifecycle skills. It creates `.agents/cg/experts.md` only when absent. Keep project constraints and selections there, or add a distinctly named `<name>-expert` skill; shipped default files are refreshed on re-init. Custom files not shipped by the release are preserved. Run sync for selected host discovery. Experts do not require lifecycle phase or root catalog changes. See [adding experts](experts.md).
 
 If a supplied expert path already exists without framework ownership in the installation manifest, init stops before modifying repository files. Retain that expert under a distinct project name and update the index before retrying; it is never silently replaced by the new default.
+
+The shared contract authoring template installs at `.agents/cg/templates/contract.template.yaml`. Init backs up and removes the three superseded warmup/produce template files only when the prior manifest establishes ownership; unowned templates and authored contracts remain intact.

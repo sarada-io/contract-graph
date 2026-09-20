@@ -90,7 +90,7 @@ Skip Phase A. Do not copy a template onto an existing `contract.yaml`. Do not bl
 [the code-inspection catalog](assets/warmup.yaml), not the packaged architecture catalog.
 
 1. Re-walk every leaf with the Phase D table. `add-child` and a separable package already exists:
-   write the child from the component template; recurse. Never overwrite an existing contract.
+   write the child from the shared contract template; recurse. Never overwrite an existing contract.
 2. `add-child` that would move code: append a **Restructure:** row to
    `<docs>/plans/warmup-corrective-set.md`. Do not wipe an in-flight `cg-plan` tree.
 3. After each new child: `cg sync`, `cg verify`. Rewrite parent and root `routes` by **adding**
@@ -283,10 +283,12 @@ not appear in `rules`, and does not become a compliance row.
 
 ## 4. Write this unit's contract
 
-Copy [the YAML contract template](assets/contract.template.yaml) to
+Copy [the shared contract template](../../cg/templates/contract.template.yaml) to
 `<unit>/.agents/cg/contract.yaml` **only when this unit has no contract.yaml** (UNMAPPED). Never
 overwrite an existing file. Keep the schema's field names and replace every instructional value.
-The YAML file is the contract. CommonMark is allowed inside descriptive string values.
+Choose the actual node kind, parent, composition and surface kind from the graph decision and inspected implementation; the template values are examples, not defaults to preserve. Validate against `.agents/cg/schema/contract.schema.json` and run `cg verify`. The YAML file is the contract. CommonMark is allowed inside descriptive string values.
+
+For JavaScript/TypeScript ESM, Java, Kotlin, Python, Go, C# or Dart/Flutter units, run `cg contract inspect . --unit <unit> --json` before populating source facts; use `--id <id>` when an existing valid graph selects the boundary, and repeat `--entry <unit-relative-file>` when entries are known. This command produces a separate review report and never writes contracts. Read coverage, graph diagnostics and `stable` before proposals. Reuse supported path/symbol candidates with their evidence; inspect cited source for meaning. Keep unresolved values unresolved in the work record, never translate report `null` to YAML `[]`. Imports are implementation observations, not automatic contract dependencies; ownership, composition, routes and behavioral promises still require the graph decision and accepted intent. Follow reported descendant contracts separately. Rerun after relevant edits, preserve authored promises/comments/IDs, then run existing verification after deliberate authoring. Other languages and unsupported syntax require bounded manual inspection, not an invented empty result. Remove the report after its active consumers finish unless retention policy requires it.
 
 Read this unit's code once, and write everything you learn from it before moving on.
 
@@ -347,7 +349,7 @@ A **Restructure:** finding is the only input to the corrective set. Phase C merg
 does not invent new ones. When the row is a finding, load `engineering.yaml` before leaving the
 unit and record the applicable `E` ids on it. That is proposal shape, not a second membership test.
 
-Use [the component contract template](assets/component-contract.template.yaml) when `add-child`
+Use [the shared contract template](../../cg/templates/contract.template.yaml) when `add-child`
 selects a component or library, and add reciprocal edges. `cg verify` rejects a dangling,
 one-sided, cyclic, or root-unreachable edge.
 

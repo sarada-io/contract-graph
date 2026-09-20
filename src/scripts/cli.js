@@ -69,6 +69,7 @@ Usage:
   cg contract children [dir] [--id id]            list direct child contracts
   cg contract parents [dir] [--id id]             list the path from root to the selected contract
   cg contract surface [dir] [--id id]             show the boundary's public surface
+  cg contract inspect [dir] --id id|--unit path [--entry file] [--json]  propose fields from source evidence; never write contracts
   cg contract route [dir] --task "request"         route a task through contract-owned routes
   cg contract verify [dir]                        verify schema, references, and graph closure
   cg graph show [dir] [--format tree|json|mermaid] project the whole composition graph
@@ -84,6 +85,8 @@ Options:
   --preparation <path>   prepared drain route to validate at --stage close (harvest only)
   --json            machine-readable output; full delivery evidence (next, status, residue, delivery, contract, graph)
   --id <id>         contract id, governed unit, or repository-relative contract path
+  --unit <path>     explicit unit to inspect, including before adoption (inspect only)
+  --entry <file>    unit-relative entry file; repeatable (inspect only)
   --task <text>     task description to match against contract routes
   --format <name>   output format: markdown, tree, json, or mermaid
   --for <skill>     exit 0 only if dispatching that skill agrees with the queue (next only)
@@ -109,6 +112,8 @@ Options:
  * nothing quietly is exactly the upgrade failure this tool should not have.
  */
 const KNOWN_FLAGS = new Set([
+  "unit",
+  "entry",
   "write",
   "reasons",
   "profile",
@@ -140,6 +145,17 @@ function parseArgs(argv) {
   // options consume values (in either `--name x` or `--name=x` form).
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
+    const inspectionValue = /^--(unit|entry)(?:=(.*))?$/.exec(arg);
+    if (inspectionValue) {
+      const value = inspectionValue[2] ?? argv[++i];
+      if (!value || value.startsWith("--")) throw new Error(`${inspectionValue[1]} requires a value`);
+      if (inspectionValue[1] === "entry") (flags.entry ??= []).push(value);
+      else {
+        if (flags.unit !== undefined) throw new Error("--unit may be specified only once");
+        flags.unit = value;
+      }
+      continue;
+    }
     const extraValue = /^--(programme|session|evidence|gate|base|reasons)(?:=(.*))?$/.exec(arg);
     if (extraValue) {
       flags[extraValue[1]] = extraValue[2] ?? argv[++i];
@@ -396,6 +412,17 @@ async function main(argv) {
     process.stdout.write(USAGE);
     return 0;
   }
+
+  if (command === "contract" && positional[0] === "inspect") {
+    const allowed = new Set(["id", "unit", "entry", "json"]);
+    for (const key of Object.keys(flags)) if (!allowed.has(key)) throw new Error(`--${key} is not supported by contract inspect`);
+    if (positional.length > 2 || (flags.id !== undefined && (!flags.id || flags.id.startsWith("--")))) throw new Error("usage: cg contract inspect [dir] --id selector|--unit path [--entry file] [--json]");
+    const { inspectContract, renderInspection } = await import("./contract-inspection.js");
+    const report = inspectContract(path.resolve(positional[1] ?? "."), { id: flags.id, unit: flags.unit, entries: flags.entry });
+    process.stdout.write(flags.json ? `${JSON.stringify(report, null, 2)}\n` : renderInspection(report));
+    return 0;
+  }
+  if (flags.unit !== undefined || flags.entry !== undefined) throw new Error("--unit and --entry are supported only by contract inspect");
 
   if (command === "contract" || command === "graph") {
     const action = positional[0] ?? "show";

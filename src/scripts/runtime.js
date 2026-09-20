@@ -11,8 +11,8 @@ const ROOT = fs.existsSync(path.join(HERE, "../package.json"))
 export function runtimeIdentity(root = ROOT) {
   const packaged = fs.existsSync(path.join(root, "agent"));
   const trees = packaged
-    ? [["script", "script"], ["agent/skills", "skills"], ["agent/hooks", "hooks"], ["agent/cg/schema", "schema"]]
-    : [["src/scripts", "script"], ["src/skills", "skills"], ["src/install/hooks", "hooks"], ["src/cg/schema", "schema"]];
+    ? [["script", "script"], ["agent/skills", "skills"], ["agent/hooks", "hooks"], ["agent/cg/schema", "schema"], ["agent/cg/templates", "templates"]]
+    : [["src/scripts", "script"], ["src/skills", "skills"], ["src/install/hooks", "hooks"], ["src/cg/schema", "schema"], ["src/cg/templates", "templates"]];
   const entries = [];
   const walk = (dir, prefix) => {
     for (const item of fs.readdirSync(dir, { withFileTypes: true })) {

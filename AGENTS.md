@@ -89,6 +89,8 @@ scaffolded from `src/`.
 
 Before running builds or destructive cleanup, check whether a global `cg` resolves into this checkout’s `dist/build`. If linked or uncertain, run validation in a disposable copy so it cannot alter the installed command. Do not install globally, publish, or update adopting repositories as part of ordinary validation. `./urun` installs a tarball copy when explicitly requested.
 
+Use one contract authoring template at `src/cg/templates/contract.template.yaml`, installed under `.agents/cg/templates/`. The schema owns shape and the architecture catalog owns placement; do not duplicate templates per skill or treat example kinds as architectural requirements.
+
 ## Installation and upgrade entry point
 
 `cg init` is the sole entry point for both first adoption and upgrading an existing installation. Extend its existing migration, preview (`--check`), confirmation (`--yes`), backup and retirement behavior when releases need upgrade work. Do not add a separate `cg upgrade` command or standalone upgrade script. Preserve repository-owned content and document release-specific steps in `docs/upgrade.md`.

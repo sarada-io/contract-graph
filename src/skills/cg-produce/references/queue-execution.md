@@ -107,7 +107,7 @@ For every changed behavior, boundary, invariant, public entry point, or operatio
 Do not delegate these to a later Step or to `cg-sign-off`.
 
 When creating a new boundary contract, use
-[the YAML contract template](../assets/contract.template.yaml).
+[the shared contract template](../../../cg/templates/contract.template.yaml) only when the contract does not already exist. Choose its actual node kind, parent, composition and surface kind from the graph decision; the template examples do not prescribe a service architecture. The installed `.agents/cg/schema/contract.schema.json` remains the shape authority.
 
 ### A new self-sufficient unit owes a contract in the Step that creates it
 

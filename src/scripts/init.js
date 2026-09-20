@@ -80,6 +80,7 @@ export const SCAFFOLD_MAPPING = Object.freeze([
   { source: "cg/workflow.md", packageSource: "agent/cg/workflow.md", target: ".agents/cg/workflow.md", mode: "always", select: "file", install: "preserve" },
   { source: "cg/phases.json", packageSource: "agent/cg/phases.json", target: ".agents/cg/phases.json", mode: "always", select: "file", install: "preserve" },
   { source: "cg/enforcement.yaml", packageSource: "agent/cg/enforcement.yaml", target: ".agents/cg/enforcement.yaml", mode: "always", select: "file", install: "preserve" },
+  { source: "cg/templates", packageSource: "agent/cg/templates", target: ".agents/cg/templates", mode: "always", select: "tree", install: "replace" },
   { source: "cg/schema", packageSource: "agent/cg/schema", target: ".agents/cg/schema", mode: "always", select: "tree", install: "replace" },
   { source: "skills/experts", packageSource: "agent/skills/experts", target: ".agents/skills", mode: "always", select: "tree", install: "replace" },
   { source: "skills", packageSource: "agent/skills", target: ".agents/skills", mode: "always", select: "tree", exclude: ["experts"], install: "replace" },
@@ -326,6 +327,13 @@ function retireSkills(repoRoot, out, dryRun) {
   const artifacts = names.flatMap(name => [...known.map(file => `.agents/skills/${name}/${file}`), `.claude/skills/${name}/SKILL.md`].map(relative => ({ name, relative })));
   for (const file of ["prototype-completion.md", "sprint-completion.md", "phase-sign-off.md"]) {
     artifacts.push({ name: "cg-sign-off", relative: `.agents/skills/cg-sign-off/references/${file}` });
+  }
+  for (const [name, file] of [
+    ["cg-warmup", "contract.template.yaml"],
+    ["cg-warmup", "component-contract.template.yaml"],
+    ["cg-produce", "contract.template.yaml"],
+  ]) {
+    artifacts.push({ name, relative: `.agents/skills/${name}/assets/${file}` });
   }
   // Expert attribution now ships once beside the installed skill directories.
   // Remove old per-expert notices only when the prior manifest establishes ownership.

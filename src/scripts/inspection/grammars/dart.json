@@ -1,0 +1,8 @@
+{
+  "grammarPackage": "@plurnk/plurnk-mimetypes-grammar-dart",
+  "grammarVersion": "1.16.1",
+  "grammarSource": "https://github.com/UserNobody14/tree-sitter-dart.git",
+  "grammarRevision": "a9bdfa3db2fbc9b9f12c93450d04a671f33a5102",
+  "grammarSha256": "a4f871dcb04a99dbd126dcb2dda4ff75ac20f2064ba1856b43782321f0c41b5f",
+  "distributionIntegrity": "sha512-+/203T+MX+7fM2kwpwYNCVeTTFm4d/VUDbEieKEUO4yiNQqKzjTm5VBrQEanQ2DlI/a4CWm+onXDNd7McXsbaQ=="
+}

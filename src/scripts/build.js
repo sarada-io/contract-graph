@@ -26,6 +26,7 @@ export const PACKAGE_DATA_DIRECTORY = "agent/cg/guidelines";
 const PACKAGE_TREE_MAPPINGS = Object.freeze([
   ["src/cg/principles", "agent/cg/principles"],
   ["src/cg/guidelines", "agent/cg/guidelines"],
+  ["src/cg/templates", "agent/cg/templates"],
   ["src/cg/schema", "agent/cg/schema"],
   ["src/skills", "agent/skills"],
   ["src/install/hooks", "agent/hooks"],
