@@ -15,19 +15,17 @@ supposed to remain after a plan is deleted.
 
 | Read | What it answers |
 |---|---|
-| [Quick Introduction Video](https://contractgraph.dev/#watch) | Plays on the public page |
 | [Vision](vision.md) | The framework’s mission, product intent and causal model |
 | [Intent and approval](intent.md) | How adopting repositories establish intent and what approval proves |
 | [Architecture considerations](architecture-considerations.md) | What is mandatory, what is advisory, and what verification actually proves |
 | [Contracts](contracts.md) | What one YAML node is, and what verification currently proves |
-| [Workflow](workflow.md) | Sprint/Epic outcomes, review, finishing and existing prepared queues |
-| [Intent and delivery design](design/intent-and-delivery.md) | Record ownership, routing, rationale, compatibility and limits |
-| [Expert skills](experts.md) | Supplied domain expertise, coordinator selection and adding project experts |
+| [Workflow](workflow.md) | Sprint/Epic outcomes, records, review, finishing and cleanup |
+| [Prototype](prototype.md) | Explore and accept a working experience before final delivery |
+| [Expert skills](experts.md) | Coordinator ownership, supplied expertise and adding project experts |
 | [Lifecycle](lifecycle.md) | The stages you run, and the structural walk they share |
 | [Upgrade](upgrade.md) | Refresh an installation, preserve repository choices and confirm adoption readiness |
 
-For exploratory work, read [Prototype](prototype.md). The
-[historical workflow review](proposals/prototype-workflow.md) records the source findings behind this extension; it is not the current procedure.
+Contributor validation methods live in [CONTRIBUTING](../CONTRIBUTING.md); superseded proposals and review reports remain in Git history.
 
 Start with vision if you are deciding
 whether to adopt. Start with [upgrade](upgrade.md) when refreshing an existing installation. Start with workflow when you want to understand how agreed work moves through review and completion.

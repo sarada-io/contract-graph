@@ -6,12 +6,13 @@ with a truthful contract graph that lets an agent find where a change belongs.**
 That is the framework's central opinion. The contract graph is the map used before reading
 implementation. Its rules protect the usefulness of that map.
 
-This guide describes the current source defaults, including intent-aware adoption and the structural catalog. It does not reconstruct every intention behind older versions of `architecture.yaml`.
+This guide explains the shipped structural defaults and their verification limits.
 The source of truth is [the architecture catalog](../src/cg/principles/architecture.yaml).
 
 **Audience:** framework adopters and reviewers deciding what architecture a repository must preserve.
 
 **Read this guide:** [Mandatory structure](#1-what-is-mandatory) ·
+[Intent and authority](#intent-authority-and-implementation-evidence) ·
 [Responsibilities](#2-organize-around-responsibilities) ·
 [Placement](#3-every-change-has-a-placement-decision) ·
 [Boundaries](#4-declare-how-a-boundary-is-used) ·
@@ -22,7 +23,7 @@ The source of truth is [the architecture catalog](../src/cg/principles/architect
 
 ## 1. What is mandatory?
 
-There are two kinds of architectural obligation, plus optional engineering advice:
+The graph protocol, machine checks, product bindings and engineering advice have distinct authority:
 
 | Kind | What you are agreeing to | How it is checked |
 |---|---|---|
@@ -40,24 +41,6 @@ separate required structure, adopted product rules, and advice. Arrows describe 
 review relationships, not runtime calls.
 
 ```mermaid
----
-config:
-  theme: base
-  fontFamily: 'Verdana, sans-serif'
-  flowchart:
-    htmlLabels: false
-    subGraphTitleMargin:
-      top: 8
-      bottom: 20
-  themeVariables:
-    primaryColor: '#EAF3EF'
-    primaryTextColor: '#24313F'
-    primaryBorderColor: '#31685D'
-    lineColor: '#64717D'
-    edgeLabelBackground: '#FCFBF8'
-    clusterBkg: '#F5F3ED'
-    clusterBorder: '#B7B6AE'
----
 flowchart TB
   accTitle: Contract Graph authority model
   accDescr: The required graph protocol produces authored contracts. A checks validate declared structure, and review assesses implementation correspondence. E informs review without binding it. P binds selected contract context.
@@ -84,7 +67,7 @@ Before amending a contract, compare its old promise with accepted intent and aff
 
 For example, an export-formatting engine promised to accept caller-defined fields should not gain a hard-coded billing field merely because a billing example needs one. A billing-specific report generator may legitimately own that field. The accepted boundary determines which design is correct, not a blanket preference for generic code.
 
-Graph validation, intent approval freshness, human acceptance and behavioral verification establish different things. None substitutes for the others. [Intent approval](intent.md) describes the operational gate and trust limits; [design rationale](design/intent-and-delivery.md) explains the records and compatibility decisions.
+Graph validation, intent approval freshness, human acceptance and behavioral verification establish different things. None substitutes for the others. [Intent approval](intent.md) describes the operational gate and trust limits; [delivery records](workflow.md#delivery-records-and-routing) explains state ownership and routing.
 
 Specialist names describe expertise, not graph ownership. API, web, mobile and UI assignments still follow the existing responsibility boundary and graph placement decision; a coordinator does not create a new architectural layer. See [expert skills](experts.md) for the extension mechanism.
 
@@ -115,24 +98,6 @@ modules. The nesting follows the [shipped hierarchy](../src/cg/principles/archit
 Composition and dependency have different meanings.
 
 ```mermaid
----
-config:
-  theme: base
-  fontFamily: 'Verdana, sans-serif'
-  flowchart:
-    htmlLabels: false
-    subGraphTitleMargin:
-      top: 8
-      bottom: 20
-  themeVariables:
-    primaryColor: '#EAF3EF'
-    primaryTextColor: '#24313F'
-    primaryBorderColor: '#31685D'
-    lineColor: '#64717D'
-    edgeLabelBackground: '#FCFBF8'
-    clusterBkg: '#F5F3ED'
-    clusterBorder: '#B7B6AE'
----
 flowchart TB
   accTitle: Example commerce ownership graph
   accDescr: A commerce repository owns billing and inventory modules. Billing decomposes into subscriptions and monetary arithmetic; subscriptions owns renewal scheduling. Renewal scheduling depends on monetary arithmetic. Inventory and the arithmetic library are leaves.
@@ -177,24 +142,6 @@ Finding a module is the start of routing; it is not proof that the module is the
 review decision, not application execution.
 
 ```mermaid
----
-config:
-  theme: base
-  fontFamily: 'Verdana, sans-serif'
-  flowchart:
-    htmlLabels: false
-    subGraphTitleMargin:
-      top: 8
-      bottom: 20
-  themeVariables:
-    primaryColor: '#EAF3EF'
-    primaryTextColor: '#24313F'
-    primaryBorderColor: '#31685D'
-    lineColor: '#64717D'
-    edgeLabelBackground: '#FCFBF8'
-    clusterBkg: '#F5F3ED'
-    clusterBorder: '#B7B6AE'
----
 flowchart TB
   accTitle: Decide where a change belongs
   accDescr: Determine whether the work belongs to the candidate owner. If not, route elsewhere. If it introduces a distinct responsibility within that owner, add a child and repeat. Otherwise stay, amending the contract when its facts change.
@@ -238,24 +185,6 @@ shows an undeclared bypass requiring review under
 [`graph.surface`](../src/cg/principles/architecture.yaml); it is not an observed defect in this repository.
 
 ```mermaid
----
-config:
-  theme: base
-  fontFamily: 'Verdana, sans-serif'
-  flowchart:
-    htmlLabels: false
-    subGraphTitleMargin:
-      top: 8
-      bottom: 20
-  themeVariables:
-    primaryColor: '#EAF3EF'
-    primaryTextColor: '#24313F'
-    primaryBorderColor: '#31685D'
-    lineColor: '#64717D'
-    edgeLabelBackground: '#FCFBF8'
-    clusterBkg: '#F5F3ED'
-    clusterBorder: '#B7B6AE'
----
 flowchart LR
   accTitle: Declared entry and an illustrative bypass
   accDescr: A caller enters an owning boundary through its declared surface, which leads to implementation and internal state. A separate dashed route from the caller to internal state illustrates an undeclared bypass requiring review.
@@ -292,24 +221,6 @@ implementations. These arrows show promise ownership and implementation, not com
 or request order.
 
 ```mermaid
----
-config:
-  theme: base
-  fontFamily: 'Verdana, sans-serif'
-  flowchart:
-    htmlLabels: false
-    subGraphTitleMargin:
-      top: 8
-      bottom: 20
-  themeVariables:
-    primaryColor: '#EAF3EF'
-    primaryTextColor: '#24313F'
-    primaryBorderColor: '#31685D'
-    lineColor: '#64717D'
-    edgeLabelBackground: '#FCFBF8'
-    clusterBkg: '#F5F3ED'
-    clusterBorder: '#B7B6AE'
----
 flowchart TB
   accTitle: Example port and adapter relationship
   accDescr: A capability owns a consumer-independent port. Two example vendor adapters implement that port. The diagram does not assert that either adapter is a separate contract node.
@@ -410,5 +321,4 @@ Before accepting a structural change, ask:
 - Are any E preferences being treated as requirements without deliberate adoption?
 
 For field details, read [Contracts](contracts.md). For stage behavior, read [Lifecycle](lifecycle.md).
-For the rationale behind the recent changes, read the
-[architecture and engineering review](reviews/architecture-engineering-rules.md).
+For validation methods and migration coverage, read [CONTRIBUTING](../CONTRIBUTING.md#schema-and-migration-validation).

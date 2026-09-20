@@ -25,7 +25,7 @@ The agent handles these commands and the temporary JSON; the owner reviews the m
 
 The snapshot covers the full page and explicitly listed sources. Any byte change in those inputs requires renewed review; unlisted linked documents are not transitively included. This first version uses repository-wide approval, not independent per-module approvals. A meaningful interpretation still needs human judgment; structural validation cannot decide whether a paragraph adequately expresses a product's purpose.
 
-Installed repositories gate plan, prototype, produce and sign-off admission through `cg next --for <skill>` and the supported host hook. The retired cg-prepare and cg-auto-run entrypoints are rejected. Direct prototype start, resume, handoff and close also check readiness. Skills require the check even where a host has no dispatch hook. Inspection, drafting and clarification remain available while approval is pending. Uninstalled standalone graph/prototype APIs retain their compatibility behavior; they do not establish adoption readiness.
+Installed repositories gate plan, prototype, produce and sign-off admission through `cg next --for <skill>` and the supported host hook. The retired cg-prepare and cg-auto-run entrypoints are rejected. Direct delivery start, resume, handoff and close also check readiness. Skills require the check even where a host has no dispatch hook. Inspection, drafting and clarification remain available while approval is pending. Uninstalled standalone graph/prototype APIs retain their compatibility behavior; they do not establish adoption readiness.
 
 ## What the evidence means
 
@@ -33,4 +33,4 @@ The local record attributes a response and detects changed content. It does not 
 
 `cg verify` keeps its existing graph-check exit semantics. It checks the authored graph and registered structural rules; declared product checks are not automatically executed. A passing graph check, fresh intent approval and passing behavioral tests answer different questions. Delivery still needs relevant behavioral evidence and actual acceptance of the agreed result.
 
-For the technical representation, state ownership and reasons for these limits, see [Intent and delivery design](design/intent-and-delivery.md).
+Full-file freshness is deliberately conservative: even editorial changes need review because a semantic comparison cannot reliably decide whether product meaning changed. See [record ownership](workflow.md#delivery-records-and-routing) for how intent relates to delivery.

@@ -71,7 +71,7 @@ interface:
 
 Init preserves the project expert index and custom skill files the release does not ship. It refreshes supplied skills, so keep local constraints in the index or a distinctly named custom skill rather than editing a default. The index may omit a default to stop coordinator selection; that does not uninstall it or hide it from host discovery. Reconcile missing paths or conflicting instructions before dependent delegation. No model, tool access or permission is granted by an index entry.
 
-See [coordination architecture](design/intent-and-delivery.md#optional-coordinator-and-bounded-specialists) for assignment, recovery, integration and worker retirement.
+See [coordinators and workers](#coordinators-and-workers) for assignment and recovery.
 
 If a supplied expert path already exists without framework ownership in the installation manifest, init stops before modifying repository files. Retain that expert under a distinct project name and update the index before retrying; it is never silently replaced by the new default.
 
@@ -88,3 +88,17 @@ Each expert uses the same four-step structure: establish the assignment, perform
 The return format separates the assignment result, changed paths or findings, verification evidence and remaining obligations. Done applies only to that assignment; it never supplies owner acceptance or programme completion. Review-only work remains read-only. Prototype application automation remains deferred. Missing context is recovered from the request and repository before asking a question; ordinary implementation choices do not require fresh approval. These instructions aim to reduce inference required from an executing model, but have not been validated by a live trial with a lower-capability model.
 
 The source notice lives at `src/skills/experts/THIRD_PARTY_NOTICES.txt` and packages with the experts. Include that shared notice when copying an expert independently. Re-init backs up and removes previous per-expert LICENSE files only when its prior manifest establishes framework ownership; unowned notices remain untouched.
+
+## Coordinators and workers
+
+Produce and prototype can use one coordinator with bounded specialists when delegation is available and permitted; direct execution remains valid. This adds no lifecycle stage, scheduler, automatic worker disposal or enforced write confinement.
+
+The coordinator owns the user conversation, scope, review choice, dependencies, shared roadmap/queue updates, integration and recovery. Existing roadmap notes retain assignment identity, scope, state and evidence pointers. A replacement coordinator reads these records and inspects live writers and disk before reassigning work; silence does not prove a worker stopped.
+
+Each specialist receives contract routes, outcome and exclusions, the exact checkout/baseline, allowed writes and shared resources, prerequisite evidence, required checks and return conditions. The coordinator verifies the returned diff and integration evidence, retains the worker for immediate repairs, then confirms writes have stopped and releases it through supported host controls. Disposing of a worker does not delete code, evidence or worktrees. Worker completion never supplies owner acceptance.
+
+Keep technical queues sequential: independent contributions can share the current Step, but later Steps wait for its integrated gate. Batch items without a queue may run concurrently only after actual dependencies and shared file/resource ownership are checked; per-item review stays on the current item. Separate contracts or worktrees do not prove independence. Serialize uncertain writes, especially shared contracts, lockfiles, builds and preview resources.
+
+Prototype delegation preserves early preview and deferred application tests. Specialists work on the current experiment without inventing production Steps. Changed feedback stops affected writers before reassignment; the coordinator integrates one coherent preview for review. Both loops retain the same accepted delivery handoff and sign-off.
+
+The installed [coordinator procedure](../src/skills/cg-produce/references/coordination.md) and [assignment protocol](../src/skills/cg-produce/references/specialist-assignment.md) own the detailed agent instructions.

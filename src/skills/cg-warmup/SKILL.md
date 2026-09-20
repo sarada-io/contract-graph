@@ -671,7 +671,7 @@ Do this before the next-action response, and say what happened to each file. If 
 | File | What it is | Where it ends up |
 |---|---|---|
 | `<docs>/plans/warmup-findings.md` | resume log | **Delete it** once every governed unit has a connected contract and the rules are harvested |
-| `<docs>/plans/warmup-corrective-set.md` | findings that must become work | **Consumed, then archived** under `<docs>/plans/archive/` when `cg-plan` gives every finding a phase |
+| `<docs>/plans/warmup-corrective-set.md` | findings that must become work | **Consumed, then removed** after every finding and its necessary evidence are transferred to owned work and no active consumer needs this file |
 | `<docs>/plans/warmup-report.md` | what adoption found | **`<docs>/decisions/`**, or delete. Durable knowledge does not live under `<docs>/plans/` |
 | `<docs>/plans/warmup-reseed-delta.md` | reseed additions | **`<docs>/decisions/`**, or delete after the owner reads it. Never written when the delta is empty |
 

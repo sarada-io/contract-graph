@@ -68,3 +68,5 @@ Write each prose paragraph on one source line and separate paragraphs with a bla
 ## Finish an iteration
 
 Check that the summary accurately represents the detailed proposal, including its proposed fix, material limits, phases and open choices. Check links, formatting and preservation of existing context. Run verification appropriate to the actual edits under AGENTS.md; documentation-only planning does not need runtime tests. Report the change briefly and link to the master document.
+
+Completed maintainer plans are temporary. Transfer lasting decisions to the existing canonical guides and contributor instructions, then remove obsolete scope-owned plans and review notes once no active work depends on them. Do not commit an implementation diary or create a replacement archive.

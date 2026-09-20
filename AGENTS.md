@@ -43,7 +43,7 @@ When reviewing an architecture rule, classify it explicitly:
 
 Machine-expressible bindings owe build-breaking detectors and fail-on-demand fixtures. A detector
 recipe is not enforcement. Brownfield warmup must resolve a binding finding to a real detector, a
-corrective Step, or an explicit owner-approved exception. Architecture practices remain optional
+corrective Step, or an explicit owner-approved exception. Broader engineering practices remain optional
 guidance. A team may amend installed defaults, but later init runs refresh A/E from the release;
 review the preserved backups when reapplying deliberate amendments. Product and workflow choices
 remain repository-owned.
@@ -61,11 +61,11 @@ the turn-by-turn procedure. After `cg init`, that lives in the `/cg-*` skills an
 
 Before changing this repository, read in order:
 
-1. `[docs/vision.md](docs/vision.md)` — the project intention and causal model.
-2. `[docs/contracts.md](docs/contracts.md)` — the recursive contract structure and current limits.
-3. `[docs/README.md](docs/README.md)` — human documentation index, then workflow and lifecycle as needed.
-4. `[README.md](README.md)` — the npm and GitHub landing page for people installing the package.
-5. The relevant skill under `src/skills/` and `[src/cg/workflow.md](src/cg/workflow.md)` when the change is agent procedure.
+1. [docs/vision.md](docs/vision.md) — the project intention and causal model.
+2. [docs/contracts.md](docs/contracts.md) — the recursive contract structure and current limits.
+3. [docs/README.md](docs/README.md) — human documentation index, then workflow and lifecycle as needed.
+4. [README.md](README.md) — the npm and GitHub landing page for people installing the package.
+5. The relevant skill under `src/skills/` and [src/cg/workflow.md](src/cg/workflow.md) when the change is agent procedure.
 6. The relevant files under `src/scripts/`, plus `test/verify.test.js`, for implementation work.
 
 Keep claims honest. Schema-backed contracts, contract-owned task routes, and machine verification
@@ -78,6 +78,16 @@ This project supports Node.js 18.17+ and uses the bundled `yaml` package to pars
 nodes. Preserve unrelated working tree changes. Run `npm run build` after changing
 `src/cg/principles/`, `src/cg/guidelines/`, or `src/cg/schema/`. Run `npm test` after changing runtime code or anything
 scaffolded from `src/`.
+
+## Current delivery and documentation architecture
+
+- Six lifecycle skills remain: warmup, plan, produce, prototype, sign-off and unblock. Plan owns outcomes and technical readiness; produce owns incremental preparation, implementation and repairs. Prepare and auto-run are retired, not hidden stages. Plan/produce and prototype converge on one accepted `cg delivery handoff` and one sign-off procedure.
+- Actual completion authority carries in-scope work forward; it does not supply human acceptance or waive blockers. Produce preserves batch/per-item review choice and reports Item/Code/Test/Docs with Yes/No/Partial/Blocked, then an actual next action or None. See [workflow](docs/workflow.md) for record ownership and cleanup.
+- Optional coordinators and workers use existing plans and receipts, not another ledger. Experts are skills under `src/skills/experts/`, installed flat under `.agents/skills/`; project selection is repository-owned `.agents/cg/experts.md`. They add no lifecycle phases or structural layers. Keep shared attribution in `THIRD_PARTY_NOTICES.txt`, outside expert instructions. See [experts](docs/experts.md).
+- Completion leaves durable docs, owner-approved intent and YAML current, then removes obsolete scope-owned plan/process/progress files. Preserve active shared dependencies, explicit retention policy and the compact delivery receipt. Do not replace deleted plans with permanent execution diaries.
+- Use the [documentation index](docs/README.md) to find each topic’s canonical home; update and link rather than duplicating guidance. Maintainer planning under ignored `docs/plan/` is temporary and must not be required to understand the product. Do not invoke the shipped lifecycle merely to maintain its implementation.
+
+Before running builds or destructive cleanup, check whether a global `cg` resolves into this checkout’s `dist/build`. If linked or uncertain, run validation in a disposable copy so it cannot alter the installed command. Do not install globally, publish, or update adopting repositories as part of ordinary validation. `./urun` installs a tarball copy when explicitly requested.
 
 ## Installation and upgrade entry point
 

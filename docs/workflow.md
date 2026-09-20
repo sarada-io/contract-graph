@@ -40,7 +40,7 @@ A full sprint-completion request authorizes implementation, review coordination 
 
 During working-result review, unstable application tests and final documentation can be deferred with named obligations. Contract truth, binding detectors, launch/build and risk-critical checks remain immediate. Stable non-UI logic may need early tests. Prepared finishing queues retain their assigned gates, and a failed gate remains unfinished work to investigate and repair. A changed test expectation must follow the accepted promise rather than conceal an implementation defect.
 
-The [design record](design/intent-and-delivery.md) describes which artifacts own state and how sprint mode reuses existing machinery. Internal execution queues support finishing and repairs; they are not another owner-facing planning stage.
+Internal execution queues support finishing and repairs; they are not another owner-facing planning stage.
 
 ## Prototype before detailed delivery
 
@@ -88,6 +88,10 @@ plan files for that phase are removed once their evidence and active consumers a
 rules, or durable docs — not into a plan you are about to delete. A defect that is still this
 phase's behaviour returns to produce. A finding that was never this phase returns to plan.
 
+Technical queues keep one Step In progress in a single integration context. States are Waiting (dependencies incomplete), Ready (dependencies and baseline satisfied), Blocked (a named decision or external prerequisite), In progress, and Complete (gate passed and handoff recorded). Choose the lowest-numbered Ready Step. For Steps 1–4 where 2 is blocked, 3 depends only on 1 and 4 depends on 2, the valid order is 1 → 3 → 2 → 4.
+
+Repository-wide residue belongs at closure, not inside a Step prerequisite. `cg next` detects direct global residue commands in fenced shell Done when blocks and routes to production repair; it cannot interpret arbitrary wrappers or prose. A scoped residue check does not waive a repository-required global gate. Another programme’s files must be handled by their owner, not removed to make a check green.
+
 ## Verification without duplicate work
 
 Preparation assigns checks for the changed promises, applicable detectors, and affected consumers.
@@ -133,6 +137,24 @@ If deleting `docs/plans/` would lose a rule, the rule was stored in the wrong pl
 After a green step, the baseline is the pair **code that exists** and **graph that describes it**.
 The next step, and the next person or agent, starts from that pair.
 
+## Delivery records and routing
+
+| Record | Owns |
+|---|---|
+| Project intent and `.agents/cg/intent.json` | Accepted repository meaning and approval freshness; see [intent](intent.md). |
+| `contract.yaml` | Current boundaries, surfaces, relationships and structural promises. |
+| Roadmap | Agreed goals, item criteria, dependencies, review choice and deferred obligations. |
+| Optional Step queue | Technical readiness, bounded writes, gates and handoffs. |
+| `.agents/cg/deliveries/<programme>.json` | Review, acceptance, completion authority, sessions and final source/verification evidence. |
+
+`cg next` and `cg status` derive their answers; they create no second progress ledger. Roadmap Status is Proposed, Active or Complete; Phase map rows use Current, Blocked, Complete or Future. Proposed sprints route to planning. Active sprint iteration reports `delivery-review` and routes to produce; a non-closed sprint receipt denies prototype dispatch. Malformed roadmap headers block delivery while allowing planning repair. Explicit programme selection isolates unrelated plans.
+
+Both loops meet at `cg delivery handoff`, which validates the shared roadmap, review freshness and accepted scope and records source/review snapshots. A Handed off receipt routes to the common `delivery-completion` procedure. Without a queue, sign-off finishes from the roadmap; it does not demand a preparation document. Before handoff, sign-off can assess with `handoffReady: false` but cannot treat development as accepted. See [upgrade](upgrade.md#shared-delivery-records-and-sign-off) for earlier receipt locations and command aliases.
+
+Skill admission is not execution readiness. A blocked queue, or a complete queue with an active completion request, can admit produce with `executionAllowed: false` to prepare an in-scope repair. Implementation waits for an eligible Step. Completion requests retain the owner’s actual words and scope; the CLI does not authenticate identity or interpret free text as unlimited authority.
+
+These mechanisms check records, freshness and routing, not product satisfaction, safe concurrent writes or model judgment. Review cadence, report formatting and specialist behavior remain agent instructions; no live lower-capability-model trial is claimed. Runtime coverage lives in [delivery tests](../test/prototype.test.js) and [intent tests](../test/intent.test.js); the procedure lives in the shipped skills.
+
 ## Seeing where you are
 
 These commands inspect the same disk state the stages use. They do not require the last chat.
@@ -158,6 +180,4 @@ directory that is actually in use.
 
 ## Coordinating specialist work
 
-Produce can use one coordinator with bounded specialists when the host and repository permit delegation. The coordinator preserves the agreed scope, review choice, dependencies and pending decisions, verifies returned work, integrates it and reports to the owner. Specialists remain through coherent work and immediate repairs, then release their writes and retire after verified handoff. Existing plans and receipts carry recovery context; a long-running conversation is not the only copy.
-
-Single-agent execution remains supported. Technical queues keep one Step in progress. Parallel contributions inside that Step, or independent batch items without a queue, require inspected dependencies and resolved file/resource ownership. Per-item review still waits before developing the next item. Internal handoff verification never supplies human acceptance or final sign-off. Web, API, mobile, desktop or UX expertise can fill assignments without adding lifecycle stages. See the [coordination design](design/intent-and-delivery.md#optional-coordinator-and-bounded-specialists), including its prototype application and current limits.
+Produce and prototype support optional coordinator-led execution or a single agent. See [experts and coordination](experts.md#coordinators-and-workers) for ownership, recovery, parallel-work limits and extending the supplied expertise.

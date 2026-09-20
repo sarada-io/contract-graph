@@ -27,7 +27,7 @@ Correct structure alone cannot determine which product the owner intended. Adopt
 
 Project intent establishes identity and boundaries; each change still needs its own agreed outcome and relevant UX expectations. Sprint delivery brings a working result to review before unstable details acquire extensive tests and documentation, then completes the necessary verification and durable records. This serves the graph's purpose by preserving accepted promises through change. Approval and delivery controls remain supporting mechanisms, not the product's primary value.
 
-A successful result is a fresh session finding the correct boundary and understanding what it may change without reconstructing the repository. More process or enforcement that makes that task harder is not success. Repository-specific product choices and workflows remain variable; universal application policy, elimination of code reading and unproven parallel safety are outside the promise. See [intent and approval](intent.md), [workflow](workflow.md) and the [design rationale](design/intent-and-delivery.md).
+A successful result is a fresh session finding the correct boundary and understanding what it may change without reconstructing the repository. More process or enforcement that makes that task harder is not success. Repository-specific product choices and workflows remain variable; universal application policy, elimination of code reading and unproven parallel safety are outside the promise. See [intent and approval](intent.md), [workflow](workflow.md) and the [design rationale](workflow.md#delivery-records-and-routing).
 
 ## The model
 

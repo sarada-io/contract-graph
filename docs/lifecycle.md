@@ -95,51 +95,6 @@ An agreed full-completion request carries this loop through its remaining work w
 
 cg-prototype supplies a provisional implementation and accepted experience when the outcome needs exploration. Both loops meet at the same accepted cg delivery handoff. The common cg-sign-off procedure then completes remaining tests/docs and verification, using cg-produce for implementation repairs and their preparation. Accepted code is retained; another plan is needed only for a genuinely changed goal. There is no separate preparation or auto-run stage.
 
-## How a phase queue works
-
-One phase branch or worktree, one step in progress, no per-step branches, no merge or rebase
-between steps. Preparation assigns stable priority numbers and **explicit** dependencies rather
-than treating every earlier number as an implicit one.
-
-| State | Meaning |
-|---|---|
-| `Waiting` | at least one declared dependency is incomplete |
-| `Ready` | dependencies complete, blockers clear, verified phase state matches |
-| `Blocked` | an exact decision or external prerequisite prevents execution |
-| `In progress` | the one step currently executing |
-| `Complete` | the step gate passed and its handoff is recorded |
-
-Execution always selects the lowest-numbered `Ready` step, then continues while ready work
-remains. A blocked step stays visible and incomplete; a later step runs only when it has no
-dependency or path collision with the blocked work.
-
-For steps `1`–`4` where `2` is blocked, `3` depends only on `1`, and `4` depends on `2`, the valid
-history is `1 → 3 → 2 → 4`. No dependency was reordered: `3` never consumed `2`, and `4` waited.
-
-This is continuous serial execution, not parallel execution. It avoids converting coordination
-ambiguity into integration ambiguity while preventing one localized decision from idling unrelated
-work.
-
-## Where the files live
-
-Each programme keeps `roadmap.md` under `docs/plans/<programme>/` by default. Production adds a `<phase>_detailed_preparation.md` queue only when finishing or repairs need explicit Step dependencies; ordinary sprint items keep short preparation in the roadmap. `cg init --docs` records a different root in
-`.agents/cg/profile.json`; `cg residue` prints the plans directory that is actually in use.
-
-`cg status --programme <slug>` reads the current queue and delivery record and shows remaining
-Steps, exact file locations, recorded blockers, recovery action, and residue owners. It creates no
-new status document. Older repair reports can explain history but do not override those records.
-
-`cg residue --programme <slug>` checks selected and shared/unassigned files while listing other
-programmes separately. An unreferenced file may be useful evidence awaiting a consumer link.
-The unfiltered command still checks the whole repository. A scoped result does not replace a
-repository-wide gate required by policy; coordinate other owners before final closure.
-
-Repository-wide residue belongs at phase closure, not as a prerequisite for an individual Step.
-`cg next` reports `repair-required` for direct global residue commands in fenced shell `Done when`
-blocks. Preparation corrects their placement while retaining the final obligation. This detector
-does not interpret arbitrary shell wrappers or prose prerequisites. Preparation can also repair
-unreadable queue headers; production and closure remain gated until the queue is valid.
-
 ## Contract updates belong with the change
 
 A prepared step that changes behavior or structure owns the corresponding implementation, YAML
@@ -151,15 +106,6 @@ central property: **the one executable branch stays truthful against its graph a
 The graph impact may be empty, but it must be assessed. A purely internal implementation change can
 leave the contract untouched when responsibility, public surface, relationships, routes, and
 invariants are unchanged. A structural change is incomplete until those graph facts change with it.
-
-## Closing a phase is a repair loop, not a review
-
-`cg-sign-off` completes deferred tests and useful documentation, then verifies integration and final evidence. A behaviour-,
-boundary-, invariant-, or contract-affecting defect re-enters produce as a corrective step so its
-implementation, tests, contract, and detector remain one independently valid change.
-
-A finding may leave a green phase only when it is genuinely outside that phase. A failing phase
-gate stays Incomplete or Blocked and retains its recovery records. Successful closure also updates durable documentation, approved intent and YAML, then removes obsolete plans and progress files under the [workflow cleanup rules](workflow.md#keeping-documentation-small).
 
 ## Related
 

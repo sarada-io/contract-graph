@@ -149,8 +149,7 @@ the backups support recovery, but conversion is not a filesystem-wide transactio
 
 The standalone migration retains local A/E content and therefore requires deliberate authoring
 if its old architecture protocol lacks required fields. Init instead refreshes A/E from the
-release and migrates product rules. Its preflight blocks before any installation writes if product
-conversion needs input. Both commands preserve workflow and phase policy. Unrecognized contract
+release and migrates product rules. Malformed catalogs or invalid supplied rationale block before writes. Missing product rationale instead preserves the original product catalog while refreshing installed files, then defers sync/verification and returns an incomplete-upgrade result for warmup. Both commands preserve workflow and phase policy. Unrecognized contract
 or enforcement schema identities still need explicit correction.
 
 After reviewing the migration and successful verification, retain backups outside the catalog

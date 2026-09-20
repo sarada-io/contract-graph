@@ -3105,7 +3105,7 @@ test("no shipped file references a pre-rename governance path", () => {
     /guidelines\/design\.yaml/,
     /schema\/design\.schema\.json/,
     /design-v1\.schema\.json/,
-    /docs\/design(?:\/(?!intent-and-delivery\.md\b)|$)/,
+    /docs\/design(?:\/|$)/,
     /(?:^|[^\w/])src\/principles(?:\/|$)/,
     /(?:^|[^\w/])src\/schema(?:\/|$)/,
     /src\/(?:model|init|sync|verify|dev)\.js/,
