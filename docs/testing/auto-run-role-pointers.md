@@ -1,5 +1,9 @@
 # Transient: Auto-Run role pointers — problem and fix
 
+> Historical record, superseded for 0.7.0: standalone preparation and auto-run are retired. Commands and role procedures below describe the prior release and are not current instructions. See [the current workflow](../workflow.md).
+
+**Historical only.** The following describes the retired 0.6.0 workflow.
+
 **Status:** revised after second-model review; retain until validation is reviewed. Do not treat this file as agent procedure or as
 the lasting product guide. After a human and a second model have reviewed it,
 fold any remaining durable facts into `docs/workflow.md`, `docs/lifecycle.md`,
@@ -12,7 +16,7 @@ working-file lifecycle.
 **Classification:** delivery workflow. Not graph protocol. Not structural
 governance. Nothing here is an `A` rule.
 
-The installed procedure is `.agents/skills/cg-auto-run/` after `cg init`.
+In 0.6.0, `cg init` installed the procedure at `.agents/skills/cg-auto-run/`; 0.7.0 no longer installs it.
 This note explains *why* those files changed.
 
 ## 1. What was wrong

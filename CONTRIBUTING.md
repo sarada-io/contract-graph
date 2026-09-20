@@ -50,7 +50,7 @@ release version (Enter keeps the current `package.json` value, Escape cancels). 
 version changes it runs `npm version <version> --no-git-tag-version` so `package.json` and
 `package-lock.json` update without a git tag, then deletes `dist/build` and `npm run pack` replaces
 `dist/tar/contract-graph-<version>.tgz`. Installing the release tarball to this machine uses `npm install -g` with that
-tarball, building it first if it is missing. Publish checks `npm whoami`, runs `npm login`
+tarball, building it first if it is missing. This installs an independent package copy and replaces an existing development link. Later builds or deletion of this checkout do not change the installed command. The `cg` executable may still be a normal npm link to the globally installed copy; it must not resolve into this checkout. To install newer source changes, rebuild the release tarball before selecting install again; an existing tarball is reused. Publish checks `npm whoami`, runs `npm login`
 when that fails, then `npm publish dist/tar/contract-graph-<version>.tgz --access public`.
 Long-running commands keep their normal terminal output and Ctrl-C behaviour, including npm
 login prompts.
@@ -95,64 +95,9 @@ request. Use this table as the minimum:
 Report the exact checks and outcomes in the pull request. “Tests pass” is not enough when the
 change affects interactive initialization or editor discovery.
 
-## Manager–Engineer interaction trial
+## Sprint interaction validation
 
-`npm test` includes regression tests for the interaction evidence verifier. Those tests exercise
-recorded-state checks and reject invalid histories; they do not launch models. A real host trial
-is separate so an ordinary test run needs neither model access nor a network connection.
-
-Create a disposable two-phase repository with `npm run --silent trial:interaction`. The command
-prints its absolute path, scaffolds the current source skills, writes an accepted Plan and a
-partially blocked queue, and leaves an unrelated dirty note to preserve. Use the source CLI or
-install the current packed package there without replacing its scaffold. Never point this trial
-at a working product repository. The independent acceptance checks under `checks/` are read-only
-for agents; do not reveal the synthetic owner answer before the recovery checkpoint.
-
-Run the actual Manager and Engineer with the host's agent tools and fresh, non-inherited contexts.
-The observer acts as the fixture's test owner through messages, not a real product approval.
-Collect observations from outside both roles:
-
-```bash
-npm run test:interaction -- observe <fixture> baseline <observer-id>
-npm run test:interaction -- observe <fixture> question <manager-id> <question-message-file>
-npm run test:interaction -- observe <fixture> recovered-question <new-manager-id> <question-message-file>
-npm run test:interaction -- observe <fixture> answer-recorded <new-manager-id> <message-file>
-npm run test:interaction -- observe <fixture> phase-1-complete <new-manager-id> <gate-envelope-file>
-npm run test:interaction -- observe <fixture> phase-2-complete <new-manager-id> <gate-envelope-file>
-npm run test:interaction -- observe <fixture> cleanup <new-manager-id> <message-file>
-npm run test:interaction -- verify <fixture>
-```
-
-Pause the first Manager after it saves and presents its question. Let the Engineer complete the
-independent count Step, then replace the Manager with a fresh session given only fixture paths
-and host identifiers. It must recover the same pending decision from disk. Supply this synthetic
-typed answer: `Use the stable node IDs in input order, and preserve each supplied label verbatim.`
-Capture the recorded answer before notifying the Engineer, using an observer barrier rather than
-another user authorization. Release that barrier and observe automatic resumption, corrective
-preparation for the hidden-node defect, sign-off, and a different Engineer for Phase 2. Pause at
-each completed-phase observation after acceptance but before ledger deletion, so the observer
-can run independent checks and retain the actual Engineer identity and handoff. Release that
-measurement barrier, delete the accepted phase ledger, and then start the successor Engineer.
-After the final handoff capture, reconcile and remove the remaining working ledgers and handoff
-files, then capture `cleanup`. Canonical decisions, source and archived evidence must survive
-unchanged. New observations use evidence version 2; historical version 1 traces remain
-readable under their original six-checkpoint contract and cannot be appended to.
-
-Question files contain the actual received messages. At completion, the external observer runs
-`node checks/check.mjs phase-1` or `phase-2` and `cg verify` and saves their real outputs as JSON:
-`{"text":"received handoff", "gates":[{"command":"node checks/check.mjs phase-1",
-"status":0,"stdout":"actual output","stderr":""}, ...]}`. Do not populate success values
-from an agent's claim. The observer snapshots files, queue state, graph findings, instruction
-hashes and messages into `<fixture>.evidence.jsonl`, outside the agents' writable repository.
-
-Keep the evidence and a concise result report, including failures and any changed instructions.
-The hash chain detects accidental changes, not forgery by someone controlling the observer.
-Snapshots do not prove every intervening write or model-internal context isolation. Report which
-host, actor identities, transport and recovery behavior were actually exercised; do not generalize
-one successful host run to all hosts or claim measured token savings.
-
-The [2026-09-06 live trial report](docs/testing/auto-run-interaction.md) records the actors,
-recovery transport, observed behavior and evidence limits for the local 0.6.0 workflow.
+Exercise mixed Features/Bugs/Tasks with batch review and per-item review, an unanswered decision with independent work, interruption/recovery, and a failed finishing check that returns to production repair. Preserve actual review responses and checks; fixture success does not establish model behavior or user satisfaction. The historical [0.6.0 interaction report](docs/testing/auto-run-interaction.md) remains evidence of that retired workflow, not the 0.7.0 loop.
 
 ## Installation scenarios
 

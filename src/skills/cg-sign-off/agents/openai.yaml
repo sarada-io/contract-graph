@@ -1,4 +1,4 @@
 interface:
   display_name: "CG Sign Off"
-  short_description: "Finish a prototype or close a delivery phase"
-  default_prompt: "Use $cg-sign-off to resolve the intended programme and sign-off type, then load its procedure to finish the selected prototype or close the selected delivery phase; ask for selection if the target is ambiguous."
+  short_description: "Finish and verify the accepted delivery"
+  default_prompt: "Use $cg-sign-off to complete the selected accepted delivery handoff, finish tests and docs, route implementation repairs to produce, and verify completion within the recorded scope."

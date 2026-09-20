@@ -59,74 +59,41 @@ modify or branch the core while its consumer-independent promise already suffice
 That walk is a protocol the stages apply. It is not an `A` detector and does not scan imports;
 A10 checks surface presence and A11 checks paths; neither proves exported symbols or caller confinement.
 
-Warmup, prepare, and produce walk this sequence before they keep work on the open node. An
-adopting repository whose installed catalog is missing a key is stale; copy the packaged binding.
-`cg init` will not overwrite the installed catalog.
+Warmup, plan, and produce walk this sequence before they keep work on the open node. An
+adopting repository whose installed catalog is missing a key is stale. Refresh it with `cg init`, which previews replacement and retains backups of A/E catalogs; preserve repository-owned product and workflow choices.
 
 ## The lifecycle skills
 
-The two entry paths are plan → prepare → produce → sign-off and
-prototype → manual acceptance and roadmap → prepare → produce → sign-off. `/cg-sign-off` also accepts a
-request to finish a selected prototype: it coordinates the remaining delivery through these
-stages and closes only on passing requirements. Its entry point selects the programme and loads
-separate prototype-completion or phase-sign-off instructions; it asks when the intended target
-is ambiguous. Shared closure checks supply evidence requirements without changing who owns
-continuation. See [prototype completion](prototype.md).
-For an uncertain experience,
-prototype → manual acceptance supplies the roadmap and provisional implementation before prepare. Warmup runs at adoption before
-that sequence, and again as an additive reseed after a package upgrade when the graph already
-exists. Unblock is entered from any stage when a choice is expensive or protected. Auto-run
-is optional and follows an already-planned roadmap; it does not invent the plan, and it never
-dispatches warmup.
+The 0.7.0 delivery path is plan → produce → sign-off, with review and repair loops. Preparation belongs partly to planning readiness and partly to production. Automatic continuation is part of an authorised sprint-completion request.
 
 | Skill | Responsibility |
 |---|---|
-| `cg-plan` | Traverse the current graph, convert a broad outcome into an ordered phase roadmap, and identify the boundaries likely to change. Owns programme shape, dependencies, phase acceptance, risk, and status — not which files move. |
-| `cg-prototype` | Launch a working application and iterate through manual human feedback before formal preparation. Keeps contract truth, records provisional changes and explicit acceptance, and hands the accepted implementation and remaining roadmap to normal delivery. |
-| `cg-prepare` | Select one phase and convert it into one prioritized queue of contract-complete steps. Each step names its owning boundary, expected graph changes, verification, explicit dependencies, blockers, and state in a single execution branch or worktree. |
-| `cg-produce` | Run the earliest ready step; deliver implementation, tests, YAML contract updates, and detectors as one independently valid structural change; continue through ready work. |
-| `cg-sign-off` | Verify every prepared step completed and that the resulting graph still describes the implemented system; drive current-phase defects through corrective steps; harvest decisions; close only on a green gate. Also owns the durable record — design records, product and operator guidance, and diagrams — and is entered standalone when only documentation is needed. Never repairs contract correctness as detached cleanup. |
-| `cg-unblock` | Govern forks across the lifecycle: apply contract-backed or reversible defaults, record assumptions, log blocked steps, keep independent work moving. |
-| `cg-auto-run` | **Opt-in.** Follow already-named next stages while measured state advances, route questions through the Manager to the user, and resume after recorded answers clear blockers. At `roadmap` authority it continues through remaining planned phases; it does not stop after a phase or dispatch count. One Engineer owns each phase through sign-off; the Manager coordinates using the stage skills. Roles do not apply to standalone `/cg-plan` or `/cg-produce`. Accepted, reconciled auto-run ledgers are deleted, not archived; interrupted runs retain needed recovery state. |
-| `cg-warmup` | **Adoption, then additive reseed.** Discover an existing repository's real boundaries, write and connect their YAML contracts, add contract-owned routes, verify every applicable structural binding, and harvest product bindings or non-binding engineering guidelines. On a governed graph, reseed adds missing children, P rows, and route targets without rewriting existing purpose or P IDs. Logs what it cannot settle, asks directly with options and free-text input, and records the response. Never scores, never edits behaviour. |
+| `cg-warmup` | Confirm project intent and establish or reseed the truthful context graph. |
+| `cg-plan` | Agree outcomes, acceptance and scope; assess baseline, boundaries, dependencies, likely approach and verification before production. |
+| `cg-produce` | Ask for batch or per-item review, prepare incrementally, implement ready items, preserve blocked work and recover progress. Report each item's Code/Test/Docs status and next action, or None when the requested work is complete. |
+| `cg-sign-off` | Finish deferred tests and useful docs, verify accepted outcomes, route implementation repairs through produce and close with passing evidence and remove obsolete transient files after preserving durable knowledge. |
+| `cg-unblock` | Resolve consequential decisions, record actual scoped answers and resume eligible work. |
+| `cg-prototype` | Explore a working experience through feedback and explicit acceptance, then finish through sign-off. |
+
+### New sprint delivery
 
 ```mermaid
-flowchart TD
-    Contracts["YAML contract graph"] --> Plan["cg-plan"]
-    Contracts --> Prototype["cg-prototype<br/>(launch + feedback)"]
-    Prototype -->|"feedback"| Prototype
-    Prototype --> Accept["Explicit UX acceptance<br/>+ Active roadmap + handoff"]
-    Accept --> Prepare["cg-prepare<br/>(one selected phase)"]
-    Plan --> Prepare
-    Prototype -.->|"finish this prototype"| Completion["cg-sign-off<br/>(prototype completion coordinator)"]
-    Completion -.->|"obtain acceptance + finalise roadmap"| Accept
-    Completion -.->|"coordinate remaining phases"| Prepare
-    Prepare --> Produce["cg-produce<br/>(earliest ready step)"]
-    Produce -->|"ready work remains"| Produce
-    Produce -->|"all steps complete"| SignOff["cg-sign-off<br/>(close + durable record)"]
-    SignOff -->|"corrective step"| Produce
-    SignOff -->|"remaining order changes"| Prepare
-    Produce -->|"implementation + graph stay aligned"| Contracts
-    SignOff -->|"successor or roadmap handover"| Plan
-    Docs["Documentation only"] -.->|"standalone entry"| SignOff
-    Unblock["cg-unblock"] -.-> Plan
-    Unblock -.-> Prototype
-    Unblock -.-> Prepare
-    Unblock -.->|"answer recorded"| Produce
-    Unblock -.-> SignOff
+flowchart LR
+    Intent["Warmup: confirm intent"] --> Plan["Plan: agree goal and criteria"]
+    Plan --> Produce["Produce: prepare and implement items"]
+    Produce --> Review["Review working result"]
+    Review -->|feedback| Produce
+    Review -->|accepted| Finish["Sign-off: tests, docs, repairs and gates"]
+    Finish -->|affected experience changed| Review
+    Finish --> Done["Sprint complete"]
+    Done -->|authorized next sprint| Produce
 ```
 
-Each stage finishes its own job and names what should happen next. It does not start the next
-stage on its own. Explicit auto-run authority or a request to complete the selected prototype
-allows continued delivery. Prototype completion records that request and coordinates the remaining
-stages; it still requires separate UX acceptance and passing final gates.
+An agreed full-completion request carries this loop through its remaining work without repeated stage prompts. Acceptance of the working result is still explicit, and one-sprint authority does not extend to another sprint. Automatic continuation does not mean parallel execution or permission to merge and publish.
 
-## Why plan and prepare are separate
+### Exploratory delivery
 
-They answer different questions. *What sequence delivers the outcome?* and *how does this selected
-phase become a safe sequence of executable steps?* Restructuring stays inside preparation and
-execution because its source, destination, tests, dependencies, contracts, and leftover files must
-be allocated together.
+cg-prototype supplies a provisional implementation and accepted experience when the outcome needs exploration. Both loops meet at the same accepted cg delivery handoff. The common cg-sign-off procedure then completes remaining tests/docs and verification, using cg-produce for implementation repairs and their preparation. Accepted code is retained; another plan is needed only for a genuinely changed goal. There is no separate preparation or auto-run stage.
 
 ## How a phase queue works
 
@@ -155,11 +122,10 @@ work.
 
 ## Where the files live
 
-Each programme keeps `roadmap.md` and one `<phase>_detailed_preparation.md` queue under
-`docs/plans/<programme>/` by default. `cg init --docs` records a different root in
+Each programme keeps `roadmap.md` under `docs/plans/<programme>/` by default. Production adds a `<phase>_detailed_preparation.md` queue only when finishing or repairs need explicit Step dependencies; ordinary sprint items keep short preparation in the roadmap. `cg init --docs` records a different root in
 `.agents/cg/profile.json`; `cg residue` prints the plans directory that is actually in use.
 
-`cg status --programme <slug>` reads the current queue and prototype receipt and shows remaining
+`cg status --programme <slug>` reads the current queue and delivery record and shows remaining
 Steps, exact file locations, recorded blockers, recovery action, and residue owners. It creates no
 new status document. Older repair reports can explain history but do not override those records.
 
@@ -188,16 +154,16 @@ invariants are unchanged. A structural change is incomplete until those graph fa
 
 ## Closing a phase is a repair loop, not a review
 
-`cg-sign-off` directly fixes only integration composition and emergent tests. A behaviour-,
+`cg-sign-off` completes deferred tests and useful documentation, then verifies integration and final evidence. A behaviour-,
 boundary-, invariant-, or contract-affecting defect re-enters produce as a corrective step so its
 implementation, tests, contract, and detector remain one independently valid change.
 
 A finding may leave a green phase only when it is genuinely outside that phase. A failing phase
-gate stays Incomplete or Blocked and is never archived as Complete.
+gate stays Incomplete or Blocked and retains its recovery records. Successful closure also updates durable documentation, approved intent and YAML, then removes obsolete plans and progress files under the [workflow cleanup rules](workflow.md#keeping-documentation-small).
 
 ## Related
 
 - [Workflow](workflow.md) — how an outcome becomes phases, steps, and a lasting graph.
-- [Upgrade](upgrade.md) — 0.3.0 / 0.4.0 → 0.5.0: `cg init`, then adoption or reseed.
+- [Upgrade](upgrade.md) — Install 0.7.0 through `cg init`, preserving repository choices.
 - [Contracts](contracts.md) — node shape and what verification proves today.
 - [Vision](vision.md) — why the graph exists.

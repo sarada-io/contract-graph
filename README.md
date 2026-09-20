@@ -51,7 +51,7 @@ Choose the mode that matches how clearly you understand the outcome.
 | Mode | Start here when… | Your involvement |
 |---|---|---|
 | **Product Prototyping** | You need to try a working experience before deciding exactly what to build. | Use the preview, give feedback, approve the experience, then ask the agent to finish it. |
-| **Detailed Plan-Based Delivery** | The outcome is understood, and you want an explicit implementation roadmap. | Agree on phases and acceptance gates, then run delivery stage by stage or opt into auto-run. |
+| **Sprint and Epic Delivery** | The outcome is understood, and you want an agreed goal and reviewable increments. | Agree outcomes and criteria, review the working result, and let the agent finish within the requested sprint or epic scope. |
 
 ### Product Prototyping
 
@@ -65,7 +65,7 @@ Improve the dashboard layout and interactions. Launch it and iterate with me.
 Review the preview and give feedback in the same conversation. When the experience is right, explicitly approve it and ask the agent to complete it with `/cg-sign-off`. See the
 [prototype guide](https://contractgraph.dev/docs/prototype/) for the full workflow.
 
-### Detailed Plan-Based Delivery
+### Sprint and Epic Delivery
 
 Use `/cg-plan` when the outcome and its constraints are already clear:
 
@@ -74,8 +74,7 @@ Use `/cg-plan` when the outcome and its constraints are already clear:
 Add export and import for saved dashboards, including validation and recovery.
 ```
 
-Review and accept the roadmap, then follow the next command the agent gives you or use
-`/cg-auto-run` to coordinate delivery. See the
+Agree the goal, expected behavior and review conditions in one Sprint Plan or Epic Plan. Ask the agent to complete the selected sprint: `/cg-produce` implements the items for review, and `/cg-sign-off` finishes tests, documentation and verification under the same request. Produce asks whether to review all ready items together or each item separately, and continues independent work when another item needs your input. See the
 [delivery workflow](https://contractgraph.dev/docs/workflow/) for stages, gates, and recovery.
 
 ## Get Started
@@ -88,12 +87,12 @@ npm install --global contract-graph
 cd your-repository
 ```
 
-| New repository | Add Contract Graph in Existing Repo     |  |
-|---|---|---|
-| `cg init` | `cg init` |  |
-|  .| Ask your coding agent to run `/cg-warmup`. |  |
+| New repository | Existing repository |
+|---|---|
+| Run `cg init`, then `/cg-warmup`. | Run `cg init`, then `/cg-warmup`. |
+| Confirm project intent and establish root context. | Confirm intent from existing documents and map the current code. |
 
-Behind the scenes, `cg init` installs the schemas, structural principles, agent skills, hooks, and editor discovery files that make the contract graph usable. It records the installed version and selected profiles without adding a runtime dependency to your application. `cg modules` identifies mapping gaps, while `cg verify` checks that the authored graph remains valid and connected.
+Behind the scenes, `cg init` installs the schemas, structural principles, agent skills, hooks, and editor discovery files that make the contract graph usable. It records the installed version and selected profiles without adding a runtime dependency to your application. `cg modules` identifies mapping gaps, while `cg verify` checks that the authored graph remains valid and connected. `cg intent verify` separately checks owner-attributed intent approval and freshness.
 
 ## Learn More
 

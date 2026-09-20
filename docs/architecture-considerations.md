@@ -6,8 +6,7 @@ with a truthful contract graph that lets an agent find where a change belongs.**
 That is the framework's central opinion. The contract graph is the map used before reading
 implementation. Its rules protect the usefulness of that map.
 
-This guide describes the **current shipped defaults for 0.6.0**, including the recent catalog
-review. It does not reconstruct every intention behind older versions of `architecture.yaml`.
+This guide describes the current source defaults, including intent-aware adoption and the structural catalog. It does not reconstruct every intention behind older versions of `architecture.yaml`.
 The source of truth is [the architecture catalog](../src/cg/principles/architecture.yaml).
 
 **Audience:** framework adopters and reviewers deciding what architecture a repository must preserve.
@@ -74,6 +73,20 @@ flowchart TB
 Architecture, engineering, and product share a schema, **not authority**. Keeping the protocol
 in `architecture.yaml` also prevents a workflow edit from accidentally removing the structural
 instructions. The delivery sequence lives separately in the skills and repository workflow.
+
+## Intent, authority and implementation evidence
+
+Project intent explains why the repository exists, who it serves and which boundaries define its product identity. Specifications describe required behavior; contracts locate responsibility and state structural promises. A/P/E retain their existing authority: intent is context, not a fourth principle catalog, and not every sentence becomes a binding rule.
+
+Keep three questions separate: who authorized a promise, whether the implementation satisfies it, and what evidence establishes that satisfaction. Accepted intent survives conflicting code. A product-specific constraint can remain binding while its detector is missing; that gap needs a real detector, corrective work or an explicit owner-approved exception. A detector recipe alone is not enforcement.
+
+Before amending a contract, compare its old promise with accepted intent and affected callers. A clarification or compatible extension can use existing scoped authority. A material change in product identity, ownership or allowed behavior needs authority for that change. Do not quietly specialize a reusable boundary to make one consumer pass, then change its tests to agree. Exercise a relevant unrelated consumer or negative case when it challenges the changed promise. An intentionally domain-specific boundary does not owe universal genericity.
+
+For example, an export-formatting engine promised to accept caller-defined fields should not gain a hard-coded billing field merely because a billing example needs one. A billing-specific report generator may legitimately own that field. The accepted boundary determines which design is correct, not a blanket preference for generic code.
+
+Graph validation, intent approval freshness, human acceptance and behavioral verification establish different things. None substitutes for the others. [Intent approval](intent.md) describes the operational gate and trust limits; [design rationale](design/intent-and-delivery.md) explains the records and compatibility decisions.
+
+Specialist names describe expertise, not graph ownership. API, web, mobile and UI assignments still follow the existing responsibility boundary and graph placement decision; a coordinator does not create a new architectural layer. See [expert skills](experts.md) for the extension mechanism.
 
 ## 2. Organize around responsibilities
 

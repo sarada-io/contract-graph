@@ -1,9 +1,11 @@
 ---
 name: cg-unblock
-description: Resolve Contract Graph forks through recorded authority and direct user interaction. Use throughout cg-plan, cg-prepare, cg-produce, and cg-sign-off whenever requirements leave a choice, a contract may change, or work may need owner approval. Classifies blockers, applies recorded decisions and reversible defaults, writes assumption ledgers, asks the user about unresolved material decisions and records their responses in the repository decision log, and keeps the earliest dependency-safe ready Step moving while blocked Steps wait.
+description: Resolve Contract Graph forks through recorded authority and direct user interaction. Use throughout cg-plan, cg-produce, and cg-sign-off whenever requirements leave a choice, a contract may change, or work may need owner approval. Classifies blockers, applies recorded decisions and reversible defaults, writes assumption ledgers, asks the user about unresolved material decisions and records their responses in the repository decision log, and keeps the earliest dependency-safe ready Step moving while blocked Steps wait.
 ---
 
 # CG Unblock
+
+For sprint work, scope each canonical decision to the programme, sprint ID/name and affected Feature/Bug/Task IDs. One decision spanning items remains one entry linked from those items. Preserve the actual answer, rationale, authority and implementation impact; resolving an item does not approve the whole sprint.
 
 Decide from contracts first. Escalate only when the owner must accept the blast radius. An `E`
 disagreement is not `Blocked by`.
@@ -35,7 +37,7 @@ to reverse; D-3 also requires an answer when no existing authorization covers th
 
 Ask as soon as the question is concrete and reviewable. Mark only affected Steps `Blocked` and
 their dependents `Waiting`; continue independent `Ready` work while awaiting the response when
-the host supports asynchronous interaction. Do not postpone asking until the queue is exhausted.
+the host supports asynchronous interaction. In batch mode, pending questions may be consolidated for the run review while independent work proceeds.
 If the host must yield to receive an answer, checkpoint first and resume after the response.
 
 A reversible implementation choice within existing authority uses D-2 and D-4. Do not invent an
@@ -142,73 +144,20 @@ phase whose acceptance gate can prove the destination's obligations.
 
 ## D-6 — Clarification and direct interaction
 
-1. Under auto-run, the Engineer sends the Manager the exact ambiguity, Plan and contract evidence
-   checked, viable options and tradeoffs, recommendation, affected Steps, and what an answer
-   would unblock. The Manager checks the Plan and accepted decisions first. Without a Manager,
-   the invoking agent performs that check itself.
-2. Resolve from existing authority when possible and return the cited interpretation to the
-   Engineer. If the user must decide, write a pending `DU-NN` entry before asking. The Manager
-   must save the complete question, context, viable options, tradeoffs, recommendation, affected
-   work and unblocking condition to disk first. If that write fails, do not present an unrecorded
-   decision request. This ordering lets a new session resume even if the current one ends before
-   the user sees or answers the question. Follow-up questions must also be recorded before asking.
-   The Manager
-   owns this entry and the user interaction; the Engineer references the ID rather than writing
-   a competing copy. The Engineer owns queue updates, including blocking and independent progress;
-   applying the answer is serialized after the Manager records it. During a prepared harvest
-   drain the Manager may temporarily hand off exact-cohort log writes, pausing its own writes
-   and queuing incoming answers until the Engineer returns ownership. Write
-   `<docs>/plans/auto-run/<programme>/harvest.auto-run.md` before that handoff and delete it when
-   ownership returns and all queued answers have been persisted and re-read in the
-   authoritative log. Cancellation stops execution, not answer preservation: reconcile
-   the worker before writing, and retain Suspended ledgers and the ownership record if
-   that cannot finish safely. Never delete the only recorded copy of a user answer.
-3. Ask directly in chat or the host's interaction tool. Include the decision ID, enough context
-   to answer, all viable options with tradeoffs, and a clearly labelled recommendation. Offer
-   selection or a typed solution; if the tool limits option count, present the complete options
-   in the question text or chat. A link to the log is supplemental, not the whole question.
-4. Keep unanswered entries pending. Silence, elapsed time, preselected options, Manager preference,
-   and passing tests are not user approval. If a typed solution is ambiguous, preserve it and ask
-   a focused follow-up before resolving the dependent choice.
-5. Record the actual answer under D-5, update affected Plan or decision artifacts, then notify the
-   same Engineer. Recalculate the queue immediately, clearing only the resolved blocker. Other
-   blockers, unfinished dependencies, and changed-scope preparation requirements still apply.
-6. Resume the earliest eligible work under the existing auto-run authority without requiring the
-   user to repeat a start command. An answer does not widen that authority. On a host without live
-   worker messaging, checkpoint and resume from the same artifacts when interaction returns.
-7. At session start or recovery, read the relevant pending entries and reconcile any recorded
-   responses before dispatching dependent work. If an entry is still unanswered, present that
-   saved question using the same `DU-NN` ID in the new session. Do not invent a replacement entry,
-   infer an answer from a previous request being shown, or require the old chat. Avoid repeating
-   a question already awaiting an answer in the current session. Record the user's response
-   before releasing the resolution, so a later session can distinguish pending from resolved.
+1. Check the plan, contracts and recorded scoped decisions before asking. If they resolve the question, cite and apply that authority. Otherwise record one pending DU entry with the full question, evidence, viable options, tradeoffs, recommendation, affected sprint/item IDs and unblocking condition before presenting it.
+2. Ask directly in chat or the host's interaction tool. Offer a recommendation and free-text input. In a batch production run, record input-dependent steps and continue independent items; consolidate unanswered questions for review where possible. Never implement the missing decision by assumption.
+3. Record the actual answer before updating dependent work. Silence, elapsed time, preselected options and passing tests are not approval. Preserve ambiguous answers and ask a focused follow-up. A decision does not expand execution scope.
+4. Recalculate readiness, clearing only the resolved blocker. Resume eligible work within the existing request; preserve other prerequisites. Keep decision-log writes serialised if explicitly delegated workers are in use; coordinate ownership before another writer edits the same records.
+5. On recovery, read pending entries and recorded answers first. Reuse IDs, avoid duplicate questions or competing logs, and never delete the only recorded answer. Check current source and plan state before resuming.
 
-Sign-off checks implementation against applicable resolved decisions and records remaining gaps.
-A user response accepting a design does not also accept a later harvest classification unless it
-explicitly covers that classification. Keep D-5a and the existing harvest acceptance gate.
+## D-7 — Return to the active loop
 
-## Stage boundary — yield here
-
-Return to the invoking stage or Auto-Run Manager after the fork work. Outside auto-run, return to
-the user. Do not invoke the next skill yourself. Under auto-run, `cg-unblock` may be invoked for
-clarification and user interaction; it never grants permission to execute unresolved work.
-
-## D-7 — Next-action response
-
-Choose exactly one immediate route:
-
-- decision resolved or a reversible assumption recorded: name the invoking skill with the updated
-  decision or assumption artifact;
-- owner answers required and no Step is ready: keep the direct question pending, keep
-  `cg-unblock` as the next skill, and name every blocking decision-log entry;
-- independent work remains: name `cg-produce` with the earliest `Ready` Step.
-
-End the user-facing response with:
+Return to the invoking production or sign-off loop within its recorded authority. Resolve only the named decision; do not invent acceptance, widen the sprint or start a different programme. Keep user-facing output brief and end with the recommended skill and affected scope.
 
 ```markdown
 ## Next action — <Decision applied | Owner decision required | Independent work ready>
 - **User action:** <one concrete action>
-- **Next input:** <$cg-plan | $cg-prepare | $cg-produce | $cg-sign-off | $cg-unblock> — <updated assumption, decision set, plan, preparation, earliest Ready Step, or corrective brief>
+- **Next input:** <$cg-plan | $cg-produce | $cg-sign-off | $cg-unblock> — <updated assumption, decision set, plan, preparation, earliest Ready Step, or corrective brief>
 - **Blocked by:** <condition preventing the named next action>   <!-- omit unless the status is non-advancing -->
 ```
 

@@ -7,7 +7,7 @@ const object = value => value !== null && typeof value === "object" && !Array.is
 const exactKeys = (value, keys) => object(value) && Object.keys(value).sort().join(",") === [...keys].sort().join(",");
 
 /** Intern repeated large JSON values, without pruning events, fields, or unknown extensions. */
-export function encodePrototype(record) {
+export function encodeDelivery(record) {
   record = clone(record);
   const counts = new Map();
   const count = value => {
@@ -33,9 +33,9 @@ export function encodePrototype(record) {
 }
 
 /** Fail closed on missing, modified, unused, or ambiguous evidence. Never load external paths. */
-export function decodePrototype(stored) {
+export function decodeDelivery(stored) {
   if (stored?.version !== 2) return stored;
-  const fail = () => { throw new Error("invalid v2 prototype evidence storage"); };
+  const fail = () => { throw new Error("invalid v2 delivery evidence storage"); };
   if (!exactKeys(stored, ["version", "programme", "status", "logicalHash", "payload", "objects", "references"]) ||
       !object(stored.payload) || stored.payload.version !== 1 || !object(stored.objects) || !Array.isArray(stored.references)) fail();
   for (const [digest, value] of Object.entries(stored.objects)) {

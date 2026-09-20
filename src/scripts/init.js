@@ -8,6 +8,7 @@
  */
 
 import crypto from "node:crypto";
+import { parseDocument } from "yaml";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -75,11 +76,13 @@ export const SCAFFOLD_MAPPING = Object.freeze([
   },
   { source: "cg/guidelines/product.yaml", packageSource: "agent/cg/guidelines/product.yaml", target: ".agents/cg/guidelines/product.yaml", mode: "always", select: "file", install: "preserve" },
   { source: "cg/contract.yaml", packageSource: "agent/cg/contract.yaml", target: ".agents/cg/contract.yaml", mode: "always", select: "file", install: "preserve" },
+  { source: "cg/experts.md", packageSource: "agent/cg/experts.md", target: ".agents/cg/experts.md", mode: "always", select: "file", install: "preserve" },
   { source: "cg/workflow.md", packageSource: "agent/cg/workflow.md", target: ".agents/cg/workflow.md", mode: "always", select: "file", install: "preserve" },
   { source: "cg/phases.json", packageSource: "agent/cg/phases.json", target: ".agents/cg/phases.json", mode: "always", select: "file", install: "preserve" },
   { source: "cg/enforcement.yaml", packageSource: "agent/cg/enforcement.yaml", target: ".agents/cg/enforcement.yaml", mode: "always", select: "file", install: "preserve" },
   { source: "cg/schema", packageSource: "agent/cg/schema", target: ".agents/cg/schema", mode: "always", select: "tree", install: "replace" },
-  { source: "skills", packageSource: "agent/skills", target: ".agents/skills", mode: "always", select: "tree", install: "replace" },
+  { source: "skills/experts", packageSource: "agent/skills/experts", target: ".agents/skills", mode: "always", select: "tree", install: "replace" },
+  { source: "skills", packageSource: "agent/skills", target: ".agents/skills", mode: "always", select: "tree", exclude: ["experts"], install: "replace" },
   { source: "install/hooks", packageSource: "agent/hooks", target: ".agents/hooks", mode: "always", select: "tree", install: "replace" },
   // `starter` rather than `always`: the module tree is an example contract for a repository
   // that has no modules yet. Writing it into a brownfield repo invents a module that does not
@@ -141,14 +144,16 @@ function skipUnselectedStarterPointer(rule, target, modulePointers) {
 }
 
 /** Walk one source tree, yielding every {source, target, rule} file pair it would install. */
-function* walkTree(from, to, rule) {
+function* walkTree(from, to, rule, relative = "") {
   for (const entry of fs.readdirSync(from, { withFileTypes: true }).sort((a, b) =>
     a.name.localeCompare(b.name),
   )) {
+    const childRelative = relative ? `${relative}/${entry.name}` : entry.name;
+    if (rule.exclude?.includes(childRelative)) continue;
     const source = path.join(from, entry.name);
     const target = path.join(to, entry.name);
     if (entry.isDirectory()) {
-      yield* walkTree(source, target, rule);
+      yield* walkTree(source, target, rule, childRelative);
       continue;
     }
     yield { source, target, rule };
@@ -235,6 +240,7 @@ function writeManifest(repoRoot, version, out, docsRoot) {
   // truthful record, and keeping the old one would leave the manifest describing a file that
   // is no longer on disk.
   const merged = { ...files, ...previous };
+  for (const target of out.removed) delete merged[path.relative(repoRoot, target).split(path.sep).join("/")];
   for (const target of out.replaced) {
     const migrated = out.catalogUpdates.some(item => item.file === target && item.action !== "refresh release defaults");
     record(target, migrated);
@@ -255,41 +261,6 @@ function writeManifest(repoRoot, version, out, docsRoot) {
   fs.writeFileSync(file, desired, "utf8");
   out.written.push(file);
 }
-
-/**
- * Make sure the root `.gitignore` ignores the auto-run ledger.
- *
- * Appended rather than scaffolded: `.gitignore` belongs to the repository, and a file that
- * already carries its own rules must not be replaced by ours. The pattern has no slash, so one
- * root-level line covers the ledger wherever a run writes it.
- *
- * Idempotent by inspection — the line is added only when no existing rule already names it.
- */
-export function ensureLedgerIgnored(repoRoot, out, dryRun) {
-  const file = path.join(repoRoot, ".gitignore");
-  const current = fs.existsSync(file) ? fs.readFileSync(file, "utf8") : "";
-  const lines = new Set(current.split("\n").map((line) => line.trim()));
-  const missing = LEDGER_IGNORE.filter((rule) => !lines.has(rule));
-  if (!missing.length) return;
-
-  const block =
-    `${current && !current.endsWith("\n") ? "\n" : ""}` +
-    "\n# Contract Graph: cg-auto-run ledgers are live state for one run, never history.\n" +
-    `${missing.join("\n")}\n`;
-  // Always `written`, never `replaced`. The CLI treats `replaced` as “overwrite a
-  // framework file, default No” — a prompt that cancelled a first brownfield init
-  // when the only change was these two append-only ignore lines.
-  out.written.push(file);
-  if (dryRun) return;
-  fs.writeFileSync(file, current + block, "utf8");
-}
-
-/**
- * Both rules, because either alone leaves a gap. The directory rule covers ledgers written where
- * they belong; the suffix rule covers one written anywhere else, so a stray ledger is still
- * self-ignoring rather than quietly committed.
- */
-const LEDGER_IGNORE = ["auto-run/", "*.auto-run.md"];
 
 /** Repository entries that do not make a repository "existing" for the purposes below. */
 const IGNORED_AT_ROOT = new Set([".git", ".gitignore", ".github", "LICENSE", "README.md"]);
@@ -325,9 +296,75 @@ function clearStarterComposition(repoRoot, brownfield, written) {
 
 
 
+/** Retire known framework artifacts only; retain edited files in a recoverable backup. */
+function retireSkills(repoRoot, out, dryRun) {
+  let prior = {};
+  const manifest = manifestPath(repoRoot);
+  if (fs.existsSync(manifest)) prior = JSON.parse(fs.readFileSync(manifest, "utf8")).files ?? {};
+  const names = ["cg-prepare", "cg-auto-run"];
+  const known = ["SKILL.md", "agents/openai.yaml", "references/verification.md", "references/protocol.md", "references/manager.md", "references/engineer.md"];
+  const contractFile = governanceContractPath(repoRoot);
+  if (fs.existsSync(contractFile)) {
+    const original = fs.readFileSync(contractFile, "utf8");
+    const document = parseDocument(original);
+    const catalog = document.getIn(["extensions", "contractGraph", "skills"]);
+    if (!document.errors.length && Array.isArray(catalog?.items)) {
+      const retained = catalog.items.filter(item => !names.includes(item?.get?.("name")));
+      if (retained.length !== catalog.items.length) {
+        const backup = path.join(repoRoot, ".agents/cg/backups/retired-0.7.0", sha256(contractFile), ".agents/cg/contract.yaml");
+        out.replaced.push(contractFile);
+        out.backups.push(backup);
+        if (!dryRun) {
+          fs.mkdirSync(path.dirname(backup), { recursive: true });
+          fs.writeFileSync(backup, original);
+          catalog.items = retained;
+          fs.writeFileSync(contractFile, String(document));
+        }
+      }
+    }
+  }
+  const artifacts = names.flatMap(name => [...known.map(file => `.agents/skills/${name}/${file}`), `.claude/skills/${name}/SKILL.md`].map(relative => ({ name, relative })));
+  for (const file of ["prototype-completion.md", "sprint-completion.md", "phase-sign-off.md"]) {
+    artifacts.push({ name: "cg-sign-off", relative: `.agents/skills/cg-sign-off/references/${file}` });
+  }
+  // Expert attribution now ships once beside the installed skill directories.
+  // Remove old per-expert notices only when the prior manifest establishes ownership.
+  for (const name of ["api-expert", "mobile-expert", "web-expert", "ui-design-expert"]) {
+    artifacts.push({ name, relative: `.agents/skills/${name}/LICENSE` });
+  }
+  for (const { name, relative } of artifacts) {
+    const file = path.join(repoRoot, relative);
+    // Never follow an installed symlink into another checkout, even for a known artifact.
+    const parts = relative.split("/");
+    if (parts.some((_, i) => {
+      const parent = path.join(repoRoot, ...parts.slice(0, i + 1));
+      return fs.existsSync(parent) && fs.lstatSync(parent).isSymbolicLink();
+    }) || !fs.existsSync(file)) continue;
+    const wrapper = relative.startsWith(".claude/");
+    const text = fs.readFileSync(file, "utf8");
+    const isFramework = Boolean(prior[relative]) || (wrapper
+      ? text.includes("# Contract Graph Skill Discovery") && text.includes(`.agents/skills/${name}/SKILL.md`)
+      : relative.endsWith("/SKILL.md") && new RegExp(`^name: ${name}\\s*$`, "m").test(text));
+    if (!isFramework) continue;
+    const backup = path.join(repoRoot, ".agents/cg/backups/retired-0.7.0", sha256(file), relative);
+    out.removed.push(file);
+    out.backups.push(backup);
+    if (dryRun) continue;
+    fs.mkdirSync(path.dirname(backup), { recursive: true });
+    fs.copyFileSync(file, backup);
+    fs.unlinkSync(file);
+    let parent = path.dirname(file);
+    const boundary = path.join(repoRoot, wrapper ? ".claude/skills" : ".agents/skills");
+    while (parent !== boundary && fs.existsSync(parent) && fs.readdirSync(parent).length === 0) {
+      fs.rmdirSync(parent);
+      parent = path.dirname(parent);
+    }
+  }
+}
+
 export function init(repoRoot, { profiles, docs, dryRun = false, reasons = {} } = {}) {
   repoRoot = path.resolve(repoRoot);
-  const out = { written: [], replaced: [], skipped: [], backups: [], catalogUpdates: [] };
+  const out = { written: [], replaced: [], removed: [], skipped: [], backups: [], catalogUpdates: [] };
   const { written, skipped } = out;
 
   const previous = loadProfileSelection(repoRoot, { allowMissing: true });
@@ -346,6 +383,18 @@ export function init(repoRoot, { profiles, docs, dryRun = false, reasons = {} } 
     repoRoot,
     SCAFFOLD_MAPPING.find((entry) => entry.mode === "starter").target,
   );
+
+  // A new generic expert name may already belong to this repository. Refuse the
+  // collision before any mutation; only previously installed framework files refresh.
+  const priorManifest = fs.existsSync(manifestPath(repoRoot))
+    ? JSON.parse(fs.readFileSync(manifestPath(repoRoot), "utf8")).files ?? {} : {};
+  const expertCollisions = scaffoldFiles(repoRoot, { docsRoot, brownfield }).filter(({ target }) => {
+    const relative = path.relative(repoRoot, target).split(path.sep).join("/");
+    return (/^\.agents\/skills\/(?!cg-)[^/]+-expert\//.test(relative) ||
+      relative === ".agents/skills/THIRD_PARTY_NOTICES.txt") &&
+      fs.existsSync(target) && !priorManifest[relative];
+  }).map(({ target }) => path.relative(repoRoot, target));
+  if (expertCollisions.length) throw new Error(`expert skill name collision: ${expertCollisions.join(", ")}; preserve the conflicting repository-owned content at a distinct project path before installing the supplied default`);
 
   const catalogDefaults = scaffoldFiles(repoRoot, { docsRoot, brownfield }).filter(({ target }) =>
     ["architecture.yaml", "engineering.yaml"].includes(path.basename(target)),
@@ -371,7 +420,7 @@ export function init(repoRoot, { profiles, docs, dryRun = false, reasons = {} } 
   // some, and the phase map may only name what exists — so narrow it to the selection on the
   // way in. Installing a pack later fails verification until a phase claims it, which is the
   // prompt to decide where it belongs rather than a chore.
-  ensureLedgerIgnored(repoRoot, out, dryRun);
+  retireSkills(repoRoot, out, dryRun);
 
   if (dryRun) {
     return {

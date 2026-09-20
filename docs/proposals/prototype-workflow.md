@@ -1,5 +1,7 @@
 # Faster human feedback and prototype delivery
 
+> Historical record, superseded for 0.7.0: standalone preparation and auto-run are retired. Commands and role procedures below describe the prior release and are not current instructions. See [the current workflow](../workflow.md).
+
 Status: Design record — implemented in the working tree; project timing trials remain outstanding
 
 Date: 2026-09-09
@@ -26,7 +28,7 @@ those projects or prove that all prescribed checks actually ran.
 
 | Source finding | Consequence | Recommended change |
 |---|---|---|
-| [Plan](../../src/skills/cg-plan/SKILL.md), [prepare](../../src/skills/cg-prepare/SKILL.md), and [produce](../../src/skills/cg-produce/SKILL.md) each require graph verification and the narrowest useful baseline on admission. | Adjacent stages can repeat a command against unchanged inputs. | Permit evidence reuse when relevant inputs and environment match; rerun when applicability cannot be established. |
+| [Plan](../../src/skills/cg-plan/SKILL.md), [prepare](../../src/skills/cg-produce/references/execution-preparation.md), and [produce](../../src/skills/cg-produce/SKILL.md) each require graph verification and the narrowest useful baseline on admission. | Adjacent stages can repeat a command against unchanged inputs. | Permit evidence reuse when relevant inputs and environment match; rerun when applicability cannot be established. |
 | Prepare includes Step checks and graph verification in `Done when`; produce additionally requires the full build-and-contract gate. | Checks can overlap, and a full application gate is required even when preparation selected narrower scope. | Preparation assigns verification explicitly; produce executes it without adding an unconditional second full gate. |
 | [Sign-off](../../src/skills/cg-sign-off/SKILL.md) requires full verification at admission and during accumulated-state review, then repeats Step verification at confirmation. | The prose can cause repeated execution on the same final state. | Maintain one evidence inventory and final verification pass; invalidate affected results after repairs. |
 | [Workflow](../../src/cg/workflow.md) requires a corresponding test file or method for every new or materially changed class. | Class shape can determine test work independently of changed observable promises or existing coverage. | Require adequate coverage of changed behavior and invariants, adding tests when existing coverage is insufficient. |

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { encodePrototype, decodePrototype } from "../src/scripts/prototype-storage.js";
+import { encodeDelivery, decodeDelivery } from "../src/scripts/delivery-storage.js";
 
 const fixture = () => {
   const files = Array.from({ length: 40 }, (_, i) => [`src/unit-${i}.js`, "file", "a".repeat(64)]);
@@ -13,20 +13,20 @@ const fixture = () => {
 
 test("v2 interns repeated evidence and reconstructs every logical field without aliases", () => {
   const record = fixture();
-  const stored = encodePrototype(record);
+  const stored = encodeDelivery(record);
   const roundtrip = JSON.parse(JSON.stringify(stored));
   assert.ok(JSON.stringify(stored).length < JSON.stringify(record).length);
-  assert.deepEqual(decodePrototype(roundtrip), record);
-  const decoded = decodePrototype(roundtrip);
+  assert.deepEqual(decodeDelivery(roundtrip), record);
+  const decoded = decodeDelivery(roundtrip);
   decoded.history[0].checkpoint.files[0][0] = "changed";
   assert.equal(decoded.history[1].checkpoint.files[0][0], "src/unit-0.js");
-  assert.deepEqual(decodePrototype(roundtrip), record);
-  assert.deepEqual(encodePrototype(decodePrototype(roundtrip)), stored);
+  assert.deepEqual(decodeDelivery(roundtrip), record);
+  assert.deepEqual(encodeDelivery(decodeDelivery(roundtrip)), stored);
 });
 
 test("v1 storage remains readable without reinterpretation", () => {
   const record = fixture();
-  assert.strictEqual(decodePrototype(record), record);
+  assert.strictEqual(decodeDelivery(record), record);
 });
 
 test("v2 rejects changed or missing objects, duplicate/unsafe slots, unused objects, and metadata conflicts", () => {
@@ -48,8 +48,8 @@ test("v2 rejects changed or missing objects, duplicate/unsafe slots, unused obje
     stored => { stored.references[0].extra = "would be lost"; },
   ];
   for (const corrupt of cases) {
-    const stored = encodePrototype(fixture());
+    const stored = encodeDelivery(fixture());
     corrupt(stored);
-    assert.throws(() => decodePrototype(stored), /invalid v2/);
+    assert.throws(() => decodeDelivery(stored), /invalid v2/);
   }
 });

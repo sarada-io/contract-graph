@@ -23,7 +23,7 @@ solely to populate another section of a report.
 Sign-off maintains one final evidence inventory in the phase acceptance record covering all Step
 obligations, composition, graph verification, and the repository full gate. Link Step Handoff
 sections and captured outputs; add final-state results and invalidations without copying execution
-narratives. The roadmap and coordinator ledger link this inventory rather than reproducing it. Repairs invalidate affected evidence. Reuse only what
+narratives. The roadmap and assignment notes link this inventory rather than reproducing it. Repairs invalidate affected evidence. Reuse only what
 remains applicable; rerun the full gate when the final state or relevant environment changed. If
 scope is uncertain, broaden verification rather than guessing that an earlier result still proves it.
 
@@ -31,3 +31,9 @@ Prototype admission is different: the starting state may have deferred tests and
 Preparation assigns their correction explicitly; it does not label that baseline green. Produce
 may run a corrective Step from that measured state, but cannot mark it Complete until its assigned
 gate passes. Binding detectors are never weakened to make a prototype pass.
+
+## Sprint review and promise preservation
+
+Before review, sprint production may defer unstable application tests and final docs into named finishing obligations. Required binding detectors, truthful contracts, safe launch/build checks and risk-critical verification remain immediate. Stable non-UI behavior can receive focused early tests. Prepared finishing Steps use the ordinary verification rules above; deferral never changes their Done when gate.
+
+Compare a changed test expectation with accepted intent, the contract promise and actual behavior. Classify it as fixing an incorrect test, implementing an approved requirement change or hiding an implementation defect. The last case requires fixing the implementation. For a reusable boundary, select a relevant unrelated consumer or negative example to challenge accidental specialization; do not impose genericity on an intentionally domain-specific product. Record concrete evidence and limits, not a claim that passing graph checks proves product conformance.

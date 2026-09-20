@@ -78,3 +78,13 @@ This project supports Node.js 18.17+ and uses the bundled `yaml` package to pars
 nodes. Preserve unrelated working tree changes. Run `npm run build` after changing
 `src/cg/principles/`, `src/cg/guidelines/`, or `src/cg/schema/`. Run `npm test` after changing runtime code or anything
 scaffolded from `src/`.
+
+## Installation and upgrade entry point
+
+`cg init` is the sole entry point for both first adoption and upgrading an existing installation. Extend its existing migration, preview (`--check`), confirmation (`--yes`), backup and retirement behavior when releases need upgrade work. Do not add a separate `cg upgrade` command or standalone upgrade script. Preserve repository-owned content and document release-specific steps in `docs/upgrade.md`.
+
+## Repository-only planning
+
+When creating or iterating a maintainer plan for this repository, read
+[repo-plan](.agent/skills/repo-plan/SKILL.md). Keep one master plan with a concise Executive Summary
+above the full agent detail. This local skill is independent of the shipped `src/skills/cg-plan/`.

@@ -21,12 +21,13 @@ import {
   routeContracts,
 } from "./contracts.js";
 import { build, BuildError } from "./build.js";
-import { init } from "./init.js";
+import { init, PACKAGE_VERSION } from "./init.js";
+import { intentAction } from "./intent.js";
 import { migratePrinciples } from "./migrate-principles.js";
 import { HarvestError, checkHarvest } from "./harvest.js";
 import { moduleCoverage, openDescent } from "./modules.js";
 import { next, permits } from "./next.js";
-import { prototypeAction, deliveryReadiness } from "./prototype.js";
+import { deliveryAction, deliveryReadiness } from "./delivery.js";
 import { residue } from "./residue.js";
 import { status } from "./status.js";
 import { runtimeIdentity } from "./runtime.js";
@@ -54,9 +55,10 @@ Usage:
   cg build [dir] [--check]                         assemble the package target under dist/build/
   cg init [--profile a,b] [--docs dir] [--reasons file]  install or update CG
   cg migrate-principles [dir] [--reasons file] [--write]  preview or apply legacy catalog conversion
-  cg next [dir] [--json] [--for skill]            what runs next, computed from the Step queue
-  cg prototype <action> [dir] --programme slug   start, checkpoint, review, approve, handoff, request-sign-off, suspend, resume, abandon, close, compact, evidence, status
-  cg delivery verify [dir] --base ref --gate cmd check prototype delivery receipts for a pull request
+  cg intent <action> [dir] [--evidence file]     status, review, approve, verify project intent
+  cg next [dir] [--json] [--for skill]            what runs next, derived from delivery records, roadmaps and Step queues
+  cg delivery <action> [dir] --programme slug   start, checkpoint, review, approve, handoff, request-sign-off, suspend, resume, abandon, close, compact, evidence, status
+  cg delivery verify [dir] --base ref --gate cmd check delivery receipts for a pull request
   cg status [dir] [--programme slug] [--json]    current queue, blockers, recovery action, and residue owners
   cg residue [dir] [--programme slug] [--json]   unreferenced plan files; scoped checks retain shared findings
   cg sync [dir] [--check]                         regenerate derived artifacts
@@ -80,15 +82,15 @@ Options:
   --stage <name>    harvest stage: classify (default) or close
   --decision-log <path>  decision log to check cohort eligibility against (harvest only)
   --preparation <path>   prepared drain route to validate at --stage close (harvest only)
-  --json            machine-readable output; full prototype evidence (next, status, residue, prototype, contract, graph)
+  --json            machine-readable output; full delivery evidence (next, status, residue, delivery, contract, graph)
   --id <id>         contract id, governed unit, or repository-relative contract path
   --task <text>     task description to match against contract routes
   --format <name>   output format: markdown, tree, json, or mermaid
   --for <skill>     exit 0 only if dispatching that skill agrees with the queue (next only)
-  --programme <slug> select one programme (prototype, next, status, residue)
+  --programme <slug> select one programme (delivery, next, status, residue)
   --evidence <file> checkpoint/approval/completion-request JSON or final sign-off document
-  --session <id>    identify the acting session; required for prototype checkpoints
-  --gate <command>  execute the repository delivery gate before closing a prototype
+  --session <id>    identify the acting session; required for delivery checkpoints
+  --gate <command>  execute the repository delivery gate before closing a delivery
   --base <ref>      trusted target ref with fetched history (delivery verify)
   --check           verify build/init/sync output without changing it
   --yes             accept the displayed installation and catalog updates (init only)
@@ -488,20 +490,33 @@ async function main(argv) {
     }
   }
 
+  if (command === "intent") {
+    const action = positional[0];
+    if (positional.length > 2 || Object.keys(flags).some(flag => !["json", "evidence"].includes(flag))) throw new Error("usage: cg intent <status|review|approve|verify> [dir] [--evidence file] [--json]");
+    const result = intentAction(path.resolve(positional[1] ?? "."), action, { evidence: flags.evidence });
+    if (flags.json) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+    else {
+      process.stdout.write(`cg intent: ${result.state} — ${result.reason}\n`);
+      if (result.snapshot) process.stdout.write(`  snapshot: ${result.snapshot}\n`);
+      if (result.file) process.stdout.write(`  file: ${result.file}\n`);
+    }
+    return action === "verify" && !result.ready ? 1 : 0;
+  }
+
   if (command === "prototype" || command === "delivery") {
     const action = positional[0];
     const root = path.resolve(positional[1] ?? ".");
-    if (command === "delivery") {
+    if (command === "delivery" && action === "verify") {
       if (action !== "verify" || !flags.base || !flags.gate) throw new Error("usage: cg delivery verify [dir] --base <trusted target ref> --gate <required command>");
       const result = deliveryReadiness(root, { base: flags.base, gate: flags.gate });
       if (flags.json) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
       else process.stdout.write(`cg delivery: ${result.failures.length ? "FAIL" : "OK"}\n${result.failures.map(f => `  ${f}\n`).join("")}`);
       return result.failures.length ? 1 : 0;
     }
-    const result = prototypeAction(root, action, { programme: flags.programme, evidence: flags.evidence, gate: flags.gate, session: flags.session });
+    const result = deliveryAction(root, action, { programme: flags.programme, evidence: flags.evidence, gate: flags.gate, session: flags.session });
     // Routine lifecycle output is a view, not another copy of the full evidence archive.
     const summary = record => ({ programme: record.programme, status: record.status,
-      file: record.file ?? `.agents/cg/prototypes/${record.programme}.json`,
+      file: record.file ?? `.agents/cg/deliveries/${record.programme}.json`,
       historyEvents: record.history.length, completionRequest: record.completionRequest ?? null,
       sessions: (record.sessions ?? []).map(({ session, state, writes, resources, peers, unregisteredProgrammes }) =>
         ({ session, state, writes, resources, peers, unregisteredProgrammes })),
@@ -636,6 +651,17 @@ async function main(argv) {
   }
 
   if (command === "init") {
+    const existing = fs.existsSync(path.join(repoRoot, ".agents/cg/manifest.json")) ||
+      fs.existsSync(path.join(repoRoot, ".agents/cg/contract.yaml"));
+    if (existing) {
+      process.stdout.write(
+        `cg ${command}: ${flags.check ? "previewing" : "about to apply"} installed release ${PACKAGE_VERSION} to ${repoRoot}\n` +
+        "  Warning: stop active agents and finish or checkpoint open work before upgrading.\n" +
+        "  Open plans and evidence are preserved; completing every plan first is not required.\n" +
+        "  Retired prepare/auto-run skills are removed with backups. Reload skills and reconcile preserved workflow/phase policy before resuming; old auto-run sessions are not automatically converted.\n" +
+        "  This command does not download the latest release or install a global CLI.\n"
+      );
+    }
     if (!(await confirmInitLocation(repoRoot, positional[0] !== undefined, flags))) return 1;
     const profiles = await chooseProfiles(repoRoot, flags);
     const docs = await chooseDocsRoot(repoRoot, flags);
@@ -663,13 +689,14 @@ async function main(argv) {
       process.stdout.write(`cg init: product migration needs /cg-warmup (${plan.pendingReasons.length} missing rationale). Original product.yaml will be preserved.\n`);
       for (const item of plan.pendingReasons) process.stdout.write(`  ${item.id}: ${item.statement}\n`);
     }
-    if (plan.replaced.length) {
+    if (plan.replaced.length || plan.removed.length) {
       process.stdout.write(
         `cg init: ${plan.replaced.length} file(s) will be updated with this version\n`,
       );
       for (const file of plan.replaced) {
         process.stdout.write(`  ${path.relative(repoRoot, file)}\n`);
       }
+      for (const file of plan.removed) process.stdout.write(`  retire (with backup): ${path.relative(repoRoot, file)}\n`);
       for (const item of plan.catalogUpdates) {
         process.stdout.write(`  ${item.action}: ${path.relative(repoRoot, item.file)}\n    backup: ${item.backup}\n`);
       }
@@ -747,6 +774,7 @@ async function main(argv) {
       `  verified: ${counts.folders} contract(s), ${counts.roots} root entry file(s), ` +
         `${counts.skills} skill(s), ${counts.engineering} engineering guideline(s)\n`,
     );
+    process.stdout.write("  adoption: run cg intent status; scaffold verification does not establish owner-approved intent.\n");
     if (result.brownfield) {
       const unmapped = counts.modules?.unmapped ?? 0;
       const descentCount = counts.modules?.descent ?? 0;
@@ -773,7 +801,7 @@ async function main(argv) {
       }
     } else {
       process.stdout.write(
-        "\n  next: fill in purpose and responsibilities in .agents/cg/contract.yaml, then start with `cg-plan`.\n",
+        "\n  next: run `/cg-warmup` (greenfield) to confirm project intent and establish the initial root context before planning.\n",
       );
     }
     return 0;
@@ -789,7 +817,7 @@ async function main(argv) {
       for (const candidate of result.signOffRecovery.candidates) process.stdout.write(`  resumable sign-off: ${candidate.mode} for ${candidate.programme} — ${candidate.scope}\n`);
       if (result.reason) process.stdout.write(`  ${result.reason}\n`);
       if (result.programmes.length) process.stdout.write(`  programmes: ${result.programmes.join(", ")}\n`);
-      if (result.prototype) process.stdout.write(`  prototype: ${result.prototype.status}; completion request: ${result.prototype.completionRequest?.state ?? "none"}\n`);
+      if (result.receipt) process.stdout.write(`  delivery: ${result.receipt.status}; completion request: ${result.receipt.completionRequest?.state ?? "none"}\n`);
       for (const step of result.remainingSteps) process.stdout.write(`  ${step.file} — ${step.status}: ${step.title}\n${step.blockedBy ? `    blocked by: ${step.blockedBy}\n` : ""}`);
       for (const finding of result.findings) process.stdout.write(`  repair: ${finding.file}: ${finding.reason}\n`);
       for (const item of [...(result.residue?.blocking ?? []), ...(result.residue?.otherProgrammes ?? [])]) {
@@ -815,11 +843,13 @@ async function main(argv) {
           programmes: result.programmes ?? [],
           findings: result.findings ?? [],
           repairableQueue: result.repairableQueue ?? false,
+          repairablePlan: result.repairablePlan ?? false,
           installation: result.installation,
+          intent: result.intent, delivery: result.delivery,
           signOffRecovery: result.signOffRecovery,
           selectionSource: result.selectionSource ?? null,
-          ...(result.prototype ? { prototype: { programme: result.prototype.programme, status: result.prototype.status,
-            completionRequest: result.prototype.completionRequest ? { state: result.prototype.completionRequest.state } : null } } : {}),
+          ...(result.receipt ? { receipt: { programme: result.receipt.programme, status: result.receipt.status,
+            completionRequest: result.receipt.completionRequest ? { state: result.receipt.completionRequest.state, session: result.receipt.completionRequest.session } : null } } : {}),
           ...(flags.for ? { for: flags.for, ...permits(result, flags.for) } : {}),
         },
         null,
@@ -827,6 +857,7 @@ async function main(argv) {
       )}\n`);
     } else {
       process.stdout.write(`cg next: ${result.state} — ${result.stage ?? "nothing dispatchable"}\n`);
+      if (result.intent?.required && !result.intent.ready) process.stderr.write(`  intent: ${result.intent.reason}\n`);
       if (result.installation.reason) process.stderr.write(`  ${result.installation.reason}\n`);
       if (result.reason) process.stdout.write(`  ${result.reason}\n`);
       for (const problem of result.problems) process.stderr.write(`  ${problem}\n`);
@@ -836,6 +867,7 @@ async function main(argv) {
       const verdict = permits(result, flags.for);
       if (!flags.json) {
         process.stdout.write(`  ${verdict.allowed ? "allow" : "deny"} ${flags.for}: ${verdict.reason}\n`);
+        if (verdict.executionAllowed === false) process.stdout.write("  executionAllowed: false — preparation only; no implementation Step is selected.\n");
       }
       return verdict.allowed ? 0 : 1;
     }
@@ -878,6 +910,7 @@ async function main(argv) {
   }
 
   if (command === "verify") {
+    process.stdout.write("Scope: authored graph and registered structural checks. Product checks may be declared in contracts; their execution and product-intent conformance are not established by this command. Use cg intent verify for approval freshness.\n");
     const { failures, advisories, counts } = verify(repoRoot);
     for (const message of advisories) process.stderr.write(`  ${message}\n`);
     if (!failures.length) {

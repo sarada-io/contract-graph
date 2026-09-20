@@ -27,7 +27,7 @@ normally `<docs>/plans/<programme>/sessions/<session-slug>.json`:
 
 Use repository-relative files or directories without globs. Include affected contracts, shared
 configuration and tracked generated inputs. A directory is sufficient; do not enumerate every
-future file. Run `cg prototype checkpoint --programme <slug> --session <id> --evidence <file>`.
+future file. Run `cg delivery checkpoint --programme <slug> --session <id> --evidence <file>`.
 This declaration supplies review scope. Earlier and released declarations remain included, so
 narrowing a later declaration cannot remove prototype code from review.
 

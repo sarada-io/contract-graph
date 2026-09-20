@@ -322,6 +322,14 @@ library owns parsing, traversal, rendering, and verification.
 The loop that consumes those contracts — plan, queue, Step, and the disk baseline a later
 session is supposed to trust — is [workflow](workflow.md).
 
+## Preserve accepted promises when contracts change
+
+A contract's purpose explains how its unit serves its parent. Project intent supplies the wider product meaning; a module can refine that meaning through its purpose, responsibility and surface without a mandatory separate intent document. A module cannot silently change its parent's promise. Establish authority for an actual product change and update affected callers and contracts together.
+
+Record the distinction between a promised requirement and its current implementation. When code violates an accepted invariant, retain the requirement and expose the discrepancy and missing evidence. Conversely, do not claim that an intended capability already exists. Updating both code and a contract to agree does not establish that the changed promise was authorized.
+
+When a test expectation changes, determine whether it repairs an incorrect test, reflects an authorized requirement change, or conceals an implementation defect. The last case requires repairing the implementation. See [architecture considerations](architecture-considerations.md#intent-authority-and-implementation-evidence) for amendment reasoning and [intent approval](intent.md) for the repository context.
+
 ## Authoring rule
 
 Contracts are written from the code and architectural intent one boundary at a time. Generating

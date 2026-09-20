@@ -1,19 +1,14 @@
 ---
 name: cg-warmup
-description: Adopt Contract Graph into a repository that already has code, or reseed an existing graph after a package upgrade. After cg init. Adoption is four phases — a whole-repository survey, a resumable per-module loop that writes and connects each unit's contract.yaml, a recursive leaf audit for component contracts, then one consolidation. Reseed walks governed leaves additively — new child contracts, new P rows, route targets — and never overwrites existing purpose or P IDs. Finds any predecessor governance framework on adoption and carries its rules forward rather than writing over them. Resumes from cg modules after a context break rather than restarting. Never reports a compliance score, edits behaviour, deletes or runs the predecessor, or marks a rule enforced that no detector proves.
+description: Establish owner-confirmed project intent in new and existing repositories, adopt the current structure of existing code, or reseed a graph after a package upgrade. After cg init. Adoption is four phases — a whole-repository survey, a resumable per-module loop that writes and connects each unit's contract.yaml, a recursive leaf audit for component contracts, then one consolidation. Reseed walks governed leaves additively — new child contracts, new P rows, route targets — and never overwrites existing purpose or P IDs. Finds any predecessor governance framework on adoption and carries its rules forward rather than writing over them. Resumes from cg modules after a context break rather than restarting. Never reports a compliance score, edits behaviour, deletes or runs the predecessor, or marks a rule enforced that no detector proves.
 ---
 
 # CG Warmup
 
-A fresh `cg init` describes a repository that does not exist yet. Warmup replaces that
-description with the one you actually have. A brownfield typically has no existing Contract Graph contracts.
-Write the graph from the code and §2a. Predecessor markdown, if found, is a checklist against the
-tree — not a graph to copy. After adoption, `cg-plan`, `cg-prepare`, `cg-produce`, and `cg-sign-off`
-have real contracts to work against. An already-governed tree uses **Reseed** instead: the graph
-on disk is the baseline, not a predecessor.
+Warmup establishes intent for every repository after init: greenfield, brownfield and reseed. Accepted intent describes what the repository is for; contracts describe its current structure. Existing code is evidence of conformance, not authority to discard an accepted requirement. Complete the shared intent step before claiming adoption readiness.
 
-**Never delete this skill.** `cg verify` requires all eight skills, and a later module tree still
-needs these instructions. Auto-run never dispatches it.
+**Never delete this skill.** `cg verify` requires all six skills, and a later module tree still
+needs these instructions.
 
 Warmup declares an existing cohesive surface and records the controls that protect it before
 proposing restructuring. Assess the named surface first; propose a split or merge only once
@@ -33,6 +28,20 @@ or a required rewrite.
 Read `.agents/skills/cg-unblock/SKILL.md` when a fork remains unresolved by contracts and
 accepted decisions or requires owner authority. Ask directly under D-6 and continue independent
 work while recording the response.
+
+## Shared intent step — every entry
+
+Resolve `<docs>` from `.agents/cg/profile.json` and inspect `cg intent status --json`. Read existing vision, mission, overview, specifications, product rules and durable decisions before asking questions. Draft `<docs>/project-intent.md` from these sources with purpose/audience, boundaries, permitted variation, an acceptance example, open questions and binding sources. Distinguish confirmed statements, inferred interpretations and conflicts. Preserve an existing canonical vision; the intent page can be a concise entry point linking it. Binding sources use bullet-listed repository-relative paths in backticks so approval includes their contents.
+
+Present the concrete draft and only unresolved material choices to the owner. Minimal prose or a nonempty file does not establish meaningful intent. Do not infer intent from architecture rules, a passing test or current code alone. Module responsibilities normally refine project intent in their contracts; create separate module context only when it adds needed detail, never to override a parent promise silently.
+
+When all material questions are resolved, write `None` under Open questions. Run `cg intent review --json` and present that exact page and its binding sources. Record the owner's actual approval using a temporary JSON file with `by`, `response`, `scope: "repository"`, and the returned `snapshot`; run `cg intent approve --evidence <file>`, then remove the temporary file. The agent prepares the evidence; the user reviews meaning, not JSON. Prior explicit approval of the exact content is sufficient; never fabricate it. Changed page or binding-source bytes require renewed review. `cg intent verify` exits nonzero until confirmed.
+
+Approval is attributed local evidence, not authenticated identity or proof that implementation conforms. Owner-controlled CI can run `cg intent verify --evidence <trusted-record>` using evidence outside a proposed change; protecting that CI/evidence is repository policy. Do not claim local files alone enforce human review or block remote merging.
+
+For greenfield repositories, capture intent, author the root purpose/responsibilities from it and run graph verification. Do not invent modules or run the brownfield module-completeness loop against an empty repository. Record unknown implementation boundaries as future work and hand the first actual change to planning. For brownfield and reseed, continue the survey below, preserving accepted intent even when implementation violates it. Independent inspection and drafting can continue while owner approval waits; dependent delivery cannot.
+
+A brownfield repository typically has no existing Contract Graph contracts. Predecessor markdown can establish accepted requirements, but is not a graph to copy: inspect current boundaries and record discrepancies.
 
 ## Which entry — read this before §1
 
@@ -101,7 +110,7 @@ Skip Phase A. Do not copy a template onto an existing `contract.yaml`. Do not bl
 **This is not a linear procedure. It is a survey, a loop, a leaf audit, and a consolidation.**
 
 ```text
-Phase A — once      §1–§3    predecessor · module roots · code-first context · root routes
+Phase A — once      §1–§3    predecessor · module roots · intent/conformance comparison · root routes
 Phase B — per unit  §4–§6    ←──┐  contract · descend · connect · bind · record
                                └──┘  repeat until `cg modules` exits 0
 Phase D — once      §6a      recursive leaf audit · write existing components · else corrective
@@ -183,10 +192,8 @@ When you find a predecessor:
 
 - **Read its rules before writing yours.** Every rule it asserted is reproduced in the new graph
   or it is a deliberate drop.
-- **Carry a predecessor product rule only when the code still obeys it.**
-  `.agents/cg/guidelines/product.yaml` ships empty. Copy each rule the tree still holds, restate
-  it in full, and give it a row in `.agents/cg/enforcement.yaml` naming the detector that already
-  proves it. A predecessor `product.md` is a checklist against the code, not the source of §2a.
+- **Preserve an accepted predecessor product rule even when code violates it.**
+  `.agents/cg/guidelines/product.yaml` ships empty. Restate accepted product constraints in full and record their authority, conformance and enforcement separately. Name a real detector when one exists; otherwise report unproven evidence and route the binding finding to a detector, corrective Step or explicit owner-approved exception. Unconfirmed predecessor claims require confirmation; implementation disagreement does not revoke an accepted requirement.
 - **A detector that loses its rule is the highest-severity finding here.** List every one in the
   report even when the rule is carried forward.
 - **Record the comparison** under *Predecessor* (§11): rules carried forward, rules dropped and
@@ -202,7 +209,7 @@ cg modules
 ```
 
 It prints every detected root, whether a contract already governs it, and exits **1** while any is
-unmapped — that is also the gate that this skill is finished.
+unmapped. Brownfield completion also requires confirmed intent and resolution of binding findings; module coverage alone is not adoption readiness.
 
 Detection is a heuristic. Read the build yourself where the answer looks wrong.
 
@@ -222,10 +229,9 @@ it. Exclude vendored, generated, build output, and fixtures with a stated reason
 Do not stop and ask the owner to confirm the list. Proceed on the roots a manifest identified,
 recording that as an assumption, and raise only the genuinely ambiguous ones — §10.
 
-## 2a. Snapshot the product from the code
+## 2a. Compare current code with accepted intent
 
-Module roots tell you where the build cuts. They do not tell you what the product is. Write the
-answers into `<docs>/plans/warmup-findings.md` now, then into the root contract in §7 and the
+Module roots tell you where the build cuts. Compare the implementation below with the accepted project intent; mark conflicts and unknowns rather than deriving authority from code. Write the answers into `<docs>/plans/warmup-findings.md` now, then into the root contract in §7 and the
 harvest in §9.
 
 | Question | What to read | Where it lands |
@@ -446,6 +452,9 @@ first.** Do not re-open module source to reconstruct what the loop already recor
 
 ## 7. Fill the repository contract
 
+Use approved project intent for the repository's purpose and promised boundaries, and inspected code for its present structure. Record discrepancies explicitly; do not claim a missing capability is implemented or weaken an accepted promise to match a violation.
+
+
 `.agents/cg/contract.yaml` is the root of the graph. `cg init` ships its `purpose` and
 `responsibilities.forbids` with `Replace this sentence` placeholders, and **nothing else fills
 them.** Leave no `Replace this sentence` marker behind in this file.
@@ -504,7 +513,7 @@ Status: Unconsumed
 
 **Never produce a compliance score, a percentage, or a grade.** State counts: enforced, violated,
 unproven. **Warmup never edits behaviour.** The moment a finding requires a code change, it is
-delivery work for `cg-plan` → `cg-prepare` → `cg-produce` after the owner accepts the programme.
+delivery work for `cg-plan` → `cg-produce` → `cg-sign-off` after the owner accepts the programme.
 
 ## 9. Harvest the rules the code already enforces
 
@@ -520,16 +529,15 @@ A candidate is a rule only when all four hold:
 
 1. **It constrains, rather than describes.** "Nothing outside `data/` opens a database connection"
    is a rule.
-2. **The code obeys it today**, and you can name the files that prove it.
+2. **Its authority is established:** an owner-confirmed product requirement, or an observed constraint proposed for confirmation. Record implementation conformance separately.
 3. **A violation would be a defect**, not a preference.
 4. **No existing rule already covers it.**
 
 The four tests qualify a **constraint**. They do not require a test file. Named ceilings,
 single-seam types, startup validators, throwing constructors, config defaults, and scheduled
-jobs count when you can name the implementing files. Vision prose with no implementing code
-does not.
+jobs count when you can name the implementing files. Unconfirmed vision prose is a proposal. Owner-confirmed intent remains authoritative without implementing code; record the gap and required corrective work.
 
-A product-specific constraint the code already obeys is **P**. Write it in
+An accepted product-specific constraint is **P**, whether currently satisfied or violated. Write it in
 `.agents/cg/guidelines/product.yaml` and list it on every contract it governs. The strongest
 source is a detector that enforces no rule — the line is the rule; write it down and bind
 them. A working detector is the enforcement row and the rule is enforced. Without a detector,
@@ -569,8 +577,7 @@ harvested rule is listed for confirmation in §11.
 
 ## 10. Raise what needs the owner — in the log, not in chat
 
-Warmup does not interview you. Decide from the code, log what it cannot decide, and hand one
-consolidated set at the end.
+Use available evidence to prepare concrete choices, then obtain required owner decisions. Do not decide product intent from code alone. Bundle related questions and continue independent survey work while answers are pending.
 
 | Question | Route |
 |---|---|
@@ -627,8 +634,7 @@ discoverable modules, ask before inventing a boundary.
 - unproven (no working detector): <n>
 
 ## Harvested rules and structural candidates — please confirm
-Harvested from the code (§9). Repository-owned `P` rules listed here are written, scoped, and
-green; `E` entries are explicitly advisory. Generic structural findings remain `A` candidates
+Harvested from the code (§9). Repository-owned `P` rules listed here are written and scoped, with conformance and enforcement reported separately; `E` entries are explicitly advisory. Generic structural findings remain `A` candidates
 until a verifier-owning delivery change registers their detectors and assigns permanent IDs.
 
 | ID | Rule | Why it is that family | Evidence in the code | Detector |
@@ -676,9 +682,9 @@ Delete rather than archive when a file has no reader.
 Adoption: finish Phase A, loop Phase B until `cg modules` exits 0, run Phase D, then Phase C.
 Reseed: the additive walk above, then §12a. That is this skill.
 Then return to the user. Do not invoke the next skill yourself, however obvious the route is.
-The `Next action` block names the successor so a person can choose it and so `cg-auto-run` can
+The `Next action` block names the successor so a person can choose it and so `cg-produce` can
 follow it under a granted authority — naming it is not permission to take it. The single exception
-is a dispatch from `cg-auto-run`. If you were not dispatched by it, you are the last stage of this
+is a dispatch from `cg-produce`. If you were not dispatched by it, you are the last stage of this
 turn.
 
 ## 12a. Next-action response

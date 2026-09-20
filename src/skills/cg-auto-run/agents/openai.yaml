@@ -1,4 +1,0 @@
-interface:
-  display_name: "CG Auto Run"
-  short_description: "Coordinate one Engineer per planned phase"
-  default_prompt: "Use $cg-auto-run as Manager at the stated authority level — default roadmap — with one Engineer per phase, honor selected models, ask unresolved user decisions directly and record answers before resuming dependent work, and check sign-off evidence before handing off the next phase."

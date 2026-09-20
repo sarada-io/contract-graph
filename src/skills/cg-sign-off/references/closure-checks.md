@@ -1,13 +1,12 @@
 # Shared closure checks
 
-These checks define evidence, repairs, harvest, documentation, and archival for an already
+These checks define evidence, repairs, harvest, documentation, and transient-file cleanup for an already
 selected scope. They do not select a programme or decide stage continuation. The invoking
-phase-sign-off or prototype-completion procedure owns those decisions. Return corrective findings
+delivery-completion procedure owns those decisions. Return corrective findings
 to that procedure; never apply a different procedure's yield rule.
 
-Read §§1–11 for phase closure. For documentation-only work, read §8 and §11 alone.
-Use `cg-unblock` for unresolved material decisions under the caller's authority. Under auto-run,
-ask the Manager first; otherwise follow its direct-user decision protocol.
+Read §§1–11 for closure of the selected scope. Step-history requirements apply only where a technical queue exists; do not invent historical Steps for accepted work. For documentation-only work, read §8 and §11 alone.
+Use `cg-unblock` for unresolved material decisions under the caller's authority. Follow its direct-user decision protocol after checking existing authority.
 
 ## Required outcome
 
@@ -26,7 +25,7 @@ only outcomes 10, 12, and 13 apply to it.
 9. Every non-empty decision-harvest cohort has one batch acceptance and a validated first prepared
    harvest Step whose classification digest and drain IDs exactly equal the eligible decision IDs.
 10. Durable rationale and product/operator guidance are harvested, written, and validated.
-11. The phase status and roadmap reflect reality before archival.
+11. The phase status and roadmap reflect reality before transient-file cleanup.
 12. No required contract update was displaced from `cg-produce` into a documentation edit.
 13. The result includes the evidence inventory and next route described in §11.
 
@@ -44,7 +43,7 @@ it is not phase completion.
 3. Run `cg next --programme <slug>` for the already selected programme.
    Closure starts only when every prepared Step in the exact selected phase is `Complete`.
    Run the repository's selected-phase guard when present; aggregate routing cannot override it.
-4. Maintain one final evidence inventory in the existing phase acceptance record under [verification](../../cg-prepare/references/verification.md).
+4. Maintain one final evidence inventory in the existing phase acceptance record under [verification](../../cg-produce/references/verification.md).
    Establish `cg verify`, Step checks, and the repository full gate for the final state; reuse only
    applicable evidence and execute missing or invalidated checks. Later sections consume this
    inventory rather than triggering duplicate runs.
@@ -65,19 +64,19 @@ Classify every admission, test, contract, or acceptance finding:
 |---|---|
 | phase-level composition test or close record | fix directly in closure-owned paths and re-run affected gates |
 | defect within an already prepared Step's paths | return a corrective Step brief for `$cg-produce` |
-| defect requiring new paths or a changed remaining order | return the finding for `$cg-prepare` |
+| defect requiring new paths or a changed remaining order | return the finding for `$cg-produce` |
 | competing design or protected decision | return a decision for `$cg-unblock`; keep the phase Blocked |
-| genuinely out-of-phase work | return a handover for `$cg-plan`, or `$cg-prepare` when a matching future phase already exists |
+| genuinely out-of-phase work | return a handover for `$cg-plan`, or `$cg-produce` when a matching future phase already exists |
 | missing prerequisite or outcome error | return a handover for `$cg-plan`; mark the phase Incomplete or Blocked |
 
 Routine bookkeeping within assigned paths does not need another user decision: repair a known
 consumer link, refresh a stale status note, or reconcile a queue label against recorded evidence.
-Use `cg-prepare` when the edit changes the prepared paths, prerequisites, or gate placement.
+Use `cg-produce` when the edit changes the prepared paths, prerequisites, or gate placement.
 Acceptance, changed outcomes, disputed ownership, and destructive disposal still require their
 existing authority. Do not relabel them as bookkeeping.
 
 For residue, retain useful evidence with a Markdown consumer link or an explicit prototype
-receipt reference (`cg prototype evidence --programme <slug> --evidence <owned-plan-file>`).
+receipt reference (`cg delivery evidence --programme <slug> --evidence <owned-plan-file>`).
 Registration records a consumer; it does not approve the evidence or prove delivery. Existing
 bare paths are not links. Inspect the named file and its actual consumer before registering it;
 never claim a whole directory merely to silence findings. Preserve other programmes' files and
@@ -91,8 +90,7 @@ are history until reconciled against those facts. Update existing owned notes to
 superseded blockers without discarding their evidence. Report one next action and the condition
 preventing that action, rather than repeating every historical failure as a current blocker.
 
-Closure-owned fixes are limited to paths reserved by `cg-prepare`: emergent composition tests and
-phase-close records. If a repair changes production behavior, a boundary, an invariant, an entry
+Sign-off owns deferred functional and composition tests, useful documentation and close records within the accepted scope. Respect existing path ownership and coordinate shared writes. If a repair changes production behavior, a boundary, an invariant, an entry
 point, a contract, or a detector, return a corrective Step brief to the invoking procedure.
 That procedure owns continuation; these checks never grant or cancel authority to run another stage.
 
@@ -162,8 +160,7 @@ per-Step rebase, or conflict-resolution phase.
 
 ## 5. Write emergent verification
 
-Write only in closure-owned test paths reserved by `cg-prepare`. Emergent tests prove phase
-composition. They never compensate for a missing Step-owned contract, detector, or functional test.
+Complete deferred functional tests and necessary composition tests within the accepted scope. Respect existing Step-owned paths and preserve their gates. Tests never substitute for a missing contract or detector.
 
 Write the assertions the phase acceptance gate and the contracts actually require. Do not invent
 role-by-route or isolation matrices unless those contracts or the gate name them.
@@ -196,7 +193,7 @@ otherwise leave it in the log and report the harvest prerequisite. The original 
 does not authorize a different harvest classification. Permanent contracts cannot cite plan IDs.
 
 1. Create one versioned JSON manifest in the closure-owned phase-close path reserved by
-   `cg-prepare`.
+   `cg-produce`.
 2. Copy the cohort's stable ID and exact eligible decision IDs from the accepted roadmap scope.
 3. Classification IDs must exactly equal the eligible decision IDs.
 4. Each eligible ID must be in the log's `Resolved` section. A pending or unknown ID is never
@@ -225,13 +222,9 @@ approves the proposed promotions; it does not reopen the underlying decisions.
 1. Record `acceptance.status` as `accepted`, the owner in `acceptedBy`, an unambiguous UTC instant
    in `acceptedAt`, and `acceptedDecisionIds` exactly equal to the eligible decision IDs.
 2. Route a non-empty accepted cohort to the next already-planned destination phase through
-   `cg-prepare`. If no matching phase exists, return the work to `cg-plan` first.
-   Under auto-run, return this request to the Manager's preparation-only exception and pause
-   writes. The same source Engineer resumes sign-off with the returned preparation artifact;
-   no destination Engineer executes before source closure.
-3. The first prepared harvest Step must name the exact source manifest, cohort ID, classification
-   digest, and drain IDs exactly equal the eligible decision IDs. That Step stays `Blocked` on
-   source-phase completion; later Steps stay `Waiting` behind it.
+   `cg-produce`. If no matching phase exists, return the work to `cg-plan` first.
+   Use cg-produce’s internal preparation for the exact destination work list, preserving the source dependency; do not execute destination work before its prerequisites pass.
+3. The first prepared harvest Step must name the exact source manifest, cohort ID, classification digest, and drain IDs exactly equal the eligible decision IDs. That Step stays `Blocked` on source-phase completion; later Steps stay `Waiting` behind it.
 4. Validate before closing the source:
 
 ```bash
@@ -267,7 +260,7 @@ Design records live under `<docs>/decisions/`. Product and operator guides live 
 |---|---|
 | binding rule, invariant, entry point, forbidden dependency | `cg-produce` → `.agents/cg/` plus detector |
 | programme outcome and phase map | `cg-plan` → roadmap |
-| selected phase Steps, files, order, and execution context | `cg-prepare` → preparation record |
+| selected phase Steps, files, order, and execution context | `cg-produce` → preparation record |
 | Step implementation and contract co-delivery | `cg-produce` |
 | integration evidence, phase closure, durable rationale, product and operator guidance, Mermaid | `cg-sign-off` |
 
@@ -322,7 +315,7 @@ handover.
 ```markdown
 # Sign-off handover: <finding>
 Source phase: <phase and sign-off record>
-Target: cg-plan | cg-prepare
+Target: cg-plan | cg-produce
 Disposition: future phase | blocked prerequisite | roadmap correction
 
 ## Finding and evidence
@@ -347,14 +340,14 @@ Disposition: future phase | blocked prerequisite | roadmap correction
 <scope or prerequisite proof>
 ```
 
-`cg-plan` converts a roadmap-level handover into a phase. `cg-prepare` may consume it directly
+`cg-plan` converts a roadmap-level handover into a phase. `cg-produce` may consume it directly
 only when an already-planned phase outcome and gate remain unchanged. Mark it Consumed only after
 the receiving phase or preparation is named.
 
 A handover is not a waiver. If the phase gate fails, mark Incomplete or Blocked, link the handover
-or decision that unblocks it, and do not archive it as Complete.
+or decision that unblocks it, and do not dispose of its recovery records as Complete.
 
-## 10. Close and archive
+## 10. Close and remove transient records
 
 1. Confirm the phase acceptance gate is green.
 2. Confirm every corrective Step is closed with fresh evidence.
@@ -362,15 +355,16 @@ or decision that unblocks it, and do not archive it as Complete.
 4. Replace forward-looking instructions with measured results.
 5. Add valid out-of-phase handovers to the roadmap or named future phase.
 6. Update roadmap and current-state tables.
-7. Archive the completed phase and preparation records under `<docs>/plans/archive/`.
-8. Update links to archived paths.
-9. Re-run `cg verify` and a sweep that durable documents do not cite `<docs>/plans/` paths.
+7. Inventory the selected scope's temporary plans, preparation queues, process/progress notes, review scratch files and superseded handovers. Transfer enduring requirements, resolved decisions and useful evidence to their existing durable owners; do not copy the task history into new permanent reports. Confirm product/operator docs, owner-approved intent, YAML contracts and applicable rules match the delivered result. A changed intent needs actual owner confirmation; stale contracts return to produce.
+8. Identify active consumers before deleting anything. Retain shared roadmap sections, pending decisions, harvest inputs and evidence needed by unfinished work. Do not delete another programme's files, user-authored unrelated content, or a repository retention requirement. Name each retained dependency and its owner; it is not permission to accumulate an archive.
+9. Delete obsolete files owned exclusively by the completed scope once their required evidence is preserved. For delivery-record closure, retain the final sign-off input until `cg delivery close` succeeds and stores its text, then remove that temporary input and the remaining completed programme plan/progress files. For a queue-only closure, preserve required final evidence in the repository's existing durable verification location before deleting its source. Do not create an archive copy by default.
+10. Update live consumers to durable destinations, remove empty task directories, run `cg verify` and the applicable residue/link checks, and confirm durable documents no longer depend on deleted plans. Reuse implementation-test evidence unless cleanup changed its inputs. A failed cleanup check keeps the overall task incomplete even if the receipt is already Closed; finish cleanup without reopening settled acceptance.
 
-If the gate cannot become green, return Incomplete or Blocked to the invoking procedure. Do not archive.
+If the gate cannot become green, return Incomplete or Blocked to the invoking procedure. Do not delete its recovery records.
 
 ## 11. Return the evidence and next route
 
-Return a concise outcome, links to the canonical phase acceptance record and Step handoffs, and
+Return a concise outcome, links to retained evidence (the closed delivery receipt or the existing durable verification record, not deleted Step files), and
 the immediate next route to the invoking procedure. Do not create another summary file. It decides whether to
 continue, yield to its caller, or ask the user. A failed gate keeps the phase incomplete; it does
 not cancel an authorized corrective route. Include a blocker only when something prevents that
@@ -378,18 +372,18 @@ route itself, such as an unanswered decision or unavailable prerequisite.
 
 Report the execution baseline, queue-state history, final gates, defects and dispositions,
 emergent tests, phase acceptance result, contracts and detectors verified, durable documents and
-their validation method, out-of-phase handovers, archive location when eligible, and the exact
+their validation method, out-of-phase handovers, removed transient paths and any explicitly retained dependencies, and the exact
 final commands. For documentation-only work, report only the artifacts written, their evidence, and
 their validation.
 
 Choose exactly one immediate route:
 
 - corrective Step ready: use `cg-produce` with its brief;
-- repair changes paths or ordering: use `cg-prepare` with the finding;
+- repair changes paths or ordering: use `cg-produce` with the finding;
 - protected decision blocks closure: use `cg-unblock` with the decision-log entry;
 - valid cohort classification awaits owner acceptance: resume `cg-sign-off` with its manifest
   after the owner records one batch acceptance;
-- accepted non-empty cohort has no prepared drain route: use `cg-prepare` with the destination
+- accepted non-empty cohort has no prepared drain route: use `cg-produce` with the destination
   phase and accepted manifest;
 - accepted cohort has a prepared route whose close-stage detector passes: resume `cg-sign-off`
   for the source phase;
@@ -398,7 +392,7 @@ Choose exactly one immediate route:
   the verified artifact;
 - documentation exposed stale contract truth: use `cg-produce` with the exact contract defect and
   its owning implementation Step;
-- phase complete and the next roadmap phase is ready: use `cg-prepare` with that phase;
+- phase complete and the next roadmap phase is ready: use `cg-produce` with that phase;
 - roadmap correction or successor phase required: use `cg-plan` with the handover;
 - standalone documentation is complete, or the programme is complete: name no next skill.
 

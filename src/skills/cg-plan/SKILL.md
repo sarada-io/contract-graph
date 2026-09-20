@@ -1,231 +1,119 @@
 ---
 name: cg-plan
-description: Create or revise a phase-wise Contract Graph roadmap from binding contracts, measured repository truth, and cg-sign-off successor handovers. Use when a broad product, architecture, migration, restructuring, or completion finding must be divided into ordered phases before one phase is prepared as sequential executable Steps. Defines phase outcomes, dependencies, acceptance gates, risks, assumptions, and status without allocating files, Steps, branches, or execution contexts; hands one selected phase to cg-prepare.
+description: Agree a goal and observable outcomes in one Sprint or Epic Plan with a short human summary and complete agent detail. Group mixed features, bugs and tasks by dependencies, contract impact, risk and review burden. New sprint plans hand execution to cg-produce with internal preparation and finishing through cg-sign-off.
 ---
 
 # CG Plan
 
-Turn a broad outcome into an ordered phase roadmap. Do not prepare implementation Steps here.
-If the user needs a working experience to discover the outcome, route to cg-prototype with the
-known scope instead of elaborating speculative delivery phases: emit the `Exploration needed`
-handoff in §9 and return to the user. Both paths share the six-column
-phase table in §3. [Prototype §3](../cg-prototype/SKILL.md#3-record-acceptance-and-finalise-the-roadmap)
-owns prototype roadmap finalisation and can hand the accepted roadmap directly to preparation.
-Its required `## Deferred tests and known gaps` section is specific to prototype handoff; the
-ordinary plan template does not require it.
+Agree what success means before implementation. Run `cg intent verify`; if intent is incomplete or stale, use cg-warmup to draft and confirm it while continuing independent discovery. Planning may explore an unanswered question but must not label its dependent outcome agreed. Read the root contract, `.agents/cg/workflow.md`, profile and the families selected for `plan` in `.agents/cg/phases.json`. Route with `cg contract route --task "<outcome>"` before bounded source reading. A and applicable P are binding; E remains advisory.
 
-Read `.agents/skills/cg-unblock/SKILL.md` when a fork remains unresolved by the Plan, contracts
-and accepted decisions, or requires owner authority. Under auto-run, ask the Manager first;
-otherwise ask the user directly under D-6. Record the answer and continue independent work.
+New delivery uses the sprint loop. Version 0.7.0 retires the former standalone preparation and auto-run stages; do not route an unmarked old programme through a hidden legacy workflow. Reconcile the requested outcome into this master-plan format before new execution. No branch, commit, issue or implementation is created merely by agreement on a plan.
 
-Read `.agents/cg/phases.json` and load the families selected for `plan`. Shipped defaults
-include `.agents/cg/guidelines/engineering.yaml` on every pass; retained repository phase policy
-controls loading. Consider applicable E practices as advisory context. They create no acceptance
-criteria, required changes, or blockers unless separately adopted through an authorized binding.
-Do not reopen settled decisions merely because an E preference differs.
+## Vocabulary and relationships
 
-## Required outcome
+- **Goal:** the useful result the owner wants, such as reliable data export. It is not a list of files or tickets.
+- **Objective:** an observable aspect of that goal, such as a clear empty-state message.
+- **Sprint:** one bounded, reviewable increment toward a goal. It can contain several features, bugs and tasks. A calendar timebox is optional; its expiry never means completion.
+- **Epic:** a larger goal requiring several dependent sprints, held in this same master plan.
+- **Feature:** a new or improved capability; **Bug:** behavior that violates an accepted promise; **Task:** necessary supporting work such as a migration, test, documentation or investigation.
+- **Acceptance criteria:** concrete behavior and relevant UX conditions the result must satisfy. For non-UI work use outputs, error behavior, compatibility and performance limits where required.
+- **Done:** accepted outcome plus completed deferred obligations, passing required checks and truthful contracts. A working preview is not Done.
+- **Dependency:** a result or decision needed before another item can proceed. An unresolved dependency blocks its consumers, not independent items.
 
-When exploration is needed, emit the human handoff in §9 without inventing a roadmap to satisfy
-this checklist. Otherwise finish with all eight true:
+Assign stable sprint IDs/names and stable item IDs with an explicit Feature/Bug/Task type. The human map and agent details refer to the same IDs. An internal implementation Step is a technical action, not another product ticket or a new sprint.
 
-1. The roadmap names the final product or architecture outcome.
-2. Current repository truth and prerequisites are measured.
-3. Work is divided into ordered phases with no hidden dependency cycles.
-4. Every phase has one observable outcome and one acceptance gate.
-5. Risks, costs, assumptions, and protected decisions are explicit.
-6. Every phase status is exactly one of `Current`, `Blocked`, `Complete`, or `Future`.
-7. One phase can be selected and handed to `cg-prepare` without redesigning the roadmap.
-8. The response ends with the `Next action` block in §9.
+## Establish and agree the outcome
 
-## 1. Establish truth
+Read project intent and its binding sources, relevant contracts, existing decisions, specifications and the measured baseline. Separate existing failures from requested changes. State goal, objectives, included outcomes, exclusions, UX/review conditions and final completion evidence. Where current code violates accepted intent, record a discrepancy; do not redefine the intent or weaken a test to match the code.
 
-Before writing or revising the roadmap:
+Ask only for unresolved product choices. Reuse explicit instructions and prior agreement. Record the owner's actual answer and its scope under Agreement; do not manufacture approval from silence, plan existence or a green test. Plan agreement, execution authority and acceptance of the implemented experience are separate facts. A request to complete a sprint/epic supplies execution and finishing authority for that scope, but does not pre-approve unseen UX or authorize publication.
 
-1. Load `.agents/cg/principles/architecture.yaml`. Apply `hierarchy.kinds` and `graph` when
-   dividing work across boundaries.
-2. Load `.agents/cg/contract.yaml`. Run `cg contract route --task "<outcome>"`. Load only the
-   matched contracts and their named children; then scoped `P` rules on those contracts, then the
-   repository constitution and specifications. Apply relevant `E` guidance to a remaining design fork; it is
-   not a compliance list and does not replace `graph`. Run `cg graph show` if composition is still
-   unclear. If `<docs>/plans/warmup-corrective-set.md` is Unconsumed, that file is the restructure
-   input: keep each row's Architecture target and Engineering guidance; do not invent phases from
-   uncited `E` entries, and do not drop cited ones.
-3. Resolve `<docs>` from `.agents/cg/profile.json` `docs` (default `docs`). Confirm with
-   `cg residue`, which prints `<docs>/plans/`. Find the active roadmap by `Status: Proposed` or
-   `Status: Active` under `<docs>/plans/*/roadmap.md`, not by filename.
-4. Inspect source, tests, resources, and the worktree inside the selected units only.
-5. Establish `cg verify` and the narrowest useful baseline; reuse applicable recorded evidence
-   under [verification](../cg-prepare/references/verification.md), otherwise run the commands.
-   Record existing failures as facts.
-6. Read accepted decisions in `<docs>/plans/decision-log.md`.
-7. If invoked from `cg-sign-off`, validate the handover against the fields in §8 before placing it.
+## Recommend one sprint or several
 
-Record measured facts separately from proposals. The roadmap is transient: current behavior stays
-in contracts. Do not cite a plan path as the source of a rule.
+Explain the recommendation using cohesion of the goal, affected responsibilities/contracts, dependency order, migrations/compatibility, uncertainty, reversibility, external prerequisites and human review burden. Count probable contract changes as an impact signal, not a threshold. Mixed work belongs together when it produces one coherent increment. Do not group by ticket type or split a feature, its bug fixes and required tests into unrelated sprints.
 
-## 2. Define the final outcome
+Keep atomic changes together. Split only at a useful intermediate outcome with a truthful acceptance gate. A risky migration touching one contract can need staged compatibility; eight small corrections across six stable boundaries can fit one review batch. An uncertain UX can start with a discovery increment whose outcome is validated direction, without claiming a shipped capability.
 
-State:
+Recommend batch or incremental review based on risk and owner preference. Reassess affected scope when evidence changes; routine technical refinement or an in-scope defect does not need another master plan.
 
-- the user or operator outcome;
-- the final ownership and trust boundaries;
-- what is deliberately removed or unchanged;
-- the command or evidence that proves the programme is complete.
+Name the components, libraries, sub-modules, or modules a phase introduces. Apply `.agents/cg/principles/architecture.yaml` `graph`: stay, add-child, elsewhere. Each new self-sufficient unit owes its own contract and reciprocal graph edges when implemented; a folder alone is not a new responsibility. Preserve that obligation in the item's preparation.
 
-Do not use a directory name or diagram as proof that the target already exists.
+## Establish technical readiness
 
-## 3. Design phases
+Before handing the selected batch to production, inspect enough bounded source and tests to establish current behavior, known failures, responsible contracts and consumers, probable change surface and implementation approach, prerequisites, risk/reversibility, immediate checks, deferred finishing obligations and review conditions. State evidence separately from assumptions. Count contract impact as a signal, not a fixed sprint-size threshold.
 
-Each phase delivers one independently verifiable change in capability or architecture.
+An item is ready when produce can take a bounded next action without inventing a product decision or bypassing a prerequisite. Resolve material product/UX choices with the owner; investigate unknown feasibility or ownership before dependent implementation. Independent ready items can proceed while another waits. Later technical details may remain open if produce can settle them safely within the agreed outcome. Do not generate a speculative file-by-file queue for the entire epic. Record this analysis under the existing item IDs, so production refines it rather than repeats a separate preparation phase.
 
-| Phase | Observable outcome | Prerequisites | Scope | Acceptance gate | Status |
-|---|---|---|---|---|---|
-| 1 | user/system result | decisions/phases | contract nodes | command/evidence | Future |
+Plan review cadence as a recommendation, then record the owner's explicit batch/per-item choice when supplied. Produce must obtain that choice before starting the run if still missing. Technical discovery is the agent's responsibility; the human summary highlights meaningful decisions and outcomes without requiring approval of every internal Step.
 
-Phase status is exactly one of: `Current` (selected or in delivery), `Blocked`, `Complete`, `Future`.
-These are phase-table cells. The separate programme `Status:` line before the roadmap sections
-is `Proposed`, `Active`, or `Complete`; never set a phase to `Active`.
+## One master document, two reading layers
 
-Rules:
-
-- Start with a walking skeleton when a new shape must be established.
-- Put published boundaries before their consumers.
-- Put migrations before removal of the compatibility path.
-- Put production measurement after the environment it measures exists.
-- Name the components, libraries, sub-modules, or modules a phase introduces. Each is a node in
-  the context graph: pick its `hierarchy.kinds` value and apply `graph` (stay, add-child, elsewhere).
-  A self-sufficient unit owes its own contract when it is delivered — say so here so preparation
-  allocates it.
-- Do not create phases merely to distribute equal amounts of work.
-- Never assign files, execution Steps, or branches in this skill.
-
-## 4. Make dependencies explicit
-
-For every phase, name:
-
-- prior phases it requires;
-- owner decisions that block it;
-- external systems, credentials, data, or environments it requires;
-- what independent work may continue while a prerequisite is blocked.
-
-If two proposed phases repeatedly modify one atomic migration or must land together to work, they
-are one phase.
-
-## 5. Define acceptance
-
-Every phase has one acceptance gate that proves its outcome. It may call several checks, but it must
-be runnable or objectively measurable. Write the command or evidence for this phase's outcome, not
-a copy of every later concern.
-
-Detailed Step tests and per-Step `Done when` commands belong to `cg-prepare`.
-
-## 6. Record decisions and assumptions
-
-Follow `cg-unblock`. Put reversible assumptions in this roadmap with a bounded reversal. Log
-protected or costly choices in the decision log. Continue planning phases the unresolved choice
-does not affect.
-
-Do not hide a product decision inside phase ordering.
-
-## 7. Roadmap format and where it lives
-
-Write `<docs>/plans/<programme>/roadmap.md`. The programme slug names the outcome, not a date or
-ticket. One folder per programme:
-
-```
-<docs>/plans/<programme>/roadmap.md
-<docs>/plans/<programme>/<phase>_detailed_preparation.md
-```
-
-Do not put a roadmap at `<docs>/plans/` with phase files as siblings. `cg-prepare` writes each phase
-document; the roadmap links it. `cg residue` treats `<programme>/roadmap.md` as a root: link every
-other file under the folder from it.
-
-The roadmap contains:
+Write `<docs>/plans/<programme>/roadmap.md`, resolving docs from the profile. Write prose paragraphs on one source line. Keep evidence and technical detail beneath the summary; do not shorten away context when improving readability. Use this format:
 
 ```markdown
-# <programme or workstream>
-Status: <Proposed | Active | Complete>
+# <Sprint or Epic name>
+Status: Proposed
+Delivery: sprint
 
-## Final outcome
-<observable end state>
+## Executive Summary
+### 1. Problem/Opportunity
+<one or two plain-language paragraphs>
+### 2. Solution Overview
+<one or two paragraphs including how the result will be achieved>
+### 3. Plan Overview
+<organisation and short sprint bullets: outcome and how>
 
-## Measured baseline
-<facts and existing failures>
-
-## Assumptions and decisions
-<references and reversible assumptions>
+## Details (Agent Version)
+### Goal and objectives
+<observable result, exclusions, UX and non-UI expectations>
+### Agreement
+<actual owner response and scope; execution request separately, or explicitly pending>
+### Measured baseline
+<facts, failures, affected contracts and uncertainties>
 
 ## Phase map
-<ordered phase table>
+| Phase | Observable outcome | Prerequisites | Scope | Acceptance gate | Status |
+|---|---|---|---|---|---|
+| S1 — <sprint name> | <result> | None | <contracts> | <objective evidence> | Current |
+
+## Items
+| ID | Sprint | Type | Intended outcome and acceptance criteria | Depends on | Stage | State |
+|---|---|---|---|---|---|---|
+| F1 | S1 | Feature | <behavior and UX> | None | Implementation | Planned |
+| T1 | S1 | Task | <necessary regression evidence> | F1 | Finishing | Planned |
+
+## Item details
+### F1
+<readiness evidence, baseline, likely approach, scope/contracts/consumers, prerequisites, risk, immediate checks, deferred work and remaining uncertainties>
+
+## Production run
+<execution scope/request, explicit batch or per-item review choice or Pending, current item, pending decision IDs and next action; link receipts/queues rather than duplicate their state>
+
+## Assumptions and decisions
+<bounded assumptions and links to canonical DU entries>
+
+## Deferred tests and known gaps
+<each necessary obligation once, referencing its item ID, reason and finishing owner; or None with rationale>
 
 ## Dependencies and risks
-<phase graph, blockers, cost, operations>
-
-## Completion handovers
-<unconsumed or consumed successor inputs from cg-sign-off>
+<external prerequisites and what can proceed independently>
 
 ## Programme completion gate
-<command or objective evidence>
+<commands and objective evidence covering the entire agreed result>
 ```
 
-## 8. Handoff to preparation
+`Phase map` is the existing machine-compatible table; in sprint mode each row represents a sprint. Row states remain `Current`, `Blocked`, `Complete`, `Future`. Programme Status is `Proposed`, `Active`, `Complete`. Keep only one Current row. Set Active once the plan is agreed; record missing execution authority explicitly. Stable item IDs own acceptance obligations in the roadmap. Prepared Step records later own technical execution status; link them instead of copying their state. Item states describe outcome progress: Planned, Implementing, Awaiting review, Accepted, Complete or Blocked. Accepted still has finishing work outstanding.
 
-Select exactly one phase whose prerequisites are satisfied. Mark it `Current`. Give `cg-prepare`:
+## Example: reliable export
 
-- the roadmap and selected phase;
-- its outcome, scope, dependencies, and acceptance gate;
-- relevant contracts and accepted decisions; and
-- the repository execution context policy.
+Goal: an operator can export the filtered result and understand empty and failed outcomes. S1 includes F1 filtered CSV export, B1 incorrect empty-result message and T1 regression coverage/documentation. F1 and B1 can be implemented together for one review; T1 finishes against accepted behavior. Acceptance includes correct rows/columns, understandable empty/error states and an agreed download interaction. A separate S2 is justified only if a scheduled background export introduces independent infrastructure and review needs. Do not create sprints called Features, Bugs and Tests.
 
-`cg-prepare` may refine implementation Steps but must not change the phase outcome. A changed
-outcome returns to `cg-plan`.
+If the preview has the wrong columns, repair F1 under this plan. If a test expects an accepted column that the code omits, fix the code; change the test only with evidence that its expectation was wrong or the requirement was explicitly amended. A new request for a different permissions model needs a scoped decision and impact assessment.
 
-For a `cg-sign-off` successor handover, first place the finding into a new or existing roadmap
-phase with an explicit dependency on its source phase. Validate evidence, affected scope, contract
-and decision impact, proposed acceptance gate, dependencies, blocking status, and the reason it
-cannot be repaired safely within its source phase. Do not pass an unplanned defect directly to
-execution or treat a handover as evidence that the source phase passed. Mark it Consumed with the
-receiving phase only after that phase exists.
+## Handoff and continuation
 
-## Stage boundary — yield here
+Supply cg-produce the agreed roadmap, selected sprint, item IDs, contracts, baseline, review cadence and execution scope. Produce prepares small changes internally and brings the result to review; sign-off completes deferred work on that implementation. Use cg-prototype only when the desired experience itself needs open exploration, preserving the same known scope.
 
-**Finish your stage, then return to the user.** Do not invoke the next skill yourself, however
-obvious the route is. The `Next action` block names the successor so a person can choose it and so
-`cg-auto-run` can follow it under a granted authority — naming it is not permission to take it.
-The single exception is a dispatch from `cg-auto-run`. If you were not dispatched by it, you are
-the last stage of this turn. That exception covers only routes within the run's authority;
-`Exploration needed` always returns to the human and never auto-dispatches `cg-prototype`.
+When the user has already requested execution or full sprint/epic completion, continue under that request without asking for another stage invocation. Otherwise return the agreed plan for execution. A new objective requires affected agreement; routine repairs do not. Use cg-unblock for consequential missing decisions and continue independent work.
 
-## 9. Next-action response
-
-Choose exactly one immediate route from measured state:
-
-- the intended experience needs exploration: use the human `cg-prototype` handoff below;
-- selected phase ready: use `cg-prepare` with that phase;
-- protected decision blocks selection: use `cg-unblock` with the exact decision-log entry;
-- programme outcome already complete: name no next skill.
-
-For exploration, end the user-facing response with this block:
-
-```markdown
-## Next action — Exploration needed
-- **User action:** invoke /cg-prototype with the known scope
-- **Next input:** $cg-prototype — <known scope>
-```
-
-Keep the known scope concrete. `User action` names the human even under auto-run; never replace
-it with `None — auto-run continues`. Auto-run must not follow this token or invent UX acceptance.
-
-For the other routes, end the user-facing response with:
-
-```markdown
-## Next action — <Ready | Blocked | Programme complete>
-- **User action:** <one concrete action>
-- **Next input:** <$cg-prepare | $cg-unblock | None — programme complete> — <exact roadmap, selected phase, handover, or decision entry>
-- **Blocked by:** <condition preventing the named next action>   <!-- omit unless the status is non-advancing -->
-```
-
-Do not say only "continue" or list several possible next skills. Name the selected phase when
-`cg-prepare` is next.
+End with one Next action block naming `$cg-produce`, `$cg-prototype`, `$cg-unblock`, or None and the exact scope. Include `Blocked by` only when a prerequisite prevents that next action. Plan approval alone does not authorize implementation.

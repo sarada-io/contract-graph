@@ -1,6 +1,8 @@
 # Manager–Engineer interaction trial
 
-This report records a real model-driven trial of the local 0.6.0 workflow on 2026-09-06.
+> Historical record, superseded for 0.7.0: standalone preparation and auto-run are retired. Commands and role procedures below describe the prior release and are not current instructions. See [the current workflow](../workflow.md).
+
+Historical only: this report records a real model-driven trial of the local 0.6.0 workflow on 2026-09-06.
 The fixture contains a two-phase review model, an unresolved display-policy decision,
 independent work, and a deliberately hidden-node defect. Agents edit real source,
 contracts, tests, preparation and sign-off records. A test controller supplies a synthetic

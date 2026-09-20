@@ -13,11 +13,11 @@ for autonomous decisions. Do not restart a family at `01` because the other fami
 **Raised:** <date> · <source>
 **Blocks:** <the smallest exact unit that cannot proceed>
 **Unblocks when:** <objective answer or prerequisite state>
-**Scope:** <affected programme, phases, boundaries, and Steps>
+**Scope:** <affected programme, sprint ID/name or phase, Feature/Bug/Task IDs, boundaries, and Steps>
 **Depends on:** <accepted decision IDs and their relevant constraints, or None>
 **Supersedes:** <decision IDs within this scope, or None>
 
-**Context:** <question, evidence checked by Engineer and Manager, and why D-1 or D-3 applies>
+**Context:** <question, evidence checked by the executing agent, and why D-1 or D-3 applies>
 
 **Options:**
 - **A) <option>** <recommendation and trade-off>
@@ -38,6 +38,7 @@ requesting clarification. Do not duplicate or renumber.
 ## Autonomous — paste under *Resolved*
 
 ### DA-NN — <short title>
+**Scope:** <programme, sprint ID/name, and affected Feature/Bug/Task IDs; or repository scope>
 **Raised:** <date> · <source>
 **Answered:** <date> · <the decision taken>
 **Reverses by:** <one bounded edit>

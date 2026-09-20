@@ -90,15 +90,11 @@ const EXISTENCE_ONLY = /^\s*(?:test\s+-[efd]\s+\S+|\[\s+-[efd]\s+\S+\s*\])\s*$/;
  * Codex both rank their skill pickers by usage, not by name, so no naming scheme puts these in
  * lifecycle order on screen. Sequence is carried by each skill's `Next action` route instead.
  *
- * `cg-auto-run` leads because it is an adapter over the lifecycle rather than a part of it. Then
- * the four lifecycle stages; `cg-unblock` follows because it is entered from any of them rather
- * than being a stage; `cg-warmup` is last because it is owner-invoked at adoption or reseed,
- * and never auto-run.
+ * Plan, produce and sign-off form the delivery loop. Prototype supports exploration;
+ * unblock resolves scoped decisions, and warmup establishes adoption readiness.
  */
 export const CORE_CG_SKILLS = [
-  "cg-auto-run",
   "cg-plan",
-  "cg-prepare",
   "cg-produce",
   "cg-prototype",
   "cg-sign-off",
@@ -238,8 +234,9 @@ export function checkSkills(
     const relative = rel(repoRoot, file);
     const text = read(file);
 
-    if (!folderName.startsWith("cg-")) {
-      fail(`[9] ${relative}: public skill folder must use the cg- prefix`);
+    const expert = !folderName.startsWith("cg-") && folderName.endsWith("-expert");
+    if (!folderName.startsWith("cg-") && !expert) {
+      fail(`[9] ${relative}: use the cg- lifecycle prefix or a domain skill name ending in -expert`);
     }
     if (!SKILL_NAME.test(folderName)) {
       fail(`[9] ${relative}: invalid skill folder name \`${folderName}\``);
@@ -265,7 +262,7 @@ export function checkSkills(
 
     // The optional prototype entry remains discoverable from its installed skill on upgrade,
     // even while a preserved root catalog predates it. Its scoped adoption can add the entry.
-    if (!catalog.has(folderName) && folderName !== "cg-prototype") {
+    if (!expert && !catalog.has(folderName) && folderName !== "cg-prototype") {
       fail(`[9] ${relative}: skill is missing from .agents/cg/contract.yaml catalog`);
     }
 
@@ -501,7 +498,7 @@ export function checkForkPrinciples(fail, repoRoot, enforcementIds) {
  *
  * `cg next` reads Step states and nothing else, so it cannot tell "every Step is Complete, ready
  * to close" from "closed days ago, never archived" — both look identical. Left in place, a closed
- * phase keeps `cg next` naming `cg-sign-off`, and `cg-auto-run` will dutifully dispatch it again
+ * phase keeps `cg next` naming `cg-sign-off`, and the production loop will dutifully dispatch it again
  * on a programme that is already signed off. Archiving is the signal, which makes forgetting it a
  * correctness problem rather than untidiness.
  */
@@ -535,7 +532,7 @@ function adviseUnarchivedClosures(advise, repoRoot, docsRoot) {
     advise(
       `[0] ${file} records a closed phase that is still in the active plans tree — ${what} is ` +
         "signed off but never archived. `cg next` reads Step states only, so it cannot tell this " +
-        "from work that is ready to close: it will keep naming `cg-sign-off`, and `cg-auto-run` " +
+        "from work that is ready to close: it will keep naming `cg-sign-off`, and the production loop " +
         `will dispatch it again. Move the records to ${docsRoot}/plans/archive/`,
     );
   }
