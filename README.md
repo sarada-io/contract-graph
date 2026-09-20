@@ -44,6 +44,17 @@ flowchart TB
   P -.-> L
 ```
 
+## Supported languages and frameworks
+
+- **Direct source inspection (0.7.0):** C# (.NET), Dart (Flutter), Go, Java, JavaScript, Kotlin, Python and TypeScript.
+- **Other languages (e.g. C++, Rust and Swift):** use the same contract graph and lifecycle, with source facts supplied by agents, owners or repository-specific tools.
+
+Inspection proposes facts for review; it does not prove implementation or framework behavior. See [coverage and limitations](docs/contracts.md#inspect-implementation-facts-before-authoring).
+
+## Supported agent harnesses
+
+**Antigravity, Claude Code, Codex, Cursor and GitHub Copilot (VS Code).** Select integrations during `cg init`; run `cg profiles` to list them. Skill and hook support varies by host.
+
 ## Choose how to work
 
 | Mode | Start here when… | Your involvement |
