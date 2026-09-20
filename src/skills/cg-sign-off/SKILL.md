@@ -21,6 +21,8 @@ Before that handoff, the originating loop still owns development and review. An 
 
 Once the handoff is ready, follow the common completion procedure. Implementation repairs go to cg-produce within the same scope. Only affected acceptance is renewed when the accepted experience changes. A repairable failure does not cancel completion authority.
 
+Before final closure, inspect affected contract units against the resulting source under [fresh implementation evidence](references/closure-checks.md#61-refresh-implementation-evidence). Recheck after relevant finishing changes or returned repairs; source inspection complements the required behavioral and graph checks.
+
 ## Report within scope
 
 Report the selected outcome, finishing work, verification and genuine remaining obligations concisely. Continue authorized repairs automatically. At terminal completion say **Next recommended: None — requested delivery complete**; do not invent another stage. A request solely for a durable document uses shared closure checks §8 and §11, without closing a delivery or changing contracts. This is a scope restriction, not a separate sign-off workflow.

@@ -51,6 +51,8 @@ Implementation imports stay separate from `relations.dependencies`. A resolved t
 
 After review, use the shared template for a missing contract or amend an existing contract narrowly. Supply meaning from accepted intent, bounded code reading and actual behavioral checks; never weaken an accepted promise merely to agree with current code. Run contract/graph verification after authoring and report its result separately from extraction and behavioral evidence. Inspection, better instructions and passing schema checks do not prove implementation correspondence.
 
+The installed skills invoke inspection during warmup before contract population, during produce when changes need source facts, and at sign-off for affected contract units after finishing changes and repairs. Sign-off records current evidence and finding dispositions alongside behavioral and graph checks, refreshing it when relevant inputs change. Unaffected units and documentation-only work do not require a repository-wide scan. These are agent procedure requirements: init installs them, while `cg verify` and `cg delivery close` do not automatically run source inspection or enforce its report freshness.
+
 ## One artifact per boundary
 
 Every governed directory owns exactly one canonical file:

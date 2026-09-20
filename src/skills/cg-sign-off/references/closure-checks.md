@@ -175,10 +175,27 @@ role-by-route or isolation matrices unless those contracts or the gate name them
    resolved decisions. Pending answers remain pending and cannot satisfy phase acceptance.
 5. Establish the phase acceptance gate from the roadmap, reusing only applicable evidence.
 6. Confirm no unexpected worktree residue remains.
+7. Establish fresh implementation evidence for affected contract units under §6.1 before accepting the final evidence inventory.
 
 If an applicable P binding is absent from a contract, or an A detector fails, write a corrective
 Step brief for `$cg-produce` and return it to the invoking procedure. If `.agents/cg/principles/architecture.yaml` `graph.recurse`
 would add a child for a self-sufficient unit that has no contract, that is the same produce defect.
+
+### 6.1 Refresh implementation evidence
+
+After finishing changes and returned repairs, identify affected units from the accepted scope, actual source/contract changes and contract routing. Include moved or removed entry paths and affected parent/caller contracts; follow declared descendants separately. Inspect the smallest responsible units, not the entire repository by default. Test-only changes require source inspection only when they affect contract evidence, generated source or structural claims; standalone documentation retains the §8/§11 scope restriction.
+
+For each affected unit with a supported language adapter, run:
+
+```bash
+cg contract inspect . --id <contract-id> --json
+```
+
+Use `--unit <unit>` when a missing or invalid graph prevents ID selection, and repeat `--entry <unit-relative-file>` when needed for known entries. Unit inspection does not waive graph failures. Check coverage, diagnostics, discrepancies and `stable` before consuming proposals. Exit 0 means a report was produced, not that correspondence passed. Keep partial or unsupported fields unresolved; never convert `null` to `[]`, infer architectural edges from imports, or overwrite authored promises from a proposed symbol list.
+
+Review observed facts against the authored surfaces and accepted intent. Send confirmed source/contract mismatches through the existing cg-produce repair loop. For unsupported languages, syntax, generated APIs or unresolved findings, use bounded source reading and applicable repository tools to establish the required evidence; record the method, limits and disposition. Parser limitations alone do not establish a defect, but required evidence left unresolved keeps the affected obligation incomplete. A report cannot supply behavioral guarantees or owner acceptance.
+
+Record selected units, command, snapshot digest, coverage, findings and their dispositions in the existing acceptance evidence inventory. Reuse an earlier report only after checking its recorded snapshot inputs against the current checkout; `stable: true` describes the inspection run, not continued freshness. Rerun affected inspections after source, entry, contract, boundary or relevant configuration changes, including changes made by final build/test gates. Reconcile that evidence before recording completion. Keep the compact evidence in the existing close record; remove transient reports when their consumers finish. This is a skill procedure, not an automatic `cg verify` or `cg delivery close` detector.
 
 ## 7. Harvest decisions
 
