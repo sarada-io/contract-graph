@@ -356,7 +356,7 @@ export async function runMoreMenu(hooks = {}) {
 export async function startRepositoryMenu(argv = process.argv.slice(2)) {
   const help = argv.includes('--help') || argv.includes('-h');
   if (help || !isInteractive()) {
-    process.stdout.write('Contract Graph - repository menu\n');
+    process.stdout.write('Contract Graph Dev Kit - repository menu\n');
     for (const line of listMenuLines()) process.stdout.write(`  ${line}\n`);
     if (help) return 0;
     process.stderr.write('Open an interactive terminal and run ./urun or urun.cmd to select with arrow keys. Nothing was executed.\n');
@@ -365,7 +365,7 @@ export async function startRepositoryMenu(argv = process.argv.slice(2)) {
   let lastStatus = 0;
   while (true) {
     const menu = getMenuItems();
-    const choice = await readMenuChoice('Contract Graph', menu);
+    const choice = await readMenuChoice('Contract Graph Dev Kit', menu);
     if (choice < 0 || menu[choice].kind === 'exit') return lastStatus;
     if (menu[choice].kind === 'more') {
       const outcome = await runMoreMenu();

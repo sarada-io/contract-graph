@@ -3,6 +3,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 
+export const PROJECT_CONTEXT = ".agents/cg/project-context.md";
 export const INTENT_RECORD = ".agents/cg/intent.json";
 const hash = value => crypto.createHash("sha256").update(value).digest("hex");
 const text = value => typeof value === "string" && value.trim().length > 0;
@@ -22,11 +23,8 @@ function localPath(root, relative) {
 }
 
 export function intentFile(root) {
-  const profile = localPath(root, ".agents/cg/profile.json");
-  const docs = fs.existsSync(profile) ? JSON.parse(fs.readFileSync(profile, "utf8")).docs ?? "docs" : "docs";
-  const relative = `${docs}/project-intent.md`;
-  localPath(root, relative);
-  return relative;
+  localPath(root, PROJECT_CONTEXT);
+  return PROJECT_CONTEXT;
 }
 
 function sections(markdown) {

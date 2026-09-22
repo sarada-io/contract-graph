@@ -1,6 +1,6 @@
 # Prototype
 
-Use `/cg-prototype` when you need to use an application to discover the desired result. It starts
+Contract Graph Dev Kit supports exploring a working experience before committing to detailed delivery. Use `/cg-prototype` when you need to use an application to discover the desired result. It starts
 with the relevant contracts, launches the application, and makes small changes that you review
 manually. You do not need a complete implementation plan before the first preview.
 

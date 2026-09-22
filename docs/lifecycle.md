@@ -1,7 +1,6 @@
 # Lifecycle
 
-The stages you run after `cg init`, and the structural walk they share when a node is kept,
-split, or moved.
+Contract Graph Dev Kit’s lifecycle skills guide coding agents through adoption, planning, execution, review and completion. After `cg init`, these stages share the same contract graph and structural walk when a node is kept, split or moved.
 
 How a programme is split into phases and steps, and what is supposed to remain after a plan is
 deleted, is [workflow](workflow.md). This page is what each stage is *for*, and how the graph is

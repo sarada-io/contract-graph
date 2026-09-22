@@ -1,7 +1,7 @@
 # Delivery contract
 
 Parent: [repository](README.md). Owns intent acceptance evidence and state-derived delivery
-admission, progress and completion across sessions.
+admission, progress and completion across sessions. Intent reads `.agents/cg/project-context.md`; content/source changes invalidate approval. Decision consolidation at sign-off is owned by Authoring’s procedure, not inferred by the runtime.
 
 ## Surface and implementation
 

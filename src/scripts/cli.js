@@ -49,7 +49,9 @@ const PACKAGE_JSON = [
 
 const VERSION = JSON.parse(fs.readFileSync(PACKAGE_JSON, "utf8")).version;
 
-const USAGE = `cg — Contract Graph
+const USAGE = `cg — Contract Graph Dev Kit
+
+A framework for agentic software development with repository-native contracts as a graph at its core.
 
 Usage:
   cg build [dir] [--check]                         assemble the package target under dist/build/

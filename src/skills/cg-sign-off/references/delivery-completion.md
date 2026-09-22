@@ -25,6 +25,8 @@ Continue independent authorized work while a decision or external prerequisite b
 
 ## Close the requested scope
 
+Reconcile the selected scope’s resolved decisions and relevant design records under [closure checks §7.0](closure-checks.md#70-reconcile-decisions-at-every-sign-off). Record destinations, approval evidence, discarded one-off choices and any retained dependencies in the existing acceptance record. Drain consumed entries only after that evidence has a durable home. This is required at every sign-off, not only for planned harvest phases.
+
 Before declaring completion, ensure every included outcome is accepted, deferred obligations are finished, applicable gates pass on the resulting state, contracts and useful docs match reality, and no scope-blocking decision remains. Passing a command alone cannot establish these facts.
 
 Record verification once in the existing acceptance record. Close completed technical phase records and remove obsolete transient files through shared closure checks; preserve inputs still required for the final delivery close. Completing one item, phase or sprint does not close a wider programme: retain its remaining-work note and delivery record. Only continue another defined, ready increment when the existing request covers it. Return that increment to its development/review loop for its own acceptance; never reuse the prior increment's approval.

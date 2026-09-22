@@ -1,6 +1,6 @@
 # Contributing
 
-Contract Graph is a contract-first project. A contribution is complete when the implementation,
+Contract Graph Dev Kit is an open-source framework for agentic software development, built around repository-native contracts as a graph. Contributions keep the graph, development workflow and verification tools coherent. A contribution is complete when the implementation,
 tests, user documentation, and affected YAML contracts tell the same story.
 
 For this repository's implementation, start at the lightweight

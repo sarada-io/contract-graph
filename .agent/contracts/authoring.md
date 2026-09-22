@@ -10,12 +10,18 @@ agents use the product's graph and delivery capabilities.
 - [workflow.md](../../src/cg/workflow.md), [phases.json](../../src/cg/phases.json),
   [experts.md](../../src/cg/experts.md) and [contract-graph-agent.md](../../src/cg/contract-graph-agent.md):
   shipped procedure, loading policy and agent entry context.
+- [project-context.md](../../src/cg/project-context.md): preserved project intent and current approved direction; warmup and unblock maintain it, and every sign-off reconciles decisions into their durable owners.
 - [contract.yaml](../../src/cg/contract.yaml), [contract template](../../src/cg/templates/contract.template.yaml)
   and [install templates](../../src/install/templates/): initial context and authoring aids.
 - [docs index](../../docs/README.md), [README](../../README.md) and
   [CONTRIBUTING](../../CONTRIBUTING.md): canonical human explanations and contributor validation.
 
 ## Boundary promises
+
+Use **Contract Graph Dev Kit** as the full product name and **Contract Graph** as its short name.
+Position it as a framework for agentic software development with repository-native contracts as a
+graph at its core. Explain both the graph and the integrated planning, execution, review and
+completion workflow. Keep `contract-graph`, `cg`, `/cg-*`, paths and schema identities stable.
 
 Read the relevant skill and workflow before changing agent procedure. Warmup, plan, produce,
 prototype, sign-off and unblock remain the lifecycle; experts add no stages. Use one contract
@@ -35,7 +41,8 @@ technical readiness; produce owns incremental preparation, implementation and re
 Prepare and auto-run are retired stages. Optional coordinators and workers use existing plans
 and receipts, not another ledger; expert selection remains repository-owned in `.agents/cg/experts.md`.
 
-Completion leaves durable docs, owner-approved intent and YAML current, then removes obsolete
+Every sign-off accounts for scope-owned resolved decisions and design records, preserves their authority in existing completion evidence, and drains consumed entries while retaining pending/shared dependencies.
+Completion leaves durable docs, owner-approved project context and YAML current, then removes obsolete
 scope-owned process files. Preserve active shared dependencies, explicit retention policy and
 the compact delivery receipt; do not replace deleted plans with permanent execution diaries.
 The schema owns contract shape and the architecture catalog owns placement; example kinds in

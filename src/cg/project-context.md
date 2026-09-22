@@ -1,6 +1,6 @@
-# Project intent
+# Project context
 
-Repository-owned context. Draft from existing vision, overview, specifications and accepted decisions, then review the interpretation with the owner. A draft is not approval. Keep detailed source requirements in their canonical documents.
+Repository-owned current context alongside contract.yaml. Retain a concise, faithful copy of the project intent from repository documentation, with source links, then confirm the interpretation with the owner. A draft is not approval. Preserve detailed requirements in their canonical documents. Update this file when approved decisions change project direction, audience, scope, constraints or significant tradeoffs; keep current meaning rather than a chronological decision log. Routine implementation choices do not belong here.
 
 ## Purpose and audience
 
@@ -25,6 +25,10 @@ Repository-owned context. Draft from existing vision, overview, specifications a
 ## Binding sources
 
 None
+
+## Project direction
+
+None yet beyond the intent above. Replace this paragraph with current approved direction and its rationale when needed, not a list of decision IDs or delivery history.
 
 ## Recording approval
 

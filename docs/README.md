@@ -1,12 +1,13 @@
-# Documentation
+# Contract Graph Dev Kit documentation
 
 Start with the [Quick Introduction Video](https://contractgraph.dev/#watch). This directory is the written guide
 that follows that page.
 
 Read the published guides at [contractgraph.dev/docs](https://contractgraph.dev/docs/).
 
-These pages are for people adopting or reviewing Contract Graph: what a contract is, how a
-programme of work is split and run, and what the lifecycle stages mean.
+Contract Graph Dev Kit is a framework for agentic software development with repository-native contracts as a graph at its core. These guides explain how to give coding agents the structure and workflow to plan, execute and verify changes while keeping the codebase understandable.
+
+Start with the product vision, then follow the workflow and contract guides to see how agreed work moves through implementation, review and completion. “Contract Graph” is the short product name; the contract graph is the underlying map of responsibilities and dependencies.
 
 Coding agents may read them. **They are not the agent procedure.** After `cg init`, that lives in
 the `/cg-*` skills and `.agents/cg/workflow.md`. Those files tell a model what to do on a turn.

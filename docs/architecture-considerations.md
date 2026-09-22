@@ -1,6 +1,6 @@
 # Architecture considerations
 
-**Contract Graph requires software to have explicit, recursively decomposed responsibilities,
+**Contract Graph Dev Kit requires software to have explicit, recursively decomposed responsibilities,
 with a truthful contract graph that lets an agent find where a change belongs.**
 
 That is the framework's central opinion. The contract graph is the map used before reading

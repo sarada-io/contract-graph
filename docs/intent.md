@@ -1,18 +1,26 @@
 # Project intent and approval
 
-Contract Graph needs to know what a repository is for before its boundaries can guide delivery. A structurally consistent graph can still describe the wrong product. After `cg init`, run `/cg-warmup` for both a new project and an existing codebase. Init creates `<docs>/project-intent.md` and preserves it on subsequent runs; the docs root comes from the saved profile.
+Contract Graph Dev Kit establishes what a repository is for before its boundaries and workflow can guide delivery. A structurally consistent graph can still describe the wrong product. After `cg init`, run `/cg-warmup` for both a new project and an existing codebase. Init creates `.agents/cg/project-context.md` beside the root `contract.yaml` and preserves it on subsequent runs. Its location does not depend on the configured docs root. The existing `cg intent` commands and `.agents/cg/intent.json` continue to own review and approval freshness.
 
-Warmup uses existing vision, overview, specifications and decisions to draft a concise interpretation for owner review. It records purpose and audience, boundaries, permitted variation, an acceptance example, open questions and binding sources. A canonical vision can remain authoritative: name its repository-relative path in Binding sources. Modules usually refine project intent through their contract responsibilities, without another mandatory intent page.
+Warmup copies the intent expressed in existing vision, overview and specifications into concise project context for owner review, with links to its sources. It incorporates approved decisions that materially shape the project. It records purpose and audience, boundaries, permitted variation, an acceptance example, open questions and binding sources. A canonical vision can remain authoritative: name its repository-relative path in Binding sources. Modules usually refine project intent through their contract responsibilities, without another mandatory intent page.
 
 Confirmed intent is separate from conformance. If existing code violates an accepted requirement, preserve that requirement and record corrective work and the enforcement gap. Do not rewrite intent, contracts or valid test expectations merely to make the implementation appear consistent.
 
 ## Project and module intent
 
-The repository page is a concise entry point to existing accepted meaning. It should answer who the product serves, what it owns, what stays outside it, which variations are allowed and what a successful example looks like. Do not turn it into a long questionnaire or replace a useful canonical vision. Distinguish an inferred interpretation from an accepted requirement and surface material conflicts for review.
+Project context is a self-contained copy of current accepted meaning, not just an index of other documents. It should answer who the product serves, what it owns, what stays outside it, which variations are allowed and what a successful example looks like. Do not turn it into a long questionnaire or replace a useful canonical vision. Distinguish an inferred interpretation from an accepted requirement and surface material conflicts for review.
 
 A module normally expresses its narrower intent in its contract's purpose, responsibility and surface. Add separate module context only when it helps readers; the current approval mechanism is repository-wide, not a hierarchy of independent module approvals. For Contract Graph itself, [Vision](vision.md#product-intent-and-successful-outcomes) remains the canonical product-intent statement. This guide explains adoption of intent in repositories; it is not a competing statement of the framework's mission or evidence of self-adoption approval.
 
 In a greenfield repository, warmup confirms intent and establishes root context without inventing modules. In brownfield and reseed, it compares existing code with accepted meaning and records discrepancies. An empty product-rule catalog or a green graph check alone establishes neither missing intent nor completed adoption.
+
+## Keep context current
+
+As development and owner decisions change the project, update project context and the affected canonical documentation together. Capture changes to purpose, audience, boundaries, supported variation, enduring constraints and significant tradeoffs with their rationale. One direction-setting decision can warrant an update. Routine implementation choices, task sequencing and superseded alternatives do not need entries. Keep current meaning concise rather than accumulating a decision history.
+
+At every sign-off, account for resolved decisions within the completed scope and relevant design records. Consolidate lasting direction in project context, structural promises in the owning contract, and qualifying policy in the appropriate YAML catalog. Context prose does not create a machine-enforced rule. Preserve actual approval evidence in the existing completion record before clearing consumed decision-log entries or obsolete scope-owned design records. Pending questions and decisions needed by unfinished work remain, with their owner and dependency explicit. Detailed design records remain only where they serve a continuing reader or retention need. See [decision consolidation](workflow.md#decision-consolidation-at-sign-off).
+
+A changed context or binding source still requires fresh approval of the exact resulting content. An already-recorded answer can supply that authority only when it covers that content; approval of one decision does not approve an expanded rewrite.
 
 ## Review and record
 

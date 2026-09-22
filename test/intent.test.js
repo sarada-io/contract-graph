@@ -50,7 +50,7 @@ test("greenfield scaffold is not intent approval; direct lifecycle and hook admi
 test("attributed approval opens admission, while page or canonical source changes require fresh review", t => {
   const root = fixture(t);
   write(root, "docs/vision.md", "Reusable conversion for arbitrary fields.\n");
-  write(root, "docs/project-intent.md", fixtureIntent.replace(/## Binding sources\nNone/, "## Binding sources\n- `docs/vision.md`"));
+  write(root, ".agents/cg/project-context.md", fixtureIntent.replace(/## Binding sources\nNone/, "## Binding sources\n- `docs/vision.md`"));
   assert.equal(intentStatus(root).state, "approval-pending");
   assert.equal(approve(root).ready, true);
   assert.equal(permits(next(root), "cg-plan").allowed, true);
@@ -58,12 +58,12 @@ test("attributed approval opens admission, while page or canonical source change
   assert.equal(intentStatus(root).state, "review-required");
   assert.throws(() => intentAction(root, "approve", { evidence: "answer.json" }), /changed|reviewed/);
   assert.equal(approve(root).ready, true);
-  fs.appendFileSync(path.join(root, "docs/project-intent.md"), "\n## Additional context\nA changed promise.\n");
+  fs.appendFileSync(path.join(root, ".agents/cg/project-context.md"), "\n## Additional context\nA changed promise.\n");
   assert.equal(intentStatus(root).ready, false);
 });
 
 test("review never grants approval and rejects mismatched snapshots or missing attribution", t => {
-  const root = fixture(t); write(root, "docs/project-intent.md", fixtureIntent);
+  const root = fixture(t); write(root, ".agents/cg/project-context.md", fixtureIntent);
   const review = intentAction(root, "review");
   assert.equal(intentStatus(root).ready, false);
   for (const answer of [{ by: "Owner", response: "yes", scope: "repository", snapshot: "0".repeat(64) }, { response: "yes", scope: "repository", snapshot: review.snapshot }]) {
@@ -77,11 +77,11 @@ test("review never grants approval and rejects mismatched snapshots or missing a
 
 test("custom docs root and owner confirmation survive re-init and conflicting implementation", t => {
   const root = fixture(t, "handbook"); approveFixtureIntent(root);
-  const content = fs.readFileSync(path.join(root, "handbook/project-intent.md"), "utf8");
+  const content = fs.readFileSync(path.join(root, ".agents/cg/project-context.md"), "utf8");
   const record = fs.readFileSync(path.join(root, INTENT_RECORD), "utf8");
   write(root, "engine.js", "export const field = 'hard-coded-domain';\n");
   init(root, { docs: "handbook", profiles: ["agents"] });
-  assert.equal(fs.readFileSync(path.join(root, "handbook/project-intent.md"), "utf8"), content);
+  assert.equal(fs.readFileSync(path.join(root, ".agents/cg/project-context.md"), "utf8"), content);
   assert.equal(fs.readFileSync(path.join(root, INTENT_RECORD), "utf8"), record);
   assert.equal(intentStatus(root).ready, true, "content approval is not implementation conformance");
   assert.match(intentStatus(root).reason, /does not authenticate.*or prove product conformance/);
@@ -90,7 +90,7 @@ test("custom docs root and owner confirmation survive re-init and conflicting im
 test("missing, duplicate, placeholder and unresolved intent sections fail closed", t => {
   const root = fixture(t);
   for (const body of [fixtureIntent.replace("## Boundaries", "## Omitted"), fixtureIntent + "\n## Boundaries\nOther\n", fixtureIntent.replace("## Open questions\nNone", "## Open questions\nOwner must choose scope"), fixtureIntent.replace("## Variation\nAccept", "## Variation\nTODO Accept")]) {
-    write(root, "docs/project-intent.md", body);
+    write(root, ".agents/cg/project-context.md", body);
     assert.equal(intentStatus(root).ready, false);
     assert.throws(() => intentAction(root, "review"));
   }
@@ -99,8 +99,8 @@ test("missing, duplicate, placeholder and unresolved intent sections fail closed
 test("binding source paths reject traversal, symlink escape, missing and self-dependent inputs", t => {
   const root = fixture(t);
   fs.symlinkSync(os.tmpdir(), path.join(root, "external"));
-  for (const source of ["../outside", "/etc/passwd", "external/escape.md", "missing.md", "docs/project-intent.md", INTENT_RECORD]) {
-    write(root, "docs/project-intent.md", fixtureIntent.replace(/## Binding sources\nNone/, `## Binding sources\n- \`${source}\``));
+  for (const source of ["../outside", "/etc/passwd", "external/escape.md", "missing.md", ".agents/cg/project-context.md", INTENT_RECORD]) {
+    write(root, ".agents/cg/project-context.md", fixtureIntent.replace(/## Binding sources\nNone/, `## Binding sources\n- \`${source}\``));
     assert.equal(intentStatus(root).ready, false, source);
     assert.throws(() => intentAction(root, "review"));
   }
@@ -113,7 +113,7 @@ test("CI can select independent approval evidence; local replacement does not up
   const evidence = path.join(trusted, "approval.json");
   fs.copyFileSync(path.join(root, INTENT_RECORD), evidence);
   assert.equal(cli(root, "intent", "verify", "--evidence", evidence).status, 0);
-  fs.appendFileSync(path.join(root, "docs/project-intent.md"), "\n## Change\nChanged boundary.\n");
+  fs.appendFileSync(path.join(root, ".agents/cg/project-context.md"), "\n## Change\nChanged boundary.\n");
   approve(root);
   assert.equal(intentStatus(root).ready, true);
   assert.equal(cli(root, "intent", "verify", "--evidence", evidence).status, 1);
@@ -126,4 +126,11 @@ test("graph verification retains its exit semantics and reports product evidence
   assert.match(result.stdout, /authored graph and registered structural checks/);
   assert.match(result.stdout, /product-intent conformance are not established/);
   assert.equal(cli(root, "intent", "verify").status, 1);
+});
+
+test("fresh install keeps context beside the contract regardless of docs root", t => {
+  const root = fixture(t, "handbook");
+  assert.equal(fs.existsSync(path.join(root, ".agents/cg/project-context.md")), true);
+  assert.equal(fs.existsSync(path.join(root, "handbook/project-intent.md")), false);
+  assert.equal(fs.existsSync(path.join(root, "docs/project-intent.md")), false);
 });

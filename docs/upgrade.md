@@ -1,5 +1,7 @@
 # Upgrade
 
+Install or refresh Contract Graph Dev Kit through the `contract-graph` package and `cg init`. The product name does not change package names, commands or repository paths.
+
 ## Upgrade to 0.7.0
 
 Install the intended 0.7.0 CLI first. Once published, use `npm install --global contract-graph@0.7.0`; for an unpublished release, install its independently packed tarball. The repository upgrade does not fetch a package or change the global CLI.
@@ -23,7 +25,7 @@ The 0.7.0 CLI includes `cg contract inspect` for JavaScript/TypeScript ESM, Java
 
 ## Intent approval and sprint delivery
 
-This iteration adds a preserved `<docs>/project-intent.md` and a separate approval-freshness gate. After installing the intended build and re-running init, use `/cg-warmup` to draft intent from existing documents and confirm it with the owner. New installations are not delivery-ready merely because the scaffold passes `cg verify`. Existing intent pages and `.agents/cg/intent.json` are preserved; changed binding sources require renewed review. See [intent approval](intent.md).
+Project intent lives in preserved `.agents/cg/project-context.md` alongside the root contract. After init, use `/cg-warmup` to draft context from repository documentation and confirm it with the owner. Fresh installations receive a draft rather than approval and are not delivery-ready merely because `cg verify` passes. Init preserves existing project context and `.agents/cg/intent.json`; changed context or binding sources require renewed review. See [intent approval](intent.md).
 
 New plans use the sprint delivery path described in [workflow](workflow.md). Existing unmarked roadmaps, prepared queues and delivery records retain their formats and history. Re-init preserves `.agents/cg/workflow.md` and phase policy: review any deliberate stage restrictions before adopting automatic sprint completion. Do not discard existing policy or rename an in-flight roadmap to bypass it. The executable and refreshed skills must still have matching build identity.
 

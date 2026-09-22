@@ -4,9 +4,7 @@ Durable reasoning, written and maintained by `cg-sign-off`. A record here answer
 chosen — the alternatives considered, the trade-off accepted, the threat or failure model, the
 architecture consequence, and what supersedes what.
 
-Unlike `docs/plans/`, this directory is **permanent**, so a contract may cite it. That is the whole
-distinction between the two: a plan records what you are about to do, a decision record states what
-you decided and why it still holds.
+At every sign-off, consume relevant approved decisions into `.agents/cg/project-context.md`, the owning contract or an appropriate YAML catalog. Retain a record here only when its detailed rationale, active consumers or explicit retention policy still needs it. Preserve authority in completion evidence and update incoming links before removing an obsolete scope-owned record. Pending and unrelated decisions are not cleanup candidates. A retained durable record may be cited by a contract; a transient plan may not.
 
 What belongs here:
 
@@ -21,5 +19,4 @@ record under `docs/plans/`. Nor binding rules: structural bindings belong in
 bindings belong in the P catalog with enforcement. A decision record that quietly becomes a rule
 is a rule nothing enforces.
 
-A dated record is historical evidence. When the decision changes, add a new record that supersedes
-it and say so in both. Do not edit a past decision to look like the current one.
+A dated record is historical evidence. When a retained decision changes, record its supersession; create a replacement record only if that detail still needs a separate home. Do not edit a past decision to look like the current one.

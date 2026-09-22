@@ -50,7 +50,7 @@ Use the first source that answers the fork:
 1. Global `A` bindings, `.agents/cg/principles/architecture.yaml` `graph` (kinds, recurse,
    selfSufficient, surface including service, adapters, stay, add-child, elsewhere), applicable
    scoped `P` bindings, and boundary contracts.
-2. The repository constitution and published specifications.
+2. Owner-confirmed `.agents/cg/project-context.md`, the repository constitution and published specifications. Surface conflicts rather than silently changing project direction.
 3. Accepted decisions in `<docs>/plans/decision-log.md`.
 4. Permanent design records and published product requirements.
 5. The repository's walking skeleton or an already-green neighboring implementation.
@@ -102,7 +102,7 @@ entry shape, warmup behaviour, or promotion rules into that file. `cg-warmup` fi
 review* first; later stages append. Group related questions when useful, keeping each independently
 answerable decision under its own ID. The log preserves the interaction; it does not replace it.
 
-Use the repository's established numbering:
+Use the repository's established numbering. Allocate above both the existing entries and the retained highest allocated DA/DU counters; initialise those counters from existing IDs when absent and never lower them after cleanup:
 
 - `DA-NN`: autonomous decisions recorded for traceability; add directly to *Resolved*.
 - `DU-NN`: decisions requiring owner review; append to *Pending your review*.
@@ -118,6 +118,12 @@ scope until promoted, superseded, or dropped; it is not blanket permission for a
 Keep dependencies on decisions explicit so later decisions can compose their accepted constraints.
 Do not drain an entry still needed by an active decision or phase until its authority and relevant
 response evidence have an accessible destination. Permanent contracts still cannot cite plan IDs.
+
+### Keep project context current
+
+After an actual owner answer changes project direction or materially shapes the product, update `.agents/cg/project-context.md` in the same work: purpose, audience, boundaries, supported variation, enduring constraints and significant tradeoffs with their rationale. Reconcile affected canonical repository documentation as well. Preserve the actual answer and scope in the existing decision entry until sign-off accounts for it. Keep the context self-contained, concise and stated as current meaning, without transient decision IDs or plan links. Ordinary implementation choices and superseded alternatives do not belong there. One direction-setting decision is sufficient; the recurrence test below applies to promoting reusable rules, not maintaining project intent.
+
+Use the existing intent review/approve/verify flow for changed context or binding-source bytes. Reuse an actual response only if it explicitly covers the exact resulting content and sources; otherwise present the concrete revision for confirmation. A prior decision is not blanket approval of an agent's broader rewrite. Pending choices stay in the decision log; they do not become approved project context. Continue independent inspection while affected delivery waits. Every sign-off reconciles resolved entries and relevant design records under cg-sign-off's closure checks §7.0.
 
 ### D-5a — Promotion test and destination
 

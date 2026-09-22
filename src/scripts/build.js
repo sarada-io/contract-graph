@@ -40,6 +40,7 @@ const PACKAGE_FILE_MAPPINGS = Object.freeze([
   ["README.md", "README.md"],
   ["src/cg/contract-graph-agent.md", "agent/cg/contract-graph-agent.md"],
   ["src/cg/contract.yaml", "agent/cg/contract.yaml"],
+  ["src/cg/project-context.md", "agent/cg/project-context.md"],
   ["src/cg/experts.md", "agent/cg/experts.md"],
   ["src/cg/workflow.md", "agent/cg/workflow.md"],
   ["src/cg/phases.json", "agent/cg/phases.json"],

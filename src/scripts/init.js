@@ -23,6 +23,7 @@ import {
   selectedModulePointers,
 } from "./model.js";
 import { loadContract, stringifyContractYaml } from "./contracts.js";
+import { PROJECT_CONTEXT } from "./intent.js";
 import { runtimeIdentity } from "./runtime.js";
 import { planInitCatalogs, applyInitCatalogs } from "./init-catalogs.js";
 import {
@@ -76,6 +77,7 @@ export const SCAFFOLD_MAPPING = Object.freeze([
   },
   { source: "cg/guidelines/product.yaml", packageSource: "agent/cg/guidelines/product.yaml", target: ".agents/cg/guidelines/product.yaml", mode: "always", select: "file", install: "preserve" },
   { source: "cg/contract.yaml", packageSource: "agent/cg/contract.yaml", target: ".agents/cg/contract.yaml", mode: "always", select: "file", install: "preserve" },
+  { source: "cg/project-context.md", packageSource: "agent/cg/project-context.md", target: PROJECT_CONTEXT, mode: "always", select: "file", install: "preserve" },
   { source: "cg/experts.md", packageSource: "agent/cg/experts.md", target: ".agents/cg/experts.md", mode: "always", select: "file", install: "preserve" },
   { source: "cg/workflow.md", packageSource: "agent/cg/workflow.md", target: ".agents/cg/workflow.md", mode: "always", select: "file", install: "preserve" },
   { source: "cg/phases.json", packageSource: "agent/cg/phases.json", target: ".agents/cg/phases.json", mode: "always", select: "file", install: "preserve" },

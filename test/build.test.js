@@ -44,6 +44,8 @@ test("cg build copies architecture and product YAML catalogs", () => {
   assert.match(output, /file\(s\) from 1 compiler/);
   assert.equal(readJson(dir, "package.json").devDependencies, undefined, "schema test tooling must not become package metadata");
 
+  assert.equal(fs.existsSync(path.join(dir, BUILD_DIRECTORY, "agent/cg/project-context.md")), true);
+  assert.equal(fs.existsSync(path.join(dir, BUILD_DIRECTORY, "agent/templates/docs/project-intent.md")), false);
   const architectureFile = path.join(dir, BUILD_DIRECTORY, "agent/cg/principles/architecture.yaml");
   assert.ok(fs.existsSync(architectureFile));
   assert.equal(
@@ -313,7 +315,7 @@ test("an extracted tarball resolves shared exports and migrates a repository wit
   assert.ok(fs.existsSync(path.join(packageRoot, "script/inspection/THIRD_PARTY_NOTICES.txt")));
   const files = ["principles/architecture.yaml", "guidelines/engineering.yaml", "guidelines/product.yaml"];
   const legacy = path.join(REPO, "test/fixtures/principles-legacy");
-  const preservedFiles = ["contract.yaml", "enforcement.yaml", "workflow.md", "phases.json"];
+  const preservedFiles = ["project-context.md", "contract.yaml", "enforcement.yaml", "workflow.md", "phases.json"];
   const preserved = new Map(preservedFiles.map(file => [file, fs.readFileSync(path.join(repo, ".agents/cg", file), "utf8")]));
   // Give the frozen product fixture its existing P enforcement mapping.
   const mapFile = path.join(repo, ".agents/cg/enforcement.yaml");

@@ -3,8 +3,9 @@
 Parent: [Verification contract](contracts/verification.md). Read when changing principles,
 schemas, structural detectors or the product’s architectural promises.
 
-Contract Graph is deliberately not a neutral documentation scaffold. It supplies a firm,
-opinionated definition of well-structured software so a lower-capability coding agent has safe
+Contract Graph Dev Kit is a framework for agentic software development with a repository-native
+contract graph at its core. Its workflow supports planning, execution, review and completion.
+It supplies a firm, opinionated definition of well-structured software so a lower-capability coding agent has safe
 defaults to follow instead of inventing architecture locally and gradually mixing responsibilities,
 dependencies, persistence, and policy together.
 

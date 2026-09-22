@@ -1,9 +1,11 @@
-# Contract Graph — contributor entry
+# Contract Graph Dev Kit — contributor entry
 
-Contract Graph makes software understandable through a traversable, top-down context graph.
-Structure and precise routing are the product; verification protects that graph. The intended
-outcome is bounded implementation reading, not eliminating code reading or proving arbitrary
-parallel work safe.
+Contract Graph Dev Kit is a framework for agentic software development with repository-native
+contracts as a graph at its core. It gives coding agents the structure and workflow to plan,
+execute and verify changes while keeping the codebase understandable. Integrated workflows
+carry agreed work through implementation, review and completion. The graph provides precise
+routing and bounded implementation reading; it does not eliminate code reading or prove
+arbitrary parallel work safe.
 
 ## Find the owner before reading implementation
 

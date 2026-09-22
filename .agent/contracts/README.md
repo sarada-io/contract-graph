@@ -1,6 +1,6 @@
-# Contract Graph repository contract
+# Contract Graph Dev Kit repository contract
 
-Parent: [AGENTS.md](../../AGENTS.md). Purpose: route maintenance of Contract Graph itself
+Parent: [AGENTS.md](../../AGENTS.md). Purpose: route maintenance of Contract Graph Dev Kit itself
 to the smallest responsible boundary before reading implementation.
 
 These are repository-only Markdown contracts. They describe logical ownership of the current

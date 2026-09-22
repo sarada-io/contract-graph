@@ -24,7 +24,7 @@ Assign stable sprint IDs/names and stable item IDs with an explicit Feature/Bug/
 
 ## Establish and agree the outcome
 
-Read project intent and its binding sources, relevant contracts, existing decisions, specifications and the measured baseline. Separate existing failures from requested changes. State goal, objectives, included outcomes, exclusions, UX/review conditions and final completion evidence. Where current code violates accepted intent, record a discrepancy; do not redefine the intent or weaken a test to match the code.
+Read `.agents/cg/project-context.md` and its binding sources, relevant contracts, existing decisions, specifications and the measured baseline. Separate existing failures from requested changes. State goal, objectives, included outcomes, exclusions, UX/review conditions and final completion evidence. Where current code violates accepted intent, record a discrepancy; do not redefine the intent or weaken a test to match the code.
 
 Ask only for unresolved product choices. Reuse explicit instructions and prior agreement. Record the owner's actual answer and its scope under Agreement; do not manufacture approval from silence, plan existence or a green test. Plan agreement, execution authority and acceptance of the implemented experience are separate facts. A request to complete a sprint/epic supplies execution and finishing authority for that scope, but does not pre-approve unseen UX or authorize publication.
 

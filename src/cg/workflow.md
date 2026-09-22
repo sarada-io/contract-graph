@@ -1,10 +1,10 @@
 # Repository Agent Workflow
 
-This repository-owned workflow supplies delivery policy. Contract Graph’s structural authority remains `.agents/cg/principles/architecture.yaml`; changing the delivery sequence cannot remove graph obligations. Init preserves local workflow and phase policy. When retained policy names retired stages, reconcile it explicitly with the 0.7.0 loop before executing dependent work.
+This repository-owned workflow supplies delivery policy for Contract Graph Dev Kit, a framework for agentic software development built around the repository-native contract graph. Contract Graph’s structural authority remains `.agents/cg/principles/architecture.yaml`; changing the delivery sequence cannot remove graph obligations. Init preserves local workflow and phase policy. When retained policy names retired stages, reconcile it explicitly with the 0.7.0 loop before executing dependent work.
 
 ## Intent, planning and execution
 
-Both new and existing repositories start with cg-warmup after init. Establish owner-confirmed project intent from existing sources and verify its freshness with `cg intent verify`. Existing code is evidence of conformance, not authority to replace an accepted requirement. Modules refine parent purpose through their contracts.
+Both new and existing repositories start with cg-warmup after init. Maintain `.agents/cg/project-context.md` beside the root contract as a concise copy of project intent from repository documentation, with source links and current approved direction. Establish owner-confirmed project intent from existing sources and verify its freshness with `cg intent verify`. Existing code is evidence of conformance, not authority to replace an accepted requirement. Modules refine parent purpose through their contracts.
 
 Use cg-plan to agree a goal, mixed Features/Bugs/Tasks and observable acceptance in one Sprint or Epic Plan. The human summary and agent details reference the same stable IDs. Planning examines the baseline, relevant contracts and consumers, probable approach, prerequisites, risks and checks before handing ready work to produce. Do not demand speculative implementation details for every future sprint. Scope questions block affected work, not independent items.
 
@@ -30,7 +30,7 @@ Contracts own current structural truth. The master roadmap owns sprint/item outc
 
 Before handoffs checkpoint the selected sprint/item, pending decision IDs and next action. On recovery measure current disk state using cg status and cg next with the selected programme, reconcile stale notes, and read recorded answers before asking again. Preserve unrelated changes and use the intended checkout. Keep technical queues sequential by dependency readiness. Produce and prototype may use one coordinator with bounded specialists under `.agents/skills/cg-produce/references/coordination.md`; direct execution remains supported. Select domain expertise from the repository-owned `.agents/cg/experts.md` index and load only relevant skills. The coordinator owns the user conversation, assignment notes, integration and recovery; specialists return scoped implementation evidence. Permit concurrent writes only after checking actual dependencies and shared resources, and retain the selected review cadence. Prototype delegation preserves its early-preview loop and deferred application tests. Worker completion is not owner acceptance. Honour explicitly requested execution/model constraints without inventing effective settings.
 
-Use cg-unblock for consequential choices. Check existing intent, plan and decisions first. Record the full pending question, options, tradeoffs, recommendation and affected sprint/item IDs in one DU entry before asking. Record the actual answer before unblocking, and clear only the resolved prerequisite. Silence, elapsed time, preselected choices and passing tests are not approval. Batch work can continue independently while a decision waits.
+Use cg-unblock for consequential choices. Check existing intent, plan and decisions first. Record the full pending question, options, tradeoffs, recommendation and affected sprint/item IDs in one DU entry before asking. Record the actual answer before unblocking, and clear only the resolved prerequisite. Silence, elapsed time, preselected choices and passing tests are not approval. Batch work can continue independently while a decision waits. When an approved decision changes project direction or enduring constraints, reconcile project-context.md and its canonical sources immediately through the existing intent approval flow; routine choices remain outside that context.
 
 ## Mandatory Next-Action Response
 
@@ -68,6 +68,8 @@ Contracts must survive plan deletion. When writing or updating a contract:
 
 ## Plan Harvest Step (before deleting a completed plan)
 
+At every sign-off, reconcile the selected scope’s resolved decision-log entries and relevant `<docs>/decisions/` records under closure checks §7.0, even when no decision-harvest cohort was declared. Preserve approved direction in project-context.md and other durable meaning in its owning contract or appropriate YAML catalog; retain detailed design records only for a continuing reader, dependency or retention need. Account for each entry in the existing acceptance evidence before draining it. Pending and unrelated decisions remain.
+
 Before removing a completed scope’s temporary plan, process and progress files, follow `.agents/skills/cg-sign-off/SKILL.md`. In short:
 
 1. If the roadmap declares a decision harvest, classify one declared producer-phase cohort. The
@@ -84,8 +86,7 @@ Before removing a completed scope’s temporary plan, process and progress files
    acceptance nor a route.
 3. Confirm every normative rule the plan introduced is stated in full in the
    impacted `<boundary>/.agents/cg/contract.yaml` files.
-4. If the plan contains accepted design rationale worth keeping, promote that
-   content to a `docs/decisions/` document; otherwise let it go with the plan.
+4. Consolidate approved project direction in `.agents/cg/project-context.md` and structural or policy decisions in their owning contracts/catalogs. Keep a `docs/decisions/` record only when it supplies needed detail beyond those owners; otherwise retire the consumed record after preserving authority and checking consumers.
 5. Verify no permanent document depends on the plan:
    `grep -rn "<plan-filename>\|<ticket-id>" .agents/cg */.agents/cg docs/decisions docs/guides`
    must return nothing before the plan is deleted.

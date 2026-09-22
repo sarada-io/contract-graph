@@ -2968,6 +2968,7 @@ test("init round trip writes exactly the canonical mapped file set", () => {
       select: "top-level-principles",
     },
     { source: "cg/contract.yaml", target: ".agents/cg/contract.yaml", mode: "always", select: "file" },
+    { source: "cg/project-context.md", target: ".agents/cg/project-context.md", mode: "always", select: "file" },
     { source: "cg/experts.md", target: ".agents/cg/experts.md", mode: "always", select: "file" },
     { source: "cg/workflow.md", target: ".agents/cg/workflow.md", mode: "always", select: "file" },
     { source: "cg/phases.json", target: ".agents/cg/phases.json", mode: "always", select: "file" },

@@ -1,29 +1,33 @@
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://contractgraph.dev/assets/contract-graph-mark-white.webp">
-    <img src="https://contractgraph.dev/assets/contract-graph-mark.webp" alt="Contract Graph logo" width="96" height="96">
+    <img src="https://contractgraph.dev/assets/contract-graph-mark.webp" alt="Contract Graph Dev Kit logo" width="96" height="96">
   </picture>
 </p>
 
-# Contract Graph
+# Contract Graph Dev Kit
 
-**Scale model-driven development with repository-native contracts as durable context.**
+**A framework for agentic software development, with repository-native contracts as a graph at its core.**
+
+Give coding agents the structure and workflow to plan, execute, and verify changes while keeping your codebase understandable.
+
+Repository-native contracts map responsibilities and dependencies. Integrated workflows carry agreed work through implementation, review, and completion.
 
 - [Quick Introduction Video](https://contractgraph.dev/#watch)
-- [Why is software context structured as a graph?](https://contractgraph.dev/docs/vision/)
+- [Vision and approach](https://contractgraph.dev/docs/vision/)
 
-Contract Graph makes software understandable to coding agents as a repository-native, traversable context map. The graph helps agents locate the responsible boundary before reading implementation and preserve that context alongside the code for future work. Each contract explains what its unit owns, how its parent uses it, and where to read next.
+Contract Graph is the short name for Contract Graph Dev Kit. Install the `contract-graph` package, use the `cg` CLI, and run `/cg-*` skills in your coding agent.
 
 ## How it works
 
-Contract Graph ships a baked-in, opinionated architecture for decomposing a repository into modules, sub-modules, components, and libraries. Each boundary keeps a `.agents/cg/contract.yaml` within its directory, recording its responsibility, public surface, relationships, invariants, and verification. The architecture is therefore stored with the implementation, rather than living only in diagrams, prompts, or institutional memory.
+The Dev Kit combines a persistent contract graph, lifecycle skills and verification tools. It supplies an opinionated architecture for decomposing a repository into modules, sub-modules, components, and libraries. Each boundary keeps a `.agents/cg/contract.yaml` within its directory, recording its responsibility, public surface, relationships, invariants, and verification. The architecture is therefore stored with the implementation, rather than living only in diagrams, prompts, or institutional memory.
 
-For each task, an agent starts at the repository contract and follows only the relevant child and dependency edges to the smallest responsible boundary. It reads the relevant implementation, keeps affected contracts truthful, and runs the checks required for the change. The next agent inherits that updated map. Verification checks the authored graph; it does not yet prove that every implementation dependency matches it or that parallel writes are safe.
+For each task, an agent starts at the repository contract and follows only the relevant child and dependency edges to the smallest responsible boundary. It reads the relevant implementation, keeps affected contracts truthful, and runs the checks required for the change. Planning and execution use those boundaries to organise the work; review and sign-off preserve accepted outcomes, required checks and current project context. The next agent inherits the updated map and recorded decisions. Graph verification checks the authored graph; it does not yet prove that every implementation dependency matches it or that parallel writes are safe.
 
 ```mermaid
 flowchart TB
   T["Change request"]
-  subgraph CG["Contract Graph"]
+  subgraph CG["Contract Graph Dev Kit"]
     direction LR
     P["Baked-in architecture<br/>principles<br/><br/>applied across<br/>every contract"]
     subgraph G["Repository-native contract graph"]
@@ -88,7 +92,7 @@ Agree the goal, expected behaviour, and review conditions in one Sprint Plan or 
 
 ## Get Started
 
-Contract Graph requires Node.js 18.17 or newer. Install the CLI once, then enter the repository you
+Contract Graph Dev Kit requires Node.js 18.17 or newer. Install the CLI once, then enter the repository you
 want to work with:
 
 ```bash
@@ -118,4 +122,4 @@ For an existing CG installation, update the CLI and run `cg init --check` to pre
 
 ## Licence
 
-Contract Graph is licensed under [Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0).
+Contract Graph Dev Kit is open source, licensed under [Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0).

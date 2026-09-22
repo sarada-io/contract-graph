@@ -1,6 +1,6 @@
 # Expert skills and project extensions
 
-Contract Graph supplies four small domain skills: `api-expert`, `mobile-expert`, `web-expert` and `ui-design-expert`. They supply implementation or review guidance to a bounded assignment. They are not running agents or lifecycle stages. Produce and prototype coordinators select expertise; the host supplies worker creation, model configuration and disposal. A coordinator can also use the skills directly without delegation.
+Contract Graph Dev Kit supplies four small domain skills: `api-expert`, `mobile-expert`, `web-expert` and `ui-design-expert`. They supply implementation or review guidance to a bounded assignment. They are not running agents or lifecycle stages. Produce and prototype coordinators select expertise; the host supplies worker creation, model configuration and disposal. A coordinator can also use the skills directly without delegation.
 
 ## Framework source structure
 

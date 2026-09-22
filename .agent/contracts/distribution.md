@@ -17,6 +17,7 @@ maintainer development/release tooling.
 ## Boundary promises
 
 The complete release target is `dist/build`; generated output is not the source of truth.
+Package project-context.md under `agent/cg/` so Installation can preserve it alongside the root contract.
 Consume [Authoring](authoring.md)'s assets, [Verification](verification.md)'s catalog validation
 and the runtime files owned by the other children. Preserve Node.js 18.17+ compatibility.
 

@@ -26,6 +26,7 @@ plan, obtains confirmation, applies init, then runs sync and verification when m
   local catalog content; it does not own release installation or replace the init workflow.
 - Preserve repository-owned content and missing product rationale. Report incomplete migration
   honestly. Catalog rollback does not make the whole init/sync/verify sequence transactional.
+- Init scaffolds `.agents/cg/project-context.md` only when absent and preserves repository-authored context and its approval record on subsequent runs.
 - Sync regenerates derived artifacts; it does not become a second installer.
 
 Consumes [Distribution](distribution.md)'s package layout/identity, [Verification](verification.md)'s

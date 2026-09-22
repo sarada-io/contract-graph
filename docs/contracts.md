@@ -1,6 +1,6 @@
 # Contracts
 
-Contract Graph represents a repository as connected, machine-readable contracts. A contract is
+At the core of Contract Graph Dev Kit, connected, machine-readable contracts map a repository’s responsibilities and dependencies. The development workflow uses this graph to locate and bound changes. A contract is
 the durable promise for one owned software boundary and the routing node that leads to the next
 smaller boundary.
 
