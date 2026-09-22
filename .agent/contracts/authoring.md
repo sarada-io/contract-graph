@@ -27,7 +27,9 @@ replacement/preservation policy; changing an asset does not authorize overwritin
 [Distribution](distribution.md) owns packaging. Keep human docs at one canonical page per topic,
 and preserve durable facts before retiring temporary delivery records.
 
-Production preserves batch/per-item review choice and reports Item/Code/Test/Docs with
+Production collects missing scope/review choices together through permitted selectable host questions
+(with numbered chat fallback), reuses recorded answers and resumes eligible work under existing authority.
+It preserves batch/per-item review choice and reports Item/Code/Test/Docs with
 Yes/No/Partial/Blocked, followed by an actual next action or None. Plan owns outcomes and
 technical readiness; produce owns incremental preparation, implementation and repairs.
 Prepare and auto-run are retired stages. Optional coordinators and workers use existing plans

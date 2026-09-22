@@ -1,4 +1,4 @@
 interface:
   display_name: "CG Produce"
   short_description: "Implement sprint items with the chosen review cadence"
-  default_prompt: "Use $cg-produce to implement this sprint, ask for batch or per-item review, continue independent ready work, and report item-level Code/Test/Docs status and the next action, or None when the requested work is complete."
+  default_prompt: "Use $cg-produce to implement this sprint, recover scope and review preferences, ask only for missing choices using selectable options when the host permits, continue independent ready work, and report item-level Code/Test/Docs status and the next action, or None when the requested work is complete."
