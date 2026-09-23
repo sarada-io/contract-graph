@@ -25,6 +25,8 @@ Import syntax alone does not establish architectural dependencies or ownership.
 Consumes [Graph](graph.md) for existing ownership and [Verification](verification.md) for binding
 context. Parser dependencies and bundled grammar changes also route to [Distribution](distribution.md).
 Keep extraction inside adapters and report policy in the report owner; avoid separate language CLIs.
+Load WebAssembly grammars sequentially: the shared parser runtime links scanner symbols globally,
+and concurrent loads can expose unresolved imports on supported Node versions.
 
 Verification: `npm test -- test/contract-inspection.test.js test/language-inspection.test.js test/dart-inspection.test.js`,
 then `npm test`. Parser/package changes require extracted-package and Node 18.17 checks described

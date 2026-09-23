@@ -12,7 +12,7 @@ const grammarVersion = JSON.parse(fs.readFileSync(require.resolve("tree-sitter-w
 const specs = { java: /\.java$/i, kotlin: /\.kts?$/i, python: /\.py$/i, go: /\.go$/i, c_sharp: /\.cs$/i, dart: /\.dart$/i };
 await Parser.init();
 const grammars = new Map();
-export const adapters = await Promise.all(Object.keys(specs).map(async language => {
+async function loadAdapter(language) {
   if (language === "dart") {
     const metadata = JSON.parse(fs.readFileSync(new URL("./grammars/dart.json", import.meta.url), "utf8"));
     const bytes = fs.readFileSync(new URL("./grammars/dart.wasm", import.meta.url));
@@ -24,7 +24,11 @@ export const adapters = await Promise.all(Object.keys(specs).map(async language 
   const bytes = fs.readFileSync(file);
   grammars.set(language, await Language.load(bytes));
   return Object.freeze({ id: language, version: "1", parser: "web-tree-sitter", parserVersion: runtimeVersion, grammarPackage: "tree-sitter-wasms", grammarVersion, grammarSha256: crypto.createHash("sha256").update(bytes).digest("hex") });
-}));
+}
+// Language.load shares the runtime's dynamic-linker symbol table. Finish each
+// grammar before starting another so unresolved scanner imports cannot race.
+export const adapters = [];
+for (const language of Object.keys(specs)) adapters.push(await loadAdapter(language));
 export const languageForFile = file => Object.keys(specs).find(language => specs[language].test(file)) ?? null;
 const children = (node, type) => node.namedChildren.filter(n => n.type === type);
 const first = (node, type) => node.namedChildren.find(n => n.type === type);
