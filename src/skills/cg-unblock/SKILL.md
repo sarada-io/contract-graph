@@ -151,21 +151,23 @@ phase whose acceptance gate can prove the destination's obligations.
 ## D-6 — Clarification and direct interaction
 
 1. Check the plan, contracts and recorded scoped decisions before asking. If they resolve the question, cite and apply that authority. Otherwise record one pending DU entry with the full question, evidence, viable options, tradeoffs, recommendation, affected sprint/item IDs and unblocking condition before presenting it.
-2. Use the host's available structured question tool with selectable options when permitted in the current mode. Prefer asynchronous interaction, offer a recommendation and retain free-text input. Group already-known missing choices into one interaction with separately answerable questions. If no permitted structured tool is available, show numbered options in chat and explain that a reply is needed to resume affected work. In a batch production run, record input-dependent steps and continue independent items; consolidate unanswered questions for review where possible. Never implement the missing decision by assumption.
-3. Record the actual answer before updating dependent work. Silence, elapsed time, preselected options and passing tests are not approval. Preserve ambiguous answers and ask a focused follow-up. A decision does not expand execution scope.
-4. Recalculate readiness, clearing only the resolved blocker. Resume eligible work within the existing request; preserve other prerequisites. Keep decision-log writes serialised if explicitly delegated workers are in use; coordinate ownership before another writer edits the same records.
-5. On recovery, read pending entries and recorded answers first. Reuse IDs, avoid duplicate questions or competing logs, and never delete the only recorded answer. Check current source and plan state before resuming.
+2. Lead with a plain-language question, why the answer is needed, a linked concrete proposal and a summary of actual changes. Separate already-agreed content from new interpretation. Explain the consequences of the options and what happens after the answer. Keep commands, snapshot hashes and dependency IDs in supporting evidence, not the title or user action. The owner replies in the conversation; the agent maintains the ledger and approval evidence. Do not ask again when existing explicit approval covers the exact content and sources.
+3. Use the host's available structured question tool with selectable options when permitted in the current mode. Prefer asynchronous interaction, offer a recommendation and retain free-text input. Group already-known missing choices into one interaction with separately answerable questions. If no permitted structured tool is available, show numbered options in chat and explain that a reply is needed to resume affected work. In a batch production run, record input-dependent steps and continue independent items; consolidate unanswered questions for review where possible. Never implement the missing decision by assumption.
+4. Record the actual answer before updating dependent work. Silence, elapsed time, preselected options and passing tests are not approval. Preserve ambiguous answers and ask a focused follow-up. A decision does not expand execution scope.
+5. Recalculate readiness, clearing only the resolved blocker. Resume eligible work within the existing request; preserve other prerequisites. Keep decision-log writes serialised if explicitly delegated workers are in use; coordinate ownership before another writer edits the same records.
+6. On recovery, read pending entries and recorded answers first. Reuse IDs, avoid duplicate questions or competing logs, and never delete the only recorded answer. Check current source and plan state before resuming.
 
 ## D-7 — Return to the active loop
 
-Return to the invoking production or sign-off loop within its recorded authority. Resolve only the named decision; do not invent acceptance, widen the sprint or start a different programme. Keep user-facing output brief and end with the recommended skill and affected scope.
+Return to the invoking production or sign-off loop within its recorded authority. Resolve only the named decision; do not invent acceptance, widen the sprint or start a different programme. Lead the next action with what the owner needs to review or answer, not a skill invocation or ledger ID. Apply this wording even when retained repository workflow uses older technical response labels.
 
 ```markdown
-## Next action — <Decision applied | Owner decision required | Independent work ready>
-- **User action:** <one concrete action>
-- **Next input:** <$cg-plan | $cg-produce | $cg-sign-off | $cg-unblock> — <updated assumption, decision set, plan, preparation, earliest Ready Step, or corrective brief>
-- **Blocked by:** <condition preventing the named next action>   <!-- omit unless the status is non-advancing -->
+## Next action — <Review the project context | Choose … | Decision applied | Independent work continues>
+- **Please review:** <linked concrete document/proposal and the actual question; omit when no review is needed>
+- **Decision details:** <link to the relevant entry in the repository decision log, with its decision ID>
+- **Your choices:** <plain-language options and consequences; omit when already answered>
+- **After your answer:** <what the agent records and resumes within existing authority; omit when no answer is needed>
+- **Work waiting:** <affected outcome and why; omit when nothing waits>
 ```
 
-Do not end with a decision survey alone. Name the caller to resume, or name `cg-unblock` when the
-user's answer must first be recorded and applied.
+Use selectable questions under D-6 where permitted; a decision-log entry alone is not a request to the user. A normal reply is sufficient: do not require editing the log, copying a hash or invoking cg-unblock to submit the answer. Always include a clickable link to the relevant decision-log entry alongside the review content; use the actual repository path (`<docs>/plans/decision-log.md`), not an invented `decision-list.md`. Keep skill routing and exact evidence in the checkpoint. When a new action really needs a separate request, name it in plain language and offer the skill as an optional shortcut. For completed decisions report what was applied and the next eligible work, or that no work remains.

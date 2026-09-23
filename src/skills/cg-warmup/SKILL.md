@@ -33,7 +33,7 @@ work while recording the response.
 
 Resolve `<docs>` from `.agents/cg/profile.json` and inspect `cg intent status --json`. Read existing vision, mission, overview, specifications, product rules and durable decisions before asking questions. Draft `.agents/cg/project-context.md` alongside the root contract from these sources with purpose/audience, boundaries, permitted variation, an acceptance example, open questions and binding sources. Distinguish confirmed statements, inferred interpretations and conflicts. Preserve an existing canonical vision; project context must retain a concise, faithful copy of its intent, with provenance links, rather than only point to it. Keep purpose, audience, boundaries and significant approved direction current as development continues; do not copy the decision history. Binding sources use bullet-listed repository-relative paths in backticks so approval includes their contents.
 
-Present the concrete draft and only unresolved material choices to the owner. Minimal prose or a nonempty file does not establish meaningful intent. Do not infer intent from architecture rules, a passing test or current code alone. Module responsibilities normally refine project intent in their contracts; create separate module context only when it adds needed detail, never to override a parent promise silently.
+Present the concrete draft and only unresolved material choices to the owner using cg-unblock D-6: a plain-language question, linked content, actual change summary, choices and what happens next. Keep snapshot identifiers and command details in supporting evidence. Minimal prose or a nonempty file does not establish meaningful intent. Do not infer intent from architecture rules, a passing test or current code alone. Module responsibilities normally refine project intent in their contracts; create separate module context only when it adds needed detail, never to override a parent promise silently.
 
 When all material questions are resolved, write `None` under Open questions. Run `cg intent review --json` and present that exact page and its binding sources. Record the owner's actual approval using a temporary JSON file with `by`, `response`, `scope: "repository"`, and the returned `snapshot`; run `cg intent approve --evidence <file>`, then remove the temporary file. The agent prepares the evidence; the user reviews meaning, not JSON. Prior explicit approval of the exact content is sufficient; never fabricate it. Changed page or binding-source bytes require renewed review. `cg intent verify` exits nonzero until confirmed.
 
@@ -684,29 +684,37 @@ Delete rather than archive when a file has no reader.
 Adoption: finish Phase A, loop Phase B until `cg modules` exits 0, run Phase D, then Phase C.
 Reseed: the additive walk above, then §12a. That is this skill.
 Then return to the user. Do not invoke the next skill yourself, however obvious the route is.
-The `Next action` block names the successor so a person can choose it and so `cg-produce` can
-follow it under a granted authority — naming it is not permission to take it. The single exception
+The checkpoint names the successor so `cg-produce` can follow it under granted authority; the
+user-facing next action explains the choice in plain language. Naming a successor is not permission to take it. The single exception
 is a dispatch from `cg-produce`. If you were not dispatched by it, you are the last stage of this
 turn.
 
 ## 12a. Next-action response
 
-Choose exactly one immediate route:
+Choose exactly one immediate route for the checkpoint; present its user-facing action as described below:
 
-- contracts written, gate green, and questions logged: point the owner at the `DU-NN` set and name
-  `cg-unblock` to apply the answers when they come;
+- questions pending, including intent approval before the gate is green: record the `DU-NN` set and
+  route to `cg-unblock` to apply answers; ask the owner the concrete questions directly;
 - contracts written and nothing is pending: use `cg-plan` with the first real piece of work;
 - findings need delivery: use `cg-plan` with `<docs>/plans/warmup-corrective-set.md` so the owner
   can validate the restructure programme before any move;
 - no discoverable modules at all: stop and ask, naming what was searched for;
-- reseed wrote nothing: name no next skill, and say the delta was empty;
+- reseed wrote nothing: record `None — empty delta` in the checkpoint; tell the owner no changes or further action are needed;
 - warmup is complete and no work is queued: name no next skill.
 
-End the user-facing response with:
+Use cg-unblock D-6/D-7 for pending answers. Explain what the owner is reviewing and why; accept their answer in the conversation. Keep exact snapshots, decision IDs and successor routing in supporting evidence/checkpoints. Do not require a separate skill invocation to answer or a manual decision-log edit. Report created findings or reports only when they help the owner review or locate work; omit inventories of artifacts that were not created.
+
+For example, after presenting the actual change summary and linked binding sources:
 
 ```markdown
-## Next action — <Warmup complete | Answers pending | Findings need delivery | Empty reseed>
-- **User action:** <one concrete action — when answers are pending, "answer the N entries under *Pending your review*"; always say what happened to warmup-findings, warmup-corrective-set, warmup-report, and warmup-reseed-delta>
-- **Next input:** <$cg-plan | $cg-unblock | None — warmup complete | None — empty delta> — <exact decision-log entries, corrective set, delta, or gate evidence>
-- **Blocked by:** <condition preventing the named next action>   <!-- omit unless the status is non-advancing -->
+## Next action — Review the project context
+
+Please review [the updated project context](<relative-path-to-project-context>). Does it accurately reflect our agreed direction? See [decision details — DU-NN](<relative-path-to-decision-log-and-entry-anchor>) for the full proposal and supporting evidence.
+
+- **Approve** — this reflects our agreed direction.
+- **Request changes** — tell me what is missing or incorrect.
+
+Reply here. I will record your answer and, if approved, finish the intent check and continue the authorized warmup work. Delivery that depends on this context waits for approval.
 ```
+
+Adapt the consequence to the actual state and authority; approval does not authorize new delivery. For a completed warmup, state what is ready and the next useful action in plain language (with an optional skill shortcut), or say no further action is needed. For findings, link the concrete corrective proposal and explain the choice it needs. Omit a blocker line when nothing is blocked.

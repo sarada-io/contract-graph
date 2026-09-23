@@ -53,7 +53,7 @@ flowchart TB
 - **Direct source inspection (0.7.0):** C# (.NET), Dart (Flutter), Go, Java, JavaScript, Kotlin, Python and TypeScript.
 - **Other languages (e.g. C++, Rust and Swift):** use the same contract graph and lifecycle, with source facts supplied by agents, owners or repository-specific tools.
 
-Inspection proposes facts for review; it does not prove implementation or framework behavior. See [coverage and limitations](docs/contracts.md#inspect-implementation-facts-before-authoring).
+Inspection proposes facts for review; it does not prove implementation or framework behavior. See [contract verification limits](https://contractgraph.dev/docs/contracts/#enforced).
 
 ## Supported agent harnesses
 

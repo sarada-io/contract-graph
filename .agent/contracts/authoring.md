@@ -33,6 +33,8 @@ replacement/preservation policy; changing an asset does not authorize overwritin
 [Distribution](distribution.md) owns packaging. Keep human docs at one canonical page per topic,
 and preserve durable facts before retiring temporary delivery records.
 
+Pending decisions lead with a plain-language question, concrete review content, choices and consequences; technical approval evidence follows. Warmup and unblock accept conversational answers and keep ledger maintenance and skill routing with the agent. Next actions explain the owner’s choice and subsequent work without snapshot hashes or inventories of absent artifacts.
+
 Production collects missing scope/review choices together through permitted selectable host questions
 (with numbered chat fallback), reuses recorded answers and resumes eligible work under existing authority.
 It preserves batch/per-item review choice and reports Item/Code/Test/Docs with

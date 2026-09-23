@@ -24,7 +24,7 @@ A changed context or binding source still requires fresh approval of the exact r
 
 ## Review and record
 
-The agent handles these commands and the temporary JSON; the owner reviews the meaning and answers in ordinary language.
+The agent handles these commands and the temporary JSON; the owner reviews the meaning and answers in ordinary language. The review request links the concrete document and relevant sources, summarizes what changed, distinguishes previously agreed content from new interpretation, and explains what approval enables. Choose Approve or Request changes, or reply in your own words. The agent records your answer; you do not need to edit the decision log, copy a snapshot hash or run an approval command. Technical evidence stays available beneath the human-readable question. Existing explicit approval is reused only when it covers the exact resulting content and sources.
 
 1. Complete the page from evidence and resolve material questions. Use `None` under Open questions when settled. Binding sources is `None` or a list such as ``- `docs/vision.md` ``; paths must remain within the repository.
 2. Run `cg intent review --json`. Present the exact page and binding sources covered by the returned snapshot.
