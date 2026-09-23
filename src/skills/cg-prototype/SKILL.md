@@ -1,13 +1,15 @@
 ---
 name: cg-prototype
-description: Build a working prototype and refine it through manual human feedback when the desired experience needs exploration. Launch the existing application, make small scoped changes without application test automation, preserve contract truth, and turn explicit prototype acceptance into a roadmap for prepare, produce, and sign-off.
+description: Build a working prototype and refine it through manual human feedback when the desired experience needs exploration. Launch the existing application, make small scoped changes without application test automation, preserve contract truth, and turn explicit prototype acceptance into a roadmap for production and sign-off.
 ---
 
 # CG Prototype
 
+Run `cg intent verify` before dependent delivery. Missing or stale intent routes to cg-warmup; independent inspection and clarification remain available. Preserve repository-owned workflow restrictions and never fabricate owner approval.
+
 Reach a usable preview early. Iterate with the user until the intended result is accepted, then
 hand the actual implementation and remaining delivery work to the standard lifecycle. Prototype
-approval is not final sign-off. Do not invent human acceptance or silently begin auto-run.
+approval is not final sign-off. Do not invent human acceptance or silently begin delivery.
 
 Read `.agents/cg/phases.json` and load the families selected for `prototype`. Shipped defaults
 include `.agents/cg/guidelines/engineering.yaml` on every pass; retained repository phase policy
@@ -22,8 +24,8 @@ smallest responsible boundary before reading implementation. Apply `hierarchy.ki
 from `.agents/cg/principles/architecture.yaml`; resolve applicable P rules and product intent.
 Apply relevant E guidance to a remaining choice. Keep structural bindings and detectors.
 
-Resolve `<docs>` from `.agents/cg/profile.json`, select one programme, and inspect `cg prototype
-status` and `cg next`. Start with `cg prototype start --programme <slug>` or recover its existing
+Resolve `<docs>` from `.agents/cg/profile.json`, select one programme, and inspect `cg delivery
+status` and `cg next`. Start with `cg delivery start --programme <slug>` or recover its existing
 record and roadmap. Use a Git worktree containing the intended starting changes; preserve unrelated
 work. The command creates the starter roadmap, not a branch or commit.
 
@@ -36,11 +38,13 @@ Use the existing application launch path. Do not prepare Steps, enumerate all fu
 application test suites, or finish the roadmap before showing a preview. Fix launch problems
 inside scope; report the exact access or environment prerequisite if the preview cannot run.
 
+For useful, permitted delegation, read the shared [coordinator and specialists](../cg-produce/references/coordination.md) procedure. The coordinator owns feedback, accepted choices, preview integration and review; bounded specialists follow prototype timing and return evidence. Keep small iterations direct when coordination would delay the preview. Delegation does not introduce production Steps, application test automation or a second owner conversation.
+
 ## 2. Implement and review in one continuing loop
 
 Make the smallest useful change and present the running application. The user manually checks the
 experience and supplies feedback. Execute authorized feedback within scope without separate plan,
-prepare, produce, or sign-off invocations. Preserve context; do not create a phase per adjustment.
+production or sign-off invocations. Preserve context; do not create a phase per adjustment.
 Do not author application tests or run application suites or automated browser regression tests
 during this loop. Commands needed to build and serve the preview still run. Browser navigation
 for presentation is not a browser test suite. Do not claim visual inspection without actual access.
@@ -56,7 +60,7 @@ iteration and repair introduced graph failures before treating it as complete. I
 did not change, do not rerun graph verification for an ordinary feedback turn. Record existing
 failures explicitly; prototype status never weakens a binding. Application tests stay deferred.
 
-Only when presenting a review checkpoint, run `cg prototype review --programme <slug> --session
+Only when presenting a review checkpoint, run `cg delivery review --programme <slug> --session
 <id>`. Review fingerprints cover the programme's declared writes, including prior and released
 writers' declarations. Include affected shared inputs in that scope; declarations do not discover
 dependencies. New scope or changed reviewed files requires affected review. Records without write
@@ -66,7 +70,7 @@ Inspect the receipt's `reviewUnscopedDirty` paths: expand the declaration and re
 related edits, or note briefly why they are unrelated in the existing roadmap. The list is a
 review-time observation, not authorship proof or an automatic approval blocker.
 
-After new feedback, `cg prototype resume --programme <slug>` clears acceptance and returns to
+After new feedback, `cg delivery resume --programme <slug>` clears acceptance and returns to
 iteration. If the user pauses, use `suspend`. If they abandon, use `abandon` without deleting code.
 Suspended or abandoned work does not become mergeable. A new session reads the roadmap and record
 before resuming; silence and elapsed time never approve a prototype.
@@ -81,7 +85,7 @@ roadmap, normally `<docs>/plans/<slug>/approval.json`:
 {"by":"the user who answered","response":"their actual answer","scope":"reviewed screens, interactions, devices and data"}
 ```
 
-Use `cg prototype approve --programme <slug> --evidence <approval.json>`. The command rejects
+Use `cg delivery approve --programme <slug> --evidence <approval.json>`. The command rejects
 source changed since the review checkpoint. This records attributed evidence, not authenticated
 identity or a machine judgment of satisfaction. Never generate an answer on the user's behalf.
 
@@ -102,25 +106,25 @@ any sections; phase table statuses are `Current`, `Blocked`, `Complete`, or `Fut
 Select one phase with stable scope and gate whose prerequisites are satisfied or explicitly
 blocked. An accepted prototype is not a green prerequisite. Use cg-plan only for unresolved
 programme outcomes, dependencies, or acceptance questions; a settled prototype goes directly to
-prepare without another planning invocation.
+the shared delivery handoff without another planning invocation.
 
 Establish `cg verify` before handoff, reusing unchanged evidence under
-[verification](../cg-prepare/references/verification.md) when applicable. Run `cg prototype handoff
+[verification](../cg-produce/references/verification.md) when applicable. Run `cg delivery handoff
 --programme <slug> --session <id>`. It checks acceptance against the reviewed scope and rejects
 missing or placeholder roadmap phases, completion gate, and deferred-work sections. These are
 minimum structure checks; preparation still judges whether the plan covers the accepted outcome.
-`cg next --programme <slug>` then selects preparation or an existing eligible queue. Changed
+`cg next --programme <slug>` then selects cg-sign-off as the common finishing owner. Changed
 reviewed inputs before handoff require affected human review.
 
 ## 4. Hand over without rebuilding the prototype
 
 When the user asks to finish or sign off this prototype, use
-[cg-sign-off prototype completion](../cg-sign-off/references/prototype-completion.md). It owns the
+[cg-sign-off delivery completion](../cg-sign-off/references/delivery-completion.md). It owns the
 remaining delivery and final verification without requiring the user to invoke every stage.
 Record actual UX acceptance separately; a completion request alone is not acceptance. This is an
 explicit exception to the prototype stage boundary for that selected completion request.
 
-Give prepare the roadmap, accepted source snapshot, actual worktree including uncommitted files,
+Give cg-sign-off the roadmap, accepted source snapshot, actual worktree including uncommitted files,
 recorded feedback and approval, and remaining obligations. Ensure a fresh worker can access those
 files; do not send only a plan into a clean checkout that lacks the implementation.
 
@@ -136,16 +140,15 @@ because this skill was invoked. Never claim a local record alone blocks merging.
 ## Stage boundary — yield here
 
 Continue the prototype loop through authorized feedback; yield when human review or a prerequisite
-is needed. After an accepted handoff, follow an explicit prototype-completion request through cg-sign-off.
-Otherwise return to the user unless auto-run continuation was already
-explicitly authorized. In that case pass the accepted roadmap to cg-auto-run within that authority.
+is needed. After an accepted handoff, follow an explicit completion request through cg-sign-off.
+Otherwise return to the user. Completion continuation uses the same sign-off entry; sign-off returns implementation repairs to cg-produce within that authority.
 Do not require another approval of the plan merely because it was written after the prototype.
 
 End every result with one block:
 
 ```markdown
 ## Next action — <Awaiting review | Iterating | Delivery ready | Blocked>
-- **User action:** <review the preview, supply the prerequisite, or invoke the named next skill; None when already-authorized auto-run continues>
-- **Next input:** <$cg-prototype | $cg-sign-off | $cg-prepare | $cg-plan | $cg-unblock | $cg-auto-run> — <one exact preview, roadmap, or decision>
+- **User action:** <review the preview, supply the prerequisite, or invoke the named next skill; None when already-authorized completion continues>
+- **Next input:** <$cg-prototype | $cg-sign-off | $cg-produce | $cg-plan | $cg-unblock> — <one exact preview, roadmap, or decision>
 - **Blocked by:** <human review or prerequisite preventing the next action; omit on an advancing route>
 ```

@@ -17,20 +17,22 @@ export function status(repoRoot, options = {}) {
   return {
     programme,
     installation: current.installation,
+    intent: current.intent,
+    delivery: current.delivery,
     signOffRecovery: current.signOffRecovery,
     state: current.state,
-    nextAction: current.installation.requiresInit ? "cg init" : current.repairableQueue ? "cg-prepare" : current.stage,
+    nextAction: current.installation.requiresInit ? "cg init" : current.intent?.required && !current.intent.ready ? "cg-warmup" : current.repairablePlan ? "cg-plan" : current.repairableQueue ? "cg-produce" : current.stage,
     reason: current.reason ?? null,
     programmes: current.programmes ?? [],
     queueFiles: [...new Set(briefs.map(b => b.file.replace(/:\d+$/, "")))],
     currentStep: current.step ? step(current.step) : null,
     remainingSteps: briefs.filter(b => b.status !== "Complete").map(step),
     findings: current.findings ?? [],
-    prototype: current.prototype ? {
-      file: current.prototype.file,
-      status: current.prototype.status,
+    receipt: current.receipt ? {
+      file: current.receipt.file,
+      status: current.receipt.status,
       // A persisted completion request records coordination scope; status never creates one.
-      completionRequest: current.prototype.completionRequest ?? null,
+      completionRequest: current.receipt.completionRequest ?? null,
     } : null,
     residue: documents ? { blocking: documents.blocking,
       otherProgrammes: documents.residue.filter(item => item.scope === "other") } : null,

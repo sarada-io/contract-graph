@@ -1,8 +1,57 @@
 # Contracts
 
-Contract Graph represents a repository as connected, machine-readable contracts. A contract is
+At the core of Contract Graph Dev Kit, connected, machine-readable contracts map a repository’s responsibilities and dependencies. The development workflow uses this graph to locate and bound changes. A contract is
 the durable promise for one owned software boundary and the routing node that leads to the next
 smaller boundary.
+
+## Authoring a new contract
+
+Use the shared `.agents/cg/templates/contract.template.yaml` as an authoring aid, not another source of validity rules. The contract schema defines shape; `architecture.yaml` determines placement and decomposition. Replace the example kind, parent, composition and surface with inspected facts. A surface may be a function, event, command, schema or another supported entry—not necessarily a service. Warmup and produce use this same template only for missing contracts; existing contracts are amended in place. Run `cg verify` after authoring.
+
+## Inspect implementation facts before authoring
+
+`cg contract inspect` gathers source evidence for one selected unit and proposes field values for review. It writes only to stdout and never modifies a contract. Use normal contract routing to select an existing boundary, or select an unmapped directory explicitly before adoption:
+
+```bash
+cg contract inspect . --id billing
+cg contract inspect . --id billing --json
+cg contract inspect . --unit packages/billing --entry src/index.ts --json
+```
+
+Exactly one of `--id` or `--unit` is required. IDs, governed units and canonical contract paths work with `--id`, which requires a valid graph. `--unit` works before init or with an incomplete graph and reports graph problems separately. Repeat `--entry` for explicit unit-relative entry files. JSON and Markdown contain the same evidence. Exit 0 means a report was produced, including partial reports; it does not mean that a contract is verified or ready to accept. Invalid selection or fatal errors exit 1. There is no apply or write option.
+
+The JavaScript/TypeScript adapter uses pinned TypeScript 5.9.3 to parse JavaScript/TypeScript ESM syntax without executing source, builds, package scripts or configuration plugins. It records explicit exported names (including aliases, defaults and type-only declarations), import/re-export sites, literal dynamic imports and package entry declarations. Exact relative file references may resolve as filesystem facts; this is not full Node, compiler or bundler resolution. A language export is a candidate, not necessarily an architectural public surface. Public paths and supported symbol lists are proposed separately from existing authored values; discrepancies never delete promises automatically.
+
+Package `bin`, `main`, `types`/`typings` and `exports` supply entry evidence. Conditional alternatives remain qualified; wildcard/array targets and exclusions are recorded without expansion. Missing generated targets stay missing. CommonJS semantics, wildcard export closure, declaration-only implementation evidence, TS namespace/ambient exports, extension inference, path aliases, workspace package resolution, framework routes remain unsupported or unresolved. The parser does not type-check or prove runtime availability, input/output behavior, errors or guarantees.
+
+Dart/Flutter, Java, Kotlin, Python, Go and .NET/C# have additional syntax adapters. They use pinned `web-tree-sitter` 0.25.10 and grammar binaries from `tree-sitter-wasms` 0.1.11 for Java/Kotlin/Python/Go/C#, plus the pinned Dart WASM distributed in `@plurnk/plurnk-mimetypes-grammar-dart` 1.16.1 (vendored without its JavaScript wrapper); no adopter compiler, runtime, build or plugin is invoked. Each report lists its `adapters`, parser versions and grammar binary hashes, and records the adapter/language for each analyzed file. Packaged grammar versions define the accepted syntax: a newer or unsupported construct that the grammar cannot parse produces a failed file analysis, not an empty API. Language parsers are bounded to 2,000 progress callbacks per file; stopping early yields a failed analysis.
+
+| Language | Supported declaration and dependency evidence | Explicit limits |
+|---|---|---|
+| Dart/Flutter | Library-public declarations and members, explicit constructors, functions, accessors, bindings, type aliases, enums, mixins and named extensions; import/export URIs, aliases, deferred markers, ordered show/hide combinators, conditional alternatives, part directives and main entry evidence | Underscore names are library-private. Parts/reexports, inherited/mixed-in APIs, generated/implicit members, extension applicability, annotations and platform selection remain unresolved. No Flutter widget behavior, navigation, generated-code freshness or build resolution is inferred. |
+| Java | Public types, explicit public fields/methods/constructors, public nested types, implicit interface members, package/import declarations and static/wildcard import markers | Inherited, annotation-generated, enum/record-generated APIs and Java module exports are not expanded. |
+| Kotlin | Default-public or explicit public types, functions, properties, constructor properties and type aliases; package/import aliases | Private/internal/protected declarations are excluded from the public set. Implicit override visibility, generated/multiplatform APIs, scripts, destructuring and inheritance remain qualified. |
+| Python | Top-level definitions/bindings, class members, simple literal `__all__`, non-underscore naming convention, static/relative imports and aliases | `__all__` controls star imports, not access control. Imported binding availability, decorators, dynamic exports, conditional definitions, inheritance and module/class execution remain unresolved. |
+| Go | Unicode-uppercase exported declarations, fields, interface methods and methods on public receivers; package/import declarations | Build tags, platform/test filenames, embedded/promoted members, aliases and non-public receivers require further review. |
+| .NET/C# | Public types/members, implicit interface members, nested types, namespaces and using aliases/static/global markers | Assembly/build resolution, partial/record-generated APIs, preprocessor branches, attributes, inheritance, operators/indexers and compiler-generated entries remain qualified. F# and Visual Basic are unsupported. |
+
+Member names are qualified by their containing source type (for example `Api.Charge`); constructors use their declared source name (for example `Api.Api`). Namespace/package identity is separate evidence. Overloads produce separate observations with the same symbol name; this tool does not infer overload signatures or behavior. Non-JS imports retain their source specifiers and aliases but remain unresolved against language builds, environments and dependency graphs. A source declaration's visibility is not proof that its compiled package exposes that API.
+
+Use an explicit entry in any supported language, for example `cg contract inspect . --unit billing --entry Api.cs --json`. When an unmapped unit has no explicit entry selection, source files with supported public declarations become **candidate inspection paths**, never automatic contract surfaces or graph nodes. Existing authored contracts retain their selected surfaces. The scan reports nested Dart (`pubspec.yaml`)/Go/Python/JVM/.NET project roots for separate selection rather than absorbing them into one boundary. Languages outside the listed adapters remain unsupported even if the installed grammar distribution contains their parser binaries.
+
+For a Flutter trial, run `cg contract inspect . --unit . --entry lib/main.dart --json` from the application directory, or select a smaller contract-owned unit after routing. Repeat `--entry` for known flavor entry files; `main` observations do not select a build target. `cg modules` recognizes `pubspec.yaml` packages and Dart source branches. `.dart_tool`, `build` and `integration_test` trees are excluded from ordinary inventory; generated `.g.dart`/`.freezed.dart`/`.gr.dart` files encountered elsewhere remain qualified source observations. Barrel exports remain useful candidate paths even when their full exported symbol set is unknown. Flutter widget fixtures exercise syntax extraction, not a running Flutter application. Dart privacy and package boundaries follow the [Dart library](https://dart.dev/language/libraries) and [package layout](https://dart.dev/tools/pub/package-layout) conventions; neither defines architectural contract ownership.
+
+Read the report's coverage and `stable` status before its proposals. Each source observation identifies its file, range and content hash; manifest observations identify their property pointer. Explicit entry selection is recorded as a proposal, not an extracted source fact. Snapshot hashes identify the analyzed inputs, including directory inventories and probed target presence. Rerun before consuming saved evidence after any relevant source, graph, manifest or configuration change. Reports are transient; retain one only while active work or repository policy needs it.
+
+Unknown proposal values are `null` with a state/reason in the report, never empty arrays. An observed empty ESM export set is explicitly distinguished from parse failure or incomplete export coverage. Positive facts can survive partial coverage, but unresolved export sets cannot propose replacing an authored symbol list. All required contract fields are assessed: meaning, responsibilities, behavior, composition, dependencies, rules, routes and verification remain authored content or decisions requiring judgment. Keep report statuses and evidence objects out of `contract.yaml`; its existing schema remains authoritative.
+
+The scan stops at declared descendant units and nested package roots and identifies them for separate inspection. It excludes tool, vendor, generated and test trees, records skipped symlinks, and limits the inventory to 10,000 entries, 64 directory levels, 1 MiB per read file and 32 MiB total read bytes. Limits and unreadable files make coverage partial. Explicit entry declarations can identify files within normally excluded trees, but do not override declared descendant ownership. No symlinks are followed. This inventory is bounded evidence, not proof that the graph contains every architectural boundary.
+
+Implementation imports stay separate from `relations.dependencies`. A resolved target can name its most specific **declared** contract owner when the graph is valid; the author must decide whether the import is a legitimate public dependency, a bypass to repair, or evidence that the boundary needs review. It does not determine parent/child ownership, a leaf declaration or task routes.
+
+After review, use the shared template for a missing contract or amend an existing contract narrowly. Supply meaning from accepted intent, bounded code reading and actual behavioral checks; never weaken an accepted promise merely to agree with current code. Run contract/graph verification after authoring and report its result separately from extraction and behavioral evidence. Inspection, better instructions and passing schema checks do not prove implementation correspondence.
+
+The installed skills invoke inspection during warmup before contract population, during produce when changes need source facts, and at sign-off for affected contract units after finishing changes and repairs. Sign-off records current evidence and finding dispositions alongside behavioral and graph checks, refreshing it when relevant inputs change. Unaffected units and documentation-only work do not require a repository-wide scan. These are agent procedure requirements: init installs them, while `cg verify` and `cg delivery close` do not automatically run source inspection or enforce its report freshness.
 
 ## One artifact per boundary
 
@@ -321,6 +370,14 @@ library owns parsing, traversal, rendering, and verification.
 
 The loop that consumes those contracts — plan, queue, Step, and the disk baseline a later
 session is supposed to trust — is [workflow](workflow.md).
+
+## Preserve accepted promises when contracts change
+
+A contract's purpose explains how its unit serves its parent. Project intent supplies the wider product meaning; a module can refine that meaning through its purpose, responsibility and surface without a mandatory separate intent document. A module cannot silently change its parent's promise. Establish authority for an actual product change and update affected callers and contracts together.
+
+Record the distinction between a promised requirement and its current implementation. When code violates an accepted invariant, retain the requirement and expose the discrepancy and missing evidence. Conversely, do not claim that an intended capability already exists. Updating both code and a contract to agree does not establish that the changed promise was authorized.
+
+When a test expectation changes, determine whether it repairs an incorrect test, reflects an authorized requirement change, or conceals an implementation defect. The last case requires repairing the implementation. See [architecture considerations](architecture-considerations.md#intent-authority-and-implementation-evidence) for amendment reasoning and [intent approval](intent.md) for the repository context.
 
 ## Authoring rule
 

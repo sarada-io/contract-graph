@@ -19,7 +19,7 @@ import path from "node:path";
 import { productHasHarvestedRules } from "./model.js";
 import { loadContractGraph } from "./contracts.js";
 import { profilePath } from "./profiles.js";
-import { readPrototypes, programmeName } from "./prototype.js";
+import { readDeliveries, programmeName } from "./delivery.js";
 
 /** Markdown inline links and reference definitions. Bare paths in prose are deliberately ignored. */
 const LINK = /\[[^\]]*\]\(<?([^)>\s]+)[^)]*\)|^\[[^\]]+\]:\s*(\S+)/gm;
@@ -171,7 +171,7 @@ export function residue(repoRoot, { docs, programme } = {}) {
 
   // Receipts are typed consumers of local evidence, including non-Markdown files. Never infer
   // ownership from arbitrary JSON strings or exempt a whole active programme directory.
-  const prototypes = readPrototypes(repoRoot);
+  const prototypes = readDeliveries(repoRoot);
   const evidenceRoots = prototypes.flatMap(record => record.history.flatMap(event => {
     const p = event.evidence;
     if (typeof p !== "string" || !p.startsWith(`${docsRoot}/plans/${record.programme}/`) ||

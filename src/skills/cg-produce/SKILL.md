@@ -1,240 +1,57 @@
 ---
 name: cg-produce
-description: Execute a prepared Contract Graph queue continuously and sequentially in one phase branch or worktree. Use with cg-prepare Step briefs that define priority, dependencies, blockers, expected state, editable paths, contract changes, handoff evidence and runnable gates. Selects the earliest Ready Step, delivers implementation, tests, resources, dependencies, contracts and detectors as one independently valid change, recalculates the queue after each verified handoff, and continues until every Step is complete or no ready work remains.
+description: Implement an agreed sprint with internal preparation, dependency-aware automatic continuation, batch or per-item review, and resumable progress. Also prepares and implements in-scope repairs returned by sign-off. Reports each item's code, tests and documentation separately; finishing remains with cg-sign-off.
 ---
 
 # CG Produce
 
-Run the prepared queue with one Step `In progress` at a time. Do not redesign the phase, create
-another execution branch, run Steps concurrently, or defer contract truth.
+Read the selected master plan, root contract, `.agents/cg/profile.json`, `.agents/cg/workflow.md` and the principle families selected for `produce` in `.agents/cg/phases.json`. Run `cg intent verify` and `cg status --programme <slug>`. A and applicable P bind; E is advisory. Resolve the actual requested sprint and execution scope before writing. Use cg-plan when outcomes or material scope remain unsettled; do not substitute technical readiness for owner agreement.
 
-Read `.agents/skills/cg-unblock/SKILL.md` when a fork remains unresolved by the Plan, contracts
-and accepted decisions, or requires owner authority. Under auto-run, ask the Manager first;
-otherwise ask the user directly under D-6. Record the answer and continue independent work.
+## Ask how the owner wants to review
 
-Read `.agents/cg/phases.json` and load the families selected for `produce`. Shipped defaults
-include `.agents/cg/guidelines/engineering.yaml` on every pass; retained repository phase policy
-controls loading. Consider applicable E practices as advisory context. They create no acceptance
-criteria, required changes, or blockers unless separately adopted through an authorized binding.
-Do not reopen settled decisions merely because an E preference differs.
+Before starting a run, recover the owner's actual scope and review preference from the conversation and master roadmap. Ask only for missing choices. Use the host's available structured question tool with selectable options when permitted in the current mode; follow its tool restrictions rather than assuming a named tool is available. Prefer asynchronous questions so independent inspection and preparation can continue. If no permitted structured tool is available, present the same numbered options in chat and explain that the host requires a reply to resume.
 
-## Required outcome
+For missing review cadence, ask **“How should I review the selected work?”** with **“All remaining items together”** and **“After each item”**, explaining that the former implements eligible work before combined review and the latter pauses after each developed item. Recommend combined review for an unattended implementation request unless the scope's risk calls for incremental review. Retain free-text input. All remaining means the authorised run scope, not an automatic expansion to the entire epic.
 
-Finish with all ten true:
+If scope is also genuinely ambiguous, ask it in the same interaction as a separate selectable question, using the actual sprint/epic labels from the plan. Do not combine scope and cadence into one free-text question or ask for them over successive turns when both are already known to be missing. An explicit request such as “deliver all S1–S4” settles scope; “implement all remaining items and review them together” settles batch review. Save the actual choice, scope and response under `## Production run` in the same master roadmap; recover it after interruption rather than ask again. No answer means the choice is pending, not permission to pick a mode. Independent inspection may continue while waiting; implementation requiring that choice waits.
 
-1. The selected Step is the lowest-numbered `Ready` Step in the recalculated queue.
-2. Each Step starts from the latest verified phase state plus its prerequisite handoffs.
-3. Production behavior, tests, resources, dependencies, contracts, and detectors move together.
-4. Every changed boundary, invariant, entry point, or operational assumption is truthful in its
-   governing contract.
-5. A new or changed rule and its detector land with the implementation.
-6. The Step edits only its declared paths and preserves unrelated work.
-7. Its assigned `Done when` gate passes, including broader checks when scope or policy requires them.
-8. Every handoff updates the Step report and all affected queue states.
-9. Execution continues through ready work until the queue drains or no `Ready` Step remains.
-10. The response ends with the `Next action` block in §9.
+A Proposed roadmap is a checkpoint to reconcile, not a reason to demand another invocation. If the actual request agrees the documented outcomes and authorises their implementation, record that authority and reconcile the roadmap to Active before rerunning readiness checks. If outcomes remain unsettled, ask only the unresolved question through cg-plan or cg-unblock. Never treat execution authority as acceptance of an unseen result. After answers arrive, persist them and continue eligible work under the original request without another “shall I start?” or skill invocation.
 
-## 1. Admission and preflight
+For **all remaining items**, explain: **“I’ll implement everything that can proceed, then present it together for review. I’ll skip steps that need your input, record what is needed, and continue with the next independent item.”** Mark input-dependent items Blocked in the master plan and retain their decision under the original item ID; record which dependent items are waiting. For a technical queue, set Blocked by and recalculate Step states before continuing. Dependent work waits too. Do not mark a skipped step complete or implement a guessed product choice. Present pending questions together at the end where possible; if an answer arrives meanwhile, record it before recalculating readiness and resuming eligible work.
 
-Do not start if the brief lacks priority, dependencies, blockers, queue state, expected starting
-state, editable paths, required contract changes, work, handoff, or `Done when`.
+For **review after each item**, develop one ready item, show its result and the report below, then wait for that item's review before developing the next. Feedback stays in this plan. Item acceptance does not certify combined sprint behavior or finish deferred tests/docs. If the chosen item is blocked, report the condition; do not silently switch review modes.
 
-1. Apply `.agents/cg/principles/architecture.yaml` `graph` before any edit: recurse,
-   selfSufficient, surface, adapters, stay, add-child, or elsewhere.
-2. Load the contracts named by the brief. Run `cg contract route --task "<Step goal>"` if
-   placement is still unclear. Then scoped `P` rules, then the repository constitution and
-   specifications. Apply relevant `E` guidance to a remaining design fork. A practice already cited on the
-   phase or brief is not remaining. An `E` disagreement is not `Blocked by` and not `$cg-unblock`.
-3. Resolve `<docs>` from `.agents/cg/profile.json` `docs` (default `docs`). Confirm with
-   `cg status --programme <slug>`. Inspect `cg residue --programme <slug>` as a baseline;
-   unrelated findings alone do not prevent this Step. Read `<docs>/plans/decision-log.md`: *Resolved* entries are authority; *Pending
-   your review* entries are not, and a Step blocked on one stays blocked.
-4. Run `cg next --programme <slug>`. Confirm this is the lowest-numbered `Ready` Step.
-   For unreadable queue syntax or `repair-required`, return the exact file and finding to
-   `cg-prepare`. Do not work around a prepared gate or call routine plan repair a user decision.
-5. Confirm the branch or worktree and baseline match the preparation.
-6. Verify every declared prerequisite handoff and the latest accumulated phase state. The first
-   prepared prototype repair may explicitly admit a measured provisional baseline; do not claim it
-   is green or refuse the repair solely because the assigned defects still exist.
-7. Inspect the worktree and preserve pre-existing unrelated changes.
-8. Establish `cg verify` and the narrowest useful baseline; reuse applicable recorded evidence
-   under [verification](../cg-prepare/references/verification.md), otherwise run the commands.
-   Record existing failures as facts.
+Review cadence is distinct from execution scope. A preview request stops at review. A request to complete the sprint also authorises in-scope finishing and repairs after required acceptance. Neither mode approves unseen work or authorises merging, publishing or the next sprint.
 
-If `graph` decides `add-child` or `elsewhere`, compare it to the Step brief. If the brief already
-names that split, new child, service set, or vendor adapter as this Step's work, execute it:
-still-mixed code is the starting state, not a reason to stop. If the brief adds new behavior to
-the still-mixed node, or needs an undeclared path, stop with `$cg-prepare`. Do not add the
-behavior to the current boundary because its files were already in the brief. If the phase
-outcome or remaining order must change, stop with `$cg-prepare` carrying that finding — do not
-emit `$cg-plan`; preparation returns to planning when the outcome moved.
+## Execute and recover
 
-An undeclared entry, exposure outside the declared promise, or a surface bypass requires an
-affected contract or implementation correction within the Step. Apply `graph.adapters.mix`
-and `selfSufficient` to adapter responsibilities; vendor count alone does not require a split.
-Consumer-specific workflow stays outside a consumer-independent core while its promise suffices;
-amend the port with a product-neutral concept when the promise needs to change.
+For sprint implementation, read [sprint production](references/sprint-production.md). Route through responsible contracts before bounded source reading. Inspect the planning baseline and next change, prepare incrementally and coordinate execution. For useful, permitted delegation, read [coordinator and specialists](references/coordination.md); otherwise implement directly. Keep one coordinator responsible for review, integration and recovery, with bounded specialists retained through immediate repairs and released after verified handoff. Technical queues remain sequential; delegation does not waive Step readiness or review cadence. No separate auto-run mode or mandatory team is required. Honour explicit delegation/model constraints; never invent settings or measured efficiency gains.
 
-If the Step needs an undeclared path or a missing contract change, return to `cg-prepare`. Do not
-edit first and hope completion repairs it.
+Use the same checkout and preserve unrelated changes. Measure progress from disk, the plan and applicable receipts, not stale chat summaries. Before a handoff checkpoint the selected sprint, review choice, current item, pending decision IDs and next action in the master plan. The plan owns item outcomes; internal queues own technical Step state; receipts own working-result acceptance and scoped completion authority. Link evidence instead of maintaining a duplicate ledger. Recover recorded answers before re-asking; apply each decision only within its recorded scope.
 
-## 2. Execute each selected vertical Step
+Select dependency-ready work in agreed priority order. After each change, answer or blocker, recompute readiness. Keep unfinished code/tests/docs distinguishable. Batch mode continues independent ready work until none remains or the batch is implemented. A genuine external prerequisite, missing owner decision, required acceptance or cancellation pauses affected work; a repairable defect normally triggers repair. Never assume an unanswered question is resolved by a passing test.
 
-Within the Step:
+For technical queues, sign-off repairs or a malformed queue, read [internal preparation](references/execution-preparation.md), then [queue execution](references/queue-execution.md). Repair scope/order/syntax internally under the same request; preserve IDs, completed evidence and required gates. A cg next permission with entry `execution-preparation` and `executionAllowed: false` admits preparation only, including a blocked or completed queue returned by sign-off. Preserve actual blockers and completed evidence, add the bounded corrective Step, then re-run cg next. Execute only a Ready or eligible In progress Step under existing authority. Admission to repair a queue does not allow executing a blocked Step. Do not create a new plan for an in-scope defect. Use [verification](references/verification.md) for evidence reuse and gate placement. Sign-off owns finishing tests/docs and final verification; produce handles any implementation repairs it returns.
 
-1. state the contract truth that changes;
-2. update or add its executable detector;
-3. implement the smallest end-to-end behavior;
-4. update or add functional tests where changed promises lack adequate coverage;
-5. update resources and dependencies;
-6. run the Step verification and `cg verify`;
-7. inspect the diff and residue scan; and
-8. create the coherent commit when repository policy authorizes commits.
+Keep contracts truthful and binding detectors intact during implementation. Defer unstable application test backfilling and final docs when appropriate, recording each obligation in the plan. Run immediate checks needed to build, exercise and safely change the relevant boundary. Do not delete or weaken a valid test to hide an implementation defect.
 
-Contract, detector, implementation, and tests are one delivery. Their internal edit order may
-vary; they are never separate handoffs.
+## Report and next action
 
-After the handoff is green, mark the Step `Complete`, recalculate the queue, and select the new
-lowest-numbered `Ready` Step. Continue in this invocation while another Step is ready and the
-execution context remains safe. Serial, not concurrent.
+At every run-ending review, blocked stop or handoff, show the sprint and a concise table covering all items in the requested run scope, including skipped and not-started items. The Item cell includes stable ID, Feature/Task/Bug, summary, outcome status and an actual link to its master-plan entry.
 
-## 3. Contract co-delivery
+| Item — type, summary, status and plan pointer | Code | Test | Docs |
+|---|---|---|---|
+| F1 — Feature: filtered export; Awaiting review; <plan link> | Yes | Partial | No |
+| B1 — Bug: empty-state wording; Blocked; <plan link> | Blocked | Blocked | No |
 
-For every changed behavior, boundary, invariant, public entry point, or operational assumption:
+Use exactly **Yes / No / Partial / Blocked** for the three work columns. Yes means applicable work is complete with evidence; Test Yes requires the applicable checks to have passed on the relevant state. No means no completed work; Partial means unfinished work exists; Blocked means a prerequisite prevents proceeding. A legitimate deferral is No or Partial, not automatically Blocked. Use No for a category requiring no work and identify that exception briefly. Code Yes does not mean owner acceptance or item completion. Report failing checks honestly and keep the affected obligation incomplete.
 
-1. Update the impacted contract in this Step.
-2. State current truth in full; never use a phase path or Step ID as the rule.
-3. Add or update machine enforcement when the rule is testable. Do not use `test -f` / `test -d`
-   as verification — name the test or command that exercises the invariant.
-4. Prove a new or changed detector fails on demand and evaluates a non-empty production set.
-5. Update scoped `P` IDs, `.agents/cg/enforcement.yaml` rows, and reciprocal graph edges when
-   required. A new generic `A` rule belongs only in a verifier-owning change that also registers
-   its detector; do not add one by editing installed binding YAML.
-6. Run `cg verify` before the Step is complete.
+Keep narrative short: only material blockers, deferrals, exceptions or risks need notes. End with **Next recommended: `<action or None>` — `<specific scope and reason>`**. Select from actual remaining obligations:
 
-Do not delegate these to a later Step or to `cg-sign-off`.
+- Remaining implementation or feedback: cg-produce for the affected items, including after an accepted per-item review when more implementation remains.
+- Required human review: request that review; do not dispatch its dependent work. Name a following skill only when a concrete obligation remains after acceptance.
+- Accepted work with required tests, docs or combined verification outstanding: cg-sign-off for those obligations.
+- An unresolved consequential decision with no independent work left: cg-unblock; a material outcome/scope revision: cg-plan.
+- The requested work and its required acceptance and verification are complete: **None — requested work complete**. Do not recommend sign-off merely to name a skill or repeat valid evidence.
 
-When creating a new boundary contract, use
-[the YAML contract template](assets/contract.template.yaml).
-
-### A new self-sufficient unit owes a contract in the Step that creates it
-
-A component, library, sub-module, or module is self-sufficient when it delivers a nameable
-function with one owned responsibility, an explicit surface, and external dependencies through
-declared contracts and surfaces. The Step that creates one owes four things
-together:
-
-1. its own `.agents/cg/contract.yaml`, from the template;
-2. any applicable repository-owned P IDs in its `rules` array; global A rules apply automatically;
-3. reciprocal relation edges: the parent names the child and the child names its parent — an
-   undeclared child is unreachable by traversal, which is the same as not existing;
-4. `cg verify` green.
-
-If the unit is not self-sufficient — it changes only when a sibling changes — do not give it a
-contract; say in the parent why those packages are one boundary.
-
-## 4. Complete moves and restructures atomically
-
-For every move assigned to the Step:
-
-1. move production code into the destination namespace;
-2. move tests and fixtures;
-3. move resources and configuration;
-4. update qualified imports;
-5. add direct dependencies to consumers;
-6. remove dependencies the source no longer needs;
-7. update source and destination contracts and detectors;
-8. compile source, destination, and direct consumers;
-9. search for old packages, registrations, launch targets, resources, and imports; and
-10. inspect untracked files so a move is not mistaken for deletion.
-
-Never maintain two live implementations unless the brief names temporary compatibility residue and
-its removal condition.
-
-## 5. Handle unexpected scope
-
-- Edit only paths declared by the Step brief.
-- Stop with `$cg-unblock` when new evidence creates a protected design choice. An `E`
-  disagreement is not that evidence.
-- Continue work that remains inside the Step and can still produce one coherent verified handoff.
-- Stop with `$cg-prepare` when a new path, dependency, contract, or ordering change is required.
-- If the Step cannot finish, leave the repository at its last contract-complete verified handoff,
-  mark the Step `Blocked` with the exact decision or prerequisite, and recalculate the queue.
-- Select a later Step only when it is `Ready`, consumes no blocked output, and neither overlaps nor
-  invalidates the blocked Step's paths. Record the deferral; never treat it as completion.
-
-## 6. Test obligations
-
-Every Step: run its stated verification; add a negative, failure, or absence case for each
-invariant. Moves: prove the destination works and source ownership is absent. Leave final
-cross-Step composition assertions to `cg-sign-off`. Additional security, route, or isolation cases
-belong only when the brief or a contract invariant requires them.
-
-## 7. Durable non-contract documentation
-
-If the Step changes product behavior, operator procedures, architecture rationale, or diagrams,
-record those paths in the Step handoff. `cg-sign-off` writes them. Do not invoke `cg-sign-off`
-from this skill. Product documentation is not the source of a rule, and a contract update is never
-satisfied by writing a document about it.
-
-## 8. Verify and hand off accumulated state
-
-1. Run the Step's `Done when` verbatim.
-2. Account for each assigned check once using [verification](../cg-prepare/references/verification.md).
-   Do not add a second unconditional full gate. Run broader checks when the preparation or retained
-   repository policy requires them; missing Step verification requires re-preparation.
-3. Compare the diff with the Step's expected starting state.
-4. Confirm only declared paths and preserved unrelated changes appear.
-5. Record the commit or exact worktree state that dependent Steps consume.
-6. Report commands/results, contracts/detectors changed, assumptions, decisions, residue, and
-   rollback information.
-7. Mark the Step `Complete`, recalculate every `Waiting`, `Ready`, and `Blocked` Step, and select
-   the new lowest-numbered `Ready` Step.
-8. Continue immediately when a Step is ready; otherwise emit the terminal handoff from §9.
-
-Do not rebase or merge between Steps. Every selected Step continues from the verified accumulated
-state in the phase's single execution context.
-
-## Stage boundary — yield here
-
-When invoked by the [prototype completion coordinator](../cg-sign-off/references/prototype-completion.md),
-return the stage handoff to that coordinator so it can continue the selected prototype's recorded
-completion request. Preserve normal queue readiness, ownership, and Step verification. The ordinary
-standalone boundary below still applies outside that scope.
-
-Drain every `Ready` Step in this invocation. That is this stage, not a new one. Then return to the
-user. Do not invoke the next skill yourself, however obvious the route is. The `Next action` block
-names the successor so a person can choose it and so `cg-auto-run` can follow it under a granted
-authority — naming it is not permission to take it. Outside prototype completion, the exception is a dispatch from
-`cg-auto-run`. If you were not dispatched by it, you are the last stage of this turn after the
-queue drains or no `Ready` Step remains.
-
-## 9. Next-action response
-
-A fixable defect is work, not a run-wide blocker. If repair needs preparation, checkpoint the
-finding and yield `Re-preparation required` to `cg-prepare` without `Blocked by`, unless that
-preparation itself cannot proceed. Keep the affected Step incomplete. Under auto-run, set
-`User action` to `None — auto-run continues with the corrective route`; the Engineer handles it.
-
-Choose exactly one immediate route:
-
-- all Steps are `Complete`: use `cg-sign-off` with the preparation record and all Step reports;
-- a `Ready` Step remains but the current execution run must yield: use `cg-produce` with the
-  recalculated earliest `Ready` Step brief;
-- scope or ordering changed: use `cg-prepare` with the exact finding;
-- no Step is `Ready` and protected decisions remain: use `cg-unblock` with the consolidated
-  decision-log set;
-- no Step is `Ready` because of external prerequisites only: name no next skill until one changes.
-
-End the user-facing response with:
-
-```markdown
-## Next action — <Queue complete | Ready handoff | Re-preparation required | Queue blocked>
-- **User action:** <one concrete action>
-- **Next input:** <$cg-produce | $cg-sign-off | $cg-prepare | $cg-unblock | None — waiting on prerequisite> — <earliest Ready Step brief, Step report set, preparation finding, or blocker set>
-- **Blocked by:** <condition preventing the named next action>   <!-- omit unless the status is non-advancing -->
-```
-
-Do not stop for a user-facing response after every green Step while this run can safely continue.
-When yielding, name the recalculated earliest `Ready` Step, the consolidated blocker set, or the
-exact evidence bundle that allows `cg-sign-off` to start.
+Under an existing completion request, continue to the next authorised action after acceptance instead of asking the owner to invoke another skill. An implementation-only request stops at its requested boundary. Report any wider sprint obligations accurately without inventing another stage for the completed request. Code/Test/Docs Yes alone never waives required human acceptance or combined verification. Never call the sprint complete while a required item or finishing obligation remains.

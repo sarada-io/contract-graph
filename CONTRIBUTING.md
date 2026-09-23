@@ -1,7 +1,12 @@
 # Contributing
 
-Contract Graph is a contract-first project. A contribution is complete when the implementation,
+Contract Graph Dev Kit is an open-source framework for agentic software development, built around repository-native contracts as a graph. Contributions keep the graph, development workflow and verification tools coherent. A contribution is complete when the implementation,
 tests, user documentation, and affected YAML contracts tell the same story.
+
+For this repository's implementation, start at the lightweight
+[Markdown contract graph](.agent/contracts/README.md), then read the responsible tool group's
+contract. Keep its ownership and entry points current alongside changes. These maintainer
+contracts describe logical code boundaries; they are not installed into adopting repositories.
 
 ## Before opening a pull request
 
@@ -50,7 +55,7 @@ release version (Enter keeps the current `package.json` value, Escape cancels). 
 version changes it runs `npm version <version> --no-git-tag-version` so `package.json` and
 `package-lock.json` update without a git tag, then deletes `dist/build` and `npm run pack` replaces
 `dist/tar/contract-graph-<version>.tgz`. Installing the release tarball to this machine uses `npm install -g` with that
-tarball, building it first if it is missing. Publish checks `npm whoami`, runs `npm login`
+tarball, building it first if it is missing. This installs an independent package copy and replaces an existing development link. Later builds or deletion of this checkout do not change the installed command. The `cg` executable may still be a normal npm link to the globally installed copy; it must not resolve into this checkout. To install newer source changes, rebuild the release tarball before selecting install again; an existing tarball is reused. Publish checks `npm whoami`, runs `npm login`
 when that fails, then `npm publish dist/tar/contract-graph-<version>.tgz --access public`.
 Long-running commands keep their normal terminal output and Ctrl-C behaviour, including npm
 login prompts.
@@ -66,9 +71,7 @@ and removes its own run directory after success or failure. This also prevents a
 for a focused run. Direct `node --test` bypasses this scratch-directory isolation. An abruptly
 killed process may leave a run directory under `tmp/tests/`; `npm run clean` removes it.
 
-The runtime dependency surface is deliberately limited to the YAML parser used for canonical
-contracts and rule catalogs. A pull request adding another runtime dependency must explain why the
-benefit justifies adding supply-chain surface to a verifier.
+The runtime dependencies are the YAML parser for canonical contracts/catalogs and pinned source parsers for read-only inspection. TypeScript handles JS/TS; Web Tree-sitter plus a pinned WASM distribution supplies Java, Kotlin, Python, Go and C# grammars without adopter toolchains or native compilation. This adds approximately 54 MiB of installed parser dependencies beyond TypeScript/YAML; the WASM distribution contains unused grammars too. Dart/Flutter adds approximately 1.2 MB of vendored WASM from a separately pinned distribution; its Node 26 JavaScript wrapper is not installed or executed. Only the declared adapters are supported. The benefit is repeatable local evidence without executing inspected source. Keep dependencies pinned, preserve notices under `src/scripts/inspection/THIRD_PARTY_NOTICES.txt`, and justify future additions against package cost and supply-chain surface.
 
 `docs/` is written for people. Start with `docs/README.md`, then vision and contracts, then the
 relevant contract route. Use `cg contract route --task "<request>"` when the authored routes cover
@@ -95,64 +98,23 @@ request. Use this table as the minimum:
 Report the exact checks and outcomes in the pull request. “Tests pass” is not enough when the
 change affects interactive initialization or editor discovery.
 
-## Manager–Engineer interaction trial
+## Sprint interaction validation
 
-`npm test` includes regression tests for the interaction evidence verifier. Those tests exercise
-recorded-state checks and reject invalid histories; they do not launch models. A real host trial
-is separate so an ordinary test run needs neither model access nor a network connection.
+Exercise mixed Features/Bugs/Tasks with batch review and per-item review, an unanswered decision with independent work, interruption/recovery, and a failed finishing check that returns to production repair. Preserve actual review responses and checks; fixture success does not establish model behavior or user satisfaction. A recorded 2026-09-06 trial exercised the retired 0.6.0 Manager/Engineer workflow with synthetic owner input and mixed-host recovery. It is historical evidence only: its observer tools are retired, and it does not validate the 0.7.0 loop or establish token savings. The original report remains in Git history.
 
-Create a disposable two-phase repository with `npm run --silent trial:interaction`. The command
-prints its absolute path, scaffolds the current source skills, writes an accepted Plan and a
-partially blocked queue, and leaves an unrelated dirty note to preserve. Use the source CLI or
-install the current packed package there without replacing its scaffold. Never point this trial
-at a working product repository. The independent acceptance checks under `checks/` are read-only
-for agents; do not reveal the synthetic owner answer before the recovery checkpoint.
+Measure request-to-first-preview, feedback-to-next-preview, time to acceptance and final delivery, discarded automation and reopened defects when evaluating a live workflow. Separate agent work from human wait and disclose host, scope and environment differences. Do not claim speed, cost or reliability improvements from fixture success.
 
-Run the actual Manager and Engineer with the host's agent tools and fresh, non-inherited contexts.
-The observer acts as the fixture's test owner through messages, not a real product approval.
-Collect observations from outside both roles:
+## Schema and migration validation
 
-```bash
-npm run test:interaction -- observe <fixture> baseline <observer-id>
-npm run test:interaction -- observe <fixture> question <manager-id> <question-message-file>
-npm run test:interaction -- observe <fixture> recovered-question <new-manager-id> <question-message-file>
-npm run test:interaction -- observe <fixture> answer-recorded <new-manager-id> <message-file>
-npm run test:interaction -- observe <fixture> phase-1-complete <new-manager-id> <gate-envelope-file>
-npm run test:interaction -- observe <fixture> phase-2-complete <new-manager-id> <gate-envelope-file>
-npm run test:interaction -- observe <fixture> cleanup <new-manager-id> <message-file>
-npm run test:interaction -- verify <fixture>
-```
+Use independent historical fixtures, not fixtures generated by reversing the new implementation. Check schema/runtime agreement with valid catalogs and invalid field mutations, then test semantic authority, detector registration and reference integrity separately. For migration, compare authored IDs, statements, comments and preserved repository policy; inject backup, replacement, rollback and concurrent-edit failures. Verify repeat runs and missing-rationale behavior without inventing product meaning.
 
-Pause the first Manager after it saves and presents its question. Let the Engineer complete the
-independent count Step, then replace the Manager with a fresh session given only fixture paths
-and host identifiers. It must recover the same pending decision from disk. Supply this synthetic
-typed answer: `Use the stable node IDs in input order, and preserve each supplied label verbatim.`
-Capture the recorded answer before notifying the Engineer, using an observer barrier rather than
-another user authorization. Release that barrier and observe automatic resumption, corrective
-preparation for the hidden-node defect, sign-off, and a different Engineer for Phase 2. Pause at
-each completed-phase observation after acceptance but before ledger deletion, so the observer
-can run independent checks and retain the actual Engineer identity and handoff. Release that
-measurement barrier, delete the accepted phase ledger, and then start the successor Engineer.
-After the final handoff capture, reconcile and remove the remaining working ledgers and handoff
-files, then capture `cleanup`. Canonical decisions, source and archived evidence must survive
-unchanged. New observations use evidence version 2; historical version 1 traces remain
-readable under their original six-checkpoint contract and cannot be appended to.
+`test/principles.test.js` and `test/build.test.js` cover these boundaries. `node scripts/check-principles-mutations.mjs` deliberately introduces behavioral regressions; a syntax failure is not a successful detection. Package checks must exercise an extracted tarball with only runtime dependencies and no source-tree fallback. Check the supported Node.js minimum for compatibility changes. Coverage percentages support these checks but do not prove correctness; bundled schema checks do not establish that the public schema URL serves matching bytes.
 
-Question files contain the actual received messages. At completion, the external observer runs
-`node checks/check.mjs phase-1` or `phase-2` and `cg verify` and saves their real outputs as JSON:
-`{"text":"received handoff", "gates":[{"command":"node checks/check.mjs phase-1",
-"status":0,"stdout":"actual output","stderr":""}, ...]}`. Do not populate success values
-from an agent's claim. The observer snapshots files, queue state, graph findings, instruction
-hashes and messages into `<fixture>.evidence.jsonl`, outside the agents' writable repository.
+## Contract inspection validation
 
-Keep the evidence and a concise result report, including failures and any changed instructions.
-The hash chain detects accidental changes, not forgery by someone controlling the observer.
-Snapshots do not prove every intervening write or model-internal context isolation. Report which
-host, actor identities, transport and recovery behavior were actually exercised; do not generalize
-one successful host run to all hosts or claim measured token savings.
+`test/contract-inspection.test.js` and `test/language-inspection.test.js` use independently authored source fixtures under `test/fixtures/contract-inspection/` to check exact exports/imports, unsupported forms, explicit uncertainty, recursive ownership, stale snapshots and byte-preservation. Changes to extraction must include positive and negative behavior cases, not only report snapshots or instruction wording checks. Keep the report protocol separate from the canonical contract schema, and never infer architectural edges from import syntax. A scripted authoring exercise tests consumption of supported facts; it is not evidence of improved model reliability.
 
-The [2026-09-06 live trial report](docs/testing/auto-run-interaction.md) records the actors,
-recovery transport, observed behavior and evidence limits for the local 0.6.0 workflow.
+Source parsers are pinned production dependencies loaded only by `contract inspect`. Validate the extracted package with production dependencies, without source-tree or adopter-parser fallback, and run every language adapter on Node 18.17. Preserve parser/grammar identities and hashes in reports. Test mixed-language input, language-specific visibility, malformed syntax, dynamic/conditional/generated APIs, non-execution and byte-preservation; a recognisable extension alone is not language support. For Dart, preserve `grammars/dart.json` provenance and verify its binary hash; update the vendored WASM and upstream/distribution notices together. Test Flutter widget syntax, library privacy, conditional/deferred imports, exports/parts, pubspec discovery and generated-code limitations. Build/test validation must use a disposable copy when global `cg` points into the checkout. Inspect test side effects first: the `urun` suite contains a temporary-prefix npm link/install test. If global installation is prohibited even in a temporary prefix, filter that test explicitly and disclose the omission. Never validate through a live global install or adopter update.
 
 ## Installation scenarios
 
@@ -164,7 +126,7 @@ destructive test helpers against a working project.
 | Greenfield | `cg init` installs the starter `src` contract, selected discovery adapters, docs trees, skills, and versioned profile metadata; `cg verify` passes. |
 | Brownfield | Existing source is preserved. A repository without `src/` does not gain an invented one. Unmapped roots name `/cg-warmup` (adoption); an already-connected graph names `/cg-warmup` (reseed). |
 | Existing instructions | Existing `AGENTS.md`, `CLAUDE.md`, and `.github/copilot-instructions.md` content survives. The user is warned before the selected files receive a generated first-line pointer. |
-| Existing docs folder | Interactive init asks whether to reuse `docs/`; non-interactive init requires an explicit `--docs docs` or another single-directory root. Existing files are preserved. |
+| Existing docs folder | Init reuses the saved docs root. Without saved settings, interactive init asks whether to reuse `docs/`; non-interactive init requires an explicit `--docs docs` or another single-directory root. Existing files are preserved. |
 
 For host-specific discovery, run:
 
@@ -205,21 +167,20 @@ compares a requested skill with `cg next --for <skill>`. Merge this registration
 }
 ```
 
-The hook resolves `node_modules/.bin/cg`, then `cg` on `PATH`, or `CG_BIN`. Resolution failures
-allow the dispatch, so confirm `cg --version` in the hook environment before relying on it. Other
-hosts do not use this file.
+The hook uses `cg` on `PATH`; `CG_BIN` is an explicit development/test override. It does not prefer a repository npm dependency. When an installed build identity is recorded, failure to obtain or match that identity blocks dispatch. Legacy installations without that identity can fail open with a NOT GATING warning, so confirm `cg --version` in the hook environment before relying on it. Other hosts do not use this file.
 
 ## Source layout
 
 ```text
 src/scripts/    engine — CLI, verifier, build, and contract graph queries
-src/skills/     lifecycle skills → .agents/skills/
+src/skills/cg-*/ lifecycle skills → .agents/skills/cg-*/
+src/skills/experts/ domain skills → .agents/skills/<name>-expert/
 src/cg/         authored Contract Graph core → .agents/cg/
-src/install/    hooks, rules, profiles, and preserved templates used by init
+src/install/    hooks, profiles, and preserved templates used by init
 test/           behavior, negative fixtures, package, and scaffold coverage
 ```
 
-`src/cg/` contains `contract.yaml`, `workflow.md`, `phases.json`, `enforcement.yaml`,
+`src/cg/` contains `contract.yaml`, `workflow.md`, `experts.md`, `phases.json`, `enforcement.yaml`,
 `principles/`, `guidelines/`, and `schema/`. `src/install/templates/` holds the starter module and
 the `docs/{plans,decisions,guides}` trees. Profile configurations live in
 `src/install/profiles/` and are packaged for the CLI, but are not copied into an adopting
@@ -320,7 +281,7 @@ under `script/`, the installable assets under `agent/`, `package.json`, `LICENSE
 `README.md`; npm therefore renders the same README that is reviewed in the repository. Keep that
 file a landing page for people: what the product is, how to install it, and absolute links to
 [the public introduction](https://contractgraph.dev/) and the written guides. Relative `docs/` links,
-mermaid diagrams, skill protocol, and package-assembly internals do not belong there — the
+skill protocol and package-assembly internals do not belong there — the
 published tarball does not include `docs/`. The checkout's `bin/cg.js`, authoring `src/` tree,
 tests, docs tree, and developer helper are not part of the published artifact.
 

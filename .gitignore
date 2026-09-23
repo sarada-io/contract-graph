@@ -6,6 +6,8 @@ npm-debug.log*
 
 # Generated working trees — `npm run clean` deletes them
 plan/
+# Maintainer planning and review scratch are local, not product documentation.
+/docs/plan/
 # Test scratch runs live under tmp/tests/ and are removed by the test runner.
 tmp/
 # Legacy generated targets

@@ -1,0 +1,4 @@
+interface:
+  display_name: "UI Design Expert"
+  short_description: "Refine bounded interface and interaction choices"
+  default_prompt: "Use $ui-design-expert for this bounded assignment, following its contracts, project conventions and active lifecycle rules."

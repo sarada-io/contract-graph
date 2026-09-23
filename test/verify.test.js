@@ -7,6 +7,7 @@
  * otherwise-green repository and asserts the specific check fires.
  */
 
+import { approveFixtureIntent } from "./helpers/intent.mjs";
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
 import crypto from "node:crypto";
@@ -69,6 +70,7 @@ function makeRepo() {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-test-"));
   init(dir, {});
   sync(dir);
+  approveFixtureIntent(dir);
   return dir;
 }
 
@@ -163,7 +165,7 @@ test("a freshly initialised repository verifies green", () => {
   assert.deepEqual(failures, []);
   assert.equal(counts.folders, 1);
   assert.equal(counts.roots, 3);
-  assert.equal(counts.skills, CORE_CG_SKILLS.length);
+  assert.equal(counts.skills, CORE_CG_SKILLS.length + 4);
   assert.ok(counts.engineering > 0);
 });
 
@@ -292,6 +294,8 @@ test("profile extends cycles are rejected by name", () => {
   assert.throws(() => resolveProfiles(["one"], { root }), /one -> two -> one/);
 });
 
+const EXPERT_SKILLS = ["api-expert", "mobile-expert", "web-expert", "ui-design-expert"];
+
 const PROFILE_ARTIFACTS = {
   all: [
     ".github/copilot-instructions.md",
@@ -299,13 +303,13 @@ const PROFILE_ARTIFACTS = {
     "CLAUDE.md",
     "src/AGENTS.md",
     "src/CLAUDE.md",
-    ...CORE_CG_SKILLS.map((name) => `.claude/skills/${name}/SKILL.md`),
+    ...[...CORE_CG_SKILLS, ...EXPERT_SKILLS].map((name) => `.claude/skills/${name}/SKILL.md`),
   ],
   agents: ["AGENTS.md", "src/AGENTS.md"],
   claude: [
     "CLAUDE.md",
     "src/CLAUDE.md",
-    ...CORE_CG_SKILLS.map((name) => `.claude/skills/${name}/SKILL.md`),
+    ...[...CORE_CG_SKILLS, ...EXPERT_SKILLS].map((name) => `.claude/skills/${name}/SKILL.md`),
   ],
   copilot: [".github/copilot-instructions.md"],
 };
@@ -576,6 +580,92 @@ test("[8] a selected root file must point to the canonical instructions on its f
 
 // --------------------------------------------------------------- skills
 
+test("expert skills install with discovery without becoming lifecycle phases", () => {
+  const dir = makeRepo();
+  const names = ["api-expert", "mobile-expert", "web-expert", "ui-design-expert"];
+  const phases = read(dir, ".agents/cg/phases.json");
+  for (const name of names) {
+    assert.ok(read(dir, `.agents/skills/${name}/SKILL.md`).includes(`name: ${name}`));
+    assert.doesNotMatch(read(dir, `.agents/skills/${name}/SKILL.md`), /https?:\/\//, "expert instructions must not direct the agent to external sources");
+    const notice = read(dir, ".agents/skills/THIRD_PARTY_NOTICES.txt");
+    assert.equal(notice, fs.readFileSync(path.join(SOURCE_ROOT, "skills/experts/THIRD_PARTY_NOTICES.txt"), "utf8"));
+    assert.ok(notice.includes(name));
+    assert.ok(notice.includes("Copyright (c) 2025 AgentLand Contributors"));
+    assert.ok(notice.includes("Permission is hereby granted"));
+    assert.equal(fs.existsSync(path.join(dir, `.agents/skills/${name}/LICENSE`)), false);
+    assert.ok(read(dir, `.claude/skills/${name}/SKILL.md`).includes(`${name}/SKILL.md`));
+    assert.ok(read(dir, ".agents/cg/experts.md").includes(`.agents/skills/${name}/SKILL.md`));
+    assert.equal(CORE_CG_SKILLS.includes(name), false);
+    assert.equal(phases.includes(name), false);
+  }
+  assert.deepEqual(verify(dir).failures, []);
+});
+
+test("re-init consolidates owned expert notices with backups and preserves unowned notices", () => {
+  const dir = makeRepo();
+  const manifest = JSON.parse(read(dir, MANIFEST));
+  const owned = ["api-expert", "mobile-expert", "web-expert"];
+  for (const name of [...owned, "ui-design-expert"]) {
+    const relative = `.agents/skills/${name}/LICENSE`;
+    write(dir, relative, `Prior notice for ${name}\n`);
+    if (owned.includes(name)) manifest.files[relative] = { version: "0.7.0", sha256: "previous" };
+  }
+  write(dir, MANIFEST, JSON.stringify(manifest));
+  const preview = init(dir, { dryRun: true });
+  assert.equal(preview.removed.filter(file => file.endsWith("/LICENSE")).length, owned.length);
+  assert.ok(fs.existsSync(path.join(dir, ".agents/skills/api-expert/LICENSE")), "dry run must retain originals");
+  const result = init(dir, {}); sync(dir);
+  for (const name of owned) {
+    assert.equal(fs.existsSync(path.join(dir, `.agents/skills/${name}/LICENSE`)), false);
+    const backup = result.backups.find(file => file.endsWith(`/skills/${name}/LICENSE`));
+    assert.equal(fs.readFileSync(backup, "utf8"), `Prior notice for ${name}\n`);
+  }
+  assert.equal(read(dir, ".agents/skills/ui-design-expert/LICENSE"), "Prior notice for ui-design-expert\n");
+  assert.ok(read(dir, ".agents/skills/THIRD_PARTY_NOTICES.txt").includes("MIT License"));
+  assert.deepEqual(verify(dir).failures, []);
+});
+
+test("re-init preserves a project expert and index while refreshing supplied expertise", () => {
+  const dir = makeRepo();
+  const custom = ".agents/skills/payments-api-expert";
+  fs.cpSync(path.join(dir, ".agents/skills/api-expert"), path.join(dir, custom), { recursive: true });
+  edit(dir, `${custom}/SKILL.md`, text => text.replaceAll("api-expert", "payments-api-expert") + "\nUse the payment boundary's adopted conventions.\n");
+  edit(dir, `${custom}/agents/openai.yaml`, text => text.replaceAll("$api-expert", "$payments-api-expert"));
+  edit(dir, ".agents/cg/experts.md", text => text + `\nProject choice: ${custom}/SKILL.md for payment APIs.\n`);
+  const index = read(dir, ".agents/cg/experts.md");
+  const skill = read(dir, `${custom}/SKILL.md`);
+  edit(dir, ".agents/skills/api-expert/SKILL.md", text => text + "\nTemporary local edit to shipped default.\n");
+  init(dir, {}); sync(dir);
+  assert.equal(read(dir, ".agents/cg/experts.md"), index);
+  assert.equal(read(dir, `${custom}/SKILL.md`), skill);
+  assert.equal(read(dir, ".agents/skills/api-expert/SKILL.md"), fs.readFileSync(path.join(SOURCE_ROOT, "skills/experts/api-expert/SKILL.md"), "utf8"));
+  assert.ok(read(dir, ".claude/skills/payments-api-expert/SKILL.md").includes(custom));
+  assert.deepEqual(verify(dir).failures, []);
+});
+
+for (const relative of [".agents/skills/api-expert/SKILL.md", ".agents/skills/THIRD_PARTY_NOTICES.txt"]) {
+test(`init refuses unowned expert content at ${relative} before changing repository files`, () => {
+  const dir = makeRepo();
+  const manifest = JSON.parse(read(dir, MANIFEST));
+  delete manifest.files[relative];
+  write(dir, MANIFEST, JSON.stringify(manifest));
+  write(dir, relative, "Repository-owned expert predating the release.\n");
+  const before = read(dir, MANIFEST);
+  assert.throws(() => init(dir, {}), /expert skill name collision/);
+  assert.equal(read(dir, relative), "Repository-owned expert predating the release.\n");
+  assert.equal(read(dir, MANIFEST), before);
+});
+}
+
+test("expert naming does not waive metadata or discovery validation", () => {
+  const dir = makeRepo();
+  edit(dir, ".agents/skills/api-expert/SKILL.md", text => text.replace("name: api-expert", "name: other-expert"));
+  assert.ok(verify(dir).failures.some(message => message.includes("does not match folder")));
+  init(dir, {}); sync(dir);
+  fs.rmSync(path.join(dir, ".claude/skills/api-expert/SKILL.md"));
+  assert.ok(verify(dir).failures.some(message => message.includes("api-expert") && message.includes("missing Claude discovery wrapper")));
+});
+
 test("[9] a skill whose frontmatter name mismatches its folder fails", () => {
   const dir = makeRepo();
   edit(dir, ".agents/skills/cg-plan/SKILL.md", (t) =>
@@ -651,7 +741,7 @@ test("the public workflow guide names decomposition and the disk baseline", () =
     path.join(SOURCE_ROOT, "..", "docs", "workflow.md"),
     "utf8",
   );
-  assert.match(workflow, /## The decomposition stack/);
+  assert.match(workflow, /## Planning readiness and production review/);
   assert.match(workflow, /cg next/);
   assert.match(workflow, /<phase>_detailed_preparation\.md/);
   assert.match(workflow, /cites a plan path or ticket id/);
@@ -1049,7 +1139,7 @@ test("cg-unblock resolves the docs root and loads E from engineering.yaml", () =
   assert.match(skill, /E16-01/);
   assert.match(skill, /E12-01/);
   assert.match(skill, /Do not copy this section/);
-  assert.match(skill, /Do not invoke the next skill yourself/);
+  assert.match(skill, /recorded authority/);
   assert.doesNotMatch(skill, /architecture catalog under/);
   assert.doesNotMatch(skill, /^## Completion check$/m);
 });
@@ -1615,11 +1705,11 @@ test("cg-warmup searches for a predecessor framework before authoring anything",
   // Measured on the first real adoption: the architecture family is pre-seeded and looked
   // complete, while 23 product rules and 10 requirements silently became zero. Harvest is the
   // right route for a rule nobody has written yet and the wrong one for a rule already written.
-  // A predecessor product.md is a checklist against the code, not the source of the survey.
+  // Accepted predecessor intent survives even when implementation violates it.
   assert.match(
     skill,
-    /predecessor product rule only when the code still obeys it/,
-    "predecessor product rules must be carried over only when the tree still holds them",
+    /accepted predecessor product rule even when code violates it/,
+    "accepted requirements must not be discarded because implementation disagrees",
   );
   assert.match(
     skill,
@@ -1628,8 +1718,8 @@ test("cg-warmup searches for a predecessor framework before authoring anything",
   );
   assert.match(
     skill,
-    /## 2a\. Snapshot the product from the code/,
-    "brownfield context (SaaS vs enterprise, composition, surface kind) comes from the tree, not product.md",
+    /## 2a\. Compare current code with accepted intent/,
+    "code conformance must be compared against accepted intent",
   );
   assert.match(
     skill,
@@ -1798,17 +1888,11 @@ test("a composed contract with no children fails verification", () => {
   );
 });
 
-/**
- * `cg-warmup` copies its own template rather than the scaffold's, so the two drift silently and
- * the drift only shows up in an adopted repository. It has happened once: the scaffold gained the
- * traversal fields and warmup kept writing contracts without them.
- */
-test("the warmup and produce templates conform to the same YAML contract shape", () => {
+/** The shared authoring aid and installed starter must remain schema-conformant. */
+test("the shared contract template and starter conform to the canonical YAML shape", () => {
   for (const file of [
     "install/templates/module/.agents/cg/contract.yaml",
-    "skills/cg-warmup/assets/contract.template.yaml",
-    "skills/cg-warmup/assets/component-contract.template.yaml",
-    "skills/cg-produce/assets/contract.template.yaml",
+    "cg/templates/contract.template.yaml",
   ]) {
     const contract = parseContractYaml(fs.readFileSync(path.join(SOURCE_ROOT, file), "utf8"), { source: file });
     assert.deepEqual(validateContract(contract, { source: file }), [], `${file} must satisfy the canonical shape`);
@@ -1834,6 +1918,9 @@ test("every governance path a skill names is a file init installs", () => {
   }
   for (const file of fs.readdirSync(path.join(SOURCE_ROOT, "cg"))) {
     if (/\.(?:md|json|yaml)$/.test(file)) installed.add(`.agents/cg/${file}`);
+  }
+  for (const folder of ["schema", "templates"]) {
+    for (const file of fs.readdirSync(path.join(SOURCE_ROOT, "cg", folder))) installed.add(`.agents/cg/${folder}/${file}`);
   }
   // Written by init, not shipped under src/cg.
   installed.add("docs/plans/decision-log.md");
@@ -2007,68 +2094,6 @@ test("cg-warmup uses both catalogs for a restructure proposal, not for membershi
  * or treats an E disagreement as Blocked by / $cg-unblock, a default `roadmap` run either
  * loops prepare↔produce or stops as if the owner had a decision to make.
  */
-test("cg-auto-run stays an adapter, and produce executes a prepared split", () => {
-  const skill = (name) =>
-    fs.readFileSync(path.join(SOURCE_ROOT, "skills", name, "SKILL.md"), "utf8");
-
-  const autoRun = skill("cg-auto-run");
-  assert.match(autoRun, /Never auto-invoke `cg-warmup`/);
-  assert.match(autoRun, /adds no graph rules and no `E` rules/);
-  assert.match(autoRun, /does not rewrite a `Next input`/);
-  assert.match(autoRun, /\.agents\/cg\/profile\.json/);
-  assert.match(autoRun, /<docs>\/plans\/auto-run\//);
-  assert.match(autoRun, /no per-run cap/);
-  assert.match(autoRun, /no dispatch budget/);
-  assert.match(autoRun, /fresh start from disk/);
-  assert.match(autoRun, /new agent is the intended\npattern/);
-  assert.match(autoRun, /every remaining planned phase closes/);
-  assert.doesNotMatch(autoRun, /twelve dispatches per run/);
-  assert.doesNotMatch(autoRun, /Third `Phase complete` heading this run/);
-  assert.doesNotMatch(autoRun, /A few phases is the window/);
-  assert.doesNotMatch(autoRun, /twenty-four/);
-  assert.doesNotMatch(autoRun, /six dispatches per run/);
-  assert.doesNotMatch(autoRun, /Budget reached/);
-  assert.doesNotMatch(
-    autoRun,
-    /Next input: \$cg-warmup/,
-    "warmup is never a successor this adapter may follow",
-  );
-
-  const protocol = fs.readFileSync(
-    path.join(SOURCE_ROOT, "skills", "cg-auto-run", "references", "protocol.md"),
-    "utf8",
-  );
-  const engineer = fs.readFileSync(
-    path.join(SOURCE_ROOT, "skills", "cg-auto-run", "references", "engineer.md"),
-    "utf8",
-  );
-  const manager = fs.readFileSync(
-    path.join(SOURCE_ROOT, "skills", "cg-auto-run", "references", "manager.md"),
-    "utf8",
-  );
-  assert.match(autoRun, /Do not read\n\[Manager instructions\]/);
-  assert.match(engineer, /protocol\.md/);
-  assert.doesNotMatch(engineer, /references\/manager\.md/);
-  assert.doesNotMatch(protocol, /start one fresh Engineer/);
-  assert.doesNotMatch(protocol, /Report the whole run:/);
-  assert.match(protocol, /Dispose working files/);
-  assert.match(protocol, /mixed-context/);
-  assert.match(manager, /Accept the phase only when all of these exist on disk/);
-  assert.match(manager, /harvest\.auto-run\.md/);
-  assert.match(autoRun, /Standalone `cg-plan`/);
-
-  const produce = skill("cg-produce");
-  assert.match(produce, /still-mixed code is the starting state, not a reason to stop/);
-  assert.match(produce, /do not\nemit `\$cg-plan`/);
-  assert.match(produce, /An `E` disagreement is not `Blocked by` and not `\$cg-unblock`/);
-
-  const prepare = skill("cg-prepare");
-  assert.match(prepare, /Mixed code that matches that target is the work, not a return to `\$cg-plan`/);
-  assert.match(
-    prepare,
-    /An `E` disagreement is not[\s\S]{0,20}`Blocked by` and not `\$cg-unblock`/,
-  );
-});
 
 /**
  * A graph that was generated rather than written.
@@ -2124,50 +2149,6 @@ test("verify flags a contract set that was generated rather than written", () =>
  * lifecycle has to carry the same obligation. Otherwise every repository needs an archaeology
  * pass, which is the cost the graph exists to remove.
  */
-test("the lifecycle skills own component identification, not just warmup", () => {
-  const skill = (name) =>
-    fs.readFileSync(path.join(SOURCE_ROOT, "skills", name, "SKILL.md"), "utf8");
-
-  // Planning names the units a phase introduces, so preparation can allocate their contracts.
-  assert.match(skill("cg-plan"), /components, libraries, sub-modules, or modules a phase introduces/);
-
-  // Preparation carries them in the ledger and forbids deferring the contract to a later Step.
-  assert.match(skill("cg-prepare"), /new component\/library\/sub-module/);
-  assert.match(skill("cg-prepare"), /cannot be deferred to a later Step/);
-
-  // Execution delivers the contract, scoped rules, and reciprocal parent edge together.
-  const produce = skill("cg-produce");
-  assert.match(produce, /A new self-sufficient unit owes a contract in the Step that creates it/);
-  assert.match(produce, /reciprocal relation edges/);
-  assert.match(produce, /applicable repository-owned P IDs in its `rules` array/);
-  assert.match(produce, /principles\/architecture\.yaml` `graph`/);
-  assert.match(produce, /add-child/);
-
-  const prepare = skill("cg-prepare");
-  assert.match(prepare, /principles\/architecture\.yaml` `graph`/);
-  assert.match(skill("cg-plan"), /stay, add-child, elsewhere/);
-
-  for (const name of ["cg-auto-run", "cg-plan", "cg-prepare", "cg-produce", "cg-sign-off", "cg-unblock", "cg-warmup"]) {
-    assert.match(
-      skill(name),
-      /principles\/architecture\.yaml/,
-      `${name} must read the architecture principles catalog`,
-    );
-  }
-
-  const workflow = fs.readFileSync(path.join(SOURCE_ROOT, "cg", "workflow.md"), "utf8");
-  assert.match(workflow, /principles\/architecture\.yaml` `graph`/);
-  assert.match(workflow, /Read implementation only after this placement is known/);
-
-  // All four agree on the criterion, so a weaker model meets one definition rather than three.
-  for (const name of ["cg-plan", "cg-prepare", "cg-produce", "cg-warmup"]) {
-    const body = skill(name);
-    assert.ok(
-      /self-sufficient|context graph/.test(body),
-      `${name} must state why a unit earns a contract`,
-    );
-  }
-});
 
 /**
  * `subBoundaryCount` descends past the single-child chain every language puts in front of its
@@ -2681,7 +2662,7 @@ test("architecture catalogue classifies the complete non-product inventory", () 
 // ------------------------------------------------------------- manifest
 
 /**
- * `cg upgrade` ships later, but its baseline cannot be captured later. These assert the
+ * Upgrades through `cg init` need the original installation baseline. These assert the
  * record is complete and, more importantly, that it is never refreshed — a later `init`
  * that re-hashed an edited file would adopt the user's edits as pristine and destroy the
  * only evidence that they changed anything.
@@ -2784,13 +2765,13 @@ test("[11] a phase map missing a lifecycle phase fails", () => {
 
 test("[11] a phase naming the same token twice fails", () => {
   const dir = makeRepo();
-  edit(dir, PHASES, (t) => t.replace('"A", "P"', '"A", "A", "P"'));
+  edit(dir, PHASES, (t) => { const value = JSON.parse(t); value.phases.produce.always.push("A"); return JSON.stringify(value); });
   assertFails(dir, 11, "a duplicated token in one phase");
 });
 
 test("[11] every phase always loads structural bindings", () => {
   const dir = makeRepo();
-  edit(dir, PHASES, (t) => t.replace('"always": ["A", "P", "E"]', '"always": ["P", "E"]'));
+  edit(dir, PHASES, (t) => { const value = JSON.parse(t); value.phases.produce.always = ["P", "E"]; return JSON.stringify(value); });
   assertFails(dir, 11, "A is ambient binding for every phase");
 });
 
@@ -2944,6 +2925,7 @@ function filesUnder(root) {
 function ruleMatchesSource(rule, relative) {
   if (rule.select === "file") return relative === rule.source;
   if (rule.select === "tree") {
+    if (rule.exclude?.some(excluded => relative === `${rule.source}/${excluded}` || relative.startsWith(`${rule.source}/${excluded}/`))) return false;
     return relative.startsWith(`${rule.source}/`);
   }
   if (rule.select === "top-level-principles") {
@@ -2986,11 +2968,15 @@ test("init round trip writes exactly the canonical mapped file set", () => {
       select: "top-level-principles",
     },
     { source: "cg/contract.yaml", target: ".agents/cg/contract.yaml", mode: "always", select: "file" },
+    { source: "cg/project-context.md", target: ".agents/cg/project-context.md", mode: "always", select: "file" },
+    { source: "cg/experts.md", target: ".agents/cg/experts.md", mode: "always", select: "file" },
     { source: "cg/workflow.md", target: ".agents/cg/workflow.md", mode: "always", select: "file" },
     { source: "cg/phases.json", target: ".agents/cg/phases.json", mode: "always", select: "file" },
     { source: "cg/enforcement.yaml", target: ".agents/cg/enforcement.yaml", mode: "always", select: "file" },
+    { source: "cg/templates", target: ".agents/cg/templates", mode: "always", select: "tree" },
     { source: "cg/schema", target: ".agents/cg/schema", mode: "always", select: "tree" },
-    { source: "skills", target: ".agents/skills", mode: "always", select: "tree" },
+    { source: "skills/experts", target: ".agents/skills", mode: "always", select: "tree" },
+    { source: "skills", target: ".agents/skills", mode: "always", select: "tree", exclude: ["experts"] },
     { source: "install/hooks", target: ".agents/hooks", mode: "always", select: "tree" },
     { source: "install/templates/module", target: "src", mode: "always", select: "tree" },
     { source: "install/templates/docs", target: "docs", mode: "always", select: "tree" },
@@ -3003,7 +2989,7 @@ test("init round trip writes exactly the canonical mapped file set", () => {
       expected.push(path.posix.join(rule.target, within));
     }
   }
-  expected.push(PROFILE, MANIFEST, ".gitignore");
+  expected.push(PROFILE, MANIFEST);
 
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-round-trip-"));
   init(dir, {});
@@ -3179,14 +3165,18 @@ test("no shipped file references a pre-rename governance path", () => {
 // ------------------------------------------------------------ what ships
 
 /** The tarball is assembled from one closed target, not collected from authoring directories. */
-test("the published tarball ships consumer sources and no maintainer tooling", () => {
+test("the published tarball ships consumer sources and no maintainer tooling", t => {
+  const isolated = fs.mkdtempSync(path.join(os.tmpdir(), "cg-package-isolated-"));
+  t.after(() => fs.rmSync(isolated, { recursive: true, force: true }));
+  for (const directory of ["src", "bin", "docs"]) fs.cpSync(path.join(REPO, directory), path.join(isolated, directory), { recursive: true });
+  for (const file of ["package.json", "README.md", "LICENSE"]) fs.copyFileSync(path.join(REPO, file), path.join(isolated, file));
   const npm = process.platform === "win32" ? "npm.cmd" : "npm";
-  execFileSync(process.execPath, [path.join(REPO, "bin", "cg.js"), "build"], {
-    cwd: REPO,
+  execFileSync(process.execPath, [path.join(REPO, "bin", "cg.js"), "build", isolated], {
+    cwd: isolated,
     stdio: "ignore",
   });
   const output = execFileSync(npm, ["pack", "./dist/build", "--ignore-scripts", "--dry-run", "--json"], {
-    cwd: REPO,
+    cwd: isolated,
     encoding: "utf8",
     env: { ...process.env, npm_config_cache: path.join(os.tmpdir(), "cg-npm-cache") },
     stdio: ["ignore", "pipe", "ignore"],
@@ -3194,7 +3184,7 @@ test("the published tarball ships consumer sources and no maintainer tooling", (
   // The tarball is produced solely from the already verified dist/build/ target.
   const shipped = JSON.parse(output.slice(output.indexOf("[")))[0].files.map((entry) => entry.path);
   const targetManifest = JSON.parse(
-    fs.readFileSync(path.join(REPO, "dist", "build", "manifest.json"), "utf8"),
+    fs.readFileSync(path.join(isolated, "dist", "build", "manifest.json"), "utf8"),
   );
   const targetFiles = [...Object.keys(targetManifest.files), "manifest.json"].sort();
 
@@ -3380,7 +3370,7 @@ test("sync does not write workspace-root pointers onto a component", () => {
 });
 
 // ---------------------------------------------------------------------------
-// cg next — the independent answer that makes cg-auto-run enforceable
+// cg next — the independent routing for produce, sign-off and unblock
 // ---------------------------------------------------------------------------
 
 const brief = (n, { status, priority = n, depends = "None", blocked = "None" }) =>
@@ -3395,11 +3385,11 @@ function queue(dir, steps, name = "phase-1") {
   fs.writeFileSync(path.join(root, `${name}_detailed_preparation.md`), `# ${name}\n\n${body}`, "utf8");
 }
 
-test("next reports cg-prepare when no queue exists", () => {
+test("next reports cg-produce when no queue exists", () => {
   const dir = makeRepo();
   const result = next(dir);
   assert.equal(result.state, "no-queue");
-  assert.equal(result.stage, "cg-prepare");
+  assert.equal(result.stage, "cg-produce");
 });
 
 test("next selects the earliest Ready Step by priority", () => {
@@ -3482,7 +3472,7 @@ test("an In progress Step wins over any Ready one", () => {
   assert.equal(next(dir).step.number, 1);
 });
 
-test("permits denies a stage the queue does not support, and allows the one it does", () => {
+test("a complete queue without completion authority denies production", () => {
   const dir = makeRepo();
   queue(dir, { 1: { status: "Complete" } });
   const result = next(dir);
@@ -3490,52 +3480,24 @@ test("permits denies a stage the queue does not support, and allows the one it d
   assert.equal(permits(result, "cg-sign-off").allowed, true);
 });
 
-test("unblock, plan, warmup and the adapter itself are never gated", () => {
+test("after intent approval, unblock, plan, warmup and the adapter are not queue-gated", () => {
   const dir = makeRepo();
   queue(dir, { 1: { status: "Blocked", blocked: "DU-01" } });
   const result = next(dir);
-  for (const skill of ["cg-unblock", "cg-plan", "cg-warmup", "cg-auto-run"]) {
+  for (const skill of ["cg-unblock", "cg-plan", "cg-warmup"]) {
     assert.equal(permits(result, skill).allowed, true, skill);
   }
 });
 
-test("an unreadable queue denies production", () => {
+test("an unreadable queue admits internal production repair", () => {
   const dir = makeRepo();
   queue(dir, { 1: { status: "Ready" } });
   write(dir, "docs/plans/prog/phase-1_detailed_preparation.md", "no step sections at all\n");
   const result = next(dir);
-  assert.equal(permits(result, "cg-produce").allowed, false);
+  assert.equal(permits(result, "cg-produce").allowed, true);
 });
 
-test("init ignores the auto-run ledger without disturbing an existing .gitignore", () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-ignore-"));
-  fs.writeFileSync(path.join(dir, ".gitignore"), "node_modules/\ndist/\n", "utf8");
-  init(dir, {});
-  const text = read(dir, ".gitignore");
-  assert.match(text, /^auto-run\/$/m);
-  assert.match(text, /^\*\.auto-run\.md$/m);
-  assert.match(text, /^node_modules\/$/m, "existing rules must survive");
 
-  init(dir, {});
-  assert.equal(
-    read(dir, ".gitignore").split("\n").filter((l) => l.trim() === "*.auto-run.md").length,
-    1,
-    "re-running init must not append the rule twice",
-  );
-});
-
-test("appending ledger ignores is not a framework replace", () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-ignore-replace-"));
-  fs.writeFileSync(path.join(dir, ".gitignore"), "node_modules/\n", "utf8");
-  fs.writeFileSync(path.join(dir, "README.md"), "x\n", "utf8");
-  fs.mkdirSync(path.join(dir, "lib"));
-  const plan = init(dir, { dryRun: true });
-  assert.ok(
-    !plan.replaced.some((file) => path.basename(file) === ".gitignore"),
-    "an append-only .gitignore patch must not trigger Apply the listed updates? [y/N]",
-  );
-  assert.ok(plan.written.some((file) => path.basename(file) === ".gitignore"));
-});
 
 test("a finished warmup is advised to remove its resume log", () => {
   const dir = makeRepo();
@@ -3776,11 +3738,13 @@ function gate(dir, skill, session) {
   return JSON.parse(out).hookSpecificOutput;
 }
 
-test("the gate allows the stage the queue names and denies the others", () => {
+test("the gate denies complete-queue production without a completion request", () => {
   const dir = makeRepo();
   queue(dir, { 1: { status: "Complete" } });
   assert.equal(gate(dir, "cg-sign-off", `s${Date.now()}a`).permissionDecision, "allow");
-  assert.equal(gate(dir, "cg-produce", `s${Date.now()}b`).permissionDecision, "deny");
+  const preparation = gate(dir, "cg-produce", `s${Date.now()}b`);
+  assert.equal(preparation.permissionDecision, "deny");
+  assert.equal(next(dir).step, undefined);
 });
 
 test("the gate denies a second, different stage in the same session", () => {
@@ -3789,9 +3753,9 @@ test("the gate denies a second, different stage in the same session", () => {
   const session = `s${Date.now()}c`;
   assert.equal(gate(dir, "cg-sign-off", session).permissionDecision, "allow");
 
-  const second = gate(dir, "cg-prepare", session);
+  const second = gate(dir, "cg-produce", session);
   assert.equal(second.permissionDecision, "deny");
-  assert.match(second.permissionDecisionReason, /crosses a stage boundary/);
+  assert.match(second.permissionDecisionReason, /crossing into finishing or repair/);
 });
 
 test("re-dispatching the same stage is not a boundary crossing", () => {
@@ -3802,65 +3766,16 @@ test("re-dispatching the same stage is not a boundary crossing", () => {
   assert.equal(gate(dir, "cg-produce", session).permissionDecision, "allow", "same stage, still fine");
 });
 
-test("cg-auto-run in the session lifts the boundary, and is never itself gated", () => {
+
+
+test("produce repairs queue syntax without admitting closure", () => {
   const dir = makeRepo();
-  queue(dir, { 1: { status: "Complete" } });
-  const session = `s${Date.now()}e`;
-  assert.equal(gate(dir, "cg-auto-run", session).permissionDecision, "allow");
-  assert.equal(gate(dir, "cg-sign-off", session).permissionDecision, "allow");
-
-  // Still gated on queue state — lifting the boundary is not lifting the queue check.
-  const wrong = gate(dir, "cg-produce", session);
-  assert.equal(wrong.permissionDecision, "deny");
-  assert.match(wrong.permissionDecisionReason, /does not support dispatching/);
-});
-
-test("auto-run can prepare a repair without authorizing blocked production or premature sign-off", () => {
-  const dir = makeRepo();
-  const session = `repair-${Date.now()}`;
-  queue(dir, { 6: { status: "Blocked", blocked: "review nodes are hidden" } });
-  assert.equal(gate(dir, "cg-auto-run", session).permissionDecision, "allow");
-  assert.equal(gate(dir, "cg-prepare", session).permissionDecision, "allow");
-  assert.equal(gate(dir, "cg-produce", session).permissionDecision, "deny");
-  assert.equal(gate(dir, "cg-sign-off", session).permissionDecision, "deny");
-
-  // Preparation makes the defect an executable correction; evidence waits for its handoff.
-  queue(dir, {
-    6: { status: "Waiting", depends: "Step 7" },
-    7: { status: "Ready" },
-  });
-  assert.equal(next(dir).step.number, 7);
-  assert.equal(gate(dir, "cg-produce", session).permissionDecision, "allow");
-  assert.equal(gate(dir, "cg-sign-off", session).permissionDecision, "deny");
-  queue(dir, {
-    6: { status: "Ready", depends: "Step 7" },
-    7: { status: "Complete" },
-  });
-  assert.equal(next(dir).step.number, 6);
-  queue(dir, {
-    6: { status: "Complete", depends: "Step 7" },
-    7: { status: "Complete" },
-  });
-  assert.equal(gate(dir, "cg-sign-off", session).permissionDecision, "allow");
-});
-
-test("corrective preparation repairs queue syntax without admitting production or closure", () => {
-  const dir = makeRepo();
-  queue(dir, { 1: { status: "Complete" } });
-  assert.equal(permits(next(dir), "cg-prepare").allowed, true);
   queue(dir, { 1: { status: "Unknown" } });
-  assert.equal(permits(next(dir), "cg-prepare").allowed, true);
-  assert.equal(permits(next(dir), "cg-produce").allowed, false);
+  assert.equal(permits(next(dir), "cg-produce").allowed, true);
   assert.equal(permits(next(dir), "cg-sign-off").allowed, false);
+  assert.equal(permits(next(dir), "cg-prepare").allowed, false);
 });
 
-test("ordinary stage procedures state the yield rule", () => {
-  for (const relative of ["cg-plan/SKILL.md", "cg-prepare/SKILL.md", "cg-produce/SKILL.md", "cg-sign-off/references/phase-sign-off.md"]) {
-    const text = fs.readFileSync(path.join(SOURCE_ROOT, "skills", relative), "utf8");
-    assert.match(text, /## Stage boundary — yield here/, `${relative} must tell the model to stop`);
-    assert.match(text, /Do not invoke the next skill yourself/, relative);
-  }
-});
 
 /** The UserPromptSubmit half: a new instruction clears what the last one dispatched. */
 function userTurn(dir, session) {
@@ -3878,7 +3793,7 @@ test("a new user turn clears the boundary without abandoning the session", () =>
 
   assert.equal(gate(dir, "cg-sign-off", session).permissionDecision, "allow");
   assert.equal(
-    gate(dir, "cg-prepare", session).permissionDecision,
+    gate(dir, "cg-produce", session).permissionDecision,
     "deny",
     "chaining inside one instruction is the thing being stopped",
   );

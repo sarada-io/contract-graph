@@ -1,7 +1,10 @@
 # Vision
 
-Contract Graph exists so a person or a coding agent can understand where a change belongs before
-reading the implementation.
+Contract Graph Dev Kit is an open-source framework for agentic software development, with repository-native contracts as a graph at its core.
+
+Give coding agents the structure and workflow to plan, execute, and verify changes while keeping your codebase understandable. Repository-native contracts map responsibilities and dependencies. Integrated workflows carry agreed work through implementation, review, and completion.
+
+The contract graph gives each person or coding agent a durable starting point: where a change belongs, what it may affect, and which implementation to read. The workflow carries that understanding through delivery and preserves it for the next session.
 
 Coding models have changed the economics of development. Producing code is dramatically faster;
 understanding, integrating, and maintaining the accumulated result is not. Without stronger
@@ -18,6 +21,16 @@ Contract Graph grew from six months of ground-up work across several products. T
 problem was not persuading models to write more code. It was giving each new session a reliable
 overview, routing it to the right abstraction, and preserving that understanding after the code
 changed.
+
+## Product intent and successful outcomes
+
+The audience is people developing and maintaining software with coding agents across sessions. Contract Graph Dev Kit helps them agree outcomes, locate responsible boundaries, execute scoped changes, review working results and verify completion. Repository-native contracts keep this work grounded in durable, recursive context, limiting implementation reading to the relevant boundaries and preserving understanding for the next change. This page is the canonical statement of the framework's mission and product intent; a separate manifesto is unnecessary.
+
+Correct structure alone cannot determine which product the owner intended. Adoption therefore establishes owner-confirmed repository intent before dependent delivery. Existing vision, specifications and decisions supply the draft; current code supplies evidence of conformance. An implementation that violates an accepted requirement creates corrective work, not permission to redefine the product. Module responsibilities refine the parent purpose without silently overriding it.
+
+Project intent establishes identity and boundaries; each change still needs its own agreed outcome and relevant UX expectations. Sprint delivery brings a working result to review before unstable details acquire extensive tests and documentation, then completes the necessary verification and durable records. The delivery workflow and the contract graph work together: the workflow carries the agreed outcome to completion, while the graph keeps responsibilities and promises explicit through each change. Approval records and verification supply evidence for that work.
+
+A successful result is an agreed change delivered with relevant verification and an understandable codebase. A fresh session can find the correct boundary, recover current project direction and delivery state, and understand what it may change without reconstructing the repository. More process or enforcement that makes that task harder is not success. Repository-specific product choices and workflows remain variable; universal application policy, elimination of code reading and unproven parallel safety are outside the promise. See [intent and approval](intent.md), [workflow](workflow.md) and the [design rationale](workflow.md#delivery-records-and-routing).
 
 ## The model
 
@@ -86,10 +99,9 @@ rules exist only for the adopting product, are agent-managed after install, and 
 contracts. Product ships empty. Engineering ships populated, but an adopter may deliberately
 retire its entries and retain an empty catalog. Architecture requires structural bindings.
 
-## A structural layer, not a universal constitution
+## Structural authority and repository policy
 
-Contract Graph does not need to own every rule that guides a repository. Its non-negotiable value
-is the recursive structure and the truthful graph that represents it. Product requirements,
+The Dev Kit supplies a development workflow whose structural foundation is the recursive contract graph. Its global architecture requirements protect that graph and the boundaries it describes. Product requirements,
 delivery conventions, security posture, technology choices, and other broader policies remain
 repository-owned. Contract Graph owns structural routing and structural integrity:
 
@@ -186,8 +198,7 @@ saved implementation time rediscovering structure and repairing coupling.
 
 The contract graph pays the explanation cost once and preserves it for later sessions. A module
 contract remains the overview for that module; child contracts keep the overview useful without
-turning it into one enormous architecture document. Transient plans may disappear, but permanent
-contracts must continue to state the current truth in full.
+turning it into one enormous architecture document. Completed work removes obsolete plans and progress notes after preserving useful knowledge and evidence. Permanent contracts and documentation must state the current truth without that task history.
 
 ## Why it is a graph
 
@@ -263,13 +274,15 @@ A fresh session should be able to answer from contracts:
 
 ## What is built
 
-Contract Graph currently:
+Contract Graph Dev Kit currently:
 
 - scaffolds and verifies one schema-backed YAML contract per governed boundary;
 - routes tasks through contract-owned routes and supports recursive child traversal;
 - discovers brownfield module roots and writes their first contracts;
 - applies ambient A architecture principles and resolves contract-scoped P rule IDs without duplicating text;
 - generates editor discovery artifacts for several coding-agent harnesses;
+- preserves repository-owned project context beside the root contract and checks attributed approval against its reviewed content and declared sources;
+- supports Sprint/Epic plans, working-result review and scoped completion using existing queues and receipts;
 - provides a contract-driven delivery lifecycle and state-derived Step routing; and
 - verifies rule coverage, contract shape, reciprocal edges, acyclicity, root reachability,
   surface paths, invariant/verification links, and transient-plan boundaries.

@@ -1,0 +1,11 @@
+# Execute a bounded specialist assignment
+
+You own the concrete assignment supplied by the coordinator, not the whole programme. Read the stated outcome, authority, boundaries, dependencies, current stage and required evidence. Route through its contracts before bounded source reading. Resolve missing consequential input with the coordinator; do not invent product decisions or broaden the assignment. Do not spawn a nested team unless explicitly authorized.
+
+Use the assigned checkout and actual session identity. Preserve unrelated edits. Before writing, declare your allowed paths and resources with cg delivery checkpoint as described in [concurrent work](../../cg-prototype/references/concurrent-work.md). Coordinate overlapping ownership before editing; declarations do not enforce isolation. Ask the coordinator to update shared roadmap or queue state; do not independently approve, resume, hand off, close, or replace programme authority. Your session evidence is your own.
+
+Follow the assigned stage's rules. In produce, maintain truthful contracts and required detectors with the implementation and run the assigned checks. In prototype, build and serve the preview and verify changed contract YAML; defer application tests and automated browser regression suites. A specialist's usual habits cannot override the active loop's test timing. Keep blocked dependencies pending, preserve valid test expectations and report material scope or interface changes before dependent work proceeds.
+
+Return a concise handoff: assignment and outcome; exact checkout and changed paths or patch/commit; applicable checks with results and source state; contract changes; remaining failures, assumptions, deferred work and decisions. Distinguish your changes from pre-existing or concurrent changes. A success statement is not acceptance. Remain available for immediate corrections when the host permits it.
+
+Before release, stop writes and checkpoint state released, retaining the scope so review still includes your work. The coordinator verifies integration and decides whether the assignment is finished. Do not delete your worktree or evidence when retiring a worker. If interrupted, report recoverable state; neither silence nor elapsed time transfers ownership.

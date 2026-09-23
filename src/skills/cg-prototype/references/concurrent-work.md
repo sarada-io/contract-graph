@@ -1,10 +1,10 @@
 # Concurrent prototype and delivery sessions
 
-Keep one programme roadmap, prototype record, and programme-qualified delivery ledger per initiative.
+Keep one programme roadmap and delivery record per initiative; keep assignment notes in that roadmap.
 Different sessions are different actors, even when they share a programme. Read existing records
 before writing. Use the host's actual task ID when available, otherwise choose a distinct stable
 session label and record it in the roadmap. Never attribute older work to a newly assigned actor.
-Pass `--session <id>` to prototype lifecycle commands, including `close`.
+Pass `--session <id>` to delivery commands. Each writer checkpoints its own identity; the coordinator owns programme lifecycle actions.
 
 Before the first write and after changing scope or ownership, write a
 session-specific JSON file under `<docs>/plans/<programme>/sessions/<session-slug>.json`:
@@ -24,10 +24,12 @@ scope as it becomes known; this is a brief declaration, not advance enumeration 
 Resource names identify shared previews, output directories, caches, ports, and other mutable
 state. Agree consistent names in the roadmaps: matching is literal, not inferred.
 
-Run `cg prototype checkpoint --programme <programme> --session <id> --evidence <file>`.
+Run `cg delivery checkpoint --programme <programme> --session <id> --evidence <file>`.
 The checkpoint records the worktree, branch, commit, whole-source snapshot, dirty-path inventory,
 declared file fingerprints, observed changes since this session's previous checkpoint, and peer
-declarations in this worktree. History retains each checkpoint. At review, the CLI fingerprints the union of this programme’s
+declarations in this worktree. History retains each checkpoint. V2 storage shares repeated evidence values within the receipt;
+use `cg delivery status --json` to read the reconstructed record. Do not checkpoint ordinary feedback
+or unchanged scope repeatedly just to document activity. At review, the CLI fingerprints the union of this programme’s
 current and earlier declared writes, including released writers. Approval and handoff reuse that
 scope; expansion or changed scoped files needs review. Unrelated source edits do not invalidate
 scoped review. No declaration means the older whole-repository review behavior. Changes observed in a shared

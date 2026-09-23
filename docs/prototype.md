@@ -1,6 +1,6 @@
 # Prototype
 
-Use `/cg-prototype` when you need to use an application to discover the desired result. It starts
+Contract Graph Dev Kit supports exploring a working experience before committing to detailed delivery. Use `/cg-prototype` when you need to use an application to discover the desired result. It starts
 with the relevant contracts, launches the application, and makes small changes that you review
 manually. You do not need a complete implementation plan before the first preview.
 
@@ -22,12 +22,12 @@ prove that the application behaves correctly.
 
 The programme roadmap records your objective, scope, launch instructions, cumulative changes,
 feedback, reviewed conditions, and known gaps. A separate durable record under
-`.agents/cg/prototypes/` records lifecycle state and source snapshots. It survives plan cleanup;
+`.agents/cg/deliveries/` records lifecycle state and source snapshots. It survives plan cleanup;
 it is evidence about delivery, not the authority for a contract rule. A later session can recover
 the work without the previous conversation.
 
 The snapshot includes tracked and non-ignored untracked files, file modes, and symlink targets.
-Transient plan Markdown/JSON and prototype receipts are excluded so evidence can be recorded
+Transient plan Markdown/JSON and delivery records are excluded so evidence can be recorded
 without invalidating itself. Do not put implementation in those excluded locations. Ignored
 assets, environment configuration outside Git, and external services require separate verification.
 Review and approval fingerprint the programme’s declared writes, including earlier declarations
@@ -43,13 +43,40 @@ same metadata exclusions. The agent expands scope for related edits or records w
 unrelated. This is an observation at review time; it does not infer who edited a file or block
 approval because unrelated work is dirty.
 
+## Receipt storage in 0.7.0
+
+New receipts use storage version 2: repeated large JSON values are stored once in a local evidence
+table and referenced by SHA-256. Readers reconstruct the complete logical record and check every
+reference, object hash, and reconstructed-record checksum before recovery, routing, residue, or
+delivery verification. Current snapshots,
+all historical checkpoints, acceptance, completion requests, failures, and sign-off remain intact.
+This reduces duplicate storage; it does not cap unique history or replace audit evidence with hashes.
+
+Use `cg delivery status --programme <slug> --json` to inspect the reconstructed record. Routine delivery commands return current-state summaries; `--json` returns full reconstructed evidence
+when inspection needs it. Existing v1
+receipts remain readable and stay v1 when updated. To explicitly migrate a Closed receipt:
+
+```sh
+cg delivery compact --programme <slug>
+```
+
+Compaction runs under the programme lock, verifies complete logical JSON equality, and replaces the
+canonical receipt atomically after checking its read-back and unchanged original. It appends no
+lifecycle event and reports sizes and a logical evidence digest. Small receipts may grow due to the versioned envelope. The canonical path stays tracked;
+external attachments remain untouched. Active receipts cannot be explicitly compacted. New v2
+receipts and migrated receipts continue using v2 on later updates, including resumption.
+
+Upgrade all writers and CI readers to 0.7.0 or newer before creating or migrating v2 receipts;
+older tooling cannot read them. Hashes detect damaged evidence, not deliberate forgery by someone
+able to rewrite the whole receipt. No history pruning or age-based deletion is supported.
+
 ## Working side by side
 
 You can explore the next prototype while an accepted programme goes through delivery. Keep a
 separate programme record and roadmap for each, and a session checkpoint for each writer:
 
 ```bash
-cg prototype checkpoint --programme instruction-colour --session instructions-session --evidence docs/plans/instruction-colour/sessions/instructions-session.json
+cg delivery checkpoint --programme instruction-colour --session instructions-session --evidence docs/plans/instruction-colour/sessions/instructions-session.json
 ```
 
 The evidence JSON supplies `state` (`active` or `released`), `writes` (repository-relative files or
@@ -85,10 +112,7 @@ The agent then finalises the roadmap for the remaining work. Handoff requires th
 a non-placeholder Programme completion gate, and a populated Deferred tests and known gaps
 section (or an explicit account of why none remain). Phase table statuses are `Current`, `Blocked`,
 `Complete`, or `Future`. These checks reject starter placeholders; preparation still judges the
-plan’s coverage and substance. A Handed off prototype enters prepare directly. Preparation uses the prototype code
-that already exists, including relevant uncommitted files. It assigns incomplete behavior,
-integration gaps, and deferred tests to ordinary delivery Steps. It does not assume the prototype
-is green or rebuild it by default.
+plan’s coverage and substance. Both development workflows converge at the same accepted delivery handoff. Sign-off uses the actual implementation, recorded acceptance, roadmap criteria and explicit remaining gaps. It completes tests/docs and verification, routing implementation repairs to cg-produce. No second planning invocation or reconstruction of exploratory edits as historical Steps is required.
 
 To finish the selected prototype, use the existing sign-off skill:
 
@@ -102,32 +126,20 @@ iteration grants completion intent only; the agent still asks for acceptance of 
 prototype and waits for the actual answer before admitting delivery. An Active completion
 request cannot substitute for that answer.
 
-The prototype entry records UX acceptance and the completion request separately. It reconciles
-feedback and deferred work, finalises the same roadmap, drives necessary preparation and production,
-updates affected contracts and documentation, completes tests and repairs, and performs ordinary
-phase sign-off. You do not need to invoke each intervening skill. Existing code and applicable
-verification evidence are reused; the final required gate must pass before the prototype closes.
-A request for readiness assessment alone does not start production.
+The prototype loop records acceptance and the completion request separately, reconciles feedback and deferred work, finalises the same roadmap and runs `cg delivery handoff`. Until acceptance and handoff are ready, that loop still owns development and review. An early completion request can be saved for recovery without starting finishing.
 
-Sign-off first selects the target and loads its procedure: prototype completion or phase sign-off.
-An established prototype conversation supplies that context; in a fresh conversation, name the
-programme as above. When the target remains ambiguous, the agent asks instead of choosing an
-older queue because it is ready for closure. Missing prototype acceptance or preparation stays
-within the selected prototype's completion path. Shared closure checks return repair findings to
-that coordinator, which continues the authorized work.
+Sign-off then uses one delivery-completion procedure shared with plan/produce. It selects the requested outcome and scope, not a workflow type. It completes remaining tests and useful docs, routes implementation and contract repairs to produce, and verifies the final result. Existing code and applicable evidence are reused. Ambiguous target selection requires one question; an older ready queue never overrides the requested programme. Assessment-only remains inspection and reporting.
 
-Normal phase sign-off keeps its existing behaviour. A worker assigned one phase under auto-run
-retains that scope; it cannot grant itself permission to finish an entire prototype. Existing
-explicit auto-run continuation remains supported. Visible changes to the accepted experience
+A worker assigned one phase retains that scope; it cannot grant itself permission to finish an entire prototype. An explicit completion request carries necessary production, finishing and repairs within its recorded scope. The separate cg-prepare and cg-auto-run skills are retired in 0.7.0. Visible changes to the accepted experience
 return for affected human acceptance; tests and internal repairs that preserve it do not require
 repeating the entire prototype review. Closing a prototype does not merge code or close your chat.
 
 The completion coordinator records the actual request with
-`cg prototype request-sign-off --programme <slug> --session <id> --evidence <request.json>` at
+`cg delivery request-sign-off --programme <slug> --session <id> --evidence <request.json>` at
 admission, including while UX review is pending. Its JSON has `by`, `response`, and `scope`. This records intent, not acceptance or a successful
 gate. Session history retains the request; suspension, resumption, or abandonment cancels its active
 state. A successful `close` completes it. On hosts using the optional dispatch hook, a sign-off
-entry plus an active request allows the scoped prepare/produce chain only after accepted handoff,
+entry plus an active request allows the scoped production and repair loop only after accepted handoff,
 while keeping queue checks. The agent handles these commands and evidence records. It records a completion request only
 when you actually ask to finish the prototype, never at prototype start or as a precaution.
 
@@ -181,7 +193,7 @@ required review. Removing never-committed metadata leaves no Git evidence to det
 Prototype commands retain paths to evidence files inside their programme's plans directory as
 explicit receipt references. Residue traversal follows those references, including JSON approval
 and session files. An older receipt can register an existing consumer with
-`cg prototype evidence --programme <slug> --evidence <owned-plan-file>`. Registration preserves
+`cg delivery evidence --programme <slug> --evidence <owned-plan-file>`. Registration preserves
 approval and completion state; it neither accepts a prototype nor proves an evidence claim.
 Markdown consumer links remain available for ordinary phase evidence and files outside that scope.
 
@@ -201,3 +213,9 @@ If several programmes are active, select one with `cg next --programme <slug>`. 
 dispatch hook accepts `CG_PROGRAMME` from its environment for the same selection. It does not
 choose an arbitrary programme or allow one queue's completed Step to satisfy another queue's
 dependency.
+
+## A coordinator during exploration
+
+A prototype coordinator can retain the feedback conversation and accepted choices while specialists handle bounded experiments, components or investigations. It owns preview integration and review, stops affected work when feedback supersedes an assignment, and checks each handoff against the current direction. Small adjustments can remain direct; a team is optional.
+
+Delegated work retains prototype timing: reach a preview early, build and serve it, keep contracts truthful, and defer application test automation. It does not create production Steps or authorize specialists to accept the experience. The coordinator presents a coherent integrated preview, then passes actual acceptance and remaining obligations through the same delivery handoff as produce. See the [shared coordination design](experts.md#coordinators-and-workers).

@@ -37,16 +37,16 @@ test("dependency ranges cannot release work before every handoff is complete", t
   assert.equal(next(root).step.number, 3);
 });
 
-test("unreadable dependency syntax allows preparation repair, never production or closure", t => {
+test("unreadable dependency syntax admits internal production repair but not closure", t => {
   const root = fixture(t);
   plan(root, "game", brief(1, "Ready", "previous handoff"));
   const result = next(root);
   assert.equal(result.state, "unreadable");
   assert.match(result.problems.join("\n"), /unreadable Depends on/);
-  assert.equal(permits(result, "cg-prepare").allowed, true);
-  assert.equal(permits(result, "cg-produce").allowed, false);
+  assert.equal(permits(result, "cg-produce").allowed, true);
+  assert.equal(permits(result, "cg-prepare").allowed, false);
   assert.equal(permits(result, "cg-sign-off").allowed, false);
-  assert.equal(status(root).nextAction, "cg-prepare");
+  assert.equal(status(root).nextAction, "cg-produce");
 });
 
 test("examples inside fences cannot add or split real queue Steps", () => {
@@ -64,17 +64,17 @@ test("multiple ordinary programmes require selection without any prototype recei
   assert.equal(next(root, { programme: "typo" }).state, "selection-required");
 });
 
-test("misplaced global residue reports a repair without editing the gate or admitting production", t => {
+test("misplaced global residue admits internal repair without editing the gate or admitting closure", t => {
   const root = fixture(t);
   const text = brief(4, "Complete") + brief(5, "Blocked", "Step 4", gate("npm test && node /tool/bin/cg.js residue"), "Other programme evidence");
   plan(root, "game", text);
   const result = next(root);
   assert.equal(result.state, "repair-required");
-  assert.equal(result.stage, "cg-prepare");
+  assert.equal(result.stage, "cg-produce");
   assert.equal(result.findings[0].code, "repository-residue-in-step");
   assert.match(result.findings[0].file, /phase_detailed_preparation.md:\d+$/);
-  assert.equal(permits(result, "cg-prepare").allowed, true);
-  assert.equal(permits(result, "cg-produce").allowed, false);
+  assert.equal(permits(result, "cg-produce").allowed, true);
+  assert.equal(permits(result, "cg-prepare").allowed, false);
   assert.equal(permits(result, "cg-sign-off").allowed, false);
   assert.equal(fs.readFileSync(path.join(root, "docs/plans/game/phase_detailed_preparation.md"), "utf8"), text);
 });
@@ -128,7 +128,7 @@ test("status reports the exact current blocker and recovery action without trust
   write(root, "docs/plans/game/sign-off-repair.md", "Blocked: unreadable dependencies\n");
   const before = fs.readFileSync(path.join(root, "docs/plans/game/sign-off-repair.md"), "utf8");
   const result = status(root, { programme: "game" });
-  assert.equal(result.nextAction, "cg-prepare");
+  assert.equal(result.nextAction, "cg-produce");
   assert.equal(result.remainingSteps.length, 1);
   assert.equal(result.remainingSteps[0].number, 5);
   assert.equal(result.remainingSteps[0].blockedBy, "Other programme evidence");

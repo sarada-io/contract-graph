@@ -24,6 +24,7 @@ const MANIFESTS = Object.freeze({
   "pom.xml": "jvm",
   "composer.json": "php",
   "Gemfile": "ruby",
+  "pubspec.yaml": "dart",
 });
 
 /** Never descend into these — vendored, generated, or tool-owned. */
@@ -44,6 +45,7 @@ const SKIP = new Set([
   "venv",
   "__pycache__",
   ".gradle",
+  ".dart_tool",
   ".idea",
   ".vscode",
   "coverage",
@@ -118,7 +120,7 @@ export function moduleCoverage(repoRoot, governedUnits) {
 }
 
 /** Directories that hold tests or fixtures rather than the boundaries a contract describes. */
-const NOT_A_BOUNDARY = new Set(["test", "tests", "spec", "specs", "__tests__", "it", "e2e", "fixtures"]);
+const NOT_A_BOUNDARY = new Set(["test", "tests", "spec", "specs", "__tests__", "it", "e2e", "fixtures", "integration_test"]);
 
 /**
  * Implementation files, in any language the manifest table above can detect.
@@ -129,7 +131,7 @@ const NOT_A_BOUNDARY = new Set(["test", "tests", "spec", "specs", "__tests__", "
  * by extension rather than by filename matters: `build.ts` and `settings.js` are ordinary source.
  */
 const SOURCE_FILE =
-  /\.(java|kt|scala|go|rs|py|rb|php|cs|fs|swift|m|mm|c|h|cc|cpp|hpp|ts|tsx|js|jsx|mjs|cjs|vue|svelte)$/i;
+  /\.(java|kt|scala|go|rs|py|rb|php|cs|fs|swift|m|mm|c|h|cc|cpp|hpp|ts|tsx|js|jsx|mjs|cjs|vue|svelte|dart)$/i;
 
 /**
  * Count the sub-boundaries a module actually contains.

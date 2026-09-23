@@ -1,23 +1,5 @@
 # Plans
 
-Transient working documents: phase roadmaps from `cg-plan` or `cg-prototype`, preparation records from `cg-prepare`,
-phase-close manifests from `cg-sign-off`, and [the decision log](decision-log.md).
+One master roadmap per sprint or epic holds agreed outcomes, stable Feature/Bug/Task IDs, acceptance criteria, dependencies, review cadence and deferred obligations. cg-plan establishes readiness; cg-produce prepares and implements incrementally; cg-sign-off finishes and verifies accepted work.
 
-**Everything here is eventually disposable after its work and handoffs are reconciled.**
-Do not delete unresolved decisions, queued user answers, or the only recovery record of
-interrupted work. That is the property the framework depends on: a permanent
-contract may not cite a path under `docs/plans/` or a plan ticket ID as the source of a rule, and
-`cg verify` fails the build when one does. If deleting this directory would lose a rule, the rule
-was in the wrong place — move it to `.agents/cg/principles/` with its detector, or to a durable
-record under `docs/decisions/`.
-
-| Lives here | Written by | Ends up |
-|---|---|---|
-| phase roadmap | `cg-plan` | `archive/` at programme close |
-| preparation record and Step queue | `cg-prepare` | `archive/` at phase close |
-| decision log | `cg-unblock` | entries graduate; the file stays as a ledger (entry shape is in the skill, not the file) |
-| decision-harvest manifest | `cg-sign-off` | `archive/` with its phase |
-| auto-run ledgers (`auto-run/`, `*.auto-run.md`) | `cg-auto-run` | gitignored live state; **delete** only after acceptance and reconciliation; retain Suspended recovery state — do not archive |
-
-Move a completed phase's records to `archive/` when its acceptance gate is green, and update any
-links that pointed at them.
+Internal execution queues may record technical Steps and evidence, linked from the master plan. They are not another owner-approved plan. Keep pending decisions in the shared decision log with sprint/item scope. Preserve actual completion requests and review evidence in delivery records. Remove obsolete completed-scope execution records after final gates pass and durable knowledge and required evidence are preserved. Retain shared inputs needed by unfinished work and explicit repository retention requirements; do not accumulate archives or discard unanswered decisions. Keep the delivery receipt, which stores final sign-off evidence.

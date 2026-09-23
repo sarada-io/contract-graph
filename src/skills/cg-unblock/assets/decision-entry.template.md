@@ -9,25 +9,31 @@ for autonomous decisions. Do not restart a family at `01` because the other fami
 
 ## Owner review — paste under *Pending your review*
 
-### DU-NN — <short title>
+### DU-NN — <plain-language question the owner can answer>
+
+**Why your input is needed:** <what changed, why existing approval does not settle it, and the consequence for the product or work>
+**What to review:** <link to the concrete proposal or resulting document and relevant sources; summarize actual changes, distinguishing agreed content from new interpretation>
+
+**Your options:**
+- **A) <choice>** — <what accepting this does and its tradeoff; mark recommended only with a reason>
+- **B) <choice>** — <what this does and its tradeoff>
+- **Other:** Describe your preferred outcome.
+
+Include every viable option. For context confirmation, use **Approve — this reflects our agreed direction** and **Request changes — tell us what is missing or incorrect**. Never substitute a snapshot hash for reviewable content.
+
+**What happens next:** <what the agent will do after each answer and which affected work waits; state independent work that can continue when relevant>
+**Your answer:** _(blank — reply in the conversation; the agent records it here)_
+
+**Supporting evidence**
+
 **Raised:** <date> · <source>
 **Blocks:** <the smallest exact unit that cannot proceed>
 **Unblocks when:** <objective answer or prerequisite state>
-**Scope:** <affected programme, phases, boundaries, and Steps>
+**Scope:** <affected programme, sprint ID/name or phase, Feature/Bug/Task IDs, boundaries, and Steps>
 **Depends on:** <accepted decision IDs and their relevant constraints, or None>
 **Supersedes:** <decision IDs within this scope, or None>
-
-**Context:** <question, evidence checked by Engineer and Manager, and why D-1 or D-3 applies>
-
-**Options:**
-- **A) <option>** <recommendation and trade-off>
-- **B) <option>** <trade-off>
-- **Other:** type your own.
-
-Include every viable option; A and B do not limit the option count.
-**Recommendation:** <option and reason; pending until the user answers>
+**Evidence:** <checked authority, exact review snapshot and binding sources when applicable; technical identifiers belong here>
 **Asked:** <date and chat/interaction reference, or Not yet asked>
-**Your answer:** _(blank)_
 
 When answered, move the same `DU-NN` heading to *Resolved*. Preserve the selected option or typed
 solution verbatim under **Your answer**. Add **Answered:** (date and actor), **Decision:** (scoped
@@ -38,6 +44,7 @@ requesting clarification. Do not duplicate or renumber.
 ## Autonomous — paste under *Resolved*
 
 ### DA-NN — <short title>
+**Scope:** <programme, sprint ID/name, and affected Feature/Bug/Task IDs; or repository scope>
 **Raised:** <date> · <source>
 **Answered:** <date> · <the decision taken>
 **Reverses by:** <one bounded edit>

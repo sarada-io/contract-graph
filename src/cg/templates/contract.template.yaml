@@ -1,0 +1,104 @@
+# Authoring aid, not another schema. Replace every example/instruction from inspected context.
+# For repository roots use parent: null; surface may be empty. Never overwrite an existing contract.
+# Commented examples below describe a fictional export boundary, not repository facts.
+# Replace the corresponding field (do not add a duplicate key) only after inspecting its owner.
+# [] means confirmed absent/not applicable, never "not investigated". Record unresolved questions
+# in assumptions and the active work record; resolve them before claiming the mapping is complete.
+$schema: https://contractgraph.dev/schema/contract-v1.schema.json
+contractVersion: "1.0"
+# Quote any scalar that contains ": " so YAML does not parse it as a nested mapping.
+id: replace-with-stable-id
+name: Replace with boundary name
+# Select the actual hierarchy kind using architecture.yaml; module is an example.
+kind: module
+unit: replace/with/repository-relative/unit
+summary: Replace with one sentence that distinguishes this boundary from every sibling.
+purpose: Explain why the parent contains this unit, how the parent uses it, and who enters it.
+responsibilities:
+  owns:
+    - Name the one cohesive capability this boundary owns today.
+  allows:
+    - Name work that correctly belongs here today.
+  forbids:
+    - Name work that belongs elsewhere and identify its owner.
+surface:
+  - id: public-api
+    # Choose the actual surface kind allowed by contract.schema.json; other is a placeholder.
+    kind: other
+    path: replace/with/path/relative/to/unit
+    summary: Describe the declared entry point and how callers use this boundary.
+    # Exact exported names callers use. [] is valid for an entry with no named code exports.
+    # Example: symbols: [exportReport]
+    symbols: []
+    contract:
+      # Inputs include arguments, payloads and relevant preconditions; [] only if none apply.
+      # Example: accepts: ["A report ID and an output format of csv or json."]
+      accepts: []
+      # Describe observable results, including asynchronous output; [] only if none apply.
+      # Example: returns: ["Encoded report bytes in the requested format."]
+      returns: []
+      # Inspect errors, rejection and invalid-input behavior; [] only if no failures are exposed.
+      # Example: fails: ["Rejects an unknown report ID with ReportNotFound."]
+      fails: []
+      guarantees:
+        - State the observable promise this surface keeps today.
+# Stable conditions to preserve, not a wish list. [] only if none are identified for this boundary.
+# Example (paired with export-check below):
+# invariants:
+#   - id: EXPORT_COLUMNS
+#     statement: CSV output preserves the report's declared column order.
+#     verification: [export-check]
+# If a real invariant lacks a check, use verification: [] and debt: {reason: "Explain the gap."}.
+invariants: []
+relations:
+  parent:
+    # Use the actual parent contract path; this example is a direct repository child.
+    contract: .agents/cg/contract.yaml
+    uses: Explain what responsibility the parent delegates here.
+  # Choose leaf, composed or unmapped from inspected structure; add reciprocal child edges.
+  composition: leaf
+  # Owned decomposition, not every subdirectory. [] for a verified leaf (or an unmapped root).
+  # When adding a child, set composition: composed and the child's reciprocal parent edge.
+  # Example:
+  # children:
+  #   - contract: modules/export/csv/.agents/cg/contract.yaml
+  #     uses: Delegates CSV encoding to this child.
+  children: []
+  # Consumed peer/shared boundaries, not ownership; [] when no contract dependencies exist.
+  # Paths are repository-relative; via names the target's actual public entry, when applicable.
+  # Example:
+  # dependencies:
+  #   - contract: modules/reports/.agents/cg/contract.yaml
+  #     uses: Reads the report data to encode.
+  #     via: [readReport]
+  dependencies: []
+# Existing applicable P IDs only. [] when none apply; never copy A/E IDs or invent a P rule.
+# Example, ONLY if this ID exists and applies in the product catalog: rules: [P01-01]
+rules: []
+# Real executable checks, not proposed commands. [] if none exist; declare invariant debt above.
+# Each covers ID must name a local invariant whose verification lists this check's ID.
+# Example (only if the test file and command exist in this repository):
+# verification:
+#   - id: export-check
+#     command: node --test test/export.test.js
+#     covers: [EXPORT_COLUMNS]
+verification: []
+# Task phrases select existing contract paths, not source files. [] if no local routes are needed
+# after checking routing from the parent; do not leave a known change surface undiscoverable.
+# Example:
+# routes:
+#   - id: csv-export
+#     when: [CSV export, report column order]
+#     contracts: [modules/export/csv/.agents/cg/contract.yaml]
+routes: []
+agent:
+  readFirst:
+    - Read the parent contract and resolve every rule listed in `rules`.
+  beforeChange:
+    - "Apply the repository binding catalog `graph` section before editing: recurse, selfSufficient, surface, stay, add-child, or elsewhere."
+    - Update this contract with every boundary, surface, invariant, or dependency change; create a child contract.yaml when the decision is add-child.
+# [] when no unresolved assumptions remain. Otherwise state the uncertainty and how to resolve it.
+# Example: assumptions: ["Confirm with the report owner whether deleted reports remain exportable."]
+assumptions: []
+# [] unless an actual owner-approved rule exception exists; never invent approval to pass a check.
+exceptions: []

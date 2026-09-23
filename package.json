@@ -1,7 +1,7 @@
 {
   "name": "contract-graph",
-  "version": "0.6.0",
-  "description": "Record a repository as a traversable contract graph so people and coding agents can find where a change belongs before reading code.",
+  "version": "0.7.0",
+  "description": "Contract Graph Dev Kit: a framework for agentic software development with repository-native contracts as a graph at its core.",
   "type": "module",
   "bin": {
     "cg": "bin/cg.js"
@@ -32,8 +32,6 @@
   },
   "scripts": {
     "test": "node scripts/test.mjs",
-    "test:interaction": "node scripts/auto-run-interaction.mjs",
-    "trial:interaction": "node scripts/create-auto-run-fixture.mjs",
     "try": "node src/scripts/dev.js",
     "build": "node bin/cg.js build",
     "build:check": "node bin/cg.js build --check",
@@ -43,6 +41,8 @@
   "keywords": [
     "contract-graph",
     "coding-agents",
+    "agentic-development",
+    "development-framework",
     "context-graph",
     "llm-context",
     "governance",
@@ -67,6 +67,9 @@
     "url": "https://github.com/sarada-io/contract-graph/issues"
   },
   "dependencies": {
+    "tree-sitter-wasms": "0.1.11",
+    "typescript": "5.9.3",
+    "web-tree-sitter": "0.25.10",
     "yaml": "^2.9.0"
   },
   "devDependencies": {

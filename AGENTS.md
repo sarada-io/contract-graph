@@ -1,80 +1,50 @@
-# Contract Graph — contributor context
+# Contract Graph Dev Kit — contributor entry
 
-Contract Graph's purpose is to make software understandable to coding agents as a traversable,
-top-down context graph. The primary path is repository → module → sub-module → components →
-relevant implementation. Each contract explains how its unit is used by its parent and points
-to the next contracts below or beside it.
+Contract Graph Dev Kit is a framework for agentic software development with repository-native
+contracts as a graph at its core. It gives coding agents the structure and workflow to plan,
+execute and verify changes while keeping the codebase understandable. Integrated workflows
+carry agreed work through implementation, review and completion. The graph provides precise
+routing and bounded implementation reading; it does not eliminate code reading or prove
+arbitrary parallel work safe.
 
-Agents route through contracts before reading implementation so each new session can locate the
-smallest change surface without rediscovering the architecture from unrelated source files.
-Verification, rules, and governance protect this context graph once it exists; they are a
-consequence of the product, not its reason for existing.
+## Find the owner before reading implementation
 
-## Opinionated defaults are part of the product
+Start at the [repository Markdown contract](.agent/contracts/README.md), select the relevant
+child, then read its implementation and tests. Follow sibling links only when their promises
+are affected. The map describes logical tool groups in the current code layout.
 
-Contract Graph is deliberately not a neutral documentation scaffold. It supplies a firm,
-opinionated definition of well-structured software so a lower-capability coding agent has safe
-defaults to follow instead of inventing architecture locally and gradually mixing responsibilities,
-dependencies, persistence, and policy together.
+Before adding a tool, script or command, locate its existing owner and entry point. Update the
+affected contract in the same change as ownership, surfaces or dependencies. New responsibilities
+need a route in the map; do not accumulate subsystem rules in this entry file.
 
-The opinion has an order. Recursive structural decomposition is the product core. The YAML contract graph records and governs its responsibilities, boundaries, edges, routes, invariants, and verification through each engineering loop. General application-architecture advice is secondary: do not make it a universal Contract Graph constraint unless violating it would predictably damage graph routing, ownership, boundary confinement, or structural truth.
-
-Treat the shipped architecture principles as hard constraints, not illustrative examples. Engineering
-guidelines are deliberately non-binding best practices: retain useful judgement there without
-pretending prose is enforced. Promote one only when it protects structural integrity, states one
-deterministically measurable invariant, names a blocking detector, and has a fail-on-demand
-fixture. In the verifier-owning change, promotion registers that detector, assigns a permanent
-`A` ID, and removes the overlapping `E` practice together.
-
-`cg init` refreshes architecture and engineering from the installed release, showing the update
-and retaining backups before replacement. Product principles remain repository-owned and are
-converted to the current schema without changing their IDs or statements; missing rationale
-requires explicit input. Contracts and enforcement retain their content, with known legacy schema
-URLs updated. Workflow and phase policy remain preserved. A catalog amendment
-must remain within its registered detector semantics; a new generic `A` rule requires a verifier
-change, while repository-specific binding belongs in `P`.
-
-When reviewing an architecture rule, classify it explicitly:
-
-1. graph protocol — required for valid, connected, traversable YAML contracts;
-2. structural governance — required to keep code structure and graph truth aligned through change;
-3. broader architecture guidance — useful engineering judgement that remains repository choice
-  unless the repository adopts it as `P` or the verifier owner promotes it to `A`.
-
-Machine-expressible bindings owe build-breaking detectors and fail-on-demand fixtures. A detector
-recipe is not enforcement. Brownfield warmup must resolve a binding finding to a real detector, a
-corrective Step, or an explicit owner-approved exception. Architecture practices remain optional
-guidance. A team may amend installed defaults, but later init runs refresh A/E from the release;
-review the preserved backups when reapplying deliberate amendments. Product and workflow choices
-remain repository-owned.
-
-Keep the rule families distinct in authority, not in document kind: `A`, `E`, and `P` are
-principle catalogs sharing one schema. `A` is global MUST; `P` is scoped MUST and the only family
-contracts list in `rules`; `E` is shipped SHOULD. A generally good security, operations, data, or
-deployment preference remains guidance or constitution policy. It becomes `P` only when it is
-specific to the adopting product, or `A` when it satisfies the complete structural promotion gate
-in the verifier-owning codebase.
-
-`docs/` is written for people adopting or reviewing the product. Agents may read it; it is not
-the turn-by-turn procedure. After `cg init`, that lives in the `/cg-*` skills and
-`.agents/cg/workflow.md`.
+## Product context
 
 Before changing this repository, read in order:
 
-1. `[docs/vision.md](docs/vision.md)` — the project intention and causal model.
-2. `[docs/contracts.md](docs/contracts.md)` — the recursive contract structure and current limits.
-3. `[docs/README.md](docs/README.md)` — human documentation index, then workflow and lifecycle as needed.
-4. `[README.md](README.md)` — the npm and GitHub landing page for people installing the package.
-5. The relevant skill under `src/skills/` and `[src/cg/workflow.md](src/cg/workflow.md)` when the change is agent procedure.
-6. The relevant files under `src/scripts/`, plus `test/verify.test.js`, for implementation work.
+1. [Vision](docs/vision.md): intention and causal model.
+2. [Contracts](docs/contracts.md): recursive structure and current limits.
+3. [Documentation index](docs/README.md): canonical human explanations; follow the relevant topic.
+4. [README](README.md): installation and product claims.
+5. The selected Markdown boundary contract and its relevant source/tests. For agent procedure,
+   read the relevant `src/skills/` skill and [workflow](src/cg/workflow.md).
 
-Keep claims honest. Schema-backed contracts, contract-owned task routes, and machine verification
-of the authored graph's reciprocity, acyclicity, and root reachability are built. Correspondence
-between the graph and every implementation dependency, exported symbol, and safe parallel write
-set is not yet proven. Do not present governance as the primary product or claim that agents never
-need to read code. The intended outcome is bounded code reading after precise contract routing.
+Detailed [architecture policy](.agent/architecture-policy.md) applies to principles, structural
+rules and product architecture changes. [Authoring](.agent/contracts/authoring.md) owns lifecycle
+and documentation constraints. These maintainer contracts do not replace the shipped YAML format.
 
-This project supports Node.js 18.17+ and uses the bundled `yaml` package to parse authored contract
-nodes. Preserve unrelated working tree changes. Run `npm run build` after changing
-`src/cg/principles/`, `src/cg/guidelines/`, or `src/cg/schema/`. Run `npm test` after changing runtime code or anything
-scaffolded from `src/`.
+## Work safely and verify
+
+Preserve unrelated working tree changes. Support Node.js 18.17+ and the bundled YAML parser.
+Use the selected boundary’s verification and [CONTRIBUTING](CONTRIBUTING.md).
+Run `npm test` after runtime changes or anything scaffolded from `src/`; changes to
+`src/cg/principles/`, `src/cg/guidelines/` or `src/cg/schema/` also require `npm run build`.
+
+Before builds or destructive cleanup, resolve global `cg`. If linked to this checkout’s
+`dist/build` or uncertain, validate in a disposable copy. Do not globally install, publish or
+update adopting repositories during ordinary validation. `./urun` installs a tarball copy only
+when explicitly requested. See [Distribution](.agent/contracts/distribution.md).
+
+For repository-only maintainer plans, read [repo-plan](.agent/skills/repo-plan/SKILL.md).
+Keep one master plan with a concise Executive Summary above full agent detail. Do not invoke
+the shipped lifecycle merely to maintain its implementation; temporary plans under ignored
+`docs/plan/` must not be required to understand the product.

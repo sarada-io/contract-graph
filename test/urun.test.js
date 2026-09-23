@@ -270,7 +270,50 @@ test('urun install replaces the global package with the current tarball', async 
     },
   });
   assert.equal(status, 0);
-  assert.deepEqual(calls, [`npm install -g ${tarball}`]);
+  assert.deepEqual(calls, [`npm install -g ${path.resolve(repositoryRoot, tarball)}`]);
+});
+
+test('urun tarball install replaces a development link with a copy that survives rebuilds', async t => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'urun-install-'));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  const build = path.join(dir, 'local build');
+  const prefix = path.join(dir, 'global prefix');
+  fs.mkdirSync(build);
+  fs.writeFileSync(path.join(build, 'package.json'), JSON.stringify({
+    name: 'contract-graph', version: '0.0.0', bin: { cg: 'cli.js' },
+  }));
+  const cli = '#!/usr/bin/env node\nconsole.log("packaged copy");\n';
+  fs.writeFileSync(path.join(build, 'cli.js'), cli, { mode: 0o755 });
+  const npm = (args, cwd = dir) => {
+    const result = spawnSync(process.platform === 'win32' ? 'npm.cmd' : 'npm', args, {
+      cwd, encoding: 'utf8', timeout: 60000,
+      env: { ...process.env, npm_config_prefix: prefix, npm_config_cache: path.join(dir, 'cache'),
+        npm_config_audit: 'false', npm_config_fund: 'false', npm_config_update_notifier: 'false' },
+    });
+    assert.equal(result.status, 0, `${result.error ?? ''}\n${result.stdout}\n${result.stderr}`);
+    return result;
+  };
+  npm(['link', '--ignore-scripts'], build);
+  const installed = path.join(prefix, ...(process.platform === 'win32' ? [] : ['lib']), 'node_modules', 'contract-graph');
+  assert.equal(fs.realpathSync(installed), fs.realpathSync(build));
+  npm(['pack', '--ignore-scripts', '--pack-destination', dir], build);
+  const status = await invokeMenuItem({ kind: 'install-tarball' }, {
+    readMenuChoice: async () => 1,
+    ensureReleaseTarball: () => path.join(dir, 'contract-graph-0.0.0.tgz'),
+    invokeRepoCommand(command, args) {
+      assert.equal(command, 'npm');
+      return npm(args).status;
+    },
+  });
+  assert.equal(status, 0);
+  assert.equal(fs.lstatSync(installed).isSymbolicLink(), false);
+  fs.writeFileSync(path.join(build, 'cli.js'), 'throw new Error("changed local build");\n');
+  assert.equal(fs.readFileSync(path.join(installed, 'cli.js'), 'utf8'), cli);
+  fs.rmSync(build, { recursive: true });
+  const executable = path.join(prefix, process.platform === 'win32' ? 'cg.cmd' : 'bin/cg');
+  const result = spawnSync(executable, [], { encoding: 'utf8', shell: process.platform === 'win32' });
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(result.stdout.trim(), 'packaged copy');
 });
 
 test('urun publish logs in when npm whoami fails, then publishes the tarball', async () => {

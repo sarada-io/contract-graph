@@ -1,0 +1,4 @@
+interface:
+  display_name: "API Expert"
+  short_description: "Implement bounded API contracts and behavior"
+  default_prompt: "Use $api-expert for this bounded assignment, following its contracts, project conventions and active lifecycle rules."

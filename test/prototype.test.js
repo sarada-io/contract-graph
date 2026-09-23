@@ -1,3 +1,4 @@
+import { approveFixtureIntent } from "./helpers/intent.mjs";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
@@ -5,7 +6,7 @@ import path from "node:path";
 import { execFileSync, spawnSync } from "node:child_process";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
-import { prototypeAction, prototypeSnapshot, readPrototypes, deliveryReadiness as checkDelivery, PROTOTYPE_ROOT } from "../src/scripts/prototype.js";
+import { deliveryAction, deliverySnapshot, readDeliveries, deliveryReadiness as checkDelivery, DELIVERY_ROOT } from "../src/scripts/delivery.js";
 import { next, permits } from "../src/scripts/next.js";
 import { residue } from "../src/scripts/residue.js";
 import { status } from "../src/scripts/status.js";
@@ -33,7 +34,7 @@ function fixture(t, docs = "docs") {
   return { root, base, docs };
 }
 function action(f, verb, extra = {}, programme = "dashboard") {
-  return prototypeAction(f.root, verb, { programme, ...extra });
+  return deliveryAction(f.root, verb, { programme, ...extra });
 }
 function accepted(f, programme = "dashboard") {
   action(f, "review", {}, programme);
@@ -88,32 +89,32 @@ function queue(f, programme, state, dependency = "None", number = 1) {
 test("prototype evidence references preserve useful JSON without claiming sibling files", t => {
   const f = fixture(t, "handbook");
   action(f, "start"); accepted(f); requestSignOff(f);
-  const before = readPrototypes(f.root)[0];
+  const before = readDeliveries(f.root)[0];
   assert.ok(before.history.some(event => event.evidence === "handbook/plans/dashboard/approval.json"));
   const evidence = "handbook/plans/dashboard/review.json";
   write(f.root, evidence, "{}");
   write(f.root, "handbook/plans/dashboard/unused.json", "{}");
-  const snapshot = prototypeSnapshot(f.root);
+  const snapshot = deliverySnapshot(f.root);
   action(f, "evidence", { evidence });
-  const after = readPrototypes(f.root)[0];
+  const after = readDeliveries(f.root)[0];
   assert.equal(after.status, before.status);
   assert.deepEqual(after.approval, before.approval);
   assert.deepEqual(after.completionRequest, before.completionRequest);
-  assert.equal(prototypeSnapshot(f.root), snapshot);
+  assert.equal(deliverySnapshot(f.root), snapshot);
   assert.deepEqual(residue(f.root, { programme: "dashboard" }).residue.map(r => r.path), ["handbook/plans/dashboard/unused.json"]);
-  assert.equal(status(f.root, { programme: "dashboard" }).prototype.completionRequest.state, before.completionRequest.state);
+  assert.equal(status(f.root, { programme: "dashboard" }).receipt.completionRequest.state, before.completionRequest.state);
   write(f.root, "handbook/plans/other/evidence.json", "{}");
   assert.throws(() => action(f, "evidence", { evidence: "handbook/plans/other/evidence.json" }), /this programme/);
-  assert.equal(readPrototypes(f.root)[0].history.length, after.history.length);
+  assert.equal(readDeliveries(f.root)[0].history.length, after.history.length);
 });
 
 test("evidence registration retains a closed receipt without reopening delivery", t => {
   const f = fixture(t); action(f, "start"); accepted(f); close(f);
-  const before = readPrototypes(f.root)[0];
+  const before = readDeliveries(f.root)[0];
   const evidence = "docs/plans/dashboard/retained-review.json";
   write(f.root, evidence, "{}");
   action(f, "evidence", { evidence });
-  const after = readPrototypes(f.root)[0];
+  const after = readDeliveries(f.root)[0];
   assert.equal(after.status, "Closed");
   assert.deepEqual(after.closure, before.closure);
   assert.deepEqual(deliveryReadiness(f.root).failures, []);
@@ -125,10 +126,10 @@ test("prototype reaches review without a queue and resumes from recorded state",
   write(f.root, "app.txt", "reviewable UI\n");
   action(f, "review");
   assert.equal(next(f.root, { programme: "dashboard" }).stage, "cg-prototype");
-  assert.equal(permits(next(f.root), "cg-prepare").allowed, false);
-  assert.equal(readPrototypes(f.root)[0].status, "Awaiting review");
+  assert.equal(permits(next(f.root), "cg-produce").allowed, false);
+  assert.equal(readDeliveries(f.root)[0].status, "Awaiting review");
   action(f, "suspend"); action(f, "resume");
-  assert.equal(readPrototypes(f.root)[0].status, "Iterating");
+  assert.equal(readDeliveries(f.root)[0].status, "Iterating");
   assert.equal(fs.readFileSync(path.join(f.root, "app.txt"), "utf8"), "reviewable UI\n");
   assert.throws(() => action(f, "start"), /already exists/);
 });
@@ -144,7 +145,7 @@ test("missing acceptance and edits after review cannot become delivery handoffs"
   assert.throws(() => action(f, "approve", { evidence }), /changed after review/);
   action(f, "resume"); action(f, "review"); action(f, "approve", { evidence });
   write(f.root, "new-component.txt", "new untracked source");
-  assert.throws(() => action(f, "handoff"), /approved prototype changed/);
+  assert.throws(() => action(f, "handoff"), /approved delivery changed/);
   assert.match(next(f.root).reason, /approved source changed/);
 });
 
@@ -174,7 +175,7 @@ test("handoff rejects starter placeholders and incomplete roadmap sections", t =
   for (const [body, error] of variants) {
     write(f.root, file, body);
     assert.throws(() => action(f, "handoff"), error);
-    assert.equal(readPrototypes(f.root)[0].status, "Approved");
+    assert.equal(readDeliveries(f.root)[0].status, "Approved");
   }
   write(f.root, file, valid.replace("Run the fixture delivery gate after all Steps complete.", "```sh\nnpm test\n```"));
   assert.equal(action(f, "handoff").status, "Handed off");
@@ -192,39 +193,39 @@ test("closed prototype receipts use ordinary phase routing without completion au
   assert.equal(permit.allowed, true);
   assert.equal(next(f.root, { skill: "cg-sign-off" }).signOffRecovery.state, "none");
   assert.equal(dispatch(f, "cg-sign-off").permissionDecision, "allow");
-  assert.equal(dispatch(f, "cg-prepare").permissionDecision, "deny");
+  assert.equal(dispatch(f, "cg-produce").permissionDecision, "deny");
 });
 
 test("sign-off admits prototype assessment without granting acceptance, production, or closure", t => {
   const f = fixture(t); action(f, "start");
   const state = next(f.root, { programme: "dashboard" });
-  assert.equal(permits(state, "cg-sign-off").entry, "prototype-completion");
-  assert.equal(permits(state, "cg-prepare").allowed, false);
+  assert.equal(permits(state, "cg-sign-off").entry, "delivery-completion");
+  assert.equal(permits(state, "cg-produce").allowed, false);
   assert.equal(permits(state, "cg-produce").allowed, false);
   requestSignOff(f);
   assert.equal(permits(next(f.root), "cg-produce").allowed, false);
   assert.throws(() => close(f), /cannot close/);
-  assert.equal(readPrototypes(f.root)[0].approval, undefined);
+  assert.equal(readDeliveries(f.root)[0].approval, undefined);
   action(f, "start", {}, "other");
   assert.equal(permits(next(f.root), "cg-sign-off").allowed, false);
 });
 
 test("attributed completion requests persist separately from approval and finish only with closure", t => {
   const f = fixture(t); action(f, "start"); accepted(f);
-  const snapshot = prototypeSnapshot(f.root);
+  const snapshot = deliverySnapshot(f.root);
   assert.throws(() => action(f, "request-sign-off"), /requires --session/);
   const record = requestSignOff(f);
-  assert.equal(prototypeSnapshot(f.root), snapshot);
+  assert.equal(deliverySnapshot(f.root), snapshot);
   assert.equal(record.status, "Handed off");
   assert.equal(record.completionRequest.state, "Active");
   assert.equal(record.approval.response, "The prototype is approved");
   assert.throws(() => requestSignOff(f), /already requested/);
   queue(f, "dashboard", "Blocked", "None");
-  assert.equal(permits(next(f.root), "cg-produce").allowed, false);
-  assert.equal(permits(next(f.root), "cg-sign-off").entry, "prototype-completion");
+  assert.equal(permits(next(f.root), "cg-produce").executionAllowed, false);
+  assert.equal(permits(next(f.root), "cg-sign-off").entry, "delivery-completion");
   queue(f, "dashboard", "Complete");
   close(f);
-  assert.equal(readPrototypes(f.root)[0].completionRequest.state, "Completed");
+  assert.equal(readDeliveries(f.root)[0].completionRequest.state, "Completed");
   const resumed = action(f, "resume");
   assert.equal(resumed.completionRequest, undefined);
   assert.equal(resumed.history.at(-1).previousEvidence.completionRequest.state, "Completed");
@@ -240,25 +241,25 @@ test("cold sign-off recovers intent before acceptance despite an unrelated suspe
   const state = JSON.parse(recovered.stdout);
   assert.equal(state.programme, "dashboard");
   assert.equal(state.selectionSource, "completion-request");
-  assert.equal(state.entry, "prototype-completion");
-  assert.equal(state.prototype.status, "Iterating");
+  assert.equal(state.entry, "delivery-completion");
+  assert.equal(state.receipt.status, "Iterating");
   assert.equal(status(f.root).signOffRecovery.candidates[0].programme, "dashboard");
   assert.equal(next(f.root).state, "selection-required", "ordinary queue routing does not adopt sign-off intent");
   const explicit = JSON.parse(call("next", "--programme", "legacy", "--for", "cg-sign-off", "--json").stdout);
   assert.equal(explicit.programme, "legacy");
   assert.equal(explicit.entry, undefined);
   assert.equal(dispatch(f, "cg-sign-off", "").permissionDecision, "allow");
-  assert.equal(dispatch(f, "cg-prepare", "").permissionDecision, "deny", "recorded intent cannot supply acceptance");
+  assert.equal(dispatch(f, "cg-produce", "").permissionDecision, "deny", "recorded intent cannot supply acceptance");
   accepted(f); queue(f, "dashboard", "Ready");
-  assert.equal(dispatch(f, "cg-prepare", "").permissionDecision, "allow", "handoffs recover the admitted programme without a user flag");
+  assert.equal(dispatch(f, "cg-produce", "").permissionDecision, "allow", "handoffs recover the admitted programme without a user flag");
   assert.equal(dispatch(f, "cg-produce", "").permissionDecision, "allow");
 });
 
 test("review interruption retains intent; multiple requests require a choice and cancellation removes recovery", t => {
   const f = fixture(t); action(f, "start"); action(f, "review"); requestSignOff(f);
   const recovered = next(f.root, { skill: "cg-sign-off" });
-  assert.equal(recovered.prototype.status, "Awaiting review");
-  assert.equal(recovered.prototype.approval, undefined);
+  assert.equal(recovered.receipt.status, "Awaiting review");
+  assert.equal(recovered.receipt.approval, undefined);
   action(f, "start", {}, "second"); requestSignOff(f, "second");
   const ambiguous = next(f.root, { skill: "cg-sign-off" });
   assert.equal(ambiguous.state, "selection-required");
@@ -279,35 +280,37 @@ test("suspension cancels active completion authority and retains its original re
   action(f, "resume");
   assert.equal(next(f.root).signOffRecovery.state, "none");
   requestSignOff(f); // a fresh attributed request can be recorded before review
-  assert.equal(readPrototypes(f.root)[0].approval, undefined);
+  assert.equal(readDeliveries(f.root)[0].approval, undefined);
 });
 
 test("the host permits only a selected, requested prototype chain and keeps production blocked", t => {
   const f = fixture(t); action(f, "start"); accepted(f);
   assert.equal(dispatch(f, "cg-sign-off").permissionDecision, "allow");
-  assert.equal(dispatch(f, "cg-prepare").permissionDecision, "deny", "entry alone grants no chain");
+  assert.equal(dispatch(f, "cg-produce").permissionDecision, "deny", "entry alone grants no chain");
   requestSignOff(f);
-  assert.equal(dispatch(f, "cg-prepare").permissionDecision, "allow");
+  assert.equal(dispatch(f, "cg-produce").permissionDecision, "allow");
   queue(f, "dashboard", "Blocked");
-  assert.equal(dispatch(f, "cg-produce").permissionDecision, "deny");
+  assert.equal(dispatch(f, "cg-produce").permissionDecision, "allow", "admit preparation, not blocked execution");
+  assert.equal(permits(next(f.root), "cg-produce").executionAllowed, false);
   queue(f, "dashboard", "Ready");
   assert.equal(dispatch(f, "cg-produce").permissionDecision, "allow");
   queue(f, "dashboard", "Complete");
   assert.equal(dispatch(f, "cg-sign-off").permissionDecision, "allow");
   action(f, "start", {}, "other"); accepted(f, "other"); requestSignOff(f, "other");
-  assert.equal(dispatch(f, "cg-prepare", "other").permissionDecision, "deny", "a request for another programme needs its own sign-off entry");
+  assert.equal(dispatch(f, "cg-produce", "other").permissionDecision, "deny", "a request for another programme needs its own sign-off entry");
   action(f, "suspend");
   assert.equal(dispatch(f, "cg-produce").permissionDecision, "deny");
 });
 
-test("accepted prototype enters preparation, production, and closure without rebuilding", t => {
+test("accepted prototype enters common sign-off and repairs without rebuilding", t => {
   const f = fixture(t); action(f, "start"); write(f.root, "app.txt", "accepted UI\n"); accepted(f);
-  assert.equal(next(f.root).stage, "cg-prepare");
-  queue(f, "dashboard", "Ready"); assert.equal(next(f.root).stage, "cg-produce");
+  assert.equal(next(f.root).stage, "cg-sign-off");
+  queue(f, "dashboard", "Ready"); assert.equal(next(f.root).stage, "cg-sign-off");
+  assert.equal(permits(next(f.root), "cg-produce").allowed, true);
   queue(f, "dashboard", "Complete"); assert.equal(next(f.root).stage, "cg-sign-off");
   assert.match(deliveryReadiness(f.root, { base: f.base }).failures[0], /final sign-off/);
   assert.throws(() => close(f, `${quote(process.execPath)} -e "process.exit(7)"`), /delivery gate failed/);
-  assert.equal(readPrototypes(f.root)[0].status, "Handed off");
+  assert.equal(readDeliveries(f.root)[0].status, "Handed off");
   close(f);
   assert.deepEqual(deliveryReadiness(f.root, { base: f.base }).failures, []);
   fs.rmSync(path.join(f.root, "docs/plans"), { recursive: true });
@@ -321,8 +324,8 @@ test("a gate that changes its inputs cannot close the prototype", t => {
   const script = "require('fs').writeFileSync('app.txt', 'changed by gate')";
   const gate = `${quote(process.execPath)} -e ${quote(script)}`;
   assert.throws(() => close(f, gate), /changed source inputs/);
-  assert.equal(readPrototypes(f.root)[0].status, "Handed off");
-  assert.equal(readPrototypes(f.root)[0].deliveryAttempts.at(-1).result, "Inputs changed");
+  assert.equal(readDeliveries(f.root)[0].status, "Handed off");
+  assert.equal(readDeliveries(f.root)[0].deliveryAttempts.at(-1).result, "Inputs changed");
 });
 
 function checkpoint(f, programme, session, writes, extra = {}) {
@@ -336,9 +339,9 @@ test("session checkpoints preserve independent history, scoped observations, and
   const first = checkpoint(f, "dashboard", "delivery", ["app.txt"]);
   assert.deepEqual(first.sessions[0].unregisteredProgrammes, ["instructions"]);
   assert.deepEqual(first.sessions[0].observedChanges, []);
-  const before = prototypeSnapshot(f.root);
+  const before = deliverySnapshot(f.root);
   const second = checkpoint(f, "instructions", "preview", ["app.txt"]);
-  assert.equal(prototypeSnapshot(f.root), before);
+  assert.equal(deliverySnapshot(f.root), before);
   assert.deepEqual(second.sessions[0].peers[0].overlappingWrites, ["app.txt"]);
   assert.deepEqual(second.sessions[0].peers[0].sharedResources, ["build:app"]);
   write(f.root, "app.txt", "another session may have made this change");
@@ -368,7 +371,7 @@ test("scoped review tolerates unrelated writes through approval and handoff but 
   const f = fixture(t); action(f, "start");
   checkpoint(f, "dashboard", "editor", ["app.txt"]);
   action(f, "review");
-  assert.deepEqual(readPrototypes(f.root)[0].reviewScope, ["app.txt"]);
+  assert.deepEqual(readDeliveries(f.root)[0].reviewScope, ["app.txt"]);
   write(f.root, "other.txt", "unrelated dirty work before approval");
   const evidence = "docs/plans/dashboard/approval.json";
   write(f.root, evidence, JSON.stringify({ by: "owner", response: "Approved", scope: "whole dashboard" }));
@@ -389,9 +392,9 @@ test("adding declarations cannot retroactively narrow a legacy review", t => {
   const evidence = "docs/plans/dashboard/approval.json";
   write(f.root, evidence, JSON.stringify({ by: "owner", response: "Approved", scope: "whole dashboard" }));
   action(f, "approve", { evidence });
-  assert.equal(readPrototypes(f.root)[0].reviewScope, undefined);
+  assert.equal(readDeliveries(f.root)[0].reviewScope, undefined);
   write(f.root, "unrelated.txt", "still included in the original whole-tree review");
-  assert.throws(() => action(f, "handoff"), /approved prototype changed/);
+  assert.throws(() => action(f, "handoff"), /approved delivery changed/);
 });
 
 test("review reports undeclared dirty source without blocking approval and retains the observation", t => {
@@ -412,7 +415,7 @@ test("review reports undeclared dirty source without blocking approval and retai
   const expected = ["app/dashboard-other.css", "new-name.txt", "old-name.txt", "removed.txt", "shared/.agents/cg/contract.yaml", "shared/style.css"];
   const review = action(f, "review");
   assert.deepEqual(review.reviewUnscopedDirty, expected);
-  assert.deepEqual(readPrototypes(f.root)[0].history.at(-1).reviewUnscopedDirty, expected);
+  assert.deepEqual(readDeliveries(f.root)[0].history.at(-1).reviewUnscopedDirty, expected);
   const evidence = "handbook/plans/dashboard/approval.json";
   write(f.root, evidence, JSON.stringify({ by: "owner", response: "Approved", scope: "whole dashboard" }));
   action(f, "approve", { evidence });
@@ -420,7 +423,7 @@ test("review reports undeclared dirty source without blocking approval and retai
   assert.equal(action(f, "resume").reviewUnscopedDirty, undefined);
   checkpoint(f, "dashboard", "editor", ["app/dashboard", "shared", ...expected.slice(0, 4)]);
   assert.deepEqual(action(f, "review").reviewUnscopedDirty, []);
-  assert.deepEqual(readPrototypes(f.root)[0].history.find(event => event.action === "review").reviewUnscopedDirty, expected);
+  assert.deepEqual(readDeliveries(f.root)[0].history.find(event => event.action === "review").reviewUnscopedDirty, expected);
 });
 
 test("review retains all programme writers and detects scoped additions, deletions, and modes", t => {
@@ -438,7 +441,7 @@ test("review retains all programme writers and detects scoped additions, deletio
     () => { fs.rmSync(path.join(f.root, "app.txt")); fs.symlinkSync("screens/new.txt", path.join(f.root, "app.txt")); },
   ]) {
     action(f, "review", { session: "second" });
-    assert.deepEqual(readPrototypes(f.root)[0].reviewScope, ["app.txt", "screens"]);
+    assert.deepEqual(readDeliveries(f.root)[0].reviewScope, ["app.txt", "screens"]);
     mutate();
     assert.throws(() => action(f, "approve", { evidence }), /changed after review/);
     action(f, "resume");
@@ -457,11 +460,11 @@ test("scope cannot shrink away reviewed files, and expansion requires new review
   action(f, "resume"); action(f, "review"); action(f, "approve", { evidence });
   checkpoint(f, "dashboard", "editor", ["shared-config"]);
   assert.match(next(f.root).reason, /approved source changed/);
-  assert.throws(() => action(f, "handoff"), /approved prototype changed/);
+  assert.throws(() => action(f, "handoff"), /approved delivery changed/);
   action(f, "resume"); action(f, "review"); action(f, "approve", { evidence });
   finaliseRoadmap(f);
   write(f.root, "app.txt", "changed after scoped approval");
-  assert.throws(() => action(f, "handoff"), /approved prototype changed/);
+  assert.throws(() => action(f, "handoff"), /approved delivery changed/);
 });
 
 test("a closing process cannot lose history to a second writer; other programmes can checkpoint", t => {
@@ -471,7 +474,7 @@ test("a closing process cannot lose history to a second writer; other programmes
     const {spawnSync} = require('node:child_process');
     const assert = require('node:assert/strict');
     const call = (...args) => spawnSync(process.execPath, [${JSON.stringify(CLI)}, 'prototype', ...args], {encoding:'utf8'});
-    const state = call('status', '--programme', 'dashboard');
+    const state = call('status', '--programme', 'dashboard', '--json');
     assert.equal(JSON.parse(state.stdout)[0].deliveryAttempts.at(-1).result, 'Running');
     const same = call('resume', '--programme', 'dashboard', '--session', 'second-writer');
     assert.equal(same.status, 1);
@@ -480,18 +483,18 @@ test("a closing process cannot lose history to a second writer; other programmes
     assert.equal(other.status, 0, other.stderr);
   `;
   close(f, `${quote(process.execPath)} -e ${quote(script)}`);
-  const records = readPrototypes(f.root);
+  const records = readDeliveries(f.root);
   assert.equal(records.find(r => r.programme === "dashboard").deliveryAttempts.at(-1).result, "Passed");
   assert.equal(records.find(r => r.programme === "instructions").history.filter(e => e.action === "checkpoint").length, 2);
-  assert.ok(deliveryReadiness(f.root, { base: f.base }).failures.some(e => e.includes("instructions: Prototype")));
+  assert.ok(deliveryReadiness(f.root, { base: f.base }).failures.some(e => e.includes("instructions: Delivery")));
 });
 
 test("failed close attempts remain recorded and release the writer lock for a retry", t => {
   const f = fixture(t); action(f, "start"); accepted(f);
   assert.throws(() => close(f, "exit 9"), /delivery gate failed/);
-  assert.equal(readPrototypes(f.root)[0].deliveryAttempts[0].exitCode, 9);
+  assert.equal(readDeliveries(f.root)[0].deliveryAttempts[0].exitCode, 9);
   close(f);
-  const record = readPrototypes(f.root)[0];
+  const record = readDeliveries(f.root)[0];
   assert.deepEqual(record.deliveryAttempts.map(a => a.result), ["Failed", "Passed"]);
   assert.throws(() => checkpoint(f, "dashboard", "late", ["app.txt"]), /resume a closed/);
   const resumed = action(f, "resume", { session: "next-iteration" });
@@ -503,15 +506,15 @@ test("failed close attempts remain recorded and release the writer lock for a re
 test("deleting a record added and removed on the PR branch does not remove its obligation", t => {
   const f = fixture(t); action(f, "start");
   git(f.root, "add", "."); git(f.root, "commit", "-qm", "prototype begins");
-  fs.rmSync(path.join(f.root, PROTOTYPE_ROOT), { recursive: true });
+  fs.rmSync(path.join(f.root, DELIVERY_ROOT), { recursive: true });
   git(f.root, "add", "-A"); git(f.root, "commit", "-qm", "remove marker");
   assert.match(deliveryReadiness(f.root, { base: f.base }).failures[0], /record was removed/);
 });
 
 test("a status word without evidence and malformed records fail closed", t => {
   const f = fixture(t); action(f, "start");
-  const file = path.join(f.root, PROTOTYPE_ROOT, "dashboard.json");
-  const record = JSON.parse(fs.readFileSync(file)); record.status = "Closed"; record.history.push({ status: "Closed", at: new Date().toISOString() });
+  const file = path.join(f.root, DELIVERY_ROOT, "dashboard.json");
+  const record = { ...readDeliveries(f.root)[0] }; delete record.file; record.status = "Closed"; record.history.push({ status: "Closed", at: new Date().toISOString() });
   fs.writeFileSync(file, JSON.stringify(record));
   assert.match(deliveryReadiness(f.root, { base: f.base }).failures[0], /missing attributed/);
   fs.writeFileSync(file, "{malformed");
@@ -558,14 +561,14 @@ test("suspended and abandoned work remains provisional without deleting source",
   const f = fixture(t); action(f, "start"); action(f, "suspend"); action(f, "abandon");
   assert.match(deliveryReadiness(f.root, { base: f.base }).failures[0], /Abandoned/);
   assert.ok(fs.existsSync(path.join(f.root, "app.txt")));
-  action(f, "resume"); assert.equal(readPrototypes(f.root)[0].status, "Iterating");
+  action(f, "resume"); assert.equal(readDeliveries(f.root)[0].status, "Iterating");
 });
 
 test("metadata cannot escape the repository through a slug or symlink", t => {
   const f = fixture(t);
   assert.throws(() => action(f, "start", {}, "../../escape"), /programme slug/);
   fs.mkdirSync(path.join(f.root, ".agents/cg"), { recursive: true });
-  fs.symlinkSync(os.tmpdir(), path.join(f.root, PROTOTYPE_ROOT));
+  fs.symlinkSync(os.tmpdir(), path.join(f.root, DELIVERY_ROOT));
   assert.throws(() => action(f, "start"), /symlink/);
 });
 
@@ -581,23 +584,23 @@ test("CLI selects programmes and returns a failing merge check for a prototype",
 });
 
 test("new skill installs and upgrades preserve repository-owned policy and records", t => {
-  const f = fixture(t); init(f.root, { docs: "docs" }); sync(f.root);
+  const f = fixture(t); init(f.root, { docs: "docs" }); approveFixtureIntent(f.root); sync(f.root);
   assert.ok(fs.existsSync(path.join(f.root, ".agents/skills/cg-prototype/SKILL.md")));
   assert.ok(fs.existsSync(path.join(f.root, ".agents/skills/cg-prototype/references/concurrent-work.md")));
   assert.ok(fs.existsSync(path.join(f.root, ".agents/skills/cg-prototype/references/session-setup.md")));
-  assert.ok(fs.existsSync(path.join(f.root, ".agents/skills/cg-sign-off/references/prototype-completion.md")));
-  assert.ok(fs.existsSync(path.join(f.root, ".agents/skills/cg-sign-off/references/phase-sign-off.md")));
+  assert.ok(fs.existsSync(path.join(f.root, ".agents/skills/cg-sign-off/references/delivery-completion.md")));
+  assert.equal(fs.existsSync(path.join(f.root, ".agents/skills/cg-sign-off/references/phase-sign-off.md")), false);
   assert.ok(fs.existsSync(path.join(f.root, ".agents/skills/cg-sign-off/references/closure-checks.md")));
   assert.deepEqual(verify(f.root).failures, []);
   action(f, "start");
   const workflow = path.join(f.root, ".agents/cg/workflow.md");
   fs.appendFileSync(workflow, "\nRepository-specific instruction.\n");
   const before = fs.readFileSync(workflow, "utf8");
-  const snapshot = prototypeSnapshot(f.root);
+  const snapshot = deliverySnapshot(f.root);
   init(f.root, { docs: "docs" });
   assert.equal(fs.readFileSync(workflow, "utf8"), before);
-  assert.equal(readPrototypes(f.root)[0].status, "Iterating");
-  assert.equal(prototypeSnapshot(f.root), snapshot);
+  assert.equal(readDeliveries(f.root)[0].status, "Iterating");
+  assert.equal(deliverySnapshot(f.root), snapshot);
 });
 
 test("installed sign-off procedures retain usable local reference links", t => {
@@ -615,7 +618,7 @@ test("installed sign-off procedures retain usable local reference links", t => {
 });
 
 test("an older preserved catalog and phase map can upgrade without a forced policy rewrite", t => {
-  const f = fixture(t); init(f.root, { docs: "docs" }); sync(f.root);
+  const f = fixture(t); init(f.root, { docs: "docs" }); approveFixtureIntent(f.root); sync(f.root);
   const rootFile = path.join(f.root, ".agents/cg/contract.yaml");
   const root = loadContract(rootFile, { repoRoot: f.root, validate: false });
   root.extensions.contractGraph.skills = root.extensions.contractGraph.skills.filter(s => s.name !== "cg-prototype");
@@ -627,4 +630,277 @@ test("an older preserved catalog and phase map can upgrade without a forced poli
   init(f.root, { docs: "docs" }); sync(f.root);
   assert.equal(fs.readFileSync(rootFile, "utf8"), before);
   assert.deepEqual(verify(f.root).failures, []);
+});
+
+test("explicit Closed v1 migration preserves evidence, foreign ownership, and delivery verification", t => {
+  const f = fixture(t, "handbook");
+  action(f, "start");
+  checkpoint(f, "dashboard", "writer", ["app.txt"]);
+  checkpoint(f, "dashboard", "writer", ["app.txt"], { state: "released" });
+  accepted(f); requestSignOff(f);
+  assert.throws(() => close(f, `${quote(process.execPath)} -e "process.exit(1)"`), /delivery gate failed/);
+  close(f);
+  const record = { ...readDeliveries(f.root)[0] }; delete record.file;
+  record.futureExtension = { retain: "unknown evidence", values: [null, 1, true] };
+  const file = path.join(f.root, DELIVERY_ROOT, "dashboard.json");
+  fs.writeFileSync(file, JSON.stringify(record, null, 2));
+  const source = deliverySnapshot(f.root);
+  const readiness = deliveryReadiness(f.root, { base: f.base });
+  const plans = residue(f.root).roots;
+  const compact = action(f, "compact");
+  assert.equal(compact.storageVersion, 2);
+  assert.ok(compact.bytesAfter < compact.bytesBefore);
+  const decoded = { ...readDeliveries(f.root)[0] }; delete decoded.file;
+  assert.deepEqual(decoded, record);
+  assert.equal(deliverySnapshot(f.root), source);
+  assert.deepEqual(deliveryReadiness(f.root, { base: f.base }), readiness);
+  assert.deepEqual(residue(f.root).roots, plans);
+  const bytes = fs.readFileSync(file, "utf8");
+  action(f, "compact");
+  assert.equal(fs.readFileSync(file, "utf8"), bytes);
+  action(f, "start", {}, "other");
+  const foreign = fs.readFileSync(path.join(f.root, DELIVERY_ROOT, "other.json"), "utf8");
+  action(f, "compact");
+  assert.equal(fs.readFileSync(path.join(f.root, DELIVERY_ROOT, "other.json"), "utf8"), foreign);
+  write(f.root, "app.txt", "changed after delivery");
+  assert.ok(deliveryReadiness(f.root, { base: f.base }).failures.some(failure => /source changed/.test(failure)));
+  action(f, "resume");
+  assert.equal(JSON.parse(fs.readFileSync(file)).version, 2);
+  assert.deepEqual(readDeliveries(f.root)[0].history.at(-1).previousEvidence.closure, record.closure);
+});
+
+test("v1 writers stay v1; active receipts cannot be compacted and corrupt v2 cannot admit delivery", t => {
+  const f = fixture(t); const original = action(f, "start");
+  const file = path.join(f.root, DELIVERY_ROOT, "dashboard.json");
+  assert.equal(JSON.parse(fs.readFileSync(file)).version, 2);
+  fs.writeFileSync(file, JSON.stringify(original));
+  action(f, "review");
+  assert.equal(JSON.parse(fs.readFileSync(file)).version, 1);
+  const before = fs.readFileSync(file, "utf8");
+  assert.throws(() => action(f, "compact"), /only Closed/);
+  assert.equal(fs.readFileSync(file, "utf8"), before);
+  action(f, "resume"); accepted(f); close(f); action(f, "compact");
+  const stored = JSON.parse(fs.readFileSync(file));
+  stored.programme = "foreign";
+  fs.writeFileSync(file, JSON.stringify(stored));
+  assert.equal(next(f.root).state, "unreadable");
+  assert.match(deliveryReadiness(f.root, { base: f.base }).failures[0], /invalid v2/);
+});
+
+test("routine CLI output projects current state while --json retains complete evidence", t => {
+  const f = fixture(t); action(f, "start");
+  checkpoint(f, "dashboard", "writer", ["app.txt"]);
+  const call = (...args) => spawnSync(process.execPath, [CLI, "prototype", "status", f.root, "--programme", "dashboard", ...args], { encoding: "utf8" });
+  const brief = call(), full = call("--json");
+  assert.equal(brief.status, 0, brief.stderr); assert.equal(full.status, 0, full.stderr);
+  const summary = JSON.parse(brief.stdout)[0], record = JSON.parse(full.stdout)[0];
+  assert.equal(summary.history, undefined);
+  assert.equal(summary.historyEvents, record.history.length);
+  assert.deepEqual(summary.sessions[0].writes, record.sessions[0].writes);
+  assert.equal(summary.sessions[0].files, undefined);
+  assert.ok(brief.stdout.length < full.stdout.length);
+});
+
+function sprintPlan(f, programme = "dashboard") {
+  finaliseRoadmap(f, programme);
+  const file = path.join(f.root, `${f.docs}/plans/${programme}/roadmap.md`);
+  fs.writeFileSync(file, fs.readFileSync(file, "utf8").replace("Status: Active", "Status: Active\nDelivery: sprint") + "\n## Items\nF1: Feature — filtered export; B1: Bug — empty state; T1: Task — regression evidence, deferred until finishing.\n");
+}
+
+test("planned and exploratory work converge on the same accepted delivery handoff", t => {
+  for (const planned of [false, true]) {
+    const f = fixture(t);
+    finaliseRoadmap(f);
+    if (planned) sprintPlan(f);
+    const start = spawnSync(process.execPath, [CLI, "delivery", "start", f.root, "--programme", "dashboard"], { encoding: "utf8" });
+    assert.equal(start.status, 0, start.stderr);
+    assert.ok(fs.existsSync(path.join(f.root, DELIVERY_ROOT, "dashboard.json")));
+    requestSignOff(f);
+    assert.equal(permits(next(f.root), "cg-sign-off").handoffReady, false);
+    assert.equal(next(f.root).stage, planned ? "cg-produce" : "cg-prototype", "the originating loop owns work before handoff");
+    assert.equal(next(f.root).state, "delivery-review");
+    assert.equal(permits(next(f.root), "cg-prototype").allowed, !planned);
+    assert.equal(dispatch(f, "cg-prototype", "dashboard").permissionDecision, planned ? "deny" : "allow");
+    const printed = spawnSync(process.execPath, [CLI, "status", f.root, "--programme", "dashboard"], { encoding: "utf8" });
+    assert.equal(printed.status, 0, printed.stderr);
+    assert.match(printed.stdout, /dashboard — delivery-review/);
+    action(f, "review");
+    write(f.root, "docs/plans/dashboard/approval.json", JSON.stringify({ by: "Fixture owner", response: "Accept S1 with documented deferred tests", scope: "S1" }));
+    action(f, "approve", { evidence: "docs/plans/dashboard/approval.json" });
+    action(f, "handoff");
+    const withoutQueue = next(f.root);
+    assert.equal(withoutQueue.stage, "cg-sign-off");
+    assert.equal(withoutQueue.state, "no-queue");
+    assert.match(withoutQueue.reason, /finish deferred tests and documentation from the roadmap/);
+    assert.doesNotMatch(withoutQueue.reason, /establishes its internal execution steps/);
+    assert.equal(permits(withoutQueue, "cg-prototype").allowed, !planned);
+    assert.equal(dispatch(f, "cg-prototype", "dashboard").permissionDecision, planned ? "deny" : "allow");
+    queue(f, "dashboard", "Ready");
+    const state = next(f.root);
+    assert.equal(state.stage, "cg-sign-off");
+    assert.equal(permits(state, "cg-sign-off").entry, "delivery-completion");
+    assert.equal(permits(state, "cg-sign-off").handoffReady, true);
+    assert.equal(permits(state, "cg-produce").allowed, true, "eligible implementation repairs remain available");
+    assert.equal(state.receipt.handoff.scope, "S1");
+    assert.equal(state.receipt.handoff.reviewSnapshot, state.receipt.approval.snapshot);
+    assert.equal(state.receipt.handoff.roadmap, "docs/plans/dashboard/roadmap.md");
+    assert.equal(state.signOffRecovery.candidates[0].mode, "delivery-completion");
+    action(f, "resume");
+    const resumed = readDeliveries(f.root)[0];
+    assert.equal(resumed.handoff, undefined);
+    assert.equal(resumed.history.at(-1).previousEvidence.handoff.scope, "S1");
+  }
+});
+
+test("legacy receipt locations preserve evidence in place and duplicate programme records fail closed", t => {
+  const f = fixture(t); action(f, "start"); accepted(f); requestSignOff(f);
+  const original = readDeliveries(f.root)[0];
+  const legacy = path.join(f.root, ".agents/cg/prototypes");
+  fs.renameSync(path.join(f.root, DELIVERY_ROOT), legacy);
+  assert.equal(deliverySnapshot(f.root), original.handoff.sourceSnapshot);
+  const retained = readDeliveries(f.root)[0];
+  assert.deepEqual(retained.history, original.history);
+  assert.equal(retained.file, ".agents/cg/prototypes/dashboard.json");
+  action(f, "suspend");
+  assert.equal(readDeliveries(f.root)[0].status, "Suspended");
+  assert.equal(fs.existsSync(path.join(f.root, DELIVERY_ROOT)), false, "ordinary updates must not create a competing record");
+  fs.mkdirSync(path.join(f.root, DELIVERY_ROOT));
+  fs.copyFileSync(path.join(legacy, "dashboard.json"), path.join(f.root, DELIVERY_ROOT, "dashboard.json"));
+  assert.throws(() => readDeliveries(f.root), /duplicate delivery record/);
+  assert.throws(() => action(f, "resume"), /duplicate delivery record/);
+});
+
+test("accepted sprint repairs admit preparation from complete and blocked queues without waiving readiness", t => {
+  const f = fixture(t); action(f, "start"); accepted(f); sprintPlan(f); requestSignOff(f);
+  queue(f, "dashboard", "Complete");
+  assert.equal(dispatch(f, "cg-sign-off").permissionDecision, "allow");
+  const file = "docs/plans/dashboard/phase_detailed_preparation.md";
+  const step = (n, state, depends = "None", blocked = "None") =>
+    `## Step ${n}: Repair evidence ${n}\nPriority: ${n}\nDepends on: ${depends}\nBlocked by: ${blocked}\nStatus: ${state}\n`;
+  for (const state of ["Complete", "Blocked"]) {
+    queue(f, "dashboard", state);
+    const before = fs.readFileSync(path.join(f.root, file), "utf8");
+    const result = next(f.root, { programme: "dashboard" });
+    const permission = permits(result, "cg-produce");
+    assert.equal(permission.allowed, true);
+    assert.equal(permission.entry, "execution-preparation");
+    assert.equal(permission.executionAllowed, false);
+    assert.equal(result.step, undefined, "preparation must not select an ineligible Step");
+    assert.equal(dispatch(f, "cg-produce").permissionDecision, "allow");
+    assert.equal(fs.readFileSync(path.join(f.root, file), "utf8"), before, "admission cannot clear blockers or rewrite evidence");
+  }
+  // Preparing the correction gives evidence a real dependency, rather than waiving it.
+  write(f.root, file, step(1, "Waiting", "Step 2") + step(2, "Ready") + step(3, "Blocked", "None", "DU-01 owner decision"));
+  assert.equal(next(f.root).step.number, 2);
+  write(f.root, file, step(1, "Ready", "Step 2") + step(2, "Complete") + step(3, "Blocked", "None", "DU-01 owner decision"));
+  assert.equal(next(f.root).step.number, 1);
+  write(f.root, file, step(1, "Complete", "Step 2") + step(2, "Complete") + step(3, "Blocked", "None", "DU-01 owner decision"));
+  assert.equal(next(f.root).state, "blocked");
+  assert.equal(permits(next(f.root), "cg-produce").executionAllowed, false);
+  assert.equal(next(f.root).step, undefined);
+  assert.equal(readDeliveries(f.root)[0].status, "Handed off", "preparation admission cannot close the receipt");
+  action(f, "suspend");
+  assert.equal(dispatch(f, "cg-produce").permissionDecision, "deny", "repair admission cannot resume suspended work");
+});
+
+test("sprint roadmaps and internal execution work route to produce", t => {
+  const f = fixture(t);
+  finaliseRoadmap(f);
+  assert.equal(next(f.root, { programme: "dashboard" }).stage, "cg-produce");
+  sprintPlan(f);
+  assert.equal(next(f.root).stage, "cg-produce");
+  assert.equal(next(f.root).delivery, "sprint");
+  assert.equal(permits(next(f.root), "cg-produce").allowed, true);
+  sprintPlan(f, "second");
+  assert.equal(next(f.root).state, "selection-required");
+  assert.equal(next(f.root, { programme: "second" }).stage, "cg-produce");
+});
+
+test("a mixed-item sprint reuses review evidence and repairs a failed final gate without another plan", t => {
+  const f = fixture(t); sprintPlan(f); action(f, "start"); requestSignOff(f);
+  write(f.root, "app.txt", "F1 filtered export and B1 empty state, one review batch\n");
+  const current = next(f.root, { programme: "dashboard" });
+  assert.equal(permits(current, "cg-produce").allowed, true);
+  assert.equal(permits(current, "cg-prepare").allowed, false, "retired preparation cannot be invoked");
+  assert.equal(permits(current, "cg-sign-off").entry, "delivery-completion");
+  action(f, "review");
+  assert.throws(() => action(f, "handoff"), /cannot handoff/);
+  write(f.root, "docs/plans/dashboard/approval.json", JSON.stringify({ by: "fixture owner", response: "I accept the combined export and empty-state behavior", scope: "S1 F1 and B1" }));
+  action(f, "approve", { evidence: "docs/plans/dashboard/approval.json" });
+  action(f, "handoff");
+  queue(f, "dashboard", "Blocked", "None");
+  assert.equal(permits(next(f.root, { programme: "dashboard" }), "cg-produce").executionAllowed, false);
+  queue(f, "dashboard", "Ready");
+  assert.equal(next(f.root, { programme: "dashboard" }).stage, "cg-sign-off");
+  assert.equal(permits(next(f.root), "cg-produce").allowed, true);
+  write(f.root, "export.test.cjs", "const assert = require('node:assert/strict'); assert.match(require('node:fs').readFileSync('app.txt','utf8'), /filtered export/);\n");
+  queue(f, "dashboard", "Complete");
+  assert.throws(() => close(f, `${quote(process.execPath)} -e "process.exit(1)"`), /delivery gate failed/);
+  assert.equal(readDeliveries(f.root)[0].status, "Handed off");
+  const gate = `${quote(process.execPath)} export.test.cjs`;
+  assert.equal(close(f, gate).status, "Closed");
+  assert.deepEqual(checkDelivery(f.root, { gate }).failures, []);
+  assert.equal(fs.readdirSync(path.join(f.root, "docs/plans")).length, 1, "the same master programme remains");
+});
+
+test("sprint completion chains only with a real request and recovers without changing its scope", t => {
+  const f = fixture(t); sprintPlan(f);
+  assert.equal(dispatch(f, "cg-produce", "dashboard", "completion-session").permissionDecision, "allow");
+  action(f, "start");
+  assert.equal(dispatch(f, "cg-sign-off", "dashboard", "completion-session").permissionDecision, "deny");
+  requestSignOff(f);
+  assert.equal(dispatch(f, "cg-sign-off", "dashboard", "completion-session").permissionDecision, "allow");
+  const recovery = next(f.root, { skill: "cg-sign-off" });
+  assert.equal(recovery.selectionSource, "completion-request");
+  assert.equal(recovery.delivery, "sprint");
+  assert.equal(dispatch(f, "cg-sign-off", "dashboard", "fresh-sprint-session").permissionDecision, "allow");
+  assert.equal(dispatch(f, "cg-produce", "dashboard", "fresh-sprint-session").permissionDecision, "allow", "the admitted recorded request can resume iteration");
+});
+
+test("an epic reuses its master roadmap and retains prior sprint acceptance as history", t => {
+  const f = fixture(t); sprintPlan(f); action(f, "start"); requestSignOff(f);
+  action(f, "review");
+  write(f.root, "docs/plans/dashboard/approval.json", JSON.stringify({ by: "fixture owner", response: "Accept S1", scope: "S1 F1 B1" }));
+  action(f, "approve", { evidence: "docs/plans/dashboard/approval.json" }); action(f, "handoff");
+  action(f, "resume");
+  const receipt = readDeliveries(f.root)[0];
+  assert.equal(receipt.approval, undefined, "S1 acceptance never pre-approves S2");
+  assert.ok(receipt.history.some(e => e.previousEvidence?.approval?.scope === "S1 F1 B1"));
+  assert.equal(receipt.completionRequest, undefined, "resume cannot silently expand completion authority");
+  requestSignOff(f);
+  assert.equal(next(f.root, { programme: "dashboard" }).stage, "cg-produce");
+  assert.equal(fs.existsSync(path.join(f.root, "docs/plans/dashboard/roadmap.md")), true);
+});
+
+test("proposed or malformed sprint headers cannot admit implementation or finishing", t => {
+  const f = fixture(t); sprintPlan(f);
+  const file = path.join(f.root, "docs/plans/dashboard/roadmap.md");
+  const active = fs.readFileSync(file, "utf8");
+  fs.writeFileSync(file, active.replace("Status: Active", "Status: Proposed"));
+  assert.equal(next(f.root).stage, "cg-plan");
+  for (const skill of ["cg-produce", "cg-produce", "cg-sign-off"]) assert.equal(permits(next(f.root), skill).allowed, false);
+  fs.writeFileSync(file, active.replace("Status: Active", "Status: Almost"));
+  assert.equal(next(f.root).state, "unreadable");
+  assert.equal(permits(next(f.root), "cg-produce").allowed, false);
+});
+
+test("a malformed unrelated sprint does not block an explicitly selected programme", t => {
+  const f = fixture(t); sprintPlan(f); sprintPlan(f, "other");
+  const file = path.join(f.root, "docs/plans/other/roadmap.md");
+  fs.writeFileSync(file, fs.readFileSync(file, "utf8").replace("Status: Active", "Status: Invalid"));
+  assert.equal(next(f.root, { programme: "dashboard" }).stage, "cg-produce");
+  const invalid = next(f.root, { programme: "other" });
+  assert.equal(invalid.state, "unreadable");
+  assert.equal(permits(invalid, "cg-plan").allowed, true);
+  assert.equal(permits(invalid, "cg-produce").allowed, false);
+});
+
+test("sprint chaining remembers its admitted programme even when host and task session IDs differ", t => {
+  const f = fixture(t); sprintPlan(f);
+  const hostSession = "host-session-different-from-task-id";
+  assert.equal(dispatch(f, "cg-produce", "dashboard", hostSession).permissionDecision, "allow");
+  action(f, "start"); requestSignOff(f);
+  sprintPlan(f, "other"); action(f, "start", {}, "other"); requestSignOff(f, "other");
+  assert.equal(dispatch(f, "cg-sign-off", "other", hostSession).permissionDecision, "deny", "another programme's request does not release this stage boundary");
+  assert.equal(dispatch(f, "cg-sign-off", "dashboard", hostSession).permissionDecision, "allow");
 });

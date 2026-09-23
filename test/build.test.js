@@ -44,6 +44,8 @@ test("cg build copies architecture and product YAML catalogs", () => {
   assert.match(output, /file\(s\) from 1 compiler/);
   assert.equal(readJson(dir, "package.json").devDependencies, undefined, "schema test tooling must not become package metadata");
 
+  assert.equal(fs.existsSync(path.join(dir, BUILD_DIRECTORY, "agent/cg/project-context.md")), true);
+  assert.equal(fs.existsSync(path.join(dir, BUILD_DIRECTORY, "agent/templates/docs/project-intent.md")), false);
   const architectureFile = path.join(dir, BUILD_DIRECTORY, "agent/cg/principles/architecture.yaml");
   assert.ok(fs.existsSync(architectureFile));
   assert.equal(
@@ -260,6 +262,11 @@ test("an extracted tarball resolves shared exports and migrates a repository wit
   execFileSync("tar", ["-xzf", path.join(dir, packed.filename), "--strip-components=1", "-C", packageRoot]);
   // Supply the already-installed runtime dependency without network or development dependencies.
   fs.cpSync(path.join(REPO, "node_modules/yaml"), path.join(consumer, "node_modules/yaml"), { recursive: true });
+  // Block ancestor dependency fallback and prove ordinary commands never load the parser.
+  const parserRoot = path.join(consumer, "node_modules/typescript");
+  fs.mkdirSync(parserRoot);
+  fs.writeFileSync(path.join(parserRoot, "package.json"), '{"type":"module","exports":"./unavailable.js"}');
+  fs.writeFileSync(path.join(parserRoot, "unavailable.js"), 'export default {}; throw new Error("fixture parser unavailable");');
   fs.rmSync(path.join(dir, "src"), { recursive: true });
   fs.rmSync(path.join(dir, BUILD_DIRECTORY), { recursive: true });
   const require = createRequire(path.join(consumer, "consumer.cjs"));
@@ -281,9 +288,34 @@ test("an extracted tarball resolves shared exports and migrates a repository wit
   };
   success("init", repo, "--yes", "--docs", "docs");
   success("verify", repo);
+  // Ordinary commands do not load the optional inspection path/parser.
+  const withoutParser = run("contract", "inspect", repo, "--unit", ".", "--json");
+  assert.notEqual(withoutParser.status, 0, "inspection must not borrow a parser from an adopter or source checkout");
+  assert.match(withoutParser.stderr, /fixture parser unavailable/);
+  fs.rmSync(parserRoot, { recursive: true });
+  fs.cpSync(path.join(REPO, "node_modules/typescript"), path.join(consumer, "node_modules/typescript"), { recursive: true });
+  for (const dependency of ["web-tree-sitter", "tree-sitter-wasms"]) fs.cpSync(path.join(REPO, "node_modules", dependency), path.join(consumer, "node_modules", dependency), { recursive: true });
+  fs.writeFileSync(path.join(repo, "entry.mjs"), "export const packagedExport = 1;\n");
+  const inspected = JSON.parse(success("contract", "inspect", repo, "--unit", ".", "--entry", "entry.mjs", "--json"));
+  assert.ok(inspected.facts.some(fact => fact.category === "export" && fact.name === "packagedExport"));
+  assert.equal(inspected.adapters.find(adapter => adapter.id === "javascript-typescript-esm").parserVersion, "5.9.3");
+  const languageEntries = {
+    "api.dart": "void run() {}",
+    "Api.java": "public class Api { public void run() {} }",
+    "Api.kt": "class Api {\n fun run() {}\n}\n",
+    "api.py": "def run(): pass\n",
+    "api.go": "package api\nfunc Run() {}\n",
+    "Api.cs": "public class Api { public void Run() {} }",
+  };
+  for (const [file, source] of Object.entries(languageEntries)) {
+    fs.writeFileSync(path.join(repo, file), source);
+    const report = JSON.parse(success("contract", "inspect", repo, "--unit", ".", "--entry", file, "--json"));
+    assert.ok(report.facts.some(fact => fact.category === "export" && /run$/i.test(fact.name)), file);
+  }
+  assert.ok(fs.existsSync(path.join(packageRoot, "script/inspection/THIRD_PARTY_NOTICES.txt")));
   const files = ["principles/architecture.yaml", "guidelines/engineering.yaml", "guidelines/product.yaml"];
   const legacy = path.join(REPO, "test/fixtures/principles-legacy");
-  const preservedFiles = ["contract.yaml", "enforcement.yaml", "workflow.md", "phases.json"];
+  const preservedFiles = ["project-context.md", "contract.yaml", "enforcement.yaml", "workflow.md", "phases.json"];
   const preserved = new Map(preservedFiles.map(file => [file, fs.readFileSync(path.join(repo, ".agents/cg", file), "utf8")]));
   // Give the frozen product fixture its existing P enforcement mapping.
   const mapFile = path.join(repo, ".agents/cg/enforcement.yaml");

@@ -1,29 +1,33 @@
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://contractgraph.dev/assets/contract-graph-mark-white.webp">
-    <img src="https://contractgraph.dev/assets/contract-graph-mark.webp" alt="Contract Graph logo" width="96" height="96">
+    <img src="https://contractgraph.dev/assets/contract-graph-mark.webp" alt="Contract Graph Dev Kit logo" width="96" height="96">
   </picture>
 </p>
 
-# Contract Graph
+# Contract Graph Dev Kit
 
-**Scale model-driven development with repository-native contracts as durable context.**
+**A framework for agentic software development, with repository-native contracts as a graph at its core.**
+
+Give coding agents the structure and workflow to plan, execute, and verify changes while keeping your codebase understandable.
+
+Repository-native contracts map responsibilities and dependencies. Integrated workflows carry agreed work through implementation, review, and completion.
 
 - [Quick Introduction Video](https://contractgraph.dev/#watch)
-- [Why is software context structured as a graph?](https://contractgraph.dev/docs/vision/)
+- [Vision and approach](https://contractgraph.dev/docs/vision/)
 
-Contract Graph makes software understandable to coding agents as a repository-native, traversable context map. Agents can not only locate the precise place to make a change efficiently, but also preserve that context alongside the code for future work. Each contract explains what its unit owns, how its parent uses it, and where to read next.
+Contract Graph is the short name for Contract Graph Dev Kit. Install the `contract-graph` package, use the `cg` CLI, and run `/cg-*` skills in your coding agent.
 
 ## How it works
 
-Contract Graph ships a baked-in, opinionated architecture for decomposing a repository into modules, sub-modules, components, and libraries. Each boundary keeps a `contract.yaml` beside its code, recording its responsibility, public surface, relationships, invariants, and verification. The architecture is therefore stored with the implementation, rather than living only in diagrams, prompts, or institutional memory.
+The Dev Kit combines a persistent contract graph, lifecycle skills and verification tools. It supplies an opinionated architecture for decomposing a repository into modules, sub-modules, components, and libraries. Each boundary keeps a `.agents/cg/contract.yaml` within its directory, recording its responsibility, public surface, relationships, invariants, and verification. The architecture is therefore stored with the implementation, rather than living only in diagrams, prompts, or institutional memory.
 
-For each task, an agent starts at the repository contract and follows only the relevant child and dependency edges to the smallest responsible boundary. It reads and changes the code there, keeps the affected contracts truthful, and runs their declared checks. The next agent inherits that updated map rather than rediscovering the system from scratch.
+For each task, an agent starts at the repository contract and follows only the relevant child and dependency edges to the smallest responsible boundary. It reads the relevant implementation, keeps affected contracts truthful, and runs the checks required for the change. Planning and execution use those boundaries to organise the work; review and sign-off preserve accepted outcomes, required checks and current project context. The next agent inherits the updated map and recorded decisions. Graph verification checks the authored graph; it does not yet prove that every implementation dependency matches it or that parallel writes are safe.
 
 ```mermaid
 flowchart TB
   T["Change request"]
-  subgraph CG["Contract Graph"]
+  subgraph CG["Contract Graph Dev Kit"]
     direction LR
     P["Baked-in architecture<br/>principles<br/><br/>applied across<br/>every contract"]
     subgraph G["Repository-native contract graph"]
@@ -44,16 +48,25 @@ flowchart TB
   P -.-> L
 ```
 
-Choose the mode that matches how clearly you understand the outcome.
+## Supported languages and frameworks
+
+- **Direct source inspection (0.7.0):** C# (.NET), Dart (Flutter), Go, Java, JavaScript, Kotlin, Python and TypeScript.
+- **Other languages (e.g. C++, Rust and Swift):** use the same contract graph and lifecycle, with source facts supplied by agents, owners or repository-specific tools.
+
+Inspection proposes facts for review; it does not prove implementation or framework behavior. See [contract verification limits](https://contractgraph.dev/docs/contracts/#enforced).
+
+## Supported agent harnesses
+
+**Antigravity, Claude Code, Codex, Cursor and GitHub Copilot (VS Code).** Select integrations during `cg init`; run `cg profiles` to list them. Skill and hook support varies by host.
 
 ## Choose how to work
 
 | Mode | Start here when… | Your involvement |
 |---|---|---|
 | **Product Prototyping** | You need to try a working experience before deciding exactly what to build. | Use the preview, give feedback, approve the experience, then ask the agent to finish it. |
-| **Detailed Plan-Based Delivery** | The outcome is understood, and you want an explicit implementation roadmap. | Agree on phases and acceptance gates, then run delivery stage by stage or opt into auto-run. |
+| **Sprint and Epic Delivery** | The outcome is understood, and you want an agreed goal and reviewable increments. | Agree outcomes and criteria, review the working result, and let the agent finish within the requested sprint or epic scope. |
 
-### Product Prototyping
+###  Prototyping to Delivery Mode
 
 Use `/cg-prototype` when you want to discover the right experience by trying it:
 
@@ -65,7 +78,7 @@ Improve the dashboard layout and interactions. Launch it and iterate with me.
 Review the preview and give feedback in the same conversation. When the experience is right, explicitly approve it and ask the agent to complete it with `/cg-sign-off`. See the
 [prototype guide](https://contractgraph.dev/docs/prototype/) for the full workflow.
 
-### Detailed Plan-Based Delivery
+### Plan to Delivery Mode
 
 Use `/cg-plan` when the outcome and its constraints are already clear:
 
@@ -74,13 +87,12 @@ Use `/cg-plan` when the outcome and its constraints are already clear:
 Add export and import for saved dashboards, including validation and recovery.
 ```
 
-Review and accept the roadmap, then follow the next command the agent gives you or use
-`/cg-auto-run` to coordinate delivery. See the
+Agree the goal, expected behaviour, and review conditions in one Sprint Plan or Epic Plan. Ask the agent to complete the selected sprint: `/cg-produce` implements the items for review, and `/cg-sign-off` finishes tests, documentation and verification under the same request. Produce asks whether to review all remaining items together or each item separately, and continues independent work when another item needs your input. See the
 [delivery workflow](https://contractgraph.dev/docs/workflow/) for stages, gates, and recovery.
 
 ## Get Started
 
-Contract Graph requires Node.js 18.17 or newer. Install the CLI once, then enter the repository you
+Contract Graph Dev Kit requires Node.js 18.17 or newer. Install the CLI once, then enter the repository you
 want to work with:
 
 ```bash
@@ -88,12 +100,14 @@ npm install --global contract-graph
 cd your-repository
 ```
 
-| New repository | Add Contract Graph in Existing Repo     |  |
-|---|---|---|
-| `cg init` | `cg init` |  |
-|  .| Ask your coding agent to run `/cg-warmup`. |  |
+| New repository | Existing repository |
+|---|---|
+| Run `cg init`, then `/cg-warmup`. | Run `cg init`, then `/cg-warmup`. |
+| Confirm project intent and establish root context. | Confirm intent from existing documents and map the current code. |
 
-Behind the scenes, `cg init` installs the schemas, structural principles, agent skills, hooks, and editor discovery files that make the contract graph usable. It records the installed version and selected profiles without adding a runtime dependency to your application. `cg modules` identifies mapping gaps, while `cg verify` checks that the authored graph remains valid and connected.
+Behind the scenes, `cg init` installs the schemas, structural principles, agent skills, hooks, and editor discovery files that make the contract graph usable. It records the installed version and selected profiles without adding a runtime dependency to your application. `cg modules` identifies mapping gaps, while `cg verify` checks that the authored graph remains valid and connected. `cg intent verify` separately checks owner-attributed intent approval and freshness.
+
+For an existing CG installation, update the CLI and run `cg init --check` to preview repository changes, then `cg init` to apply them with confirmation. Stop active agents and finish or checkpoint current work first; open plans are preserved. See the [upgrade guide](https://contractgraph.dev/docs/upgrade/).
 
 ## Learn More
 
@@ -108,4 +122,4 @@ Behind the scenes, `cg init` installs the schemas, structural principles, agent 
 
 ## Licence
 
-Licensed under the [Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0).
+Contract Graph Dev Kit is open source, licensed under [Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0).

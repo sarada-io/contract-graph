@@ -360,7 +360,7 @@ export function productHasHarvestedRules(repoRoot) {
 }
 
 /** Lifecycle phases a repository can scope principle loading to. */
-export const PHASE_NAMES = Object.freeze(["plan", "prototype", "prepare", "produce", "sign-off", "unblock"]);
+export const PHASE_NAMES = Object.freeze(["plan", "prototype", "produce", "sign-off", "unblock"]);
 
 /**
  * Read `phases.json`: which rule families each phase loads.
@@ -390,7 +390,7 @@ export function loadPhases(repoRoot) {
   // directly until the repository adopts a row; upgrades must not force a policy rewrite.
   const missing = PHASE_NAMES.filter((name) => name !== "prototype" && !(name in phases));
   if (missing.length) throw new ContractError(`${file}: missing phase(s): ${missing.join(", ")}`);
-  const extra = Object.keys(phases).filter((name) => !PHASE_NAMES.includes(name));
+  const extra = Object.keys(phases).filter((name) => !PHASE_NAMES.includes(name) && name !== "prepare");
   if (extra.length) throw new ContractError(`${file}: unknown phase(s): ${extra.join(", ")}`);
 
   const result = {};

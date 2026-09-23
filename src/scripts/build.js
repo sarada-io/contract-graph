@@ -26,6 +26,7 @@ export const PACKAGE_DATA_DIRECTORY = "agent/cg/guidelines";
 const PACKAGE_TREE_MAPPINGS = Object.freeze([
   ["src/cg/principles", "agent/cg/principles"],
   ["src/cg/guidelines", "agent/cg/guidelines"],
+  ["src/cg/templates", "agent/cg/templates"],
   ["src/cg/schema", "agent/cg/schema"],
   ["src/skills", "agent/skills"],
   ["src/install/hooks", "agent/hooks"],
@@ -39,6 +40,8 @@ const PACKAGE_FILE_MAPPINGS = Object.freeze([
   ["README.md", "README.md"],
   ["src/cg/contract-graph-agent.md", "agent/cg/contract-graph-agent.md"],
   ["src/cg/contract.yaml", "agent/cg/contract.yaml"],
+  ["src/cg/project-context.md", "agent/cg/project-context.md"],
+  ["src/cg/experts.md", "agent/cg/experts.md"],
   ["src/cg/workflow.md", "agent/cg/workflow.md"],
   ["src/cg/phases.json", "agent/cg/phases.json"],
   ["src/cg/enforcement.yaml", "agent/cg/enforcement.yaml"],

@@ -45,7 +45,7 @@ export function getMenuItems(root = repositoryRoot) {
     { label: 'Clean & Build', detail: 'Delete dist/build, then compile the distributable package. Leaves dist/tar and tmp in place.', kind: 'clean-build' },
     { label: 'Clean, Build & Test All', detail: 'Delete dist/build, compile the package, then run the full test suite. Stops if the build fails.', kind: 'clean-build-test' },
     { label: `Clean, Build Release Tarball (${version})`, detail: 'Ask for a version, update package.json when it changes, delete dist/build, then replace dist/tar/contract-graph-<version>.tgz.', kind: 'pack' },
-    { label: 'Install Release Tarball to Machine', detail: `Install or replace cg on this machine's PATH from ${tarball}. Builds the tarball first if it is missing.`, kind: 'install-tarball' },
+    { label: 'Install Release Tarball to Machine', detail: `Install an independent copy of ${tarball} on this machine's PATH, replacing any development link. Builds the tarball first if it is missing.`, kind: 'install-tarball' },
     { label: 'Publish Release Tarball to NPM', detail: `Log in to npm if needed, then publish ${tarball} as a public package. Builds the tarball first if it is missing.`, kind: 'publish' },
     { label: 'More', detail: 'Build check, editor fixtures, CLI help, environment checks, and cleaning generated files.', kind: 'more' },
     { label: 'Exit', detail: 'Return to your terminal.', kind: 'exit' },
@@ -288,10 +288,11 @@ export async function invokeMenuItem(item, hooks = {}) {
       const tarball = tarballRelativeOf();
       const choice = await choose('Install Release Tarball to Machine?', [
         { label: 'Keep the Installed Command', detail: 'Return to the menu.' },
-        { label: `Install cg from ${tarball}`, detail: "Runs npm install -g so cg is available in new terminals. Builds the tarball first if it is missing." },
+        { label: `Install cg from ${tarball}`, detail: 'Installs a packaged copy; later local builds cannot change it. Builds the tarball first if it is missing.' },
       ]);
       if (choice !== 1) return null;
-      return run('npm', ['install', '-g', ensure()]);
+      // Install the archive itself, never dist/build (npm can link directories).
+      return run('npm', ['install', '-g', path.resolve(repositoryRoot, ensure())]);
     }
     case 'publish': {
       const shown = tarballRelativeOf();
@@ -355,7 +356,7 @@ export async function runMoreMenu(hooks = {}) {
 export async function startRepositoryMenu(argv = process.argv.slice(2)) {
   const help = argv.includes('--help') || argv.includes('-h');
   if (help || !isInteractive()) {
-    process.stdout.write('Contract Graph - repository menu\n');
+    process.stdout.write('Contract Graph Dev Kit - repository menu\n');
     for (const line of listMenuLines()) process.stdout.write(`  ${line}\n`);
     if (help) return 0;
     process.stderr.write('Open an interactive terminal and run ./urun or urun.cmd to select with arrow keys. Nothing was executed.\n');
@@ -364,7 +365,7 @@ export async function startRepositoryMenu(argv = process.argv.slice(2)) {
   let lastStatus = 0;
   while (true) {
     const menu = getMenuItems();
-    const choice = await readMenuChoice('Contract Graph', menu);
+    const choice = await readMenuChoice('Contract Graph Dev Kit', menu);
     if (choice < 0 || menu[choice].kind === 'exit') return lastStatus;
     if (menu[choice].kind === 'more') {
       const outcome = await runMoreMenu();

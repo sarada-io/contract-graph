@@ -1,9 +1,11 @@
 ---
 name: cg-unblock
-description: Resolve Contract Graph forks through recorded authority and direct user interaction. Use throughout cg-plan, cg-prepare, cg-produce, and cg-sign-off whenever requirements leave a choice, a contract may change, or work may need owner approval. Classifies blockers, applies recorded decisions and reversible defaults, writes assumption ledgers, asks the user about unresolved material decisions and records their responses in the repository decision log, and keeps the earliest dependency-safe ready Step moving while blocked Steps wait.
+description: Resolve Contract Graph forks through recorded authority and direct user interaction. Use throughout cg-plan, cg-produce, and cg-sign-off whenever requirements leave a choice, a contract may change, or work may need owner approval. Classifies blockers, applies recorded decisions and reversible defaults, writes assumption ledgers, asks the user about unresolved material decisions and records their responses in the repository decision log, and keeps the earliest dependency-safe ready Step moving while blocked Steps wait.
 ---
 
 # CG Unblock
+
+For sprint work, scope each canonical decision to the programme, sprint ID/name and affected Feature/Bug/Task IDs. One decision spanning items remains one entry linked from those items. Preserve the actual answer, rationale, authority and implementation impact; resolving an item does not approve the whole sprint.
 
 Decide from contracts first. Escalate only when the owner must accept the blast radius. An `E`
 disagreement is not `Blocked by`.
@@ -35,7 +37,7 @@ to reverse; D-3 also requires an answer when no existing authorization covers th
 
 Ask as soon as the question is concrete and reviewable. Mark only affected Steps `Blocked` and
 their dependents `Waiting`; continue independent `Ready` work while awaiting the response when
-the host supports asynchronous interaction. Do not postpone asking until the queue is exhausted.
+the host supports asynchronous interaction. In batch mode, pending questions may be consolidated for the run review while independent work proceeds.
 If the host must yield to receive an answer, checkpoint first and resume after the response.
 
 A reversible implementation choice within existing authority uses D-2 and D-4. Do not invent an
@@ -48,7 +50,7 @@ Use the first source that answers the fork:
 1. Global `A` bindings, `.agents/cg/principles/architecture.yaml` `graph` (kinds, recurse,
    selfSufficient, surface including service, adapters, stay, add-child, elsewhere), applicable
    scoped `P` bindings, and boundary contracts.
-2. The repository constitution and published specifications.
+2. Owner-confirmed `.agents/cg/project-context.md`, the repository constitution and published specifications. Surface conflicts rather than silently changing project direction.
 3. Accepted decisions in `<docs>/plans/decision-log.md`.
 4. Permanent design records and published product requirements.
 5. The repository's walking skeleton or an already-green neighboring implementation.
@@ -100,7 +102,7 @@ entry shape, warmup behaviour, or promotion rules into that file. `cg-warmup` fi
 review* first; later stages append. Group related questions when useful, keeping each independently
 answerable decision under its own ID. The log preserves the interaction; it does not replace it.
 
-Use the repository's established numbering:
+Use the repository's established numbering. Allocate above both the existing entries and the retained highest allocated DA/DU counters; initialise those counters from existing IDs when absent and never lower them after cleanup:
 
 - `DA-NN`: autonomous decisions recorded for traceability; add directly to *Resolved*.
 - `DU-NN`: decisions requiring owner review; append to *Pending your review*.
@@ -116,6 +118,12 @@ scope until promoted, superseded, or dropped; it is not blanket permission for a
 Keep dependencies on decisions explicit so later decisions can compose their accepted constraints.
 Do not drain an entry still needed by an active decision or phase until its authority and relevant
 response evidence have an accessible destination. Permanent contracts still cannot cite plan IDs.
+
+### Keep project context current
+
+After an actual owner answer changes project direction or materially shapes the product, update `.agents/cg/project-context.md` in the same work: purpose, audience, boundaries, supported variation, enduring constraints and significant tradeoffs with their rationale. Reconcile affected canonical repository documentation as well. Preserve the actual answer and scope in the existing decision entry until sign-off accounts for it. Keep the context self-contained, concise and stated as current meaning, without transient decision IDs or plan links. Ordinary implementation choices and superseded alternatives do not belong there. One direction-setting decision is sufficient; the recurrence test below applies to promoting reusable rules, not maintaining project intent.
+
+Use the existing intent review/approve/verify flow for changed context or binding-source bytes. Reuse an actual response only if it explicitly covers the exact resulting content and sources; otherwise present the concrete revision for confirmation. A prior decision is not blanket approval of an agent's broader rewrite. Pending choices stay in the decision log; they do not become approved project context. Continue independent inspection while affected delivery waits. Every sign-off reconciles resolved entries and relevant design records under cg-sign-off's closure checks §7.0.
 
 ### D-5a — Promotion test and destination
 
@@ -135,82 +143,31 @@ Classify each candidate once. Do not promote a one-off merely because it was dif
 | Engineering guideline (`E`) | The recurring structural advice is useful but is not yet a measurable invariant. | Add `id`, `statement`, and `reason`. A preference between workable designs may also carry `cost`. A later verifier-owning change may promote it when all `A` obligations can ship together. |
 | Architecture Principle (`A`) | The structural invariant is generic, deterministic, and the destination change owns the verifier that can enforce it. | In the verifier-owning change, register the blocking detector, add its negative fixture, assign the next permanent ID in `principles/architecture.yaml`, and remove any equivalent `E` practice. An adopting repository cannot create built-in enforcement through YAML alone. |
 | Product guideline (`P`) | The binding rule exists because of this product's market, pricing, or shape. | Add the binding rule, `.agents/cg/enforcement.yaml` row, detector, and affected contracts' rule IDs together. |
-| Drop | The result is case-specific, superseded, duplicated, or cannot stand without its originating case. | Leave no permanent rule, and record why beside the decision ID in the phase-close classification manifest. A resolved decision is binding authority until it is promoted or dropped, so one that vanishes from the log with no reason takes a rule the repository was following with it. The manifest is archived with the phase; the log still drains. |
+| Drop | The result is case-specific, superseded, duplicated, or cannot stand without its originating case. | Leave no permanent rule, and record why beside the decision ID in the phase-close classification manifest. A resolved decision is binding authority until it is promoted or dropped, so one that vanishes from the log with no reason takes a rule the repository was following with it. Retain the manifest while harvest consumers need it; preserve its required disposition evidence at closure, then remove the obsolete manifest under sign-off cleanup. The log still drains. |
 
 Promotion is delivery work, not a decision-log edit alone. Route it through the Contract Graph
 phase whose acceptance gate can prove the destination's obligations.
 
 ## D-6 — Clarification and direct interaction
 
-1. Under auto-run, the Engineer sends the Manager the exact ambiguity, Plan and contract evidence
-   checked, viable options and tradeoffs, recommendation, affected Steps, and what an answer
-   would unblock. The Manager checks the Plan and accepted decisions first. Without a Manager,
-   the invoking agent performs that check itself.
-2. Resolve from existing authority when possible and return the cited interpretation to the
-   Engineer. If the user must decide, write a pending `DU-NN` entry before asking. The Manager
-   must save the complete question, context, viable options, tradeoffs, recommendation, affected
-   work and unblocking condition to disk first. If that write fails, do not present an unrecorded
-   decision request. This ordering lets a new session resume even if the current one ends before
-   the user sees or answers the question. Follow-up questions must also be recorded before asking.
-   The Manager
-   owns this entry and the user interaction; the Engineer references the ID rather than writing
-   a competing copy. The Engineer owns queue updates, including blocking and independent progress;
-   applying the answer is serialized after the Manager records it. During a prepared harvest
-   drain the Manager may temporarily hand off exact-cohort log writes, pausing its own writes
-   and queuing incoming answers until the Engineer returns ownership. Write
-   `<docs>/plans/auto-run/<programme>/harvest.auto-run.md` before that handoff and delete it when
-   ownership returns and all queued answers have been persisted and re-read in the
-   authoritative log. Cancellation stops execution, not answer preservation: reconcile
-   the worker before writing, and retain Suspended ledgers and the ownership record if
-   that cannot finish safely. Never delete the only recorded copy of a user answer.
-3. Ask directly in chat or the host's interaction tool. Include the decision ID, enough context
-   to answer, all viable options with tradeoffs, and a clearly labelled recommendation. Offer
-   selection or a typed solution; if the tool limits option count, present the complete options
-   in the question text or chat. A link to the log is supplemental, not the whole question.
-4. Keep unanswered entries pending. Silence, elapsed time, preselected options, Manager preference,
-   and passing tests are not user approval. If a typed solution is ambiguous, preserve it and ask
-   a focused follow-up before resolving the dependent choice.
-5. Record the actual answer under D-5, update affected Plan or decision artifacts, then notify the
-   same Engineer. Recalculate the queue immediately, clearing only the resolved blocker. Other
-   blockers, unfinished dependencies, and changed-scope preparation requirements still apply.
-6. Resume the earliest eligible work under the existing auto-run authority without requiring the
-   user to repeat a start command. An answer does not widen that authority. On a host without live
-   worker messaging, checkpoint and resume from the same artifacts when interaction returns.
-7. At session start or recovery, read the relevant pending entries and reconcile any recorded
-   responses before dispatching dependent work. If an entry is still unanswered, present that
-   saved question using the same `DU-NN` ID in the new session. Do not invent a replacement entry,
-   infer an answer from a previous request being shown, or require the old chat. Avoid repeating
-   a question already awaiting an answer in the current session. Record the user's response
-   before releasing the resolution, so a later session can distinguish pending from resolved.
+1. Check the plan, contracts and recorded scoped decisions before asking. If they resolve the question, cite and apply that authority. Otherwise record one pending DU entry with the full question, evidence, viable options, tradeoffs, recommendation, affected sprint/item IDs and unblocking condition before presenting it.
+2. Lead with a plain-language question, why the answer is needed, a linked concrete proposal and a summary of actual changes. Separate already-agreed content from new interpretation. Explain the consequences of the options and what happens after the answer. Keep commands, snapshot hashes and dependency IDs in supporting evidence, not the title or user action. The owner replies in the conversation; the agent maintains the ledger and approval evidence. Do not ask again when existing explicit approval covers the exact content and sources.
+3. Use the host's available structured question tool with selectable options when permitted in the current mode. Prefer asynchronous interaction, offer a recommendation and retain free-text input. Group already-known missing choices into one interaction with separately answerable questions. If no permitted structured tool is available, show numbered options in chat and explain that a reply is needed to resume affected work. In a batch production run, record input-dependent steps and continue independent items; consolidate unanswered questions for review where possible. Never implement the missing decision by assumption.
+4. Record the actual answer before updating dependent work. Silence, elapsed time, preselected options and passing tests are not approval. Preserve ambiguous answers and ask a focused follow-up. A decision does not expand execution scope.
+5. Recalculate readiness, clearing only the resolved blocker. Resume eligible work within the existing request; preserve other prerequisites. Keep decision-log writes serialised if explicitly delegated workers are in use; coordinate ownership before another writer edits the same records.
+6. On recovery, read pending entries and recorded answers first. Reuse IDs, avoid duplicate questions or competing logs, and never delete the only recorded answer. Check current source and plan state before resuming.
 
-Sign-off checks implementation against applicable resolved decisions and records remaining gaps.
-A user response accepting a design does not also accept a later harvest classification unless it
-explicitly covers that classification. Keep D-5a and the existing harvest acceptance gate.
+## D-7 — Return to the active loop
 
-## Stage boundary — yield here
-
-Return to the invoking stage or Auto-Run Manager after the fork work. Outside auto-run, return to
-the user. Do not invoke the next skill yourself. Under auto-run, `cg-unblock` may be invoked for
-clarification and user interaction; it never grants permission to execute unresolved work.
-
-## D-7 — Next-action response
-
-Choose exactly one immediate route:
-
-- decision resolved or a reversible assumption recorded: name the invoking skill with the updated
-  decision or assumption artifact;
-- owner answers required and no Step is ready: keep the direct question pending, keep
-  `cg-unblock` as the next skill, and name every blocking decision-log entry;
-- independent work remains: name `cg-produce` with the earliest `Ready` Step.
-
-End the user-facing response with:
+Return to the invoking production or sign-off loop within its recorded authority. Resolve only the named decision; do not invent acceptance, widen the sprint or start a different programme. Lead the next action with what the owner needs to review or answer, not a skill invocation or ledger ID. Apply this wording even when retained repository workflow uses older technical response labels.
 
 ```markdown
-## Next action — <Decision applied | Owner decision required | Independent work ready>
-- **User action:** <one concrete action>
-- **Next input:** <$cg-plan | $cg-prepare | $cg-produce | $cg-sign-off | $cg-unblock> — <updated assumption, decision set, plan, preparation, earliest Ready Step, or corrective brief>
-- **Blocked by:** <condition preventing the named next action>   <!-- omit unless the status is non-advancing -->
+## Next action — <Review the project context | Choose … | Decision applied | Independent work continues>
+- **Please review:** <linked concrete document/proposal and the actual question; omit when no review is needed>
+- **Decision details:** <link to the relevant entry in the repository decision log, with its decision ID>
+- **Your choices:** <plain-language options and consequences; omit when already answered>
+- **After your answer:** <what the agent records and resumes within existing authority; omit when no answer is needed>
+- **Work waiting:** <affected outcome and why; omit when nothing waits>
 ```
 
-Do not end with a decision survey alone. Name the caller to resume, or name `cg-unblock` when the
-user's answer must first be recorded and applied.
+Use selectable questions under D-6 where permitted; a decision-log entry alone is not a request to the user. A normal reply is sufficient: do not require editing the log, copying a hash or invoking cg-unblock to submit the answer. Always include a clickable link to the relevant decision-log entry alongside the review content; use the actual repository path (`<docs>/plans/decision-log.md`), not an invented `decision-list.md`. Keep skill routing and exact evidence in the checkpoint. When a new action really needs a separate request, name it in plain language and offer the skill as an optional shortcut. For completed decisions report what was applied and the next eligible work, or that no work remains.
