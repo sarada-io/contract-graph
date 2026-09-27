@@ -13,6 +13,8 @@ maintainer development/release tooling.
 - [urun.mjs](../../scripts/urun.mjs), [urun](../../urun), [urun.cmd](../../urun.cmd): local maintainer menu.
 - [test.mjs](../../scripts/test.mjs): test runner scratch isolation;
   [check-principles-mutations.mjs](../../scripts/check-principles-mutations.mjs): mutation validation harness.
+- [ci.yml](../../.github/workflows/ci.yml): CI orchestration of tests and package checks;
+  assertions and fixtures remain with the behavior's owner.
 
 ## Boundary promises
 
