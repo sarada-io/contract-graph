@@ -94,7 +94,7 @@ export const SCAFFOLD_MAPPING = Object.freeze([
   // that has no modules yet. Writing it into a brownfield repo invents a module that does not
   // exist — see `shouldScaffoldModule`.
   { source: "install/templates/module", packageSource: "agent/templates/module", target: "src", mode: "starter", select: "tree", install: "preserve" },
-  // One tree: plans, decisions, and guides. `docsRoot` replaces the leading `docs` segment so a
+  // One tree: plans, decisions, technical guides, and product-user manuals. `docsRoot` replaces the leading `docs` segment so a
   // repo that already owns `docs/` can put them somewhere else without a special case per tree.
   { source: "install/templates/docs", packageSource: "agent/templates/docs", target: "docs", mode: "always", select: "tree", docsRoot: true, install: "preserve" },
   { source: "install/profiles", packageSource: "agent/profiles", target: null, mode: "never", select: "tree", install: "preserve" },

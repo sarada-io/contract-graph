@@ -1,16 +1,18 @@
-# Guides
+# Technical guides
 
-Current product and operator documentation, written and maintained by `cg-sign-off`. A guide
-describes the system **as it is supported today** — not how it came to be, which is a design
-record, and not what is planned, which is a plan.
+Instructions for developers and technical operators who build, deploy, release, operate,
+maintain or troubleshoot the software. Examples: deployment and environment setup, release
+procedures, incident response, backup and recovery, monitoring, and technical upgrades.
 
-Each guide states its audience and prerequisites, the happy path, the authorization and safety
-boundary, the observable failure, recovery and rollback, and a smoke test or verification command.
+Instructions for people using the product belong in `../manuals/`: for a game, how to play,
+game rules, player controls and tutorials. Classify by audience and purpose, not title. A
+“player guide” is a manual; a “deployment manual” is a technical guide. A business user operating
+the application is still a product user, not a technical operator.
 
-What belongs here: operator manuals, runbooks for alerts and incidents, backup/restore and upgrade
-procedures, deployment and environment guides, observability and performance baselines, UAT
-checklists.
+State the intended technical role, prerequisites, procedure and expected result. Include access
+requirements, risks, failure diagnosis, recovery, rollback and runnable verification where
+relevant. Use necessary technical terminology accurately. Document the supported system today;
+design rationale belongs in `../decisions/` and proposed work belongs in `../plans/`.
 
-Commands in a guide must be runnable. When a store, module, route, or deployment path is retired,
-delete its guidance rather than leaving two contradictory operating stories — a stale runbook is
-worse than none, because it is followed under pressure.
+Keep one canonical document per reader need and link shared facts. Remove obsolete instructions
+when their supported behavior is retired. Do not generate a guide merely to fill this directory.

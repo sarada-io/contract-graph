@@ -14,6 +14,8 @@ admission, progress and completion across sessions. Intent reads `.agents/cg/pro
 | `cg status` | [status.js](../../src/scripts/status.js) |
 | `cg residue` | [residue.js](../../src/scripts/residue.js): reachability and scoped ownership |
 
+Agent decision JSON under `.agents/cg/decisions/` is temporary evidence, excluded from source snapshots like plan records. Required authority is copied into existing completion evidence before deletion; Authoring owns semantic retention. Application changes outside that reserved directory still invalidate snapshots.
+
 ## Boundary promises
 
 Read existing plans and receipts to determine state; do not add a parallel ledger. Production

@@ -5,6 +5,29 @@ Contract Graph Dev Kit carries agreed work through planning, execution, review a
 The [lifecycle](lifecycle.md) lists the stages. This page is the shape of the work: what you
 agree at each layer, what gets written, and what is still true after the plan is removed.
 
+## Guides and manuals
+
+| Location | Reader and purpose | Examples |
+|---|---|---|
+| `docs/guides/` | Technical roles building, deploying, releasing, operating or maintaining the software | Deployment, release, incident response, backup and recovery |
+| `docs/manuals/` | People using the product | How to play, game rules, player controls, tutorials and feature instructions |
+
+Use your configured documentation root in place of `docs`. Classify by audience and purpose, not title: a “player guide” belongs in manuals; a “deployment manual” belongs in guides. Both explain current supported behavior. Link shared facts instead of maintaining duplicate instructions. Existing repository layouts can retain their destinations with the same audience distinction.
+
+Installation supplies directory descriptions and preserves existing documentation. It does not automatically relocate old files. When correcting misplaced content, the agent preserves useful material and updates links within the agreed scope.
+
+## Decisions you need to make
+
+Reviews are written for functional leaders. You should be able to understand the outcome, cost, risk and choice without learning framework commands. Technical terms appear only when necessary and are explained.
+
+A decision review has a clear question and four fields: **Context/background, Options, Recommendation, and Why**. Reply in the conversation. The agent keeps approval details separately; you do not need to edit a log or run a verification command. A result summary explains what was checked and what remains uncertain, rather than treating “a command passed” as proof that the product works.
+
+Open choices stay together in the central decision log, with links to the relevant plan or prototype. After you answer, the agent records the agreed outcome and removes the question. The human log is an inbox, not an archive. Routine implementation details, check results and progress updates do not become decisions for your review.
+
+Agent evidence lives separately in `.agents/cg/decisions/`, using a small JSON file for each material decision. A tiny sequence file prevents reused identifiers; it contains no history. Records remain only while active work, required preservation or a specific retention obligation needs them. Once useful meaning and necessary approval evidence have been preserved in their existing permanent homes, obsolete records are deleted. Merely resolving a question does not justify deleting evidence still needed by unfinished work.
+
+Older mixed logs are migrated as their decisions are touched: preserve the original answer and identity, verify the separate copy, then remove technical details or completed entries from the human log. Unrelated or conflicting evidence is not silently overwritten. No adopting repository is automatically migrated by installing a new CLI.
+
 ## Agree intent, then deliver a sprint
 
 After init, run warmup for either a new or existing project. Warmup maintains `.agents/cg/project-context.md` as a concise copy of intent from available vision and specifications, incorporating approved decisions that shape the project, then asks the owner to confirm the interpretation. Code that violates accepted intent is a finding to correct; it does not redefine the intended product. `cg intent verify` checks whether the reviewed page and its declared binding sources still match attributed approval. It does not prove the implementation conforms or authenticate who approved it.
@@ -138,7 +161,7 @@ Successful completion includes cleanup of the finished scope’s temporary files
 
 Every sign-off accounts for the completed scope’s resolved decisions and relevant design records, even when the plan has no explicit harvest phase. Approved project direction belongs in `.agents/cg/project-context.md`; structural promises belong in the owning `contract.yaml`; qualifying policy belongs in the appropriate architecture, engineering or product YAML catalog. Routine implementation choices need no permanent framework entry.
 
-The existing completion evidence records each decision’s disposition and preserves its actual authority before consumed entries are removed from the decision log. Scope-owned files under `docs/decisions/` can be retired before the final delivery gate once their useful meaning is consolidated and their evidence and incoming links are handled. The sign-off input retains the authority evidence until the delivery receipt stores it. Retain a record when detailed rationale, active dependencies or explicit retention policy still needs it, with that reason stated. Pending questions and other programmes’ decisions are not cleared. Declared harvest cohorts retain their existing classification and routing gates.
+The existing completion evidence records each decision’s disposition and preserves its actual authority before consumed agent records are deleted. Scope-owned files under `docs/decisions/` can be retired before the final delivery gate once their useful meaning is consolidated and their evidence and incoming links are handled. The sign-off input retains the authority evidence until the delivery receipt stores it. Retain a record when detailed rationale, active dependencies or explicit retention policy still needs it, with that reason stated. Pending questions and other programmes’ decisions are not cleared. Declared harvest cohorts retain their existing classification and routing gates.
 
 This keeps framework context current without turning it into another chronological log. Decision selection and semantic consolidation are agent responsibilities; the CLI checks intent freshness and declared harvest data, not whether every important product decision has been understood.
 
@@ -155,7 +178,7 @@ decisions** as settled until they are promoted or dropped.
 | `contract.yaml` nodes, edges, routes, invariants | Completed roadmaps, step queues and process/progress notes (delete after harvesting durable knowledge and required evidence) |
 | Architecture bindings (`A`) and product rules (`P`) | Leftover pre-0.7.0 auto-run ledgers (reconcile recovery evidence before deletion; no new ledgers are created) |
 | Current project context, useful design records and guides | Warmup findings once adoption has finished; a reseed delta after the owner has read it |
-| The decision log *file* (entries drain; the ledger remains) | A decision *id* as the source of a contract rule |
+| Current agreed outcomes and required approval evidence | Answered human questions and agent decision records with no continuing consumer (delete after preserving required meaning/evidence) |
 
 If deleting `docs/plans/` would lose a rule, the rule was stored in the wrong place.
 

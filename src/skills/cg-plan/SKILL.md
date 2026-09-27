@@ -5,6 +5,8 @@ description: Agree a goal and observable outcomes in one Sprint or Epic Plan wit
 
 # CG Plan
 
+For chat, decision reviews and results, read [owner communication](../cg-unblock/references/owner-communication.md). Explain outcomes and choices for functional leaders; keep framework commands and approval mechanics in internal evidence.
+
 Agree what success means before implementation. Run `cg intent verify`; if intent is incomplete or stale, use cg-warmup to draft and confirm it while continuing independent discovery. Planning may explore an unanswered question but must not label its dependent outcome agreed. Read the root contract, `.agents/cg/workflow.md`, profile and the families selected for `plan` in `.agents/cg/phases.json`. Route with `cg contract route --task "<outcome>"` before bounded source reading. A and applicable P are binding; E remains advisory.
 
 New delivery uses the sprint loop. Version 0.7.0 retires the former standalone preparation and auto-run stages; do not route an unmarked old programme through a hidden legacy workflow. Reconcile the requested outcome into this master-plan format before new execution. No branch, commit, issue or implementation is created merely by agreement on a plan.
@@ -92,7 +94,7 @@ Delivery: sprint
 <execution scope/request, explicit batch or per-item review choice or Pending, current item, pending decision IDs and next action; link receipts/queues rather than duplicate their state>
 
 ## Assumptions and decisions
-<bounded assumptions and links to canonical DU entries>
+<owner-facing open choices using Context/background, Options, Recommendation and Why; keep assumptions and canonical internal evidence links in the execution checkpoint>
 
 ## Deferred tests and known gaps
 <each necessary obligation once, referencing its item ID, reason and finishing owner; or None with rationale>
@@ -118,4 +120,4 @@ Supply cg-produce the agreed roadmap, selected sprint, item IDs, contracts, base
 
 When the user has already requested execution or full sprint/epic completion, continue under that request without asking for another stage invocation. Otherwise return the agreed plan for execution. A new objective requires affected agreement; routine repairs do not. Use cg-unblock for consequential missing decisions and continue independent work.
 
-End with one Next action block naming `$cg-produce`, `$cg-prototype`, `$cg-unblock`, or None and the exact scope. Include `Blocked by` only when a prerequisite prevents that next action. Plan approval alone does not authorize implementation.
+End with the next work or owner choice in functional language. Keep the selected skill and exact scope in the internal checkpoint; a skill shortcut is optional. Include `Blocked by` only when a prerequisite prevents that next action. Plan approval alone does not authorize implementation.

@@ -16,6 +16,8 @@ which owns selection, confinement, evidence aggregation, snapshots and report re
 | Dart / Flutter extraction | [dart.js](../../src/scripts/inspection/dart.js) |
 | Vendored grammar identity and license evidence | [grammars](../../src/scripts/inspection/grammars), [notices](../../src/scripts/inspection/THIRD_PARTY_NOTICES.txt) |
 
+`cg analyse` enters [analyse.js](../../src/scripts/analyse.js) to prepare an agent prompt with absolute bundled resources, bounded guidance pointers and an external report destination. It writes nothing and does not assess architecture itself. No installed graph is required. Diagnostic instructions belong to Authoring; follow-up adoption belongs to Installation. Validate with `test/analyse.test.js` and extracted-package coverage in `test/build.test.js`.
+
 ## Boundary promises
 
 Reports propose facts; they never write contracts, execute inspected source or establish that

@@ -1,6 +1,6 @@
 {
   "name": "contract-graph",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "Contract Graph Dev Kit: a framework for agentic software development with repository-native contracts as a graph at its core.",
   "type": "module",
   "bin": {

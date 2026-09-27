@@ -16,6 +16,7 @@ supposed to remain after a plan is deleted.
 
 | Read | What it answers |
 |---|---|
+| [Pre-adoption assessment](analyse.md) | Read-only diagnosis, portable skill and adoption follow-up |
 | [Vision](vision.md) | The framework’s mission, product intent and causal model |
 | [Intent and approval](intent.md) | How adopting repositories establish intent and what approval proves |
 | [Architecture considerations](architecture-considerations.md) | What is mandatory, what is advisory, and what verification actually proves |

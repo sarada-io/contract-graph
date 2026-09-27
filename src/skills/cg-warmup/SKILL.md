@@ -5,6 +5,8 @@ description: Establish owner-confirmed project intent in new and existing reposi
 
 # CG Warmup
 
+For chat, decision reviews and results, read [owner communication](../cg-unblock/references/owner-communication.md). Explain outcomes and choices for functional leaders; keep framework commands and approval mechanics in internal evidence.
+
 Warmup establishes intent for every repository after init: greenfield, brownfield and reseed. Accepted intent describes what the repository is for; contracts describe its current structure. Existing code is evidence of conformance, not authority to discard an accepted requirement. Complete the shared intent step before claiming adoption readiness.
 
 **Never delete this skill.** `cg verify` requires all six skills, and a later module tree still
@@ -165,7 +167,7 @@ Finish with all fourteen true:
 9. Every binding failure lands as a detector repair, a proposed exception, or a corrective Step.
 10. Rules the code already enforces are consolidated, classified as P, `E`, A candidates, or fork
     guidance, and listed for the owner to confirm.
-11. Every open question is a decision-log entry or a recorded assumption — none was asked in chat.
+11. Every material open question has one internal evidence entry and a functional review presented to the owner; routine reversible choices remain recorded assumptions.
 12. The report states coverage and the limits of its own evidence.
 13. The response ends with the `Next action` block in §12a.
 
@@ -180,7 +182,7 @@ a deleted principles file, contract, or decision log from version control.
 | repository root, `docs*/` | `CONTRIBUTING`, architecture-decision records, a principles or conventions file |
 | `scripts/`, `tools/`, `bin/` | governance verifiers — anything that reads a contract or principles file |
 | the build file | tasks wired into `check`, `test`, or `lint` that run those verifiers |
-| any second decision log | a populated ledger under a different path than `<docs>/plans/decision-log.md` |
+| any second authority ledger | competing approval records outside `.agents/cg/decisions/`, excluding unmigrated legacy evidence; the central human review list is not a competing authority store |
 
 Most identifiers in a codebase are work items, not rules, and chasing them wastes the run:
 
@@ -583,7 +585,7 @@ rules, the code that follows the harvested one, and the cost of moving either wa
 Harvest what would change what an agent does. A repository yields a handful to a few dozen. Every
 harvested rule is listed for confirmation in §11.
 
-## 10. Raise what needs the owner — in the log, not in chat
+## 10. Prepare and present the choices that need the owner
 
 Use available evidence to prepare concrete choices, then obtain required owner decisions. Do not decide product intent from code alone. Bundle related questions and continue independent survey work while answers are pending.
 
@@ -603,7 +605,7 @@ Reversible choices go in the plan's assumption ledger:
 
 If the reverse clause will not fit in one clause, it was not reversible — make it a `DU-NN`.
 
-Owner questions go in `<docs>/plans/decision-log.md` under *Pending your review*, using
+Keep unanswered owner reviews in the central `<docs>/plans/decision-log.md`. Record their internal evidence in `.agents/cg/decisions/`, using
 [the decision entry template](../cg-unblock/assets/decision-entry.template.md). Keep each as its
 own stable `DU-NN` entry, and never renumber one.
 
@@ -611,6 +613,8 @@ Use `cg-unblock` D-6 to present concrete questions directly in chat or interacti
 options and a typed-answer path, and record responses against the same entries. A logged question
 never pauses unrelated work when asynchronous interaction is available. If the repository has no
 discoverable modules, ask before inventing a boundary.
+
+During documentation discovery distinguish technical guides (build, deployment, release, operation and maintenance) from product-user manuals (including gameplay rules and tutorials). Use `<docs>/guides/` and `<docs>/manuals/` respectively, or record their equivalents in an established repository layout. Existing misplaced documents are findings to address within authorized scope, not permission for a repository-wide move.
 
 ## 11. Report coverage honestly
 
@@ -710,17 +714,18 @@ Choose exactly one immediate route for the checkpoint; present its user-facing a
 
 Use cg-unblock D-6/D-7 for pending answers. Explain what the owner is reviewing and why; accept their answer in the conversation. Keep exact snapshots, decision IDs and successor routing in supporting evidence/checkpoints. Do not require a separate skill invocation to answer or a manual decision-log edit. Report created findings or reports only when they help the owner review or locate work; omit inventories of artifacts that were not created.
 
-For example, after presenting the actual change summary and linked binding sources:
+For example:
 
 ```markdown
-## Next action — Review the project context
+### Does this describe the product you want?
 
-Please review [the updated project context](<relative-path-to-project-context>). Does it accurately reflect our agreed direction? See [decision details — DU-NN](<relative-path-to-decision-log-and-entry-anchor>) for the full proposal and supporting evidence.
+**Context/background:** [The updated product description](<project-context-path>) now describes the customers, outcomes and limits we discussed. Please check that it reflects your direction before I use it to guide the work.
 
-- **Approve** — this reflects our agreed direction.
-- **Request changes** — tell me what is missing or incorrect.
+**Options:** Approve it as written, or tell me what is missing or incorrect.
 
-Reply here. I will record your answer and, if approved, finish the intent check and continue the authorized warmup work. Delivery that depends on this context waits for approval.
+**Recommendation:** Approve it if the description matches your intent; I will then continue the agreed work.
+
+**Why:** A shared understanding helps prevent later work from delivering the wrong outcome. Anything you have not agreed remains open for correction.
 ```
 
 Adapt the consequence to the actual state and authority; approval does not authorize new delivery. For a completed warmup, state what is ready and the next useful action in plain language (with an optional skill shortcut), or say no further action is needed. For findings, link the concrete corrective proposal and explain the choice it needs. Omit a blocker line when nothing is blocked.

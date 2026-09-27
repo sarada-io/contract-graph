@@ -5,6 +5,8 @@ description: Resolve Contract Graph forks through recorded authority and direct 
 
 # CG Unblock
 
+Read [owner communication](references/owner-communication.md) before presenting decisions or results. It owns functional wording, the four-field review and where user-facing reviews live. Technical records below are internal agent work.
+
 For sprint work, scope each canonical decision to the programme, sprint ID/name and affected Feature/Bug/Task IDs. One decision spanning items remains one entry linked from those items. Preserve the actual answer, rationale, authority and implementation impact; resolving an item does not approve the whole sprint.
 
 Decide from contracts first. Escalate only when the owner must accept the blast radius. An `E`
@@ -22,12 +24,12 @@ Finish with all five true:
 
 1. Every implementation fork is resolved, deferred safely, or logged once for owner review.
 2. Reversible choices are recorded in the plan's `Assumptions` ledger.
-3. Material or protected choices are recorded in `<docs>/plans/decision-log.md`.
+3. Material or protected choices have one compact internal record in `.agents/cg/decisions/`; unanswered owner questions appear in the central `<docs>/plans/decision-log.md`.
 4. Execution continues on all work that is not genuinely blocked.
 5. The response ends with the `Next action` block in §D-7.
 
 Resolve `<docs>` from `.agents/cg/profile.json` `docs` (default `docs`). Confirm with `cg residue`,
-which prints `<docs>/plans/`. The ledger is `<docs>/plans/decision-log.md`.
+which prints `<docs>/plans/`. The human review list is `<docs>/plans/decision-log.md`; agent records are in `.agents/cg/decisions/`.
 
 ## D-1 — Blocking test
 
@@ -51,7 +53,7 @@ Use the first source that answers the fork:
    selfSufficient, surface including service, adapters, stay, add-child, elsewhere), applicable
    scoped `P` bindings, and boundary contracts.
 2. Owner-confirmed `.agents/cg/project-context.md`, the repository constitution and published specifications. Surface conflicts rather than silently changing project direction.
-3. Accepted decisions in `<docs>/plans/decision-log.md`.
+3. Resolved agent records in `.agents/cg/decisions/` and unmigrated accepted decisions in the legacy log.
 4. Permanent design records and published product requirements.
 5. The repository's walking skeleton or an already-green neighboring implementation.
 6. `E16-01` — the option with the smaller rollback and migration cost.
@@ -97,31 +99,15 @@ Step. Do not silently narrow scope.
 
 ## D-5 — Decision log
 
-`<docs>/plans/decision-log.md` is a ledger of entries, not a skill. Do not copy this section, the
-entry shape, warmup behaviour, or promotion rules into that file. `cg-warmup` fills *Pending your
-review* first; later stages append. Group related questions when useful, keeping each independently
-answerable decision under its own ID. The log preserves the interaction; it does not replace it.
+The human log `<docs>/plans/decision-log.md` contains only unanswered four-field reviews. Agent evidence uses compact per-decision JSON in `.agents/cg/decisions/`. Read [the decision record format](assets/decision-entry.template.md) before writing or migrating a record. Do not copy this section or the template's instructions into the human log.
 
-Use the repository's established numbering. Allocate above both the existing entries and the retained highest allocated DA/DU counters; initialise those counters from existing IDs when absent and never lower them after cleanup:
+Preserve actual answers, authority and scope, not repeated conversation history. Allocate IDs through the small retained sequence file; keep routine assumptions in their existing checkpoint. Remove an answered human question after saving its evidence. Delete an agent record when no active consumer or required evidence-preservation obligation needs it, after preserving enduring meaning and required approval evidence. Never treat absence of a consumer as proof that an unresolved question was answered.
 
-- `DA-NN`: autonomous decisions recorded for traceability; add directly to *Resolved*.
-- `DU-NN`: decisions requiring owner review; append to *Pending your review*.
-
-Copy one filled heading from [the decision entry template](assets/decision-entry.template.md).
-Do not paste that template's instructional prose into the ledger.
-
-When answered, move the same entry to *Resolved*. Preserve the user's selected option or typed
-solution verbatim, the answering actor and date, the resulting scoped decision and rationale,
-linked prerequisite or superseded decisions, and reversal costs (including when reversal is not
-bounded). Never duplicate or renumber an entry. A resolved entry is authority within its recorded
-scope until promoted, superseded, or dropped; it is not blanket permission for a different case.
-Keep dependencies on decisions explicit so later decisions can compose their accepted constraints.
-Do not drain an entry still needed by an active decision or phase until its authority and relevant
-response evidence have an accessible destination. Permanent contracts still cannot cite plan IDs.
+During transition read unmigrated legacy entries as well as JSON. Migrate touched entries without duplication, renumbering or overwriting conflicts; do not require the owner to reapprove unchanged choices. Sign-off accounts for both locations until migration is complete.
 
 ### Keep project context current
 
-After an actual owner answer changes project direction or materially shapes the product, update `.agents/cg/project-context.md` in the same work: purpose, audience, boundaries, supported variation, enduring constraints and significant tradeoffs with their rationale. Reconcile affected canonical repository documentation as well. Preserve the actual answer and scope in the existing decision entry until sign-off accounts for it. Keep the context self-contained, concise and stated as current meaning, without transient decision IDs or plan links. Ordinary implementation choices and superseded alternatives do not belong there. One direction-setting decision is sufficient; the recurrence test below applies to promoting reusable rules, not maintaining project intent.
+After an actual owner answer changes project direction or materially shapes the product, update `.agents/cg/project-context.md` in the same work: purpose, audience, boundaries, supported variation, enduring constraints and significant tradeoffs with their rationale. Reconcile affected canonical repository documentation as well. Preserve the actual answer and scope in the internal decision entry until sign-off accounts for it. Update the agreed outcome in the plan and remove the answered question from its active review list. Keep the context self-contained, concise and stated as current meaning, without transient decision IDs or plan links. Ordinary implementation choices and superseded alternatives do not belong there. One direction-setting decision is sufficient; the recurrence test below applies to promoting reusable rules, not maintaining project intent.
 
 Use the existing intent review/approve/verify flow for changed context or binding-source bytes. Reuse an actual response only if it explicitly covers the exact resulting content and sources; otherwise present the concrete revision for confirmation. A prior decision is not blanket approval of an agent's broader rewrite. Pending choices stay in the decision log; they do not become approved project context. Continue independent inspection while affected delivery waits. Every sign-off reconciles resolved entries and relevant design records under cg-sign-off's closure checks §7.0.
 
@@ -150,8 +136,8 @@ phase whose acceptance gate can prove the destination's obligations.
 
 ## D-6 — Clarification and direct interaction
 
-1. Check the plan, contracts and recorded scoped decisions before asking. If they resolve the question, cite and apply that authority. Otherwise record one pending DU entry with the full question, evidence, viable options, tradeoffs, recommendation, affected sprint/item IDs and unblocking condition before presenting it.
-2. Lead with a plain-language question, why the answer is needed, a linked concrete proposal and a summary of actual changes. Separate already-agreed content from new interpretation. Explain the consequences of the options and what happens after the answer. Keep commands, snapshot hashes and dependency IDs in supporting evidence, not the title or user action. The owner replies in the conversation; the agent maintains the ledger and approval evidence. Do not ask again when existing explicit approval covers the exact content and sources.
+1. Check the plan, contracts and recorded scoped decisions before asking. If they resolve the question, cite and apply that authority. Otherwise prepare the four-field review in the central human log and record one pending internal DU JSON record linking it, with the exact proposal, authority checked, affected sprint/item IDs and unblocking condition before presenting it.
+2. Present only Context/background, Options, Recommendation and Why under the question, using owner communication. Keep approval evidence and technical identifiers in the internal entry. The owner replies in the conversation; do not ask again when existing explicit approval covers the exact content and sources.
 3. Use the host's available structured question tool with selectable options when permitted in the current mode. Prefer asynchronous interaction, offer a recommendation and retain free-text input. Group already-known missing choices into one interaction with separately answerable questions. If no permitted structured tool is available, show numbered options in chat and explain that a reply is needed to resume affected work. In a batch production run, record input-dependent steps and continue independent items; consolidate unanswered questions for review where possible. Never implement the missing decision by assumption.
 4. Record the actual answer before updating dependent work. Silence, elapsed time, preselected options and passing tests are not approval. Preserve ambiguous answers and ask a focused follow-up. A decision does not expand execution scope.
 5. Recalculate readiness, clearing only the resolved blocker. Resume eligible work within the existing request; preserve other prerequisites. Keep decision-log writes serialised if explicitly delegated workers are in use; coordinate ownership before another writer edits the same records.
@@ -161,13 +147,6 @@ phase whose acceptance gate can prove the destination's obligations.
 
 Return to the invoking production or sign-off loop within its recorded authority. Resolve only the named decision; do not invent acceptance, widen the sprint or start a different programme. Lead the next action with what the owner needs to review or answer, not a skill invocation or ledger ID. Apply this wording even when retained repository workflow uses older technical response labels.
 
-```markdown
-## Next action — <Review the project context | Choose … | Decision applied | Independent work continues>
-- **Please review:** <linked concrete document/proposal and the actual question; omit when no review is needed>
-- **Decision details:** <link to the relevant entry in the repository decision log, with its decision ID>
-- **Your choices:** <plain-language options and consequences; omit when already answered>
-- **After your answer:** <what the agent records and resumes within existing authority; omit when no answer is needed>
-- **Work waiting:** <affected outcome and why; omit when nothing waits>
-```
+For a pending answer, use the four-field review from [owner communication](references/owner-communication.md). Link the central human review and concrete proposal when useful, not the internal JSON evidence. Use selectable questions under D-6 where permitted; recording an entry alone is not asking the user. A normal reply is sufficient.
 
-Use selectable questions under D-6 where permitted; a decision-log entry alone is not a request to the user. A normal reply is sufficient: do not require editing the log, copying a hash or invoking cg-unblock to submit the answer. Always include a clickable link to the relevant decision-log entry alongside the review content; use the actual repository path (`<docs>/plans/decision-log.md`), not an invented `decision-list.md`. Keep skill routing and exact evidence in the checkpoint. When a new action really needs a separate request, name it in plain language and offer the skill as an optional shortcut. For completed decisions report what was applied and the next eligible work, or that no work remains.
+For completed decisions, say what was agreed or applied and what work follows, in functional language. Keep skill routing, IDs and exact evidence in the checkpoint. Offer a skill shortcut only when a new action actually needs a separate request or the user asks how to invoke it.

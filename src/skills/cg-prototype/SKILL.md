@@ -5,6 +5,8 @@ description: Build a working prototype and refine it through manual human feedba
 
 # CG Prototype
 
+For chat, decision reviews and results, read [owner communication](../cg-unblock/references/owner-communication.md). Explain outcomes and choices for functional leaders; keep framework commands and approval mechanics in internal evidence.
+
 Run `cg intent verify` before dependent delivery. Missing or stale intent routes to cg-warmup; independent inspection and clarification remain available. Preserve repository-owned workflow restrictions and never fabricate owner approval.
 
 Reach a usable preview early. Iterate with the user until the intended result is accepted, then
@@ -146,11 +148,4 @@ is needed. After an accepted handoff, follow an explicit completion request thro
 Otherwise return to the user. Completion continuation uses the same sign-off entry; sign-off returns implementation repairs to cg-produce within that authority.
 Do not require another approval of the plan merely because it was written after the prototype.
 
-End every result with one block:
-
-```markdown
-## Next action — <Awaiting review | Iterating | Delivery ready | Blocked>
-- **User action:** <review the preview, supply the prerequisite, or invoke the named next skill; None when already-authorized completion continues>
-- **Next input:** <$cg-prototype | $cg-sign-off | $cg-produce | $cg-plan | $cg-unblock> — <one exact preview, roadmap, or decision>
-- **Blocked by:** <human review or prerequisite preventing the next action; omit on an advancing route>
-```
+End with the next practical action in functional language: review the preview, provide a missing answer, or continue the agreed work. Use the four-field review for a pending decision. Keep next-skill selection and exact evidence in the internal checkpoint; do not require a skill invocation to answer a question or continue already-authorized work.

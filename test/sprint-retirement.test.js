@@ -143,7 +143,7 @@ test('init upgrades with a preview, preserves open work and requires confirmatio
   const before = fs.readFileSync(manifestFile, 'utf8');
   const preview = run('--check');
   assert.equal(preview.status, 1);
-  assert.match(preview.stdout, /previewing installed release 0\.7\.0/);
+  assert.ok(preview.stdout.includes(`previewing installed release ${JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8")).version}`));
   assert.match(preview.stdout, /completing every plan first is not required/);
   assert.ok(fs.existsSync(path.join(dir, oldSkill)));
   assert.equal(fs.readFileSync(manifestFile, 'utf8'), before);

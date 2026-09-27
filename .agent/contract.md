@@ -50,6 +50,7 @@ contract to read; the last column narrows reading after that contract.
 | Find a contract by ID/path, show parents/children/surface, resolve context or route a task | [Graph](graph/contract.md#boundary-promises) | `contracts.js`: selection, context and routing |
 | Show the graph as a tree, JSON or Mermaid; exported npm graph API | [Graph](graph/contract.md) | `contracts.js`: projections; `contract-graph` and `contract-graph/contracts` exports |
 | Detect module roots, unmapped code, coverage gaps or unfinished descent | [Graph](graph/contract.md) | `modules.js`; `cg modules` |
+| Pre-adoption assessment, `cg analyse`, external diagnostic report, portable analysis skill | [Inspection](inspection/contract.md) | `analyse.js`; Authoring owns `src/diagnostics/` instructions |
 | Inspect source, propose contract fields, choose a unit/entry file, stale source snapshot | [Inspection](inspection/contract.md) | `contract-inspection.js`: selection, confinement, evidence and reports |
 | Extract imports/exports, TypeScript or JavaScript parsing, add language support | [Inspection](inspection/contract.md) | `inspection/index.js` and the relevant language adapter |
 | Dart/Flutter, Java, Kotlin, Python, Go, C# parser behavior, grammar hashes or unsupported syntax | [Inspection](inspection/contract.md) | Language adapters, `inspection/grammars/`, third-party notices |
@@ -64,6 +65,7 @@ contract to read; the last column narrows reading after that contract.
 | Decision-harvest manifest, classify/close checks, prepared drain route | [Verification](verification/contract.md) | `harvest.js`; `cg harvest` |
 | Shared path helpers, policy loaders, legacy Markdown rules or pointer rendering | [Verification](verification/contract.md#bounded-reading-inside-the-larger-files) | `model.js`; inspect the specific export and its caller |
 | Warmup, planning, production, prototype, sign-off or unblock instructions | [Authoring](authoring/contract.md) | Relevant `src/skills/cg-*/SKILL.md` and `src/cg/workflow.md` |
+| Functional leadership language, four-field decision reviews, internal decision evidence and cleanup | [Authoring](authoring/contract.md) | `cg-unblock/references/owner-communication.md`, decision template and sign-off closure checks |
 | Sprint/Epic procedure, batch/per-item review, owner questions, decision consolidation | [Authoring](authoring/contract.md) | Skills and workflow; runtime evidence/state changes also require Delivery |
 | Duplicate implementations, mixed responsibilities, legacy compatibility paths or structural sign-off review | [Authoring](authoring/contract.md) | Shared `cg-warmup/references/responsibility-review.md`; Verification owns the narrower automated declaration checks |
 | Expert selection, domain experts, coordinator/worker instructions | [Authoring](authoring/contract.md) | `src/cg/experts.md`, `src/skills/experts/` |

@@ -35,6 +35,8 @@ These are reading seams, not independently encapsulated modules. If `model.js` i
 split later, separate catalog loading from discovery rendering first, inspect all importers,
 and preserve its existing exports during migration. Do not turn it into a general utility bag.
 
+`harvest.js` accepts compact per-decision JSON directories and legacy Markdown logs for resolved-ID eligibility. The human decision inbox is not an authority source after migration. Reject malformed records and symlinks; never infer approval from a pending record.
+
 ## Boundary promises
 
 Read [repository architecture policy](../architecture-policy.md) before changing rules or

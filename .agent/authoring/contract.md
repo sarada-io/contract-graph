@@ -17,6 +17,10 @@ agents use the product's graph and delivery capabilities.
 - [docs index](../../docs/README.md), [README](../../README.md) and
   [CONTRIBUTING](../../CONTRIBUTING.md): canonical human explanations and contributor validation.
 
+[Diagnostic procedure](../../src/diagnostics/analyse.md) and [portable cg-analyse skill](../../src/diagnostics/cg-analyse/SKILL.md) guide pre-adoption assessment using warmup’s existing analysis. They are package-only resources, not repository-installed lifecycle skills. Diagnosis never invokes adoption; explicit adoption hands off to init and existing lifecycle owners.
+
+Documentation routing: `src/install/templates/docs/guides/` defines procedures for technical roles; `manuals/` defines product-user instructions, including gameplay. Sign-off closure checks §8 owns authoring and scoped relocation; warmup identifies existing audiences. Classify by purpose, not title, and preserve existing content/links when correcting placement.
+
 ## Boundary promises
 
 Use **Contract Graph Dev Kit** as the full product name and **Contract Graph** as its short name.
@@ -34,7 +38,7 @@ replacement/preservation policy; changing an asset does not authorize overwritin
 [Distribution](../distribution/contract.md) owns packaging. Keep human docs at one canonical page per topic,
 and preserve durable facts before retiring temporary delivery records.
 
-Pending decisions lead with a plain-language question, concrete review content, choices and consequences; technical approval evidence follows. Warmup and unblock accept conversational answers and keep ledger maintenance and skill routing with the agent. Next actions explain the owner’s choice and subsequent work without snapshot hashes or inventories of absent artifacts.
+The primary audience is senior leadership in functional roles. [Owner communication](../../src/skills/cg-unblock/references/owner-communication.md) owns all user-facing decision and result language. Reviews contain only Context/background, Options, Recommendation and Why under a clear question; they live in the central human decision log until answered. Compact per-decision JSON in `.agents/cg/decisions/` owns temporary agent evidence; `harvest.js` reads it and legacy Markdown during migration. Technical commands and approval metadata do not belong in the owner review. Explain verification by its actual outcome and limits. Warmup and unblock accept conversational answers and keep ledger maintenance and skill routing with the agent. Next actions explain the owner’s choice and subsequent work without snapshot hashes or inventories of absent artifacts.
 
 Production collects missing scope/review choices together through permitted selectable host questions
 (with numbered chat fallback), reuses recorded answers and resumes eligible work under existing authority.

@@ -25,6 +25,7 @@ export const BUILD_DIRECTORY = "dist/build";
 export const PACKAGE_DATA_DIRECTORY = "agent/cg/guidelines";
 
 const PACKAGE_TREE_MAPPINGS = Object.freeze([
+  ["src/diagnostics", "agent/diagnostics"],
   ["src/cg/principles", "agent/cg/principles"],
   ["src/cg/guidelines", "agent/cg/guidelines"],
   ["src/cg/templates", "agent/cg/templates"],

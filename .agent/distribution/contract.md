@@ -16,6 +16,8 @@ maintainer development/release tooling.
 - [ci.yml](../../.github/workflows/ci.yml): CI orchestration of tests and package checks;
   assertions and fixtures remain with the behavior's owner.
 
+Package `src/diagnostics/` as `agent/diagnostics/`, include it in runtime identity, and keep it outside Installation’s scaffold mappings. The portable skill is available for user-level harness installation without configuring a harness or changing a target repository.
+
 ## Boundary promises
 
 The complete release target is `dist/build`; generated output is not the source of truth.

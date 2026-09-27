@@ -5,6 +5,8 @@ description: Finish and verify an accepted delivery handoff within the requested
 
 # CG Sign Off
 
+For chat, decision reviews and results, read [owner communication](../cg-unblock/references/owner-communication.md). Explain outcomes and choices for functional leaders; keep framework commands and approval mechanics in internal evidence.
+
 Use one completion procedure for every accepted delivery. The way the implementation was developed does not select a sign-off mode. Read [delivery completion](references/delivery-completion.md), the selected master plan, delivery record, root contract, `.agents/cg/profile.json`, `.agents/cg/workflow.md` and the families selected for sign-off in `.agents/cg/phases.json`. A and applicable P bind; E is advisory. Route through contracts before bounded source reading. Run `cg intent verify` and `cg status --programme <slug>`.
 
 ## Select the requested outcome
@@ -29,4 +31,4 @@ Complete the [responsibility review](references/closure-checks.md#62-review-resp
 
 ## Report within scope
 
-Report the selected outcome, finishing work, verification and genuine remaining obligations concisely. Continue authorized repairs automatically. At terminal completion say **Next recommended: None — requested delivery complete**; do not invent another stage. A request solely for a durable document uses shared closure checks §7.0, §8 and §11 within that document’s scope, without closing a delivery or changing contracts. This is a scope restriction, not a separate sign-off workflow.
+Report the selected outcome, finishing work, verification and genuine remaining obligations concisely. Continue authorized repairs automatically. At terminal completion say the requested work is complete and whether any owner action remains; do not invent another stage. A request solely for a durable document uses shared closure checks §7.0, §8 and §11 within that document’s scope, without closing a delivery or changing contracts. This is a scope restriction, not a separate sign-off workflow.

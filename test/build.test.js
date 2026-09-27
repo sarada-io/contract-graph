@@ -286,7 +286,17 @@ test("an extracted tarball resolves shared exports and migrates a repository wit
     assert.equal(result.status, 0, `${args.join(" ")}: ${result.stderr}`);
     return result.stdout;
   };
+  fs.mkdirSync(repo);
+  const assessment = JSON.parse(success("analyse", repo, "--json"));
+  assert.deepEqual(fs.readdirSync(repo), []);
+  for (const resource of Object.values(assessment.resources)) {
+    assert.ok(resource.startsWith(packageRoot + path.sep));
+    assert.ok(fs.statSync(resource).isFile());
+  }
+  assert.equal(fs.existsSync(assessment.report), false);
   success("init", repo, "--yes", "--docs", "docs");
+  assert.equal(fs.existsSync(path.join(repo, ".agents/skills/cg-analyse")), false);
+
   success("verify", repo);
   // Ordinary commands do not load the optional inspection path/parser.
   const withoutParser = run("contract", "inspect", repo, "--unit", ".", "--json");

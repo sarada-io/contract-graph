@@ -55,6 +55,7 @@ const USAGE = `cg — Contract Graph Dev Kit
 A framework for agentic software development with repository-native contracts as a graph at its core.
 
 Usage:
+  cg analyse [dir] [--report file] [--json]       prepare a read-only adoption assessment prompt; defaults to cwd
   cg build [dir] [--check]                         assemble the package target under dist/build/
   cg init [--profile a,b] [--docs dir] [--reasons file]  install or update CG
   cg migrate-principles [dir] [--reasons file] [--write]  preview or apply legacy catalog conversion
@@ -81,10 +82,11 @@ Usage:
   cg profiles                                     list editor profiles
 
 Options:
+  --report <file>    external assessment report destination (analyse only; command creates no files)
   --profile <list>  add comma-separated editor profiles without the interactive picker (init only)
-  --docs <dir>      directory to hold plans/, decisions/, and guides/ (init only; default: docs)
+  --docs <dir>      directory to hold plans/, decisions/, guides/, and manuals/ (init only; default: docs)
   --stage <name>    harvest stage: classify (default) or close
-  --decision-log <path>  decision log to check cohort eligibility against (harvest only)
+  --decision-log <path>  agent decision directory or legacy log for cohort eligibility (harvest only)
   --preparation <path>   prepared drain route to validate at --stage close (harvest only)
   --json            machine-readable output; full delivery evidence (next, status, residue, delivery, contract, graph)
   --id <id>         contract id, governed unit, or repository-relative contract path
@@ -115,6 +117,7 @@ Options:
  * nothing quietly is exactly the upgrade failure this tool should not have.
  */
 const KNOWN_FLAGS = new Set([
+  "report",
   "unit",
   "entry",
   "write",
@@ -159,7 +162,7 @@ function parseArgs(argv) {
       }
       continue;
     }
-    const extraValue = /^--(programme|session|evidence|gate|base|reasons)(?:=(.*))?$/.exec(arg);
+    const extraValue = /^--(programme|session|evidence|gate|base|reasons|report)(?:=(.*))?$/.exec(arg);
     if (extraValue) {
       flags[extraValue[1]] = extraValue[2] ?? argv[++i];
       if (typeof flags[extraValue[1]] !== "string" || !flags[extraValue[1]].trim() || flags[extraValue[1]].startsWith("--")) throw new Error(`${extraValue[1]} requires a value`);
@@ -415,6 +418,16 @@ async function main(argv) {
     process.stdout.write(USAGE);
     return 0;
   }
+
+  if (command === "analyse") {
+    for (const key of Object.keys(flags)) if (!["report", "json"].includes(key)) throw new Error(`--${key} is not supported by analyse`);
+    if (positional.length > 1) throw new Error("usage: cg analyse [dir] [--report external-file] [--json]");
+    const { analyse, renderAnalysisPrompt } = await import("./analyse.js");
+    const context = analyse(path.resolve(positional[0] ?? "."), { report: flags.report });
+    process.stdout.write(flags.json ? `${JSON.stringify(context, null, 2)}\n` : renderAnalysisPrompt(context));
+    return 0;
+  }
+  if (flags.report !== undefined) throw new Error("--report is supported only by analyse");
 
   if (command === "contract" && positional[0] === "inspect") {
     const allowed = new Set(["id", "unit", "entry", "json"]);
