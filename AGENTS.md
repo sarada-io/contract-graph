@@ -9,7 +9,7 @@ arbitrary parallel work safe.
 
 ## Find the owner before reading implementation
 
-Start at the [repository Markdown contract](.agent/contracts/README.md), select the relevant
+Start at the [repository Markdown contract](.agent/contract.md), select the relevant
 child, then read its implementation and tests. Follow sibling links only when their promises
 are affected. The map describes logical tool groups in the current code layout.
 
@@ -29,7 +29,7 @@ Before changing this repository, read in order:
    read the relevant `src/skills/` skill and [workflow](src/cg/workflow.md).
 
 Detailed [architecture policy](.agent/architecture-policy.md) applies to principles, structural
-rules and product architecture changes. [Authoring](.agent/contracts/authoring.md) owns lifecycle
+rules and product architecture changes. [Authoring](.agent/authoring/contract.md) owns lifecycle
 and documentation constraints. These maintainer contracts do not replace the shipped YAML format.
 
 ## Work safely and verify
@@ -42,7 +42,7 @@ Run `npm test` after runtime changes or anything scaffolded from `src/`; changes
 Before builds or destructive cleanup, resolve global `cg`. If linked to this checkout’s
 `dist/build` or uncertain, validate in a disposable copy. Do not globally install, publish or
 update adopting repositories during ordinary validation. `./urun` installs a tarball copy only
-when explicitly requested. See [Distribution](.agent/contracts/distribution.md).
+when explicitly requested. See [Distribution](.agent/distribution/contract.md).
 
 For repository-only maintainer plans, read [repo-plan](.agent/skills/repo-plan/SKILL.md).
 Keep one master plan with a concise Executive Summary above full agent detail. Do not invoke

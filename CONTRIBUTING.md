@@ -4,7 +4,7 @@ Contract Graph Dev Kit is an open-source framework for agentic software developm
 tests, user documentation, and affected YAML contracts tell the same story.
 
 For this repository's implementation, start at the lightweight
-[Markdown contract graph](.agent/contracts/README.md), then read the responsible tool group's
+[Markdown contract graph](.agent/contract.md), then read the responsible tool group's
 contract. Keep its ownership and entry points current alongside changes. These maintainer
 contracts describe logical code boundaries; they are not installed into adopting repositories.
 

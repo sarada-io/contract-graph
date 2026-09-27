@@ -1,3 +1,4 @@
+// Repository contract: ../../.agent/verification/contract.md
 /** Load and validate the structural rules enforced by the installed Contract Graph verifier. */
 
 import fs from "node:fs";

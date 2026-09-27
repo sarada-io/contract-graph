@@ -1,3 +1,4 @@
+// Repository contract: ../../.agent/verification/contract.md
 /**
  * Shared model for Contract Graph principles, phases, and generated agent-discovery files.
  *

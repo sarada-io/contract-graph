@@ -1,3 +1,4 @@
+// Repository contract: ../../.agent/graph/contract.md
 /**
  * Contract Graph's canonical contract engine.
  *

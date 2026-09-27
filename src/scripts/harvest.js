@@ -1,3 +1,4 @@
+// Repository contract: ../../.agent/verification/contract.md
 /**
  * Validate a decision-harvest manifest.
  *

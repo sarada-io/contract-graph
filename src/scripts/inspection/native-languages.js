@@ -1,3 +1,4 @@
+// Repository contract: ../../../.agent/inspection/contract.md
 /** Portable syntax-only adapters. Parsers are installed CG assets, never adopter plugins. */
 import fs from "node:fs";
 import path from "node:path";

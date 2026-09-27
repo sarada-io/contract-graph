@@ -1,3 +1,4 @@
+// Repository contract: ../../.agent/distribution/contract.md
 /**
  * Resident developer helper — scaffold a throwaway repository into `tmp/<target>` so you can
  * open it in the real editor and see whether discovery actually works.

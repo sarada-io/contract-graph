@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// Repository contract: ../../.agent/contract.md (CLI composition; route behavior to its child owner).
 /** Contract Graph command line. `cg build | init | next | residue | sync | verify | modules | harvest | profiles`. */
 
 import fs from "node:fs";

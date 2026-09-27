@@ -1,3 +1,4 @@
+// Repository contract: ../../../.agent/inspection/contract.md
 /** Internal dispatch: every adapter declares its own supported syntax and evidence limits. */
 import { adapter as javascript, inspectSource, supportedFile } from "./javascript.js";
 import { adapters as native, inspectNative, languageForFile } from "./native-languages.js";

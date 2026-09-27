@@ -1,3 +1,4 @@
+// Repository contract: ../../.agent/installation/contract.md
 /** Dependency-free keyboard multi-select used by `cg init`. */
 
 import readline from "node:readline";

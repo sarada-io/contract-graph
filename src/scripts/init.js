@@ -1,3 +1,4 @@
+// Repository contract: ../../.agent/installation/contract.md
 /**
  * Scaffold Contract Graph governance into a target repository.
  *

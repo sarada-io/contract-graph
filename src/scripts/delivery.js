@@ -1,3 +1,4 @@
+// Repository contract: ../../.agent/delivery/contract.md
 import { requireIntent } from "./intent.js";
 /** Provisional work, attributed acceptance, and delivery receipts. No application code is generated here. */
 import fs from "node:fs";

@@ -1,3 +1,4 @@
+// Repository contract: ../../.agent/graph/contract.md
 /**
  * Discover the module roots a repository actually has.
  *

@@ -1,3 +1,4 @@
+// Repository contract: ../../.agent/delivery/contract.md
 /**
  * Find documents under the plans tree that nothing still points at.
  *

@@ -1,3 +1,4 @@
+// Repository contract: ../../.agent/verification/contract.md
 /** Shared principle vocabulary and family-specific catalog shape validation. */
 export const PRINCIPLES_SCHEMA_ID = "https://contractgraph.dev/schema/principles-v1.schema.json";
 export const PRINCIPLES_VERSION = "1.0";

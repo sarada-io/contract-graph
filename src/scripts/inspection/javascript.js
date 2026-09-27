@@ -1,3 +1,4 @@
+// Repository contract: ../../../.agent/inspection/contract.md
 /** Syntax observations only. No project loader, emit, application evaluation or plugins. */
 import ts from "typescript";
 

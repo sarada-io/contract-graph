@@ -1,3 +1,4 @@
+// Repository contract: ../../.agent/delivery/contract.md
 /** Repository-owned intent and attributed approval. Digests prove freshness, not identity. */
 import crypto from "node:crypto";
 import fs from "node:fs";

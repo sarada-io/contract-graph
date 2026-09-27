@@ -1,3 +1,4 @@
+// Repository contract: ../../.agent/delivery/contract.md
 /** Read current recovery facts from the queue and receipt; historical reports are not state. */
 import { next } from "./next.js";
 import { residue } from "./residue.js";

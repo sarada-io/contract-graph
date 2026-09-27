@@ -1,3 +1,4 @@
+// Repository contract: ../../.agent/distribution/contract.md
 /** Identify the CLI and its shipped procedures independently of the release version. */
 import crypto from "node:crypto";
 import fs from "node:fs";

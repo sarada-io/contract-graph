@@ -1,3 +1,4 @@
+// Repository contract: ../../.agent/distribution/contract.md
 /**
  * Deterministic package compiler.
  *
