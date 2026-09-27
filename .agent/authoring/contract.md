@@ -7,6 +7,7 @@ agents use the product's graph and delivery capabilities.
 
 - [src/skills](../../src/skills): six lifecycle skills and their references; optional experts
   under `experts/` install flat, with shared attribution outside their instructions.
+- [responsibility review](../../src/skills/cg-warmup/references/responsibility-review.md): shared semantic ownership review for warmup, planning, implementation and sign-off; existing work and acceptance records own its evidence.
 - [workflow.md](../../src/cg/workflow.md), [phases.json](../../src/cg/phases.json),
   [experts.md](../../src/cg/experts.md) and [contract-graph-agent.md](../../src/cg/contract-graph-agent.md):
   shipped procedure, loading policy and agent entry context.
@@ -44,6 +45,7 @@ Prepare and auto-run are retired stages. Optional coordinators and workers use e
 and receipts, not another ledger; expert selection remains repository-owned in `.agents/cg/experts.md`.
 
 Every sign-off accounts for scope-owned resolved decisions and design records, preserves their authority in existing completion evidence, and drains consumed entries while retaining pending/shared dependencies.
+Every implementation sign-off also records a bounded responsibility comparison and finding dispositions, including relevant sibling implementations, compatibility paths, challenged leaf rationales and changed fixtures. Graph/surface validation does not replace that review. Introduced or worsened ownership defects return to production; pre-existing out-of-scope findings retain an owner and active follow-up. This is agent procedure, not automatic semantic enforcement by the delivery runtime.
 Completion leaves durable docs, owner-approved project context and YAML current, then removes obsolete
 scope-owned process files. Preserve active shared dependencies, explicit retention policy and
 the compact delivery receipt; do not replace deleted plans with permanent execution diaries.

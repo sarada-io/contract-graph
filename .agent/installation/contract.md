@@ -28,6 +28,7 @@ plan, obtains confirmation, applies init, then runs sync and verification when m
 | Greenfield versus brownfield starter selection | `init.js`: `shouldScaffoldModule`, `clearStarterComposition` |
 | Retire a known framework artifact on upgrade | `init.js`: `retireSkills`; preserve ownership checks and backups |
 | Order of installation, saved profile selection and manifest updates | `init.js`: `init`, `writeManifest` |
+| Retained phase-policy differences after an upgrade | `init.js`: `retainedPhaseNotices`; `init` returns `policyNotices`, and CLI preview displays them without rewriting policy |
 | Preview catalog refresh or schema-identity migration | `init-catalogs.js`: `planInitCatalogs` |
 | Apply catalog changes with stale-input protection, backups and rollback | `init-catalogs.js`: `applyInitCatalogs` |
 | Convert legacy catalog syntax while retaining authored rules | `migrate-principles.js`: `migratePrinciples`, called by catalog planning |
@@ -53,6 +54,7 @@ Keep dry-run results useful for review and preserve the existing missing-rationa
   honestly. Catalog rollback does not make the whole init/sync/verify sequence transactional.
 - Init scaffolds `.agents/cg/project-context.md` only when absent and preserves repository-authored context and its approval record on subsequent runs.
 - Sync regenerates derived artifacts; it does not become a second installer.
+- Preview and apply report retained retired stages, absent optional phase entries and conditional/missing E loading. These notices do not change `--check`'s file-drift exit semantics, force E adoption or claim workflow reconciliation; malformed policy still fails ordinary verification.
 
 Consumes [Distribution](../distribution/contract.md)'s package layout/identity, [Verification](../verification/contract.md)'s
 catalog loaders and pointer renderers, [Graph](../graph/contract.md)'s YAML operations, and

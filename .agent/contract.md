@@ -65,6 +65,7 @@ contract to read; the last column narrows reading after that contract.
 | Shared path helpers, policy loaders, legacy Markdown rules or pointer rendering | [Verification](verification/contract.md#bounded-reading-inside-the-larger-files) | `model.js`; inspect the specific export and its caller |
 | Warmup, planning, production, prototype, sign-off or unblock instructions | [Authoring](authoring/contract.md) | Relevant `src/skills/cg-*/SKILL.md` and `src/cg/workflow.md` |
 | Sprint/Epic procedure, batch/per-item review, owner questions, decision consolidation | [Authoring](authoring/contract.md) | Skills and workflow; runtime evidence/state changes also require Delivery |
+| Duplicate implementations, mixed responsibilities, legacy compatibility paths or structural sign-off review | [Authoring](authoring/contract.md) | Shared `cg-warmup/references/responsibility-review.md`; Verification owns the narrower automated declaration checks |
 | Expert selection, domain experts, coordinator/worker instructions | [Authoring](authoring/contract.md) | `src/cg/experts.md`, `src/skills/experts/` |
 | Starter contract content, contract template, project context, docs/plan templates | [Authoring](authoring/contract.md) | `src/cg/`, `src/install/templates/`; Installation owns copying/preservation |
 | README, product claims, vision, human guides, branding or contributor instructions | [Authoring](authoring/contract.md) | `README.md`, `docs/README.md`, `docs/assets/`, `CONTRIBUTING.md` |

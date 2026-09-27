@@ -25,6 +25,8 @@ At every sign-off, apply [decision reconciliation](references/closure-checks.md#
 
 Before final closure, inspect affected contract units against the resulting source under [fresh implementation evidence](references/closure-checks.md#61-refresh-implementation-evidence). Recheck after relevant finishing changes or returned repairs; source inspection complements the required behavioral and graph checks.
 
+Complete the [responsibility review](references/closure-checks.md#62-review-responsibility-ownership) against the final implementation and relevant counterparts. Record comparisons and finding dispositions in the same acceptance evidence. Matching declarations, parser reports and passing tests do not substitute for this review.
+
 ## Report within scope
 
 Report the selected outcome, finishing work, verification and genuine remaining obligations concisely. Continue authorized repairs automatically. At terminal completion say **Next recommended: None — requested delivery complete**; do not invent another stage. A request solely for a durable document uses shared closure checks §7.0, §8 and §11 within that document’s scope, without closing a delivery or changing contracts. This is a scope restriction, not a separate sign-off workflow.

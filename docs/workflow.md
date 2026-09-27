@@ -91,6 +91,24 @@ Technical queues keep one Step In progress in a single integration context. Stat
 
 Repository-wide residue belongs at closure, not inside a Step prerequisite. `cg next` detects direct global residue commands in fenced shell Done when blocks and routes to production repair; it cannot interpret arbitrary wrappers or prose. A scoped residue check does not waive a repository-required global gate. Another programme’s files must be handled by their owner, not removed to make a check green.
 
+## Reviewing responsibility ownership
+
+Planning and implementation compare the proposed behavior with existing owners and relevant
+sibling implementations. Sign-off checks the final result, including compatibility paths,
+repeated resolution or lifecycle logic, mixed coordinators and changed test fixtures. A single
+entry point or one ownership sentence does not establish that a large implementation is cohesive.
+Similar code can also serve different promises; extraction needs evidence of a shared responsibility.
+
+The existing acceptance evidence records what was compared, the owner, the decision and each
+finding's disposition. Introduced or worsened ownership defects return to production before
+completion. Pre-existing issues outside the agreed outcome retain an owner and explicit follow-up;
+they do not silently disappear when a plan is deleted. Separate implementations can be retained
+with an evidenced reason. A small change needs only a proportionate comparison, not a repository-wide audit.
+
+This is an agent review obligation. Graph checks validate declarations, source inspection gathers
+syntax facts, and delivery closure runs the supplied gate and retains evidence. Those tools do
+not automatically prove semantic uniqueness or the quality of the architectural judgment.
+
 ## Verification without duplicate work
 
 Preparation assigns checks for the changed promises, applicable detectors, and affected consumers.

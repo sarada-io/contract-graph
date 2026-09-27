@@ -19,7 +19,7 @@ only outcomes 10, 12, and 13 apply to it.
 4. Emergent phase-level tests exist where composition needs proof.
 5. Every discovered defect is fixed or has an explicit, valid disposition.
 6. Every Step and the phase acceptance gate are accounted for.
-7. Contracts and detectors delivered by Steps match the combined implementation.
+7. Contracts and detectors delivered by Steps match the combined implementation, and the final responsibility review under §6.2 has evidence and a valid disposition for every applicable finding.
 8. Every decision harvest classifies one declared producer-phase cohort without capturing another
    cohort or a pending decision.
 9. Every non-empty decision-harvest cohort has one batch acceptance and a validated first prepared
@@ -176,6 +176,7 @@ role-by-route or isolation matrices unless those contracts or the gate name them
 5. Establish the phase acceptance gate from the roadmap, reusing only applicable evidence.
 6. Confirm no unexpected worktree residue remains.
 7. Establish fresh implementation evidence for affected contract units under §6.1 before accepting the final evidence inventory.
+8. Complete the responsibility comparison under §6.2, including relevant unchanged counterparts and affected test fixtures.
 
 If an applicable P binding is absent from a contract, or an A detector fails, write a corrective
 Step brief for `$cg-produce` and return it to the invoking procedure. If `.agents/cg/principles/architecture.yaml` `graph.recurse`
@@ -196,6 +197,14 @@ Use `--unit <unit>` when a missing or invalid graph prevents ID selection, and r
 Review observed facts against the authored surfaces and accepted intent. Send confirmed source/contract mismatches through the existing cg-produce repair loop. For unsupported languages, syntax, generated APIs or unresolved findings, use bounded source reading and applicable repository tools to establish the required evidence; record the method, limits and disposition. Parser limitations alone do not establish a defect, but required evidence left unresolved keeps the affected obligation incomplete. A report cannot supply behavioral guarantees or owner acceptance.
 
 Record selected units, command, snapshot digest, coverage, findings and their dispositions in the existing acceptance evidence inventory. Reuse an earlier report only after checking its recorded snapshot inputs against the current checkout; `stable: true` describes the inspection run, not continued freshness. Rerun affected inspections after source, entry, contract, boundary or relevant configuration changes, including changes made by final build/test gates. Reconcile that evidence before recording completion. Keep the compact evidence in the existing close record; remove transient reports when their consumers finish. This is a skill procedure, not an automatic `cg verify` or `cg delivery close` detector.
+
+### 6.2 Review responsibility ownership
+
+Apply the shared [responsibility review](../../cg-warmup/references/responsibility-review.md) to the accepted scope and final diff. Recheck placement and leaf claims against operations, callers and relevant sibling implementations, not only the author's explanation or inspector discrepancies. Include old/new compatibility paths, repeated resolution or lifecycle behavior, mixed coordinators and changed test setup where applicable. Source inspection's test exclusion does not waive fixture review.
+
+Record the scope, compared paths/symbols, owning contracts, decisions, dispositions and checks in the existing acceptance evidence. A scoped no-finding conclusion needs the comparison or search supporting it. Preserve legitimate out-of-scope findings with their owner and active follow-up before cleanup. Introduced/worsened structural defects and missing required evidence block completion; return repairs through cg-produce. Separate implementations may be correct when their distinct promises are evidenced. Do not manufacture extractions or change accepted requirements to obtain a clean report.
+
+Refresh affected comparisons after finishing changes and repairs. This review is mandatory agent procedure even with conditional E loading; it does not turn E preferences into bindings. The CLI stores the evidence but does not automatically assess its semantic quality.
 
 ## 7. Harvest decisions
 

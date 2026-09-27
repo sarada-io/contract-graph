@@ -45,6 +45,8 @@ A brownfield repository typically has no existing Contract Graph contracts. Pred
 
 ## Which entry — read this before §1
 
+**Reconcile retained policy explicitly.** Read `.agents/cg/phases.json` and `.agents/cg/workflow.md`, including init's policy notices. Identify retired stages and differences from the installed skill loop. Repository-owned family-loading choices remain authoritative and E remains advisory; conditional E does not disable the structural responsibility review. Resolve an incompatible stage route before dependent execution, using existing authority or the normal decision route. Do not overwrite retained policy just to match defaults or claim that successful init adopted the new workflow.
+
 **Finish any pending product upgrade first.** Inspect `.agents/cg/guidelines/product.yaml`
 before verification. If it still declares the supported legacy `productVersion`, init may have
 preserved it because required rationale was missing. Do not run whole-catalog migration: init
@@ -85,6 +87,8 @@ on adoption only; `cg-*` stays excluded. Consecutive reseed with unchanged cues 
 
 ## Reseed — additive, when every root is governed
 
+Apply [responsibility review](references/responsibility-review.md) to the existing leaves and relevant siblings even when declarations validate. Include new overlap or mixed-responsibility findings in the existing corrective set and reseed delta; an unchanged graph is not an empty delta when new structural findings exist. Record follow-up ownership so repeated reseeds reuse rather than duplicate the finding.
+
 Skip Phase A. Do not copy a template onto an existing `contract.yaml`. Do not blank `purpose`,
 `forbids`, or existing P IDs. Walk the **installed** `graph.*` and
 [the code-inspection catalog](assets/warmup.yaml), not the packaged architecture catalog.
@@ -101,7 +105,7 @@ Skip Phase A. Do not copy a template onto an existing `contract.yaml`. Do not bl
    already covers the constraint. Never renumber P IDs. Fill root `purpose` / `forbids` only if
    they still contain `Replace this sentence`.
 5. Write `<docs>/plans/warmup-reseed-delta.md` listing added contracts, added P IDs, amended
-   routes, and skipped-because-already-covered items. If nothing is missing: say so, **write no
+   routes, new responsibility-review findings, and skipped-because-already-covered items. If nothing is missing and no new findings exist: say so, **write no
    file**, stop.
 6. `cg verify`. End with §12a, naming the delta or that it was empty.
 
@@ -312,6 +316,8 @@ implementation already refuses belongs in `invariants` and `forbids` even when n
 exists; absence of a detector is not absence of the constraint.
 
 ### Descend with the binding graph
+
+Use [responsibility review](references/responsibility-review.md) before accepting a leaf rationale. Compare relevant siblings as well as internal operations. A single facade or an ordered pipeline does not by itself establish one responsibility. Record evidenced overlap and required restructuring through the table below; do not merely describe the current arrangement as correct.
 
 Apply `.agents/cg/principles/architecture.yaml` `graph.recurse` and `graph.selfSufficient` to every
 candidate inside this unit. Walk the `family: descent` cues in

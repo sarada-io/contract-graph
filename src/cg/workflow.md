@@ -23,6 +23,7 @@ Both plan/produce and exploratory cg-prototype work end at the same accepted `cg
 3. Apply `.agents/cg/principles/architecture.yaml` `graph`: stay, add-child, elsewhere. Read implementation only after this placement is known. Keep new self-sufficient units and reciprocal edges truthful in the same change.
 4. Compare changed purpose, surfaces and invariants with accepted promises and caller expectations. A valid test failure calls for implementation repair; changing an expectation needs evidence of an incorrect test or an authorised requirement change.
 5. Keep binding detectors and checks needed to safely build/run the change during iteration. Unstable application tests and final docs can be deferred explicitly; they remain completion obligations. Use `.agents/skills/cg-produce/references/verification.md` for scoped gates and evidence reuse.
+6. Apply `.agents/skills/cg-warmup/references/responsibility-review.md` during discovery, implementation and final review. Compare existing owners and relevant sibling implementations, including compatibility paths and test fixtures. Record decisions in existing work evidence and final dispositions at sign-off. Graph validity and surface correspondence do not establish cohesive or unique implementation responsibility; conditional E loading does not waive this structural review.
 
 ## State, questions and recovery
 

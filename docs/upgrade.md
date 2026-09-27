@@ -56,6 +56,14 @@ Init now performs the upgrade itself:
 | Contracts and enforcement | Preserve content; update only known legacy schema URL declarations |
 | Workflow, phase policy, docs | Preserve repository choices |
 
+Init preview reports concrete retained phase-policy differences: the retired `prepare` entry,
+an absent optional phase entry, and phases that load engineering guidance conditionally or omit
+it. The same notices appear during apply, including when no installed file needs changing.
+They do not overwrite policy or turn engineering advice into a binding. `--check` still reports
+file updates through its exit code; notices alone do not make it fail. Review retained workflow
+and phase choices during warmup before dependent execution. A matching package version and a
+clean scaffold check do not establish that repository-owned workflow has been reconciled.
+
 Backups for updated catalogs and schema declarations are stored under
 `.agents/cg/backups/init/<content-hash>/`. Repeated unchanged init runs do not add backups.
 Review backed-up A/E amendments before reapplying them; init refreshes those catalogs rather

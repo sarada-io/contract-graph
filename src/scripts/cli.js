@@ -715,6 +715,11 @@ async function main(argv) {
     // written until the plan has been shown and accepted: `cg init` is the one verb a user is
     // likely to type from memory, and typing it must never be how they find out.
     const plan = init(repoRoot, { profiles, docs, reasons, dryRun: true });
+    if (plan.policyNotices.length) {
+      process.stdout.write("cg init: retained phase policy differs from the installed skill defaults:\n");
+      for (const notice of plan.policyNotices) process.stdout.write(`  ${notice}\n`);
+      process.stdout.write("  Policy is preserved, not automatically reconciled. Review it with /cg-warmup; a clean scaffold check does not establish workflow readiness.\n");
+    }
     if (plan.pendingReasons.length) {
       process.stdout.write(`cg init: product migration needs /cg-warmup (${plan.pendingReasons.length} missing rationale). Original product.yaml will be preserved.\n`);
       for (const item of plan.pendingReasons) process.stdout.write(`  ${item.id}: ${item.statement}\n`);

@@ -40,6 +40,8 @@ Name the components, libraries, sub-modules, or modules a phase introduces. Appl
 
 ## Establish technical readiness
 
+Apply the shared [responsibility review](../cg-warmup/references/responsibility-review.md) to the selected change before proposing another implementation. Record existing owners/counterparts, compatibility consumers, and the reuse or separation decision under the relevant item. Include required structural repairs in scope and completion evidence; a valid current graph is not a clean architectural baseline.
+
 Before handing the selected batch to production, inspect enough bounded source and tests to establish current behavior, known failures, responsible contracts and consumers, probable change surface and implementation approach, prerequisites, risk/reversibility, immediate checks, deferred finishing obligations and review conditions. State evidence separately from assumptions. Count contract impact as a signal, not a fixed sprint-size threshold.
 
 An item is ready when produce can take a bounded next action without inventing a product decision or bypassing a prerequisite. Resolve material product/UX choices with the owner; investigate unknown feasibility or ownership before dependent implementation. Independent ready items can proceed while another waits. Later technical details may remain open if produce can settle them safely within the agreed outcome. Do not generate a speculative file-by-file queue for the entire epic. Record this analysis under the existing item IDs, so production refines it rather than repeats a separate preparation phase.

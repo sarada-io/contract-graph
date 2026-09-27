@@ -18,8 +18,10 @@ import {
   DEFAULT_DOCS_ROOT,
   DOCS_TREES,
   governanceContractPath,
+  loadPhases,
   manifestPath,
   MODULE_POINTERS,
+  PHASE_NAMES,
   phasesPath,
   selectedModulePointers,
 } from "./model.js";
@@ -373,10 +375,31 @@ function retireSkills(repoRoot, out, dryRun) {
   }
 }
 
+/** Explain retained policy differences without rewriting repository-owned choices. */
+function retainedPhaseNotices(repoRoot) {
+  if (!fs.existsSync(phasesPath(repoRoot))) return [];
+  let phases;
+  try {
+    phases = loadPhases(repoRoot);
+  } catch (error) {
+    return [`Preserved .agents/cg/phases.json needs correction: ${error.message}`];
+  }
+  const notices = [];
+  if (phases.prepare) notices.push("Preserved .agents/cg/phases.json still names retired prepare; reconcile its route with cg-produce before dependent work.");
+  const missing = PHASE_NAMES.filter(name => !phases[name]);
+  if (missing.length) notices.push(`Preserved .agents/cg/phases.json has no ${missing.join(", ")} entry; review loading policy before using those skills.`);
+  const conditional = PHASE_NAMES.filter(name => phases[name]?.conditional.includes("E"));
+  const absent = PHASE_NAMES.filter(name => phases[name] && !phases[name].always.includes("E") && !phases[name].conditional.includes("E"));
+  if (conditional.length) notices.push(`Preserved .agents/cg/phases.json loads E conditionally for ${conditional.join(", ")}; release defaults load E on every pass. E remains advisory.`);
+  if (absent.length) notices.push(`Preserved .agents/cg/phases.json does not load E for ${absent.join(", ")}; release defaults load E on every pass. E remains advisory.`);
+  return notices;
+}
+
 export function init(repoRoot, { profiles, docs, dryRun = false, reasons = {} } = {}) {
   repoRoot = path.resolve(repoRoot);
   const out = { written: [], replaced: [], removed: [], skipped: [], backups: [], catalogUpdates: [] };
   const { written, skipped } = out;
+  out.policyNotices = retainedPhaseNotices(repoRoot);
 
   const previous = loadProfileSelection(repoRoot, { allowMissing: true });
   const selectedProfiles = expandProfileAliases(
@@ -427,10 +450,7 @@ export function init(repoRoot, { profiles, docs, dryRun = false, reasons = {} } 
   }
 
 
-  // The bundled phase map names every set Contract Graph ships. A repository only installs
-  // some, and the phase map may only name what exists — so narrow it to the selection on the
-  // way in. Installing a pack later fails verification until a phase claims it, which is the
-  // prompt to decide where it belongs rather than a chore.
+  // Retire framework-owned artifacts; retained workflow and phase policy remain untouched.
   retireSkills(repoRoot, out, dryRun);
 
   if (dryRun) {

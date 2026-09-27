@@ -42,6 +42,8 @@ For useful, permitted delegation, read the shared [coordinator and specialists](
 
 ## 2. Implement and review in one continuing loop
 
+Use the shared [responsibility review](../cg-warmup/references/responsibility-review.md) when adding a parallel path or changing ownership. Keep comparison proportional to the preview; record necessary cleanup and its owner in the existing roadmap/handoff. Deferred application tests do not justify silently accepting duplicate responsibilities or false contract boundaries.
+
 Make the smallest useful change and present the running application. The user manually checks the
 experience and supplies feedback. Execute authorized feedback within scope without separate plan,
 production or sign-off invocations. Preserve context; do not create a phase per adjustment.
