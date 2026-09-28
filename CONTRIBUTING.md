@@ -182,7 +182,7 @@ test/           behavior, negative fixtures, package, and scaffold coverage
 
 `src/cg/` contains `contract.yaml`, `workflow.md`, `experts.md`, `phases.json`, `enforcement.yaml`,
 `principles/`, `guidelines/`, and `schema/`. `src/install/templates/` holds the starter module and
-the `docs/{plans,decisions,guides}` trees. Profile configurations live in
+the `docs/{plans,decisions,guides,manuals}` trees. Profile configurations live in
 `src/install/profiles/` and are packaged for the CLI, but are not copied into an adopting
 repository.
 
