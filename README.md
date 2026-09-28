@@ -18,7 +18,7 @@ Repository-native contracts map responsibilities and dependencies. Integrated wo
 
 Contract Graph is the short name for Contract Graph Dev Kit. Install the `contract-graph` package, use the `cg` CLI, and run `/cg-*` skills in your coding agent.
 
-For a read-only pre-adoption assessment, ask your coding agent: **“Use `cg analyse` to assess this repository for Contract Graph adoption.”** The 0.8.0 prototype emits local instructions and saves no files itself; the agent writes an external report. The generated context includes the portable harness skill location and adoption follow-up commands.
+Want to assess an existing repository first? [Check where Contract Graph could help](#assess-before-adopting) without changing the repository.
 
 ## How it works
 
@@ -101,6 +101,18 @@ want to work with:
 npm install --global contract-graph
 cd your-repository
 ```
+
+### Assess before adopting
+
+Not sure whether Contract Graph would help? Ask your coding agent:
+
+> Use `cg analyse` to assess this repository for Contract Graph adoption.
+
+Your agent follows the supplied guidance and reports what already works well, where responsibilities are unclear, and a practical first step. The assessment leaves your repository unchanged and saves its report separately.
+
+Review the findings, then decide whether to adopt. Ask your agent to guide you through setup when you are ready. See the [assessment guide](https://github.com/sarada-io/contract-graph/blob/main/docs/analyse.md) for details.
+
+### Start using Contract Graph
 
 | New repository | Existing repository |
 |---|---|
