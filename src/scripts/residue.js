@@ -1,3 +1,4 @@
+// Repository contract: ../../.agent/delivery/contract.md
 /**
  * Find documents under the plans tree that nothing still points at.
  *
@@ -24,7 +25,8 @@ import { readDeliveries, programmeName } from "./delivery.js";
 /** Markdown inline links and reference definitions. Bare paths in prose are deliberately ignored. */
 const LINK = /\[[^\]]*\]\(<?([^)>\s]+)[^)]*\)|^\[[^\]]+\]:\s*(\S+)/gm;
 
-/** Always claimed: the log is permanent by design, the README is optional prose about the tree. */
+/** Always claimed: the central human review inbox and optional directory guide.
+ * Agent evidence lives under .agents/cg/decisions; sign-off owns its semantic cleanup. */
 const NAMED_ROOTS = new Set(["decision-log.md", "README.md"]);
 
 /** Drained already — not this command's business. Live auto-run ledgers are working state; Closed ones are residue. */

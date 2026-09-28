@@ -1,3 +1,4 @@
+// Repository contract: ../../.agent/verification/contract.md
 /**
  * Validate a decision-harvest manifest.
  *
@@ -64,13 +65,33 @@ function readJson(file) {
 }
 
 /** Owner (`DU-NN`) and autonomous (`DA-NN`) decision-log ids. */
-export const DECISION_ID = /^D[AU]-\d{2}$/;
-const DECISION_HEADING = /^###\s+(D[AU]-\d{2})\b/;
+export const DECISION_ID = /^D[AU]-\d{2,}$/;
+const DECISION_HEADING = /^###\s+(D[AU]-\d{2,})\b/;
 
-/** The decision IDs listed under a `## Resolved` heading in the decision log. */
+/** Resolved IDs from compact agent records, or a legacy Markdown log during migration. */
 export function resolvedDecisionIds(logFile) {
   if (!fs.existsSync(logFile)) throw new HarvestError(`missing decision log: ${logFile}`);
   const ids = new Set();
+  if (fs.lstatSync(logFile).isSymbolicLink()) throw new HarvestError("decision evidence must not be a symlink");
+  if (fs.statSync(logFile).isDirectory()) {
+    for (const name of fs.readdirSync(logFile).sort()) {
+      if (name === "_sequence.json") continue;
+      const file = path.join(logFile, name);
+      if (!/^D[AU]-\d{2,}\.json$/.test(name) || !fs.lstatSync(file).isFile()) {
+        throw new HarvestError(`unexpected decision evidence entry: ${name}`);
+      }
+      const record = readJson(file);
+      if (!record || typeof record !== "object" || Array.isArray(record) ||
+          record.id !== name.slice(0, -5) || !DECISION_ID.test(record.id) ||
+          !["pending", "resolved"].includes(record.status) ||
+          !isNonEmptyString(record.scope) || !isNonEmptyString(record.decision) ||
+          (record.status === "resolved" && !isNonEmptyString(record.authority))) {
+        throw new HarvestError(`invalid decision evidence: ${name}`);
+      }
+      if (record.status === "resolved") ids.add(record.id);
+    }
+    return ids;
+  }
   let inResolved = false;
   for (const line of splitLines(fs.readFileSync(logFile, "utf8"))) {
     const heading = /^##\s+(.+?)\s*$/.exec(line);
@@ -200,7 +221,7 @@ export function checkHarvest(
     const unresolved = eligible.filter((id) => !resolved.has(id));
     if (unresolved.length) {
       fail(
-        `${name}: decision(s) not in the log's Resolved section: ${unresolved.join(", ")} — ` +
+        `${name}: decision(s) not resolved in the evidence source: ${unresolved.join(", ")} — ` +
           "a pending or unknown decision is never eligible",
       );
     }

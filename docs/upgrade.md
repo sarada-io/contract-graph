@@ -2,9 +2,9 @@
 
 Install or refresh Contract Graph Dev Kit through the `contract-graph` package and `cg init`. The product name does not change package names, commands or repository paths.
 
-## Upgrade to 0.7.0
+## Upgrade to 0.8.0
 
-Install the intended 0.7.0 CLI first. Once published, use `npm install --global contract-graph@0.7.0`; for an unpublished release, install its independently packed tarball. The repository upgrade does not fetch a package or change the global CLI.
+Install the intended 0.8.0 CLI first. Once published, use `npm install --global contract-graph@0.8.0`; for an unpublished release, install its independently packed tarball. The repository upgrade does not fetch a package or change the global CLI.
 
 Stop active coding agents and finish or checkpoint their work before upgrading. Completing every open plan is not required: existing roadmaps, prepared queues, decisions and delivery receipts are preserved. Old auto-run sessions are not automatically converted; reload skills, confirm intent through warmup if needed, and reconcile repository-owned workflow and phase policy before resuming the recorded scope with the new skills.
 
@@ -19,6 +19,17 @@ cg init --yes
 
 The upgrade reuses init: current lifecycle skills and the four experts go into `.agents/skills/`, shared attribution goes alongside them, selected editor discovery wrappers and hooks are refreshed, and repository-owned context is preserved. Known framework-owned `cg-prepare` and `cg-auto-run` files and obsolete sign-off references are backed up under `.agents/cg/backups/retired-0.7.0/` before removal. Custom files and unknown legacy artifacts are not recursively deleted. Older principle schemas use the migration described below; missing product rationale requires owner input and leaves the upgrade incomplete. Successful migration runs sync and verification. Review the diff before resuming work.
 
+## What changes from 0.7.0
+
+- **Assessment before adoption:** `cg analyse` prepares a read-only assessment prompt with bundled guidance and an optional portable personal skill. It does not install contracts or produce a report by itself. See [assessment and adoption follow-up](analyse.md).
+- **Responsibility review:** the refreshed skills compare relevant implementations for overlapping ownership and missing boundaries during adoption, planning and sign-off. This is an evidence-based agent review, not a new automatic detector of duplicate code.
+- **Clearer owner decisions:** unanswered questions stay in the central human decision log, using Context/background, Options, Recommendation and Why. Compact agent evidence lives separately in `.agents/cg/decisions/`. Answered questions and obsolete evidence are removed after their necessary meaning and authority have been preserved. See [decision records](workflow.md).
+- **Documentation audiences:** technical procedures belong in guides; product-user instructions belong in manuals. Existing documents are not automatically moved or overwritten.
+
+Init preserves existing decision logs, workflow and documentation templates. During warmup, reconcile those retained files with the refreshed instructions. Preserve pending questions and actual approvals when separating an older combined log; the harvest reader still accepts legacy Markdown during migration. Do not replace it with an empty starter or treat installation as proof that reconciliation is complete. Reload the host's skills before continuing work.
+
+The changes below describe capabilities retained from 0.7.0 and the migration path for older installations. Historical backup directory names remain unchanged.
+
 ## Source-assisted contract inspection
 
 The 0.7.0 CLI includes `cg contract inspect` for JavaScript/TypeScript ESM, Java, Kotlin, Python, Go, .NET/C# and Dart/Flutter. It produces read-only evidence and proposed field values; it does not migrate or overwrite authored contracts. There is no contract-schema change or new adoption command. Re-run `cg init` through the existing preview/confirmation flow to refresh the authoring skills, then follow the [inspection guide](contracts.md#inspect-implementation-facts-before-authoring). Reports separate unknowns, language visibility and implementation imports from architectural promises. The packaged parsers require no adopter toolchains; unsupported syntax stays explicit.
@@ -32,8 +43,8 @@ New plans use the sprint delivery path described in [workflow](workflow.md). Exi
 ## Update an existing repository with cg init
 
 Install the intended CLI build, then run init in your adopting repository. For an unpublished
-0.7.0 build, run `npm run pack` in the Contract Graph checkout, then
-`npm install --global ./dist/tar/contract-graph-0.7.0.tgz`.
+0.8.0 build, run `npm run pack` in the Contract Graph checkout, then
+`npm install --global ./dist/tar/contract-graph-0.8.0.tgz`.
 
 ```bash
 cd <your-repository>
@@ -55,6 +66,14 @@ Init now performs the upgrade itself:
 | `product.yaml` | Convert legacy format, retaining IDs, statements, groups, and comments |
 | Contracts and enforcement | Preserve content; update only known legacy schema URL declarations |
 | Workflow, phase policy, docs | Preserve repository choices |
+
+Init preview reports concrete retained phase-policy differences: the retired `prepare` entry,
+an absent optional phase entry, and phases that load engineering guidance conditionally or omit
+it. The same notices appear during apply, including when no installed file needs changing.
+They do not overwrite policy or turn engineering advice into a binding. `--check` still reports
+file updates through its exit code; notices alone do not make it fail. Review retained workflow
+and phase choices during warmup before dependent execution. A matching package version and a
+clean scaffold check do not establish that repository-owned workflow has been reconciled.
 
 Backups for updated catalogs and schema declarations are stored under
 `.agents/cg/backups/init/<content-hash>/`. Repeated unchanged init runs do not add backups.

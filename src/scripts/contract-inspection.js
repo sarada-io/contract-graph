@@ -1,3 +1,4 @@
+// Repository contract: ../../.agent/inspection/contract.md
 /** Read-only evidence reports. Contract YAML remains the sole authored graph. */
 import fs from "node:fs";
 import path from "node:path";

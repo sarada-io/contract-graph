@@ -42,7 +42,7 @@ test("source and packaged layouts identify the same build; same-version edits ch
   const root = fixture(t), compiled = path.join(root, "package");
   fs.mkdirSync(compiled);
   // Construct the shipped runtime layout directly, independently of a pre-existing build/.
-  for (const [source, target] of [["src/scripts", "script"], ["src/skills", "agent/skills"], ["src/install/hooks", "agent/hooks"], ["src/cg/schema", "agent/cg/schema"], ["src/cg/templates", "agent/cg/templates"]]) {
+  for (const [source, target] of [["src/scripts", "script"], ["src/skills", "agent/skills"], ["src/install/hooks", "agent/hooks"], ["src/cg/schema", "agent/cg/schema"], ["src/cg/templates", "agent/cg/templates"], ["src/diagnostics", "agent/diagnostics"]]) {
     fs.cpSync(path.join(ROOT, source), path.join(compiled, target), { recursive: true });
   }
   fs.rmSync(path.join(compiled, "script/dev.js"));

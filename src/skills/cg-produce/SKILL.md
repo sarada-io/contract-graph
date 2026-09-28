@@ -5,6 +5,8 @@ description: Implement an agreed sprint with internal preparation, dependency-aw
 
 # CG Produce
 
+For chat, decision reviews and results, read [owner communication](../cg-unblock/references/owner-communication.md). Explain outcomes and choices for functional leaders; keep framework commands and approval mechanics in internal evidence.
+
 Read the selected master plan, root contract, `.agents/cg/profile.json`, `.agents/cg/workflow.md` and the principle families selected for `produce` in `.agents/cg/phases.json`. Run `cg intent verify` and `cg status --programme <slug>`. A and applicable P bind; E is advisory. Resolve the actual requested sprint and execution scope before writing. Use cg-plan when outcomes or material scope remain unsettled; do not substitute technical readiness for owner agreement.
 
 ## Ask how the owner wants to review
@@ -24,6 +26,8 @@ For **review after each item**, develop one ready item, show its result and the 
 Review cadence is distinct from execution scope. A preview request stops at review. A request to complete the sprint also authorises in-scope finishing and repairs after required acceptance. Neither mode approves unseen work or authorises merging, publishing or the next sprint.
 
 ## Execute and recover
+
+Apply the shared [responsibility review](../cg-warmup/references/responsibility-review.md) before introducing a parallel path or growing a mixed coordinator, and revisit it after relevant changes. Preserve the comparison and disposition in the existing item/preparation evidence. This applies to sprint work, technical queues and sign-off repairs; do not defer introduced ownership defects merely because behavior tests pass.
 
 For sprint implementation, read [sprint production](references/sprint-production.md). Route through responsible contracts before bounded source reading. Inspect the planning baseline and next change, prepare incrementally and coordinate execution. For useful, permitted delegation, read [coordinator and specialists](references/coordination.md); otherwise implement directly. Keep one coordinator responsible for review, integration and recovery, with bounded specialists retained through immediate repairs and released after verified handoff. Technical queues remain sequential; delegation does not waive Step readiness or review cadence. No separate auto-run mode or mandatory team is required. Honour explicit delegation/model constraints; never invent settings or measured efficiency gains.
 
@@ -46,7 +50,7 @@ At every run-ending review, blocked stop or handoff, show the sprint and a conci
 
 Use exactly **Yes / No / Partial / Blocked** for the three work columns. Yes means applicable work is complete with evidence; Test Yes requires the applicable checks to have passed on the relevant state. No means no completed work; Partial means unfinished work exists; Blocked means a prerequisite prevents proceeding. A legitimate deferral is No or Partial, not automatically Blocked. Use No for a category requiring no work and identify that exception briefly. Code Yes does not mean owner acceptance or item completion. Report failing checks honestly and keep the affected obligation incomplete.
 
-Keep narrative short: only material blockers, deferrals, exceptions or risks need notes. End with **Next recommended: `<action or None>` — `<specific scope and reason>`**. Select from actual remaining obligations:
+Keep narrative short: only material blockers, deferrals, exceptions or risks need notes. Explain the next work or owner choice in functional language. Keep the following skill routing in the internal checkpoint rather than the owner-facing action. Select from actual remaining obligations:
 
 - Remaining implementation or feedback: cg-produce for the affected items, including after an accepted per-item review when more implementation remains.
 - Required human review: request that review; do not dispatch its dependent work. Name a following skill only when a concrete obligation remains after acceptance.

@@ -30,3 +30,7 @@ exact path rather than relying on search.
 
 The principle index in this file is generated. Keep repository-specific instructions in the root
 entry files or other repository-owned context. Regenerate with `cg sync`.
+
+## Communicate with the owner
+
+Address functional leaders in plain language. Explain outcomes, choices, costs and risks; use technical terms only when necessary and explain them. Before presenting a decision or result, read [owner communication](../skills/cg-unblock/references/owner-communication.md). It defines the four-field decision review and separates it from internal evidence.

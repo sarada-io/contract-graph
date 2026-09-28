@@ -1,3 +1,4 @@
+// Repository contract: ../../.agent/delivery/contract.md
 /** Versioned receipt storage. Readers recover the complete logical v1 record before using it. */
 import crypto from "node:crypto";
 

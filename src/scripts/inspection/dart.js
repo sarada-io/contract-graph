@@ -1,3 +1,4 @@
+// Repository contract: ../../../.agent/inspection/contract.md
 /** Dart library syntax, not Flutter runtime/build or transitive API resolution. */
 export function inspectDart(root, { file, fact, symbol, dependency, issue }) {
   const first = (n, type) => n.namedChildren.find(c => c.type === type);

@@ -904,3 +904,13 @@ test("sprint chaining remembers its admitted programme even when host and task s
   assert.equal(dispatch(f, "cg-sign-off", "other", hostSession).permissionDecision, "deny", "another programme's request does not release this stage boundary");
   assert.equal(dispatch(f, "cg-sign-off", "dashboard", hostSession).permissionDecision, "allow");
 });
+
+test('decision evidence cleanup does not invalidate source while product context still does', t => {
+  const f = fixture(t), before = deliverySnapshot(f.root);
+  write(f.root, '.agents/cg/decisions/DU-01.json', JSON.stringify({id:'DU-01',status:'pending'}));
+  assert.equal(deliverySnapshot(f.root), before);
+  fs.rmSync(path.join(f.root, '.agents/cg/decisions/DU-01.json'));
+  assert.equal(deliverySnapshot(f.root), before);
+  write(f.root, '.agents/cg/project-context.md', 'Changed product direction');
+  assert.notEqual(deliverySnapshot(f.root), before);
+});

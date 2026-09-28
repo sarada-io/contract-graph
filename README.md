@@ -18,6 +18,8 @@ Repository-native contracts map responsibilities and dependencies. Integrated wo
 
 Contract Graph is the short name for Contract Graph Dev Kit. Install the `contract-graph` package, use the `cg` CLI, and run `/cg-*` skills in your coding agent.
 
+For a read-only pre-adoption assessment, ask your coding agent: **“Use `cg analyse` to assess this repository for Contract Graph adoption.”** The 0.8.0 prototype emits local instructions and saves no files itself; the agent writes an external report. The generated context includes the portable harness skill location and adoption follow-up commands.
+
 ## How it works
 
 The Dev Kit combines a persistent contract graph, lifecycle skills and verification tools. It supplies an opinionated architecture for decomposing a repository into modules, sub-modules, components, and libraries. Each boundary keeps a `.agents/cg/contract.yaml` within its directory, recording its responsibility, public surface, relationships, invariants, and verification. The architecture is therefore stored with the implementation, rather than living only in diagrams, prompts, or institutional memory.

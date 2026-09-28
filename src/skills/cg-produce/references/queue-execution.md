@@ -42,8 +42,8 @@ state, editable paths, required contract changes, work, handoff, or `Done when`.
    phase or brief is not remaining. An `E` disagreement is not `Blocked by` and not `$cg-unblock`.
 3. Resolve `<docs>` from `.agents/cg/profile.json` `docs` (default `docs`). Confirm with
    `cg status --programme <slug>`. Inspect `cg residue --programme <slug>` as a baseline;
-   unrelated findings alone do not prevent this Step. Read `<docs>/plans/decision-log.md`: *Resolved* entries are authority; *Pending
-   your review* entries are not, and a Step blocked on one stays blocked.
+   unrelated findings alone do not prevent this Step. Read `.agents/cg/decisions/` and unmigrated legacy evidence: resolved records are scoped authority; pending
+   records are not, and a Step blocked on one stays blocked.
 4. Run `cg next --programme <slug>`. Confirm this is the lowest-numbered `Ready` Step.
    For unreadable queue syntax, `repair-required`, or permission entry `execution-preparation`, repair the exact queue internally before selecting implementation work. A blocked or complete queue can admit preparation without selecting an executable Step; re-run cg next after preparing the correction. Do not work around a prepared gate or call routine plan repair a user decision.
 5. Confirm the branch or worktree and baseline match the preparation.

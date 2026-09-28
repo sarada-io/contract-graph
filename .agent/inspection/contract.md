@@ -1,6 +1,6 @@
 # Inspection contract
 
-Parent: [repository](README.md). Owns read-only source evidence for a selected unit so an
+Parent: [repository](../contract.md). Owns read-only source evidence for a selected unit so an
 agent can author or amend its contract with explicit limits and uncertainty.
 
 ## Surface and implementation
@@ -14,7 +14,9 @@ which owns selection, confinement, evidence aggregation, snapshots and report re
 | JavaScript / TypeScript extraction | [javascript.js](../../src/scripts/inspection/javascript.js) |
 | Java, Kotlin, Python, Go and C# extraction | [native-languages.js](../../src/scripts/inspection/native-languages.js) |
 | Dart / Flutter extraction | [dart.js](../../src/scripts/inspection/dart.js) |
-| Vendored grammar identity and license evidence | [grammars](../../src/scripts/inspection/grammars/), [notices](../../src/scripts/inspection/THIRD_PARTY_NOTICES.txt) |
+| Vendored grammar identity and license evidence | [grammars](../../src/scripts/inspection/grammars), [notices](../../src/scripts/inspection/THIRD_PARTY_NOTICES.txt) |
+
+`cg analyse` enters [analyse.js](../../src/scripts/analyse.js) to prepare an agent prompt with absolute bundled resources, bounded guidance pointers and an external report destination. It writes nothing and does not assess architecture itself. No installed graph is required. Diagnostic instructions belong to Authoring; follow-up adoption belongs to Installation. Validate with `test/analyse.test.js` and extracted-package coverage in `test/build.test.js`.
 
 ## Boundary promises
 
@@ -22,8 +24,8 @@ Reports propose facts; they never write contracts, execute inspected source or e
 a graph is accepted. Preserve source fingerprints, unsupported cases and explicit uncertainty.
 Import syntax alone does not establish architectural dependencies or ownership.
 
-Consumes [Graph](graph.md) for existing ownership and [Verification](verification.md) for binding
-context. Parser dependencies and bundled grammar changes also route to [Distribution](distribution.md).
+Consumes [Graph](../graph/contract.md) for existing ownership and [Verification](../verification/contract.md) for binding
+context. Parser dependencies and bundled grammar changes also route to [Distribution](../distribution/contract.md).
 Keep extraction inside adapters and report policy in the report owner; avoid separate language CLIs.
 Load WebAssembly grammars sequentially: the shared parser runtime links scanner symbols globally,
 and concurrent loads can expose unresolved imports on supported Node versions.

@@ -1,3 +1,4 @@
+// Repository contract: ../../.agent/distribution/contract.md
 /** Identify the CLI and its shipped procedures independently of the release version. */
 import crypto from "node:crypto";
 import fs from "node:fs";
@@ -14,6 +15,7 @@ export function runtimeIdentity(root = ROOT) {
     ? [["script", "script"], ["agent/skills", "skills"], ["agent/hooks", "hooks"], ["agent/cg/schema", "schema"], ["agent/cg/templates", "templates"]]
     : [["src/scripts", "script"], ["src/skills", "skills"], ["src/install/hooks", "hooks"], ["src/cg/schema", "schema"], ["src/cg/templates", "templates"]];
   const entries = [];
+  trees.push([packaged ? "agent/diagnostics" : "src/diagnostics", "diagnostics"]);
   const walk = (dir, prefix) => {
     for (const item of fs.readdirSync(dir, { withFileTypes: true })) {
       const key = `${prefix}/${item.name}`, file = path.join(dir, item.name);

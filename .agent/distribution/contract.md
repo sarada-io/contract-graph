@@ -1,6 +1,6 @@
 # Distribution contract
 
-Parent: [repository](README.md). Owns reproducible package assembly, executable identity and
+Parent: [repository](../contract.md). Owns reproducible package assembly, executable identity and
 maintainer development/release tooling.
 
 ## Surface and implementation
@@ -13,17 +13,21 @@ maintainer development/release tooling.
 - [urun.mjs](../../scripts/urun.mjs), [urun](../../urun), [urun.cmd](../../urun.cmd): local maintainer menu.
 - [test.mjs](../../scripts/test.mjs): test runner scratch isolation;
   [check-principles-mutations.mjs](../../scripts/check-principles-mutations.mjs): mutation validation harness.
+- [ci.yml](../../.github/workflows/ci.yml): CI orchestration of tests and package checks;
+  assertions and fixtures remain with the behavior's owner.
+
+Package `src/diagnostics/` as `agent/diagnostics/`, include it in runtime identity, and keep it outside Installation’s scaffold mappings. The portable skill is available for user-level harness installation without configuring a harness or changing a target repository.
 
 ## Boundary promises
 
 The complete release target is `dist/build`; generated output is not the source of truth.
 Package project-context.md under `agent/cg/` so Installation can preserve it alongside the root contract.
-Consume [Authoring](authoring.md)'s assets, [Verification](verification.md)'s catalog validation
+Consume [Authoring](../authoring/contract.md)'s assets, [Verification](../verification/contract.md)'s catalog validation
 and the runtime files owned by the other children. Preserve Node.js 18.17+ compatibility.
 
-Build assembles a release; [Installation](installation.md) applies that release to an adopter.
+Build assembles a release; [Installation](../installation/contract.md) applies that release to an adopter.
 Neither build nor a maintainer helper may introduce a parallel repository-upgrade path.
-Runtime identity is consumed by Installation and [Delivery](delivery.md), not evidence of human
+Runtime identity is consumed by Installation and [Delivery](../delivery/contract.md), not evidence of human
 acceptance or proof that a running agent has reloaded instructions.
 
 Before builds or destructive cleanup, resolve global `cg`. If it points into this checkout's

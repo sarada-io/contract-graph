@@ -19,7 +19,7 @@ only outcomes 10, 12, and 13 apply to it.
 4. Emergent phase-level tests exist where composition needs proof.
 5. Every discovered defect is fixed or has an explicit, valid disposition.
 6. Every Step and the phase acceptance gate are accounted for.
-7. Contracts and detectors delivered by Steps match the combined implementation.
+7. Contracts and detectors delivered by Steps match the combined implementation, and the final responsibility review under §6.2 has evidence and a valid disposition for every applicable finding.
 8. Every decision harvest classifies one declared producer-phase cohort without capturing another
    cohort or a pending decision.
 9. Every non-empty decision-harvest cohort has one batch acceptance and a validated first prepared
@@ -170,12 +170,13 @@ role-by-route or isolation matrices unless those contracts or the gate name them
 1. Confirm every Step verification has applicable evidence for the final state in the inventory.
 2. Confirm positive and negative evidence.
 3. Confirm all detectors are non-vacuous and fail on demand.
-4. Confirm decisions appear once in the decision log, their selected options or typed solutions
+4. Confirm decisions have one canonical agent record (or unmigrated legacy entry), their selected options or typed solutions
    and scoped interpretations are preserved, and the implementation follows the applicable
    resolved decisions. Pending answers remain pending and cannot satisfy phase acceptance.
 5. Establish the phase acceptance gate from the roadmap, reusing only applicable evidence.
 6. Confirm no unexpected worktree residue remains.
 7. Establish fresh implementation evidence for affected contract units under §6.1 before accepting the final evidence inventory.
+8. Complete the responsibility comparison under §6.2, including relevant unchanged counterparts and affected test fixtures.
 
 If an applicable P binding is absent from a contract, or an A detector fails, write a corrective
 Step brief for `$cg-produce` and return it to the invoking procedure. If `.agents/cg/principles/architecture.yaml` `graph.recurse`
@@ -197,21 +198,31 @@ Review observed facts against the authored surfaces and accepted intent. Send co
 
 Record selected units, command, snapshot digest, coverage, findings and their dispositions in the existing acceptance evidence inventory. Reuse an earlier report only after checking its recorded snapshot inputs against the current checkout; `stable: true` describes the inspection run, not continued freshness. Rerun affected inspections after source, entry, contract, boundary or relevant configuration changes, including changes made by final build/test gates. Reconcile that evidence before recording completion. Keep the compact evidence in the existing close record; remove transient reports when their consumers finish. This is a skill procedure, not an automatic `cg verify` or `cg delivery close` detector.
 
+### 6.2 Review responsibility ownership
+
+Apply the shared [responsibility review](../../cg-warmup/references/responsibility-review.md) to the accepted scope and final diff. Recheck placement and leaf claims against operations, callers and relevant sibling implementations, not only the author's explanation or inspector discrepancies. Include old/new compatibility paths, repeated resolution or lifecycle behavior, mixed coordinators and changed test setup where applicable. Source inspection's test exclusion does not waive fixture review.
+
+Record the scope, compared paths/symbols, owning contracts, decisions, dispositions and checks in the existing acceptance evidence. A scoped no-finding conclusion needs the comparison or search supporting it. Preserve legitimate out-of-scope findings with their owner and active follow-up before cleanup. Introduced/worsened structural defects and missing required evidence block completion; return repairs through cg-produce. Separate implementations may be correct when their distinct promises are evidenced. Do not manufacture extractions or change accepted requirements to obtain a clean report.
+
+Refresh affected comparisons after finishing changes and repairs. This review is mandatory agent procedure even with conditional E loading; it does not turn E preferences into bindings. The CLI stores the evidence but does not automatically assess its semantic quality.
+
 ## 7. Harvest decisions
 
 ### 7.0 Reconcile decisions at every sign-off
 
-For the selected completion scope, inspect resolved entries in `<docs>/plans/decision-log.md` and relevant files under `<docs>/decisions/`, including decisions already reflected in current framework context. Do this on every sign-off; no declared harvest phase is required. Do not sweep unrelated programmes or reclassify pending decisions as resolved.
+For the selected completion scope, inspect the central human review list, resolved JSON records in `.agents/cg/decisions/` and unmigrated legacy entries in `<docs>/plans/decision-log.md` and relevant files under `<docs>/decisions/`, including decisions already reflected in current framework context. Do this on every sign-off; no declared harvest phase is required. Do not sweep unrelated programmes or reclassify pending decisions as resolved.
 
 1. Account for every in-scope resolved decision and relevant design record once in the existing acceptance/sign-off evidence: source ID/path, actual approval or autonomous authority, destination and disposition. Use a compact table, or explicitly state that there were no decisions to reconcile. This is closure evidence, not another permanent decision ledger.
 2. Put approved project direction, purpose, audience, boundaries, enduring constraints and significant tradeoffs in `.agents/cg/project-context.md`. Retain a faithful copy of intent from canonical repository documentation with provenance links, reconciling both when approved meaning changes. State current meaning and rationale; do not append a chronological log. A one-off direction-setting decision qualifies without a recurrence test.
 3. Put structural promises in the owning `contract.yaml`; put qualifying product bindings in `guidelines/product.yaml`, advisory reusable practices in `guidelines/engineering.yaml`, and generic structural bindings in `principles/architecture.yaml` only through the existing detector-owning promotion rules. Context prose does not enforce a binding. Send contract/catalog/detector changes through cg-produce within existing authority. Do not invent a YAML rule for every choice.
 4. Retain a design record only for detailed rationale, a threat model, active consumers or explicit retention policy not adequately served by framework context. Record that specific reason and owner. Otherwise consolidate its useful meaning, preserve its authority and relevant evidence in the sign-off input, update incoming links and binding-source lists, and retire the consumed scope-owned file before the final source snapshot and delivery gate. Keep that sign-off input until closure stores its contents. Do not rewrite dated history to look current or delete unrelated user documentation. Routine implementation choices, superseded alternatives and task history need no framework entry; record a short disposition in closure evidence instead.
 5. Preserve the owner's actual answer, attribution and scope from consumed entries in the existing acceptance evidence retained by the delivery receipt (or the repository's durable verification record for queue-only closure). Preserve autonomous decisions as autonomous, not owner-approved. Existing exact authority needs no repeat approval; changed meaning requires the affected decision. Changed project-context or binding-source bytes use `cg intent review`, actual approval and `cg intent verify` before dependent closure. Pending decisions remain pending and block their affected obligations.
-6. Check active consumers and declared harvest cohorts before draining anything. Entries required by unfinished work remain with their dependency/owner named. For a declared cohort, §§7.1–7.2 still govern its classification, acceptance, route and drain timing; this reconciliation must not bypass those gates or add unsupported manifest destinations. After successful closure stores the evidence, remove consumed resolved entries from the transient decision log. Design-record retirement and any context/source updates must already be included in the final verified source snapshot, not performed after close. Keep the decision-log shell and pending/shared entries. Preserve the highest allocated DA/DU numbers in the log so removed IDs are never reused.
+6. Check active consumers and declared harvest cohorts before draining anything. Entries required by unfinished work remain with their dependency/owner named. For a declared cohort, §§7.1–7.2 still govern its classification, acceptance, route and drain timing; this reconciliation must not bypass those gates or add unsupported manifest destinations. After successful closure stores the evidence, delete consumed resolved JSON records and accounted-for legacy entries. Design-record retirement and any context/source updates must already be included in the final verified source snapshot, not performed after close. Remove answered questions from the human log after recording their answers; do not add a completed section. Retain only pending/shared agent records with an active consumer or explicit preservation obligation. Preserve high-water counters in `.agents/cg/decisions/_sequence.json`; never reuse removed IDs. Before removing a legacy counter, transfer its high-water value. A retained shell is not an archive exemption.
 7. Verify context approval, graph truth and live links after cleanup. Completion requires a disposition for every in-scope resolved decision; unexplained accumulation or deletion is unfinished work. Do not reopen unchanged decisions merely to produce a sign-off ceremony.
 
 ### 7.1 Classify one declared producer-phase cohort
+
+Use the JSON directory for migrated evidence and the original Markdown path for an unmigrated cohort. Complete a mixed cohort’s migration before checking the directory. If no decision directory exists and the declared cohort is empty, omit `--decision-log`; never omit eligibility evidence for a non-empty cohort.
 
 When the active roadmap and preparation declare a decision-harvest cohort, classify only that
 cohort. Do not default to every resolved decision in the log.
@@ -225,7 +236,7 @@ does not authorize a different harvest classification. Permanent contracts canno
    `cg-produce`.
 2. Copy the cohort's stable ID and exact eligible decision IDs from the accepted roadmap scope.
 3. Classification IDs must exactly equal the eligible decision IDs.
-4. Each eligible ID must be in the log's `Resolved` section. A pending or unknown ID is never
+4. Each eligible ID must have a resolved agent JSON record (or appear in the legacy log’s `Resolved` section during migration). A pending or unknown ID is never
    eligible.
 5. Classify each eligible decision once through `cg-unblock` D-5a: module contract, architecture
    principle, engineering guideline, product guideline, or drop. A `drop` carries one line saying
@@ -237,7 +248,7 @@ does not authorize a different harvest classification. Permanent contracts canno
 7. Run:
 
 ```bash
-cg harvest <decision-harvest.json> --decision-log <docs>/plans/decision-log.md
+cg harvest <decision-harvest.json> --decision-log .agents/cg/decisions
 ```
 
 The manifest is transient. Sign-off proposes classifications; it does not write promoted rules or
@@ -257,7 +268,7 @@ approves the proposed promotions; it does not reopen the underlying decisions.
 4. Validate before closing the source:
 
 ```bash
-cg harvest <decision-harvest.json> --decision-log <docs>/plans/decision-log.md \
+cg harvest <decision-harvest.json> --decision-log .agents/cg/decisions \
   --stage close --preparation <destination-preparation.md>
 ```
 
@@ -277,12 +288,11 @@ Permanent documents must not depend on a transient phase path or ticket ID as th
 ## 8. Write the durable record
 
 Create or update durable non-contract documentation only when a named reader has a current need
-not already met by a contract, guide, or decision. Prefer updating the existing owner document.
+not already met by a contract, guide, manual, or decision. Prefer updating the existing owner document.
 If no such need remains, record “No durable documentation change needed” in the existing closure
 record and continue. Do not create a guide, ADR, diagram, or report merely because a phase closes.
 Read contracts as evidence; never replace or defer them.
-Design records live under `<docs>/decisions/`. Product and operator guides live under
-`<docs>/guides/`. They can survive plan deletion when their reader or retention need remains; §7.0 retires consumed decision records. The roadmap is transient.
+Design records live under `<docs>/decisions/`. Technical guides for developers and technical operators live under `<docs>/guides/`; product-user instructions live under `<docs>/manuals/`. They can survive plan deletion when their reader or retention need remains; §7.0 retires consumed decision records. The roadmap is transient.
 
 ### 8.1 Respect lifecycle ownership
 
@@ -292,7 +302,7 @@ Design records live under `<docs>/decisions/`. Product and operator guides live 
 | programme outcome and phase map | `cg-plan` → roadmap |
 | selected phase Steps, files, order, and execution context | `cg-produce` → preparation record |
 | Step implementation and contract co-delivery | `cg-produce` |
-| integration evidence, phase closure, durable rationale, product and operator guidance, Mermaid | `cg-sign-off` |
+| integration evidence, phase closure, durable rationale, product manuals and technical guides, Mermaid | `cg-sign-off` |
 
 Sign-off may reconcile `.agents/cg/project-context.md` under §7.0 with exact owner approval. A missing or stale structural contract or catalog rule returns to `cg-produce`; documentation cleanup does not bypass detector obligations.
 
@@ -302,18 +312,19 @@ Read relevant contracts and source. Identify audience. Decide whether the artifa
 or a dated historical record. Search existing terminology and diagrams. Verify paths, routes,
 modules, and commands. For records retained under §7.0, preserve historical bodies and add a dated supersession banner rather than rewriting history to look current. Consumed scope-owned records may be retired after evidence and consumers are handled.
 
-### 8.3 Design records and guides
+### 8.3 Route documentation by audience and purpose
 
 Design records (`<docs>/decisions/`): alternatives, accepted trade-offs, threat or failure model,
 architecture consequences, supersession. Do not promote task logs or sequencing. Supersede a dated
 record rather than silently changing it.
 
-Guides (`<docs>/guides/`): current supported product — audience, happy path, authorization and
-safety boundary, observable failure, recovery, and a runnable smoke test. Remove retired stores,
-modules, routes, and deployment paths.
+Guides (`<docs>/guides/`): building, deploying, releasing, operating, maintaining and troubleshooting the software. Name the technical role, prerequisites, procedure and expected result; include relevant access controls, failure diagnosis, recovery, rollback and runnable verification. Deployment, release and incident-response instructions belong here.
 
-Link the owning contracts for boundaries, entry points, and verification. State only the
-rationale or reader procedure the document uniquely owns; do not copy the contract fields.
+Manuals (`<docs>/manuals/`): using the product and its features. For gameplay this means how to play, game rules, controls and tutorials. Use the product user's language and describe actions, expected results and help for common problems. Do not impose technical runbook fields or framework commands on player instructions. A business user operating the application is not a technical operator.
+
+Classify content by reader and purpose, not its title: a “player guide” is a manual; a “deployment manual” is a guide. Split mixed documents only when separate readers need separate procedures; link shared facts without duplicating them. Follow these distinctions even when an older preserved directory README uses the former broad meaning of guides. For in-scope misplaced documentation, move or split it without losing useful content, update incoming links and navigation, and validate the result. Do not bulk-move unrelated documents. Honour an explicit repository-owned documentation layout by mapping these audiences to its established destinations.
+
+Both describe current supported behavior and survive plan cleanup while useful. Update or retire stale instructions when that behavior changes. Link owning contracts when helpful for technical readers; product manuals must be usable without reading internal contracts. State the procedure the document owns rather than copying contract fields.
 
 ### 8.4 Mermaid diagrams
 

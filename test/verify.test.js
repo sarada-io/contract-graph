@@ -1078,7 +1078,7 @@ test("a decision that is not Resolved is never eligible", () => {
       m.eligibleDecisionIds = ["DA-01", "DU-99"];
       m.classifications[1] = { id: "DU-99", destination: "drop", reason: "x" };
     }),
-    /not in the log's Resolved section: DU-99/,
+    /not resolved in the evidence source: DU-99/,
   );
 });
 
@@ -1144,24 +1144,6 @@ test("cg-unblock resolves the docs root and loads E from engineering.yaml", () =
   assert.doesNotMatch(skill, /^## Completion check$/m);
 });
 
-test("the decision log is a ledger; the entry template lives with cg-unblock", () => {
-  const log = fs.readFileSync(
-    path.join(SOURCE_ROOT, "install/templates/docs/plans/decision-log.md"),
-    "utf8",
-  );
-  assert.doesNotMatch(log, /\*\*Unblocks when:\*\*/);
-  assert.doesNotMatch(log, /\*\*Your answer:\*\*/);
-  assert.match(log, /DA-NN/);
-  assert.match(log, /DU-NN/);
-  const template = fs.readFileSync(
-    path.join(SOURCE_ROOT, "skills/cg-unblock/assets/decision-entry.template.md"),
-    "utf8",
-  );
-  assert.match(template, /\*\*Unblocks when:\*\*/);
-  assert.match(template, /### DU-NN/);
-  assert.match(template, /### DA-NN/);
-  assert.match(template, /<docs>\/plans\/decision-log\.md/);
-});
 
 test("the prepared drain route must carry the accepted digest and every drain id", () => {
   const { dir, file, log } = harvestFixture((m) => {
@@ -2940,6 +2922,7 @@ test("scaffold mapping covers every eligible src file exactly once", () => {
   const eligible = filesUnder(SOURCE_ROOT).filter(
     (file) =>
       !file.startsWith("scripts/") &&
+      !file.startsWith("diagnostics/") && // Package-only pre-adoption resources, never scaffolded.
       !file.startsWith("install/profiles/") &&
       file !== "cg/contract-graph-agent.md",
   );
@@ -3034,6 +3017,8 @@ test("a chosen docs root relocates the trees and is recorded", () => {
   sync(dir);
   assert.ok(fs.existsSync(path.join(dir, "handbook", "plans", "decision-log.md")));
   assert.ok(fs.existsSync(path.join(dir, "handbook", "decisions", "README.md")));
+  assert.ok(fs.existsSync(path.join(dir, "handbook", "guides", "README.md")));
+  assert.ok(fs.existsSync(path.join(dir, "handbook", "manuals", "README.md")));
   assert.ok(!fs.existsSync(path.join(dir, "docs")));
   assert.equal(JSON.parse(read(dir, PROFILE)).docs, "handbook");
   assert.deepEqual(verify(dir).failures, []);

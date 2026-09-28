@@ -1,6 +1,6 @@
 # Repository architecture policy
 
-Parent: [Verification contract](contracts/verification.md). Read when changing principles,
+Parent: [Verification contract](verification/contract.md). Read when changing principles,
 schemas, structural detectors or the product’s architectural promises.
 
 Contract Graph Dev Kit is a framework for agentic software development with a repository-native

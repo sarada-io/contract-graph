@@ -1,3 +1,4 @@
+// Repository contract: ../../.agent/installation/contract.md
 /**
  * Regenerate every derived artifact: the canonical agent entry, root discovery pointers, module
  * workspace-root pointers, and the Claude discovery wrappers.

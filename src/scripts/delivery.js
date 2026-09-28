@@ -1,3 +1,4 @@
+// Repository contract: ../../.agent/delivery/contract.md
 import { requireIntent } from "./intent.js";
 /** Provisional work, attributed acceptance, and delivery receipts. No application code is generated here. */
 import fs from "node:fs";
@@ -55,7 +56,7 @@ export function deliverySnapshot(root, writes) {
 }
 
 function isSnapshotPath(file, docs) {
-  return !RECORD_ROOTS.some(folder => file.startsWith(`${folder}/`)) && !(file.startsWith(`${docs}/plans/`) && /\.(md|json)$/.test(file));
+  return !file.startsWith(".agents/cg/decisions/") && !RECORD_ROOTS.some(folder => file.startsWith(`${folder}/`)) && !(file.startsWith(`${docs}/plans/`) && /\.(md|json)$/.test(file));
 }
 
 function dirtyPaths(root) {

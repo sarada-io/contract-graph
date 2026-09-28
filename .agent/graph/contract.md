@@ -1,6 +1,6 @@
 # Graph contract
 
-Parent: [repository](README.md). Owns the authored YAML graph's loading, validation,
+Parent: [repository](../contract.md). Owns the authored YAML graph's loading, validation,
 navigation and projections, plus discovery of mapping gaps.
 
 ## Surface and implementation
@@ -10,12 +10,25 @@ navigation and projections, plus discovery of mapping gaps.
   and `cg graph show/verify` use this engine.
 - [modules.js](../../src/scripts/modules.js): `cg modules`, module coverage and unfinished descent.
 
-The `contract inspect` subcommand belongs to [Inspection](inspection.md), even though it shares
+The `contract inspect` subcommand belongs to [Inspection](../inspection/contract.md), even though it shares
 the CLI noun. Contract shape and hierarchy policy are dependencies owned by
-[Verification](verification.md); scaffold authoring belongs to [Installation](installation.md)
-and [Authoring](authoring.md).
+[Verification](../verification/contract.md); scaffold authoring belongs to [Installation](../installation/contract.md)
+and [Authoring](../authoring/contract.md).
 
 ## Boundary promises
+
+For bounded reading within `contracts.js`, use these groups:
+
+| Responsibility | Entry symbols |
+| --- | --- |
+| Restricted YAML syntax and serialization | `parseContractYaml`, `stringifyContractYaml` |
+| One contract's shape | `validateContract`, `loadContract` |
+| Filesystem discovery and connected-graph validation | `discoverContractFiles`, `loadContractGraph` |
+| Selection, ancestor context and task routing | `findContract`, `parentChain`, `contractContext`, `routeContracts` |
+| Markdown, tree and Mermaid projections | `renderContract`, `renderContext`, `graphTree`, `renderGraph`, `renderMermaid` |
+
+Keep these behind the existing exported engine. Adding a query or rendering format does not
+create another graph loader or command driver.
 
 Canonical YAML remains the graph source. Navigation and projection do not execute inspected
 repository code. Preserve reciprocal composition edges, acyclicity and root reachability.

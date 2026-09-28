@@ -4,7 +4,7 @@ Contract Graph Dev Kit is an open-source framework for agentic software developm
 tests, user documentation, and affected YAML contracts tell the same story.
 
 For this repository's implementation, start at the lightweight
-[Markdown contract graph](.agent/contracts/README.md), then read the responsible tool group's
+[Markdown contract graph](.agent/contract.md), then read the responsible tool group's
 contract. Keep its ownership and entry points current alongside changes. These maintainer
 contracts describe logical code boundaries; they are not installed into adopting repositories.
 
@@ -182,7 +182,7 @@ test/           behavior, negative fixtures, package, and scaffold coverage
 
 `src/cg/` contains `contract.yaml`, `workflow.md`, `experts.md`, `phases.json`, `enforcement.yaml`,
 `principles/`, `guidelines/`, and `schema/`. `src/install/templates/` holds the starter module and
-the `docs/{plans,decisions,guides}` trees. Profile configurations live in
+the `docs/{plans,decisions,guides,manuals}` trees. Profile configurations live in
 `src/install/profiles/` and are packaged for the CLI, but are not copied into an adopting
 repository.
 
@@ -324,3 +324,9 @@ end-to-end review is not validation.
 
 Keep one change per commit where practical. State meaningful costs or tradeoffs in the commit
 message, and keep behavior, tests, documentation, and structural truth together.
+
+Pre-adoption diagnostics live in `src/diagnostics/` and ship under `agent/diagnostics/`. They are deliberately excluded from repository scaffolding. Validate prompt preparation with `test/analyse.test.js` and package-only resource availability with `test/build.test.js`.
+
+### Owner decision review validation
+
+For communication changes, walk through a material product choice, an already-authorized choice, a routine reversible implementation choice, and a completed scope with shared pending evidence. Check that only the material unresolved choice reaches the owner, with Context/background, Options, Recommendation and Why. The review stays in the central human inbox, compact evidence lives in `.agents/cg/decisions/`, the actual answer survives cleanup, and pending/shared work is preserved. A passing framework check must be described by what it actually checks, not as proof of product behavior. Template validation alone does not demonstrate model behavior; report whether these were static walkthroughs or independent agent trials.

@@ -1,3 +1,4 @@
+// Repository contract: ../../.agent/verification/contract.md
 /**
  * Verify the structured contract graph, structural bindings, principles, lifecycle, and discovery.
  *

@@ -1,3 +1,4 @@
+// Repository contract: ../../.agent/delivery/contract.md
 /** Derive the next owner from actual plan, receipt and internal execution state. */
 
 import fs from "node:fs";

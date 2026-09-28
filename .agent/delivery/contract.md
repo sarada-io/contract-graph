@@ -1,6 +1,6 @@
 # Delivery contract
 
-Parent: [repository](README.md). Owns intent acceptance evidence and state-derived delivery
+Parent: [repository](../contract.md). Owns intent acceptance evidence and state-derived delivery
 admission, progress and completion across sessions. Intent reads `.agents/cg/project-context.md`; content/source changes invalidate approval. Decision consolidation at sign-off is owned by Authoring’s procedure, not inferred by the runtime.
 
 ## Surface and implementation
@@ -14,6 +14,8 @@ admission, progress and completion across sessions. Intent reads `.agents/cg/pro
 | `cg status` | [status.js](../../src/scripts/status.js) |
 | `cg residue` | [residue.js](../../src/scripts/residue.js): reachability and scoped ownership |
 
+Agent decision JSON under `.agents/cg/decisions/` is temporary evidence, excluded from source snapshots like plan records. Required authority is copied into existing completion evidence before deletion; Authoring owns semantic retention. Application changes outside that reserved directory still invalidate snapshots.
+
 ## Boundary promises
 
 Read existing plans and receipts to determine state; do not add a parallel ledger. Production
@@ -21,9 +23,9 @@ and prototype converge on one accepted handoff and sign-off path. Completion aut
 not fabricate human acceptance or waive blockers. Unreferenced files are not automatically
 disposable. Preserve other programmes, shared dependencies and legacy receipt compatibility.
 
-Consumes [Verification](verification.md)'s policy/model and [Distribution](distribution.md)'s
-runtime identity. [Authoring](authoring.md) owns the instructions that consume these decisions;
-[Installation](installation.md) owns their hook wiring. Change the owning state operation before
+Consumes [Verification](../verification/contract.md)'s policy/model and [Distribution](../distribution/contract.md)'s
+runtime identity. [Authoring](../authoring/contract.md) owns the instructions that consume these decisions;
+[Installation](../installation/contract.md) owns their hook wiring. Change the owning state operation before
 adding alternate admission logic to a skill or host hook.
 
 Verification: `npm test -- test/intent.test.js test/prototype.test.js test/prototype-storage.test.js test/recovery.test.js test/runtime.test.js`,

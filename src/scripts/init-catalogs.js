@@ -1,3 +1,4 @@
+// Repository contract: ../../.agent/installation/contract.md
 /** Init's catalog refresh: release defaults for A/E, lossless P format conversion. */
 import crypto from "node:crypto";
 import fs from "node:fs";

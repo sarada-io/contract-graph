@@ -1,3 +1,4 @@
+// Repository contract: ../../.agent/installation/contract.md
 /** Explicit, preview-first conversion of repository-owned legacy YAML catalogs. */
 import fs from "node:fs";
 import path from "node:path";

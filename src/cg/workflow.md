@@ -2,6 +2,12 @@
 
 This repository-owned workflow supplies delivery policy for Contract Graph Dev Kit, a framework for agentic software development built around the repository-native contract graph. Contract Graph’s structural authority remains `.agents/cg/principles/architecture.yaml`; changing the delivery sequence cannot remove graph obligations. Init preserves local workflow and phase policy. When retained policy names retired stages, reconcile it explicitly with the 0.7.0 loop before executing dependent work.
 
+## Communication and decision reviews
+
+The primary audience is senior leadership in functional roles. Follow `.agents/skills/cg-unblock/references/owner-communication.md` for user-facing language and decision reviews. Use technical terms only when needed for an informed choice and explain them. User reviews contain only Context/background, Options, Recommendation and Why, with a clear question as their title. Keep unanswered reviews in the central <docs>/plans/decision-log.md. Compact agent evidence lives separately in .agents/cg/decisions/ and is not required reading for the owner.
+
+Explain checks by their actual outcome and limits, not command names. A passing framework check does not prove product behavior works. Keep technical results and skill routing in the existing internal evidence. Remove answered questions from the active review list after preserving the answer; completed work removes consumed internal entries and temporary reviews after preserving durable meaning and approval evidence.
+
 ## Intent, planning and execution
 
 Both new and existing repositories start with cg-warmup after init. Maintain `.agents/cg/project-context.md` beside the root contract as a concise copy of project intent from repository documentation, with source links and current approved direction. Establish owner-confirmed project intent from existing sources and verify its freshness with `cg intent verify`. Existing code is evidence of conformance, not authority to replace an accepted requirement. Modules refine parent purpose through their contracts.
@@ -23,6 +29,7 @@ Both plan/produce and exploratory cg-prototype work end at the same accepted `cg
 3. Apply `.agents/cg/principles/architecture.yaml` `graph`: stay, add-child, elsewhere. Read implementation only after this placement is known. Keep new self-sufficient units and reciprocal edges truthful in the same change.
 4. Compare changed purpose, surfaces and invariants with accepted promises and caller expectations. A valid test failure calls for implementation repair; changing an expectation needs evidence of an incorrect test or an authorised requirement change.
 5. Keep binding detectors and checks needed to safely build/run the change during iteration. Unstable application tests and final docs can be deferred explicitly; they remain completion obligations. Use `.agents/skills/cg-produce/references/verification.md` for scoped gates and evidence reuse.
+6. Apply `.agents/skills/cg-warmup/references/responsibility-review.md` during discovery, implementation and final review. Compare existing owners and relevant sibling implementations, including compatibility paths and test fixtures. Record decisions in existing work evidence and final dispositions at sign-off. Graph validity and surface correspondence do not establish cohesive or unique implementation responsibility; conditional E loading does not waive this structural review.
 
 ## State, questions and recovery
 
@@ -36,9 +43,13 @@ Use cg-unblock for consequential choices. Check existing intent, plan and decisi
 
 Keep responses concise. At each production run stop or review, show every item in the selected run scope in a table with columns **Item — type, summary, status and plan pointer | Code | Test | Docs**. The work columns use **Yes / No / Partial / Blocked**; explain non-required categories and legitimate deferrals briefly. Code completion is not acceptance or sprint completion. Test Yes requires applicable passing evidence.
 
-For pending owner decisions, use cg-unblock D-6/D-7: lead with the concrete review question, linked content, choices and what happens after the answer. Keep hashes, commands and dependency IDs in supporting evidence. Accept a conversational reply; do not require a ledger edit or skill invocation. Omit lists of artifacts that were not created. This owner-facing decision block replaces the skill-routing footer below while an answer is pending.
+For pending owner decisions, use cg-unblock D-6/D-7: lead with the concrete review question, linked content, choices and what happens after the answer. Keep hashes, commands and dependency IDs in internal evidence, outside the owner review. Accept a conversational reply; do not require a ledger edit or skill invocation. Omit lists of artifacts that were not created. This owner-facing decision block replaces the skill-routing footer below while an answer is pending.
 
-Otherwise end with **Next recommended: `<action or None>` — `<exact scope and reason>`**. Name pending review explicitly before its dependent next step. Use cg-produce for remaining implementation or repairs, cg-sign-off for accepted-result finishing, cg-unblock for an unresolved decision with no independent work, and cg-plan for changed outcomes. Continue automatically under an existing applicable completion request; do not require the owner to repeat a stage invocation. When the requested work and its applicable acceptance and verification are complete, report None. Do not invent finishing work or repeat valid verification merely to name another skill.
+Otherwise end with the next work in functional language, or say the requested work is complete. Record exact skill routing and scope in the internal checkpoint. Name pending review explicitly before its dependent next step. Use cg-produce for remaining implementation or repairs, cg-sign-off for accepted-result finishing, cg-unblock for an unresolved decision with no independent work, and cg-plan for changed outcomes. Continue automatically under an existing applicable completion request; do not require the owner to repeat a stage invocation. When the requested work and its applicable acceptance and verification are complete, report None. Do not invent finishing work or repeat valid verification merely to name another skill.
+
+## Documentation audiences
+
+Use `<docs>/guides/` for technical roles building, deploying, releasing, operating or maintaining the software. Use `<docs>/manuals/` for people using the product: gameplay rules, controls, tutorials and feature instructions. Classify by audience and purpose, not title. Link shared facts rather than duplicate them. Sign-off closure checks §8 owns detailed authoring and relocation guidance; existing repository-owned layouts may map these audiences to their established destinations.
 
 ## Contract Update Triggers
 
@@ -70,7 +81,7 @@ Contracts must survive plan deletion. When writing or updating a contract:
 
 ## Plan Harvest Step (before deleting a completed plan)
 
-At every sign-off, reconcile the selected scope’s resolved decision-log entries and relevant `<docs>/decisions/` records under closure checks §7.0, even when no decision-harvest cohort was declared. Preserve approved direction in project-context.md and other durable meaning in its owning contract or appropriate YAML catalog; retain detailed design records only for a continuing reader, dependency or retention need. Account for each entry in the existing acceptance evidence before draining it. Pending and unrelated decisions remain.
+At every sign-off, reconcile the selected scope’s resolved agent records and unmigrated legacy decision-log entries and relevant `<docs>/decisions/` records under closure checks §7.0, even when no decision-harvest cohort was declared. Preserve approved direction in project-context.md and other durable meaning in its owning contract or appropriate YAML catalog; retain detailed design records only for a continuing reader, dependency or retention need. Account for each entry in the existing acceptance evidence before draining it. Pending and unrelated decisions remain.
 
 Before removing a completed scope’s temporary plan, process and progress files, follow `.agents/skills/cg-sign-off/SKILL.md`. In short:
 
@@ -79,7 +90,7 @@ Before removing a completed scope’s temporary plan, process and progress files
    equal the eligible decision IDs. Other resolved decisions and every pending decision remain in
    the log for their own cohort or answer. Validate the transient manifest before any later gate:
    `cg harvest <decision-harvest.json>
-   --decision-log <docs>/plans/decision-log.md`.
+   --decision-log .agents/cg/decisions`.
 2. For a non-empty cohort, obtain one batch acceptance and route it through `cg-produce`. The
    first prepared harvest Step carries the accepted classification digest, and its drain IDs
    exactly equal the eligible decision IDs. It remains blocked on source-phase completion while

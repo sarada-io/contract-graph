@@ -81,6 +81,95 @@ test("init refreshes A/E and skills, converts legacy P, and preserves owned cont
   assert.deepEqual(init(dir).replaced, []);
 });
 
+function policyFixture(t) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-retained-policy-"));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  init(dir, { profiles: ["agents"] });
+  sync(dir);
+  return dir;
+}
+
+test("init installs one reachable responsibility review and a parseable warmup cue catalog", t => {
+  const dir = policyFixture(t);
+  const review = ".agents/skills/cg-warmup/references/responsibility-review.md";
+  assert.equal(read(dir, review), read(root, "src/skills/cg-warmup/references/responsibility-review.md"));
+  for (const relative of [
+    ".agents/skills/cg-warmup/SKILL.md",
+    ".agents/skills/cg-plan/SKILL.md",
+    ".agents/skills/cg-produce/SKILL.md",
+    ".agents/skills/cg-prototype/SKILL.md",
+    ".agents/skills/cg-sign-off/references/closure-checks.md",
+  ]) {
+    const link = read(dir, relative).match(/\]\(([^)]+responsibility-review\.md)\)/)?.[1];
+    assert.ok(link, `missing review route from ${relative}`);
+    assert.equal(path.resolve(dir, path.dirname(relative), link), path.join(dir, review));
+  }
+  const catalog = parseContractYaml(read(dir, ".agents/skills/cg-warmup/assets/warmup.yaml"));
+  assert.equal(new Set(catalog.cues.map(cue => cue.id)).size, catalog.cues.length);
+  for (const cue of catalog.cues) {
+    assert.equal(typeof cue.look, "string");
+    assert.equal(typeof cue.then, "string");
+  }
+});
+
+test("init reports historical phase policy during preview and apply without rewriting it", t => {
+  const dir = policyFixture(t);
+  // Independently authored historical policy: E was conditional and prepare was a stage.
+  const historical = {
+    _comment: "Local policy remains owned here.",
+    phases: Object.fromEntries(["plan", "prepare", "produce", "sign-off", "unblock"].map(name =>
+      [name, { always: ["A", "P"], conditional: ["E"] }])),
+  };
+  const file = ".agents/cg/phases.json";
+  const original = JSON.stringify(historical, null, 2) + "\n";
+  write(dir, file, original);
+  const before = snapshot(dir);
+  const preview = init(dir, { dryRun: true });
+  assert.deepEqual(snapshot(dir), before);
+  assert.equal(preview.policyNotices.length, 3);
+  assert.match(preview.policyNotices.join("\n"), /retired prepare/);
+  assert.match(preview.policyNotices.join("\n"), /no prototype entry/);
+  assert.match(preview.policyNotices.join("\n"), /loads E conditionally for plan, produce, sign-off, unblock/);
+  const applied = init(dir);
+  assert.deepEqual(applied.policyNotices, preview.policyNotices);
+  assert.equal(read(dir, file), original);
+  assert.deepEqual(verify(dir).failures, [], "retained advisory policy is not a new binding failure");
+});
+
+test("init CLI displays policy notices even with no file updates and preserves check exit semantics", t => {
+  const dir = policyFixture(t);
+  const file = ".agents/cg/phases.json";
+  const policy = JSON.parse(read(dir, file));
+  policy.phases["sign-off"] = { always: ["A", "P"], conditional: ["E"] };
+  write(dir, file, JSON.stringify(policy));
+  const before = snapshot(dir);
+  const run = extra => spawnSync(process.execPath, [path.join(root, "bin/cg.js"), "init", dir, ...extra], { encoding: "utf8" });
+  const preview = run(["--check"]);
+  assert.equal(preview.status, 0, preview.stdout + preview.stderr);
+  assert.match(preview.stdout, /loads E conditionally for sign-off/);
+  assert.match(preview.stdout, /not automatically reconciled/);
+  assert.deepEqual(snapshot(dir), before);
+  const applied = run(["--yes"]);
+  assert.equal(applied.status, 0, applied.stdout + applied.stderr);
+  assert.match(applied.stdout, /loads E conditionally for sign-off/);
+  assert.equal(read(dir, file), Buffer.from(before[file], "base64").toString());
+});
+
+test("init notices distinguish omitted guidance and malformed policy from current defaults", t => {
+  const dir = policyFixture(t);
+  assert.deepEqual(init(dir, { dryRun: true }).policyNotices, []);
+  const file = ".agents/cg/phases.json";
+  const policy = JSON.parse(read(dir, file));
+  policy.phases.produce = { always: ["A", "P"], conditional: [] };
+  write(dir, file, JSON.stringify(policy));
+  assert.match(init(dir, { dryRun: true }).policyNotices.join("\n"), /does not load E for produce/);
+  write(dir, file, "{ broken local policy\n");
+  const before = snapshot(dir);
+  assert.match(init(dir, { dryRun: true }).policyNotices.join("\n"), /needs correction:.*invalid JSON/);
+  assert.deepEqual(snapshot(dir), before);
+  assert.notDeepEqual(verify(dir).failures, [], "notices do not conceal invalid policy");
+});
+
 test("invalid rationale blocks writes; absent rationale hands off without changing product", t => {
   const dir = fixture(t);
   const before = snapshot(dir);
