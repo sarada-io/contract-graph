@@ -5,6 +5,8 @@ description: Agree a goal and observable outcomes in one Sprint or Epic Plan wit
 
 # CG Plan
 
+For CLI commands, follow `.agents/cg/contract-graph-agent.md`'s launcher guidance. In Windows PowerShell, use the installed `cg.cmd` in place of `cg` throughout this skill and its references; keep the same arguments and required checks. A blocked `cg.ps1` launcher does not authorize changing execution policy or skipping verification.
+
 For chat, decision reviews and results, read [owner communication](../cg-unblock/references/owner-communication.md). Explain outcomes and choices for functional leaders; keep framework commands and approval mechanics in internal evidence.
 
 Agree what success means before implementation. Run `cg intent verify`; if intent is incomplete or stale, use cg-warmup to draft and confirm it while continuing independent discovery. Planning may explore an unanswered question but must not label its dependent outcome agreed. Read the root contract, `.agents/cg/workflow.md`, profile and the families selected for `plan` in `.agents/cg/phases.json`. Route with `cg contract route --task "<outcome>"` before bounded source reading. A and applicable P are binding; E remains advisory.

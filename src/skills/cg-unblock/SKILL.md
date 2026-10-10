@@ -5,6 +5,8 @@ description: Resolve Contract Graph forks through recorded authority and direct 
 
 # CG Unblock
 
+For CLI commands, follow `.agents/cg/contract-graph-agent.md`'s launcher guidance. In Windows PowerShell, use the installed `cg.cmd` in place of `cg` throughout this skill and its references; keep the same arguments and required checks. A blocked `cg.ps1` launcher does not authorize changing execution policy or skipping verification.
+
 Read [owner communication](references/owner-communication.md) before presenting decisions or results. It owns functional wording, the four-field review and where user-facing reviews live. Technical records below are internal agent work.
 
 For sprint work, scope each canonical decision to the programme, sprint ID/name and affected Feature/Bug/Task IDs. One decision spanning items remains one entry linked from those items. Preserve the actual answer, rationale, authority and implementation impact; resolving an item does not approve the whole sprint.

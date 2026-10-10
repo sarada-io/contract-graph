@@ -102,6 +102,20 @@ npm install --global contract-graph
 cd your-repository
 ```
 
+### Windows PowerShell
+
+Use `npm` to install and `cg.cmd` to run Contract Graph in PowerShell:
+
+```powershell
+npm install --global contract-graph
+cg.cmd --version --json
+cg.cmd init
+```
+
+Replace `cg` with `cg.cmd` in the command examples throughout these guides. npm installs both PowerShell and batch launchers; bare `cg` can select `cg.ps1`, which PowerShell's script execution policy may block. The batch launcher runs the same CLI without an execution-policy change. See [npm's Windows launcher design](https://github.com/npm/rfcs/blob/main/implemented/0032-powershell-bins.md).
+
+If `cg.cmd` is not found, check `Get-Command cg.cmd -CommandType Application` and whether npm's global install directory is on PATH. An absent launcher or a separate machine policy restriction needs installation or environment support; switching launchers does not repair CLI validation errors.
+
 ### Assess before adopting
 
 Not sure whether Contract Graph would help? Ask your coding agent:

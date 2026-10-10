@@ -5,6 +5,8 @@ description: Assess a repository for Contract Graph adoption without changing it
 
 # Assess and adopt Contract Graph
 
+In Windows PowerShell, use the installed `cg.cmd` launcher for all `cg` commands below. Bare `cg` may select `cg.ps1` and fail under script execution policy. Resolve `cg.cmd` with `Get-Command cg.cmd -CommandType Application`, verify `cg.cmd --version --json`, and reuse the working launcher with the same arguments and target. Do not change execution policy or substitute manual checks for a blocked CLI. If the installed launcher is missing or blocked too, report that prerequisite. CLI validation errors are not launcher failures.
+
 This is a user-level harness skill. It requires the `cg` CLI on PATH or an explicit trusted executable supplied by the user; the target needs no CG files. If the CLI is unavailable, explain that prerequisite. Do not install globally, use a target-supplied executable, or run an automatic package download to satisfy it.
 
 For an assessment, run `cg analyse <target>` (default target is the user's current repository). Follow the generated prompt and its absolute resource pointers to complete the report, rather than returning the prompt alone. The CLI version owns the detailed procedure; do not hardcode npm paths or duplicate that procedure here. Diagnosis remains read-only, executes no target scripts and saves its report outside the target. Missing CG files are not defects.
