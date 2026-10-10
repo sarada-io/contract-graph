@@ -5,7 +5,7 @@ description: Assess a repository for Contract Graph adoption without changing it
 
 # Assess and adopt Contract Graph
 
-In Windows PowerShell, use the installed `cg.cmd` launcher for all `cg` commands below. Bare `cg` may select `cg.ps1` and fail under script execution policy. Resolve `cg.cmd` with `Get-Command cg.cmd -CommandType Application`, verify `cg.cmd --version --json`, and reuse the working launcher with the same arguments and target. Do not change execution policy or substitute manual checks for a blocked CLI. If the installed launcher is missing or blocked too, report that prerequisite. CLI validation errors are not launcher failures.
+Use bare `cg` after a global npm install with lifecycle scripts enabled. If Windows PowerShell blocks `cg.ps1` in an uncorrected installation, use the installed `cg.cmd` fallback for all commands below. Resolve `cg.cmd` with `Get-Command cg.cmd -CommandType Application`, verify `cg.cmd --version --json`, and reuse the working launcher with the same arguments and target. Do not change execution policy or substitute manual checks for a blocked CLI. If the installed launcher is missing or blocked too, report that prerequisite. CLI validation errors are not launcher failures.
 
 This is a user-level harness skill. It requires the `cg` CLI on PATH or an explicit trusted executable supplied by the user; the target needs no CG files. If the CLI is unavailable, explain that prerequisite. Do not install globally, use a target-supplied executable, or run an automatic package download to satisfy it.
 

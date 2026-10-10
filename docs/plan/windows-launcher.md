@@ -1,6 +1,6 @@
 # Windows npm command launching
 
-Status: plan ready for Windows implementation; no implementation authorized in this session. Updated: 2026-10-10. Context: Windows usability feedback for the 1.0.0 baseline; no version bump or release is authorized.
+Status: implementation and local verification complete, ready for review; broader CI matrix pending. Updated: 2026-10-10. Scope: Windows npm launching; package version remains 0.8.0; no release is authorized.
 
 ## Executive Summary
 
@@ -12,25 +12,49 @@ The agreed outcome is that users install through `npm install --global contract-
 
 ### 2. Solution Overview
 
-Investigate a Windows-only npm install hook that removes only the generated `cg.ps1` proven to belong to the installed Contract Graph package. Keep npm’s existing `cg.cmd` and other launchers. With the competing PowerShell script absent, PowerShell should resolve bare `cg` to the batch launcher and start the existing Node.js CLI. Actual Windows tests must confirm this before the behavior becomes a release promise.
+The release build now includes a Windows-only npm install hook that removes only the generated `cg.ps1` proven to belong to the installed Contract Graph package. It preserves npm’s existing `cg.cmd` and other launchers. Disposable installs demonstrate that bare `cg` reaches the batch launcher and initializes and verifies a project under Restricted Windows PowerShell 5.1 and PowerShell 7, on Node 18.17/npm 9.6.7 and Node 24.21/npm 11.19.
 
 This approach needs no `cg.exe`, native compiler, separate installer, bundled Node.js, PATH edits, aliases or execution-policy changes. npm does not provide a package setting to omit just the PowerShell wrapper, so automatic cleanup must run after npm creates it. The hook must handle upgrades safely, preserve unrelated files, and account for installations that disable lifecycle scripts.
 
 ### 3. Plan Overview
 
-The first phase verifies npm lifecycle ordering and Windows command selection. The next phases implement bounded wrapper cleanup and validate the complete npm installation lifecycle. The user has selected npm as the main path and removed the native launcher from scope because the existing batch launcher is sufficient if bare `cg` reaches it.
+The Windows implementation request resumed all three phases. Local package checks now cover the minimum and current runtime, including fresh installation, upgrade, rebuild, uninstall, script-disabled fallback, local installs and development links. Canonical human and agent guidance uses bare `cg` normally and preserves the fallback. The Windows CI job covers the four existing Node versions; its remote results are still pending.
 
-- **Windows feasibility:** Inspect npm wrapper creation, prove the install hook runs after linking, and test bare command selection without the PowerShell wrapper in Windows PowerShell 5.1 and PowerShell 7.
-- **Owned wrapper cleanup:** Add a Windows-only package install hook that verifies the wrapper’s ownership and removes only the matching `cg.ps1`. Preserve other launchers and unrelated installations.
-- **npm lifecycle and release validation:** Exercise fresh install, upgrade, rebuild and uninstall in disposable Windows environments; inspect the packed package and update setup guidance around bare `cg`.
+- **Windows feasibility — locally verified:** Inspected the installed npm linker and demonstrated that postinstall sees existing wrappers; both PowerShell versions select the batch launcher after cleanup.
+- **Owned wrapper cleanup — implemented:** The package helper requires complete matching wrapper forms, exact package CLI metadata and unredirected paths, then rechecks file identity/content before removing only `cg.ps1`. Negative tests preserve uncertain ownership; denied verified removal fails the hook.
+- **npm lifecycle and release validation — local checks complete, broader CI pending:** Real packed installs pass on Node 18.17/npm 9.6.7 and Node 24.21/npm 11.19. The full suite passes with 468 tests and four skips; packing, complete tarball inventory and extracted-package smoke checks pass. Node 20/22 remote CI results have not been observed.
 
 ---
 
 ## Details (Agent Version)
 
+### Measured Windows implementation results
+
+The user resumed this plan in the Windows checkout on 2026-10-10, authorizing its bounded implementation. The working tree was initially clean. The resolved global launcher points at a separately installed package, not this checkout; all installations used disposable prefixes and projects. The live global installation, repository adopters, package version and publishing state were preserved.
+
+| Environment/check | Measured result |
+| --- | --- |
+| Windows 10.0.26200; Windows PowerShell 5.1.26100.9444; PowerShell 7.6.5 | Bare `cg` selects the disposable package's `cg.cmd` under verified Restricted process policy and `-NoProfile`; initialization and aggregate verification succeed. |
+| Node 18.17.0/npm 9.6.7 | All 16 ownership tests plus the real-package lifecycle test pass. |
+| Node 24.21.0/npm 11.19.0 | Focused build/menu/ownership/package checks pass (56 passed, one existing platform skip); the enhanced real-package lifecycle test also passes independently. |
+| Fresh install, older-version replacement, reinstall, rebuild, uninstall | Corrected wrappers remain corrected; uninstall removes npm-owned package/launchers and preserves an unrelated file. |
+| Prefixes with spaces/Unicode; CLI arguments/errors | Exact installed executable identity matches; missing contract selection preserves CLI exit 1. |
+| Existing PowerShell process | Resolving `cg.ps1`, removing the verified wrapper and resolving again selects `cg.cmd` in that same shell. |
+| `--ignore-scripts`, local install, development link | PowerShell wrapper remains; script-disabled bare invocation is blocked under Restricted policy and explicit batch fallback succeeds. |
+| npm lifecycle ordering | npm 9.6.7 and 11.19.0 link before postinstall, including rebuild; observed fixture confirms cleanup is not overwritten afterward. |
+| Wider supported runtime matrix | Windows CI added for Node 18.17, 20, 22 and 24; Node 20/22 results remain unobserved locally. |
+
+Implementation uses `src/scripts/windows-launcher.js` through the existing package builder; source package maintainer scripts are not installed. Complete npm Node-shebang wrapper forms are accepted conservatively; future or customized forms warn and remain untouched. No dependency was added. Source checkouts/local installs/links and non-Windows invocation do not acquire global mutation authority. Final content/path/identity checks detect observed concurrent changes but cannot make deletion atomic against a competing installer; installs into one prefix must be serialized.
+
+Windows verification exposed existing portability problems: CRLF skill frontmatter, POSIX-only npm process spawning, filesystem mode comparisons and shell/path assumptions in test fixtures. Metadata parsing and verification now accept CRLF without rewriting skills, Git records LF checkout policy, build checks ignore unsupported Windows permission-bit comparisons, and test fixtures use platform-appropriate paths/quoting. Two POSIX shell PATH admission tests remain explicitly skipped on Windows and continue to run on Ubuntu; this package fix does not establish Windows PATH admission for the optional Claude hook. Windows ownership tests and real-package PowerShell tests retain their own coverage.
+
+Final local checks: `npm test` passes (472 tests, 468 passed, zero failures, four skips); `npm test -- test/prototype.test.js` passes all 49 cases after repairing shell fixtures; the minimum-version ownership/lifecycle run passes all 17 cases. `npm run pack` produces the 0.8.0 tarball; `npm run build:check` verifies all 103 package files. Tarball inspection confirms the sole lifecycle script is `postinstall: node script/windows-launcher.js`, its helper is included, and the package entry remains `script/cli.js`. The build tests extract the tarball and exercise schema exports, source inspection, initialization and migration without source-tree fallbacks; the separate lifecycle test installs runtime dependencies into disposable global/local prefixes and verifies real PowerShell initialization and aggregate verification. `git diff --check` passes. No implementation content is staged, published or globally installed on the live prefix.
+
+The Windows CI job is configured but has not been dispatched by this local task. Review that evidence before claiming Node 20/22 coverage or releasing. Lasting setup/fallback, CRLF, build-mode and validation constraints are already in canonical guides and ownership contracts. Retain this master only while review/CI evidence remains active, then retire it rather than keeping an implementation diary.
+
 ### Agreed scope and authority
 
-The user explicitly paused implementation to finish this plan here and intends to request implementation on a Windows machine. They require bare `cg` after npm installation and clarified that dropping the generated PowerShell wrapper makes a native executable unnecessary. The implementation request on Windows may execute the phases below; this planning session does not resume framework implementation. Phase 1 is the first bounded feasibility task, not an omitted prerequisite or a claim of established Windows behavior.
+During the earlier planning session the user paused implementation until moving to Windows. They require bare `cg` after npm installation and clarified that dropping the generated PowerShell wrapper makes a native executable unnecessary. The subsequent Windows request resumes the bounded phases below. Historical proposals remain below for rationale; measured implementation status is recorded above.
 
 In scope: a Windows-only install-time correction for CG-owned npm wrappers, lifecycle tests, existing package build integration and canonical setup/upgrade guidance. Out of scope: `cg.exe`, native launcher source, a separate installer, bundling Node.js, a CLI rewrite, execution-policy changes, aliases, PATH modifications, publishing, a version bump, global installation on the maintainer machine, or adopter updates.
 

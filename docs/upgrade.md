@@ -1,6 +1,6 @@
 # Upgrade
 
-In Windows PowerShell, use `cg.cmd` in place of `cg` for the commands below; keep `npm` as written. See [Windows PowerShell setup](../README.md#windows-powershell) when script execution policy blocks `cg.ps1`.
+On Windows, global installation with lifecycle scripts enabled corrects the package-owned PowerShell wrapper so the commands below use bare `cg`. If npm prohibits install hooks or PowerShell still blocks `cg.ps1`, use `cg.cmd` with the same arguments. See [Windows PowerShell setup](../README.md#windows-powershell).
 
 Install or refresh Contract Graph Dev Kit through the `contract-graph` package and `cg init`. The product name does not change package names, commands or repository paths.
 

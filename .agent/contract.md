@@ -73,6 +73,7 @@ contract to read; the last column narrows reading after that contract.
 | README, product claims, vision, human guides, branding or contributor instructions | [Authoring](authoring/contract.md) | `README.md`, `docs/README.md`, `docs/assets/`, `CONTRIBUTING.md` |
 | Build output, package mappings, manifest hashes, npm exports/dependencies or Node compatibility | [Distribution](distribution/contract.md) | `build.js`, `package.json`, `package-lock.json` |
 | Wrong CLI version, installed build identity, executable mismatch | [Distribution](distribution/contract.md) | `runtime.js`; `cg --version --json` |
+| Windows npm global install, bare `cg` blocked by `cg.ps1`, package postinstall wrapper correction | [Distribution](distribution/contract.md) | `windows-launcher.js`, release metadata in `build.js`; Authoring owns setup/fallback guidance |
 | Local menu, clean/build/pack/publish, tarball install, editor development fixtures | [Distribution](distribution/contract.md) | `scripts/urun.mjs`, `urun`, `urun.cmd`, `dev.js`; release actions need explicit scope |
 | CI configuration, npm test runner, scratch directories, mutation-test harness | [Distribution](distribution/contract.md) | `.github/workflows/ci.yml`, `scripts/test.mjs`, `scripts/check-principles-mutations.mjs` |
 | CLI help (`cg help`, `--help`, `-h`), flags, arguments, prompts, output formatting or exit codes | [Root composition](#root-surface-and-composition) | `bin/cg.js`, `cli.js`; consult the affected behavior's child as well |

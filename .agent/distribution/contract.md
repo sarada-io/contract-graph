@@ -7,6 +7,7 @@ maintainer development/release tooling.
 
 - [build.js](../../src/scripts/build.js): `cg build`, package mappings, hashes and `--check`.
 - [runtime.js](../../src/scripts/runtime.js): executable identity and installation mismatch checks.
+- [windows-launcher.js](../../src/scripts/windows-launcher.js): packaged Windows global npm postinstall; removes only matching npm-generated `cg.ps1` after verifying `cg.cmd`, CLI ownership and unredirected paths. Local installs, source checkouts and development links are no-ops; uncertain ownership warns without removal, and removal failure fails the hook. No policy, PATH or adopter changes.
 - [package.json](../../package.json), [package-lock.json](../../package-lock.json): exports,
   runtime dependencies, supported Node version and npm commands.
 - [dev.js](../../src/scripts/dev.js): `npm run try`, editor development fixtures.
@@ -21,6 +22,7 @@ Package `src/diagnostics/` as `agent/diagnostics/`, include it in runtime identi
 ## Boundary promises
 
 The complete release target is `dist/build`; generated output is not the source of truth.
+Build drift checks compare bytes on every platform and POSIX permission bits where supported; Windows cannot represent those executable permission bits. Git keeps authored text LF for consistent package inputs and literal fixtures across platforms.
 Package project-context.md under `agent/cg/` so Installation can preserve it alongside the root contract.
 Consume [Authoring](../authoring/contract.md)'s assets, [Verification](../verification/contract.md)'s catalog validation
 and the runtime files owned by the other children. Preserve Node.js 18.17+ compatibility.

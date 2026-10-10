@@ -104,15 +104,17 @@ cd your-repository
 
 ### Windows PowerShell
 
-Use `npm` to install and `cg.cmd` to run Contract Graph in PowerShell:
+Use `npm` to install, then run `cg` in PowerShell:
 
 ```powershell
 npm install --global contract-graph
-cg.cmd --version --json
-cg.cmd init
+cg --version --json
+cg init
 ```
 
-Replace `cg` with `cg.cmd` in the command examples throughout these guides. npm installs both PowerShell and batch launchers; bare `cg` can select `cg.ps1`, which PowerShell's script execution policy may block. The batch launcher runs the same CLI without an execution-policy change. See [npm's Windows launcher design](https://github.com/npm/rfcs/blob/main/implemented/0032-powershell-bins.md).
+For global Windows installs with lifecycle scripts enabled, the package's install hook removes only its verified npm-generated `cg.ps1`, allowing bare `cg` to select npm's existing batch launcher without changing execution policy. This also runs on global rebuilds and upgrades. Local installs and development links retain npm's normal launchers.
+
+If installation uses `--ignore-scripts`, npm script approval settings prohibit the hook, or automatic correction warns about an unfamiliar wrapper, PowerShell may still select `cg.ps1` and block it. Use `cg.cmd` for the same CLI in that environment. The hook does not change aliases, profiles, PATH or execution policy; concurrent npm installs into the same prefix should be avoided.
 
 If `cg.cmd` is not found, check `Get-Command cg.cmd -CommandType Application` and whether npm's global install directory is on PATH. An absent launcher or a separate machine policy restriction needs installation or environment support; switching launchers does not repair CLI validation errors.
 

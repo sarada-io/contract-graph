@@ -117,6 +117,7 @@ function listDirs(dir) {
 }
 
 function parseSkillFrontmatter(relative, text, fail) {
+  text = text.replaceAll("\r\n", "\n");
   if (!text.startsWith("---\n")) {
     fail(`[9] ${relative}: missing YAML frontmatter`);
     return null;

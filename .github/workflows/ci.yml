@@ -36,3 +36,22 @@ jobs:
           "$PREFIX/bin/cg" sync "$TARGET"
           "$PREFIX/bin/cg" verify "$TARGET"
           "$PREFIX/bin/cg" sync "$TARGET" --check
+
+  windows-package:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ["18.17.0", "20.x", "22.x", "24.x"]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Install dependencies
+        run: npm ci
+      - name: Wrapper ownership and packed Windows lifecycle
+        shell: pwsh
+        run: |
+          $env:CG_WINDOWS_LIFECYCLE = '1'
+          npm test -- test/windows-launcher.test.js test/windows-npm.test.js test/build.test.js test/urun.test.js

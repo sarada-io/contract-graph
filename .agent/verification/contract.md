@@ -18,6 +18,8 @@ authored graph and scaffold validity.
 delivery and build. This is an existing shared seam, not a destination for unrelated new tools;
 route new behavior to its responsible sibling and inspect affected exports before changing it.
 
+Skill metadata accepts LF and CRLF line endings without rewriting source content; schema and folder/name checks retain the same authority.
+
 ### Bounded reading inside the larger files
 
 | Task | Start here |

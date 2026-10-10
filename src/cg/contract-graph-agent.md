@@ -33,7 +33,7 @@ entry files or other repository-owned context. Regenerate with `cg sync`.
 
 ## Run the installed CLI
 
-Examples use `cg` as the command name. In Windows PowerShell, use npm's `cg.cmd` launcher for every command, for example `cg.cmd --version --json` and `cg.cmd contract route --task "<request>"`. PowerShell may select `cg.ps1` for bare `cg` and block it under script execution policy; `cg.cmd` invokes the same installed CLI without changing that policy. Other shells may continue using `cg`.
+Examples use `cg` as the command name, including Windows PowerShell after a global npm install with lifecycle scripts enabled. The package install hook removes only the verified package-owned `cg.ps1` so bare `cg` reaches npm's batch launcher. Local installs, development links, script-disabled installs and unfamiliar wrappers retain npm's normal launchers; use `cg.cmd` as the fallback if PowerShell blocks `cg.ps1`.
 
 If bare `cg` reports that `cg.ps1` cannot be loaded because scripts are disabled or unsigned, resolve the installed launcher with `Get-Command cg.cmd -CommandType Application` and verify it with `cg.cmd --version --json`. Reuse the working launcher for the rest of the session, preserving all arguments, working directory and exit codes. For a resolved absolute path containing spaces, invoke it with PowerShell's call operator: `& 'C:\path with spaces\cg.cmd' --version --json`; substitute the actual installed path.
 

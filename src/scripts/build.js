@@ -145,7 +145,7 @@ function packageSourceAssets(repoRoot) {
     },
   };
   delete packaged.files;
-  delete packaged.scripts;
+  packaged.scripts = { postinstall: "node script/windows-launcher.js" };
   delete packaged.devDependencies;
   assets.set("package.json", {
     content: Buffer.from(`${JSON.stringify(packaged, null, 2)}\n`),
@@ -217,7 +217,7 @@ export function build(repoRoot, { write = true } = {}) {
   const changed = [...assets]
     .filter(([relative, asset]) => {
       const prior = previous.get(relative);
-      return !prior || prior.mode !== asset.mode || !prior.content.equals(asset.content);
+      return !prior || (process.platform !== "win32" && prior.mode !== asset.mode) || !prior.content.equals(asset.content);
     })
     .map(([relative]) => relative)
     .sort();
