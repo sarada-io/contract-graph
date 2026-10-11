@@ -9,17 +9,43 @@ import test from "node:test";
 import { build } from "../src/scripts/build.js";
 
 const repo = fileURLToPath(new URL("../", import.meta.url));
+function copySourceTree(from, to) {
+  fs.mkdirSync(to, { recursive: true });
+  for (const entry of fs.readdirSync(from, { withFileTypes: true })) {
+    const input = path.join(from, entry.name);
+    const output = path.join(to, entry.name);
+    if (entry.isDirectory()) copySourceTree(input, output);
+    else {
+      assert.ok(entry.isFile(), `unexpected source entry: ${input}`);
+      fs.copyFileSync(input, output);
+      assert.deepEqual(fs.readFileSync(output), fs.readFileSync(input), `fixture copy: ${input}`);
+    }
+  }
+}
+function prepareSource(root) {
+  const source = path.join(root, "source");
+  fs.mkdirSync(source);
+  // Explicit traversal avoids the platform-dependent recursive cpSync fast path.
+  for (const name of ["src", "bin"]) copySourceTree(path.join(repo, name), path.join(source, name));
+  for (const name of ["package.json", "README.md", "LICENSE"]) fs.copyFileSync(path.join(repo, name), path.join(source, name));
+  build(source);
+  return source;
+}
+test("Windows lifecycle fixture builds completely in a space and Unicode path", t => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "cg npm ü "));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  const source = prepareSource(root);
+  const check = build(source, { write: false });
+  assert.deepEqual(check.changed, []);
+  assert.deepEqual(check.removed, []);
+});
 test("packed Windows npm lifecycle supports bare cg in Restricted PowerShell", {
   skip: process.platform !== "win32" || process.env.CG_WINDOWS_LIFECYCLE !== "1",
   timeout: 240000,
 }, t => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "cg npm ü "));
   t.after(() => fs.rmSync(root, {recursive:true,force:true}));
-  const source = path.join(root,"source");
-  fs.mkdirSync(source);
-  for (const name of ["src","bin"]) fs.cpSync(path.join(repo,name),path.join(source,name),{recursive:true});
-  for (const name of ["package.json","README.md","LICENSE"]) fs.copyFileSync(path.join(repo,name),path.join(source,name));
-  build(source);
+  const source = prepareSource(root);
   const npmCli = process.env.npm_execpath;
   assert.ok(npmCli && fs.existsSync(npmCli), "run this test through npm test");
   const prefix = path.join(root,"prefix space ü");
