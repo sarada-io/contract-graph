@@ -17,7 +17,9 @@ import { loadContract, stringifyContractYaml } from "../src/scripts/contracts.js
 
 const CLI = fileURLToPath(new URL("../bin/cg.js", import.meta.url));
 const HOOK = fileURLToPath(new URL("../src/install/hooks/cg-gate.mjs", import.meta.url));
-const quote = value => "'" + value.replaceAll("'", "'\\''") + "'";
+const quote = value => process.platform === "win32"
+  ? '"' + value.replaceAll("\n", " ").replaceAll('"', '\\"') + '"'
+  : "'" + value.replaceAll("'", "'\\''") + "'";
 const PASS_GATE = `${quote(process.execPath)} -e "process.exit(0)"`;
 const deliveryReadiness = (root, options) => checkDelivery(root, { gate: PASS_GATE, ...options });
 function git(root, ...args) { return execFileSync("git", ["-C", root, ...args], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim(); }
@@ -437,7 +439,8 @@ test("review retains all programme writers and detects scoped additions, deletio
     () => write(f.root, "app.txt", "released writer's source changed"),
     () => write(f.root, "screens/new.txt", "new untracked source"),
     () => fs.rmSync(path.join(f.root, "screens/a.txt")),
-    () => fs.chmodSync(path.join(f.root, "app.txt"), 0o755),
+    // Windows does not expose POSIX executable mode changes.
+    ...(process.platform === "win32" ? [] : [() => fs.chmodSync(path.join(f.root, "app.txt"), 0o755)]),
     () => { fs.rmSync(path.join(f.root, "app.txt")); fs.symlinkSync("screens/new.txt", path.join(f.root, "app.txt")); },
   ]) {
     action(f, "review", { session: "second" });
@@ -542,7 +545,7 @@ test("ordinary changes after a previously merged closure do not reopen that prot
 });
 
 test("the merge check requires the trusted gate, even if a weaker command passed", t => {
-  const f = fixture(t); action(f, "start"); accepted(f); close(f, "true");
+  const f = fixture(t); action(f, "start"); accepted(f); close(f, "exit 0");
   assert.match(deliveryReadiness(f.root, { base: f.base }).failures[0], /required delivery command/);
   assert.match(checkDelivery(f.root, { base: f.base }).failures[0], /trusted --gate/);
   close(f);

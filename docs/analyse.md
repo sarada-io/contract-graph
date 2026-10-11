@@ -1,5 +1,7 @@
 # Assess before adopting
 
+In Windows PowerShell, use `cg.cmd` for the commands below. See [Windows PowerShell setup](../README.md#windows-powershell) when script execution policy blocks `cg.ps1`.
+
 The 0.8.0 prototype provides `cg analyse [directory]`. It prepares a ready-to-paste agent prompt; it does not run an LLM or produce an architectural assessment itself. A local coding agent follows the prompt to read evidence and save a report outside the target repository. Contract Graph does not need to be installed in that repository.
 
 With the CLI available, ask your agent:

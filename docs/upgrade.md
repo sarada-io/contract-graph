@@ -1,10 +1,12 @@
 # Upgrade
 
+On Windows, global installation with lifecycle scripts enabled corrects the package-owned PowerShell wrapper so the commands below use bare `cg`. If npm prohibits install hooks or PowerShell still blocks `cg.ps1`, use `cg.cmd` with the same arguments. See [Windows PowerShell setup](../README.md#windows-powershell).
+
 Install or refresh Contract Graph Dev Kit through the `contract-graph` package and `cg init`. The product name does not change package names, commands or repository paths.
 
-## Upgrade to 0.8.0
+## Upgrade to 1.0.0
 
-Install the intended 0.8.0 CLI first. Once published, use `npm install --global contract-graph@0.8.0`; for an unpublished release, install its independently packed tarball. The repository upgrade does not fetch a package or change the global CLI.
+Install the intended 1.0.0 CLI first. Once published, use `npm install --global contract-graph@1.0.0`; for an unpublished release, install its independently packed tarball. The repository upgrade does not fetch a package or change the global CLI.
 
 Stop active coding agents and finish or checkpoint their work before upgrading. Completing every open plan is not required: existing roadmaps, prepared queues, decisions and delivery receipts are preserved. Old auto-run sessions are not automatically converted; reload skills, confirm intent through warmup if needed, and reconcile repository-owned workflow and phase policy before resuming the recorded scope with the new skills.
 
@@ -19,7 +21,14 @@ cg init --yes
 
 The upgrade reuses init: current lifecycle skills and the four experts go into `.agents/skills/`, shared attribution goes alongside them, selected editor discovery wrappers and hooks are refreshed, and repository-owned context is preserved. Known framework-owned `cg-prepare` and `cg-auto-run` files and obsolete sign-off references are backed up under `.agents/cg/backups/retired-0.7.0/` before removal. Custom files and unknown legacy artifacts are not recursively deleted. Older principle schemas use the migration described below; missing product rationale requires owner input and leaves the upgrade incomplete. Successful migration runs sync and verification. Review the diff before resuming work.
 
-## What changes from 0.7.0
+## What changes from 0.8.0
+
+- **Windows PowerShell installation:** global npm installation with lifecycle scripts enabled removes only the verified package-owned `cg.ps1`, allowing bare `cg` to use the existing batch launcher. macOS and Linux installations are unchanged. Script-disabled or unfamiliar-wrapper environments retain the `cg.cmd` fallback; no execution-policy change is required. See [Windows setup](../README.md#windows-powershell).
+- **Chat file links:** refreshed agent guidance uses host-supported local file paths and line numbers for links in chat. Repository Markdown retains portable relative paths and heading anchors.
+
+The 1.0.0 baseline retains the contract formats, CLI commands and lifecycle introduced in earlier releases. Refresh installed skills with `cg init` and reload your agent host. Existing repository-owned context, workflow and phase policy remain preserved.
+
+## Changes introduced after 0.7.0
 
 - **Assessment before adoption:** `cg analyse` prepares a read-only assessment prompt with bundled guidance and an optional portable personal skill. It does not install contracts or produce a report by itself. See [assessment and adoption follow-up](analyse.md).
 - **Responsibility review:** the refreshed skills compare relevant implementations for overlapping ownership and missing boundaries during adoption, planning and sign-off. This is an evidence-based agent review, not a new automatic detector of duplicate code.
@@ -43,8 +52,8 @@ New plans use the sprint delivery path described in [workflow](workflow.md). Exi
 ## Update an existing repository with cg init
 
 Install the intended CLI build, then run init in your adopting repository. For an unpublished
-0.8.0 build, run `npm run pack` in the Contract Graph checkout, then
-`npm install --global ./dist/tar/contract-graph-0.8.0.tgz`.
+1.0.0 build, run `npm run pack` in the Contract Graph checkout, then
+`npm install --global ./dist/tar/contract-graph-1.0.0.tgz`.
 
 ```bash
 cd <your-repository>

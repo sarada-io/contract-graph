@@ -31,6 +31,14 @@ exact path rather than relying on search.
 The principle index in this file is generated. Keep repository-specific instructions in the root
 entry files or other repository-owned context. Regenerate with `cg sync`.
 
+## Run the installed CLI
+
+Examples use `cg` as the command name, including Windows PowerShell after a global npm install with lifecycle scripts enabled. The package install hook removes only the verified package-owned `cg.ps1` so bare `cg` reaches npm's batch launcher. Local installs, development links, script-disabled installs and unfamiliar wrappers retain npm's normal launchers; use `cg.cmd` as the fallback if PowerShell blocks `cg.ps1`.
+
+If bare `cg` reports that `cg.ps1` cannot be loaded because scripts are disabled or unsigned, resolve the installed launcher with `Get-Command cg.cmd -CommandType Application` and verify it with `cg.cmd --version --json`. Reuse the working launcher for the rest of the session, preserving all arguments, working directory and exit codes. For a resolved absolute path containing spaces, invoke it with PowerShell's call operator: `& 'C:\path with spaces\cg.cmd' --version --json`; substitute the actual installed path.
+
+A launcher failure does not waive required framework checks. Do not replace verification with improvised file edits, change execution policy, elevate privileges, install another CLI or download a package merely to recover command execution. If the installed launcher is absent or also blocked, report the actual installation/PATH or policy prerequisite and continue only independent work. A command that reaches the CLI and returns a validation or application error is not a launcher failure: address that result rather than retrying a state-changing command through another launcher.
+
 ## Communicate with the owner
 
 Address functional leaders in plain language. Explain outcomes, choices, costs and risks; use technical terms only when necessary and explain them. Before presenting a decision or result, read [owner communication](../skills/cg-unblock/references/owner-communication.md). It defines the four-field decision review and separates it from internal evidence.

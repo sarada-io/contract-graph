@@ -98,6 +98,10 @@ request. Use this table as the minimum:
 Report the exact checks and outcomes in the pull request. “Tests pass” is not enough when the
 change affects interactive initialization or editor discovery.
 
+## README diagram
+
+The README embeds the hosted [composition spine SVG](https://contractgraph.dev/assets/contract-graph-composition-spine.svg) maintained by the product website. Keep the absolute image URL so npm readers do not require Mermaid rendering. Check the image loads and remains readable when updating its URL.
+
 ## Sprint interaction validation
 
 Exercise mixed Features/Bugs/Tasks with batch review and per-item review, an unanswered decision with independent work, interruption/recovery, and a failed finishing check that returns to production repair. Preserve actual review responses and checks; fixture success does not establish model behavior or user satisfaction. A recorded 2026-09-06 trial exercised the retired 0.6.0 Manager/Engineer workflow with synthetic owner input and mixed-host recovery. It is historical evidence only: its observer tools are retired, and it does not validate the 0.7.0 loop or establish token savings. The original report remains in Git history.
@@ -263,6 +267,12 @@ Imported guidance must include the case for using it here, its local cost, and a
 Prefer a paraphrase with project-specific reasoning over copied prose.
 
 ## Building and inspecting the npm package
+
+Release metadata contains only the Windows npm `postinstall` hook, not maintainer scripts. It corrects verified global Windows wrappers; local/source/link installs and non-Windows hosts are no-ops. Serialize installs into a shared prefix: immediate path/content rechecks cannot provide an atomic lock against another installer.
+
+Git keeps authored text LF across contributor platforms; skill parsing also accepts existing CRLF content without rewriting it. Build drift checks compare bytes on Windows and compare POSIX mode bits only on hosts that represent them. Two POSIX shell PATH admission fixtures are skipped on Windows and remain covered by Ubuntu CI; the Windows package job validates npm and PowerShell launching separately and does not establish optional Claude hook PATH admission.
+
+On Windows, set `CG_WINDOWS_LIFECYCLE=1` in the process environment and run `npm test -- test/windows-npm.test.js` for real-package lifecycle validation. It uses temporary prefixes and projects, tests Restricted Windows PowerShell 5.1 and PowerShell 7, and leaves the live global installation untouched. Set `CG_PWSH` to PowerShell 7's executable when it is not on PATH. The test covers installation, replacement, rebuild, uninstall, script-disabled fallback, CLI errors and initialization/verification. The harness loads PowerShell's security module before imposing Restricted policy in its disposable process; it changes no persistent execution policy.
 
 Never edit `dist/build/` directly. It is a generated, gitignored package target. Build and verify it
 with:

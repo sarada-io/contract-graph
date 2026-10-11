@@ -285,7 +285,7 @@ test('urun tarball install replaces a development link with a copy that survives
   const cli = '#!/usr/bin/env node\nconsole.log("packaged copy");\n';
   fs.writeFileSync(path.join(build, 'cli.js'), cli, { mode: 0o755 });
   const npm = (args, cwd = dir) => {
-    const result = spawnSync(process.platform === 'win32' ? 'npm.cmd' : 'npm', args, {
+    const result = spawnSync(process.execPath, [process.env.npm_execpath, ...args], {
       cwd, encoding: 'utf8', timeout: 60000,
       env: { ...process.env, npm_config_prefix: prefix, npm_config_cache: path.join(dir, 'cache'),
         npm_config_audit: 'false', npm_config_fund: 'false', npm_config_update_notifier: 'false' },
@@ -311,7 +311,7 @@ test('urun tarball install replaces a development link with a copy that survives
   assert.equal(fs.readFileSync(path.join(installed, 'cli.js'), 'utf8'), cli);
   fs.rmSync(build, { recursive: true });
   const executable = path.join(prefix, process.platform === 'win32' ? 'cg.cmd' : 'bin/cg');
-  const result = spawnSync(executable, [], { encoding: 'utf8', shell: process.platform === 'win32' });
+  const result = spawnSync(process.platform === 'win32' ? `"${executable}"` : executable, [], { encoding: 'utf8', shell: process.platform === 'win32' });
   assert.equal(result.status, 0, result.stderr);
   assert.equal(result.stdout.trim(), 'packaged copy');
 });

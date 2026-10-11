@@ -14,6 +14,7 @@ Give coding agents the structure and workflow to plan, execute, and verify chang
 Repository-native contracts map responsibilities and dependencies. Integrated workflows carry agreed work through implementation, review, and completion.
 
 - [Quick Introduction Video](https://contractgraph.dev/#watch)
+- [How to use Contract Graph: plan and deliver, or explore through prototyping](https://contractgraph.dev/ways-to-work/)
 - [Vision and approach](https://contractgraph.dev/docs/vision/)
 
 Contract Graph is the short name for Contract Graph Dev Kit. Install the `contract-graph` package, use the `cg` CLI, and run `/cg-*` skills in your coding agent.
@@ -26,36 +27,14 @@ The Dev Kit combines a persistent contract graph, lifecycle skills and verificat
 
 For each task, an agent starts at the repository contract and follows only the relevant child and dependency edges to the smallest responsible boundary. It reads the relevant implementation, keeps affected contracts truthful, and runs the checks required for the change. Planning and execution use those boundaries to organise the work; review and sign-off preserve accepted outcomes, required checks and current project context. The next agent inherits the updated map and recorded decisions. Graph verification checks the authored graph; it does not yet prove that every implementation dependency matches it or that parallel writes are safe.
 
-```mermaid
-flowchart TB
-  T["Change request"]
-  subgraph CG["Contract Graph Dev Kit"]
-    direction LR
-    P["Baked-in architecture<br/>principles<br/><br/>applied across<br/>every contract"]
-    subgraph G["Repository-native contract graph"]
-      direction TD
-      R["Repository<br/>contract.yaml"]
-      R --> B["Billing module<br/>contract.yaml + code"]
-      R --> I["Identity module<br/>contract.yaml + code"]
-      B --> C["Checkout component<br/>contract.yaml + code"]
-      B --> L["Pricing library<br/>contract.yaml + code"]
-      C -. "declared dependency" .-> I
-    end
-  end
-  T --> R
-  P -.-> R
-  P -.-> B
-  P -.-> I
-  P -.-> C
-  P -.-> L
-```
+![Contract Graph: a request follows project, module, sub-module and component contracts into implementation; composition and dependency routes connect the graph.](https://contractgraph.dev/assets/contract-graph-composition-spine.svg)
 
 ## Supported languages and frameworks
 
 - **Direct source inspection (0.7.0):** C# (.NET), Dart (Flutter), Go, Java, JavaScript, Kotlin, Python and TypeScript.
 - **Other languages (e.g. C++, Rust and Swift):** use the same contract graph and lifecycle, with source facts supplied by agents, owners or repository-specific tools.
 
-Inspection proposes facts for review; it does not prove implementation or framework behavior. See [contract verification limits](https://contractgraph.dev/docs/contracts/#enforced).
+Inspection proposes facts for review; it does not prove implementation or framework behaviour. See [contract verification limits](https://contractgraph.dev/docs/contracts/#enforced).
 
 ## Supported agent harnesses
 
@@ -101,6 +80,22 @@ want to work with:
 npm install --global contract-graph
 cd your-repository
 ```
+
+### Windows PowerShell
+
+Use `npm` to install, then run `cg` in PowerShell:
+
+```powershell
+npm install --global contract-graph
+cg --version --json
+cg init
+```
+
+For global Windows installs with lifecycle scripts enabled, the package's install hook removes only its verified npm-generated `cg.ps1`, allowing bare `cg` to select npm's existing batch launcher without changing execution policy. This also runs on global rebuilds and upgrades. Local installs and development links retain npm's normal launchers.
+
+If installation uses `--ignore-scripts`, npm script approval settings prohibit the hook, or automatic correction warns about an unfamiliar wrapper, PowerShell may still select `cg.ps1` and block it. Use `cg.cmd` for the same CLI in that environment. The hook does not change aliases, profiles, PATH or execution policy; concurrent npm installs into the same prefix should be avoided.
+
+If `cg.cmd` is not found, check `Get-Command cg.cmd -CommandType Application` and whether npm's global install directory is on PATH. An absent launcher or a separate machine policy restriction needs installation or environment support; switching launchers does not repair CLI validation errors.
 
 ### Assess before adopting
 

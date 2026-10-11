@@ -1067,7 +1067,7 @@ export function generateModulePointer(repoRoot, contract, relPath) {
 
 /** Return the exact name/description frontmatter used by generated wrappers. */
 export function parseSkillMetadata(file) {
-  const text = read(file);
+  const text = read(file).replaceAll("\r\n", "\n");
   if (!text.startsWith("---\n")) throw new ContractError(`${file}: missing YAML frontmatter`);
   const closing = text.indexOf("\n---\n", 4);
   if (closing < 0) throw new ContractError(`${file}: frontmatter has no closing \`---\``);

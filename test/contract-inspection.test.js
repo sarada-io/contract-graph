@@ -230,7 +230,7 @@ test("source, scripts and configuration are data; read errors remain explicit", 
   assert.equal(fs.existsSync(path.join(dir, "EXECUTED")), false);
   const read = fs.readFileSync;
   fs.readFileSync = function (name, ...rest) {
-    if (typeof name === "string" && name.endsWith("/index.ts")) { const error = new Error("fixture unreadable"); error.code = "EACCES"; throw error; }
+    if (typeof name === "string" && path.basename(name) === "index.ts") { const error = new Error("fixture unreadable"); error.code = "EACCES"; throw error; }
     return read.call(this, name, ...rest);
   };
   let r;

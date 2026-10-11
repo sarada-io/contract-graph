@@ -5,6 +5,8 @@ description: Establish owner-confirmed project intent in new and existing reposi
 
 # CG Warmup
 
+For CLI commands, follow `.agents/cg/contract-graph-agent.md`'s launcher guidance. Use bare `cg` after a global npm install with lifecycle scripts enabled; if Windows PowerShell blocks `cg.ps1`, use the installed `cg.cmd` fallback throughout this skill and its references with the same arguments and required checks. A blocked `cg.ps1` launcher does not authorize changing execution policy or skipping verification.
+
 For chat, decision reviews and results, read [owner communication](../cg-unblock/references/owner-communication.md). Explain outcomes and choices for functional leaders; keep framework commands and approval mechanics in internal evidence.
 
 Warmup establishes intent for every repository after init: greenfield, brownfield and reseed. Accepted intent describes what the repository is for; contracts describe its current structure. Existing code is evidence of conformance, not authority to discard an accepted requirement. Complete the shared intent step before claiming adoption readiness.

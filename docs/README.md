@@ -3,6 +3,8 @@
 Start with the [Quick Introduction Video](https://contractgraph.dev/#watch). This directory is the written guide
 that follows that page.
 
+Read [How to use Contract Graph](https://contractgraph.dev/ways-to-work/) to choose between planning and delivering an understood outcome, or exploring through prototyping.
+
 Read the published guides at [contractgraph.dev/docs](https://contractgraph.dev/docs/).
 
 Contract Graph Dev Kit is a framework for agentic software development with repository-native contracts as a graph at its core. These guides explain how to give coding agents the structure and workflow to plan, execute and verify changes while keeping the codebase understandable.

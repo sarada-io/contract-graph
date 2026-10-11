@@ -92,14 +92,14 @@ test("legacy manifests request installation reconciliation without losing queue 
   assert.equal(permits(result, "cg-produce").allowed, false);
 });
 
-test("hook uses the same PATH command as skills and ignores a stray repository CLI", t => {
+test("hook uses the same PATH command as skills and ignores a stray repository CLI", { skip: process.platform === "win32" && "POSIX shell PATH fixtures; Windows npm launch behavior has separate package coverage" }, t => {
   const root = fixture(t), bin = path.join(root, "tools");
   executable(root, "tools/cg", `#!/bin/sh\nexec ${quote(process.execPath)} ${quote(CLI)} "$@"\n`);
   executable(root, "node_modules/.bin/cg", "#!/bin/sh\nprintf 'wrong local CLI'\nexit 1\n");
   assert.equal(hook(root, bin).permissionDecision, "allow");
 });
 
-test("installed hook rejects an old CLI that reports readiness without build identity", t => {
+test("installed hook rejects an old CLI that reports readiness without build identity", { skip: process.platform === "win32" && "POSIX shell PATH fixtures; Windows hook PATH admission is outside this package fix" }, t => {
   const root = fixture(t), bin = path.join(root, "tools");
   executable(root, "tools/cg", "#!/bin/sh\nprintf '%s\\n' '{\"state\":\"ready\",\"stage\":\"cg-produce\",\"allowed\":true}'\n");
   const verdict = hook(root, bin, "cg-produce");

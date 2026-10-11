@@ -43,6 +43,8 @@ test("cg build copies architecture and product YAML catalogs", () => {
   const output = execFileSync(process.execPath, [CLI, "build", dir], { encoding: "utf8" });
   assert.match(output, /file\(s\) from 1 compiler/);
   assert.equal(readJson(dir, "package.json").devDependencies, undefined, "schema test tooling must not become package metadata");
+  assert.deepEqual(readJson(dir, "package.json").scripts, { postinstall: "node script/windows-launcher.js" });
+  assert.ok(fs.existsSync(path.join(dir, BUILD_DIRECTORY, "script/windows-launcher.js")));
 
   assert.equal(fs.existsSync(path.join(dir, BUILD_DIRECTORY, "agent/cg/project-context.md")), true);
   assert.equal(fs.existsSync(path.join(dir, BUILD_DIRECTORY, "agent/templates/docs/project-intent.md")), false);
@@ -106,7 +108,7 @@ test("compiled catalogs carry an exact source hash and a verified output manifes
   for (const [relative, entry] of Object.entries(manifest.files)) {
     const output = fs.readFileSync(path.join(dir, BUILD_DIRECTORY, relative));
     assert.equal(entry.sha256, hash(output), `${relative} output hash`);
-    assert.equal(entry.mode, (fs.statSync(path.join(dir, BUILD_DIRECTORY, relative)).mode & 0o777).toString(8).padStart(3, "0"));
+    if (process.platform !== "win32") assert.equal(entry.mode, (fs.statSync(path.join(dir, BUILD_DIRECTORY, relative)).mode & 0o777).toString(8).padStart(3, "0"));
   }
   for (const relative of manifest.compilers.find((entry) => entry.id === "principles").outputs) {
     const catalog = JSON.parse(fs.readFileSync(path.join(dir, BUILD_DIRECTORY, relative), "utf8"));
@@ -254,7 +256,7 @@ test("an extracted tarball resolves shared exports and migrates a repository wit
   const dir = fixture();
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
   build(dir);
-  const packed = JSON.parse(execFileSync("npm", ["pack", path.join(dir, BUILD_DIRECTORY), "--pack-destination", dir, "--ignore-scripts", "--json"], { encoding: "utf8" }))[0];
+  const packed = JSON.parse(execFileSync(process.execPath, [process.env.npm_execpath, "pack", path.join(dir, BUILD_DIRECTORY), "--pack-destination", dir, "--ignore-scripts", "--json"], { encoding: "utf8" }))[0];
   const consumer = path.join(dir, "consumer");
   const packageRoot = path.join(consumer, "node_modules/contract-graph");
   fs.mkdirSync(packageRoot, { recursive: true });

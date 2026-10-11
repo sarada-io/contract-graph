@@ -152,7 +152,7 @@ test("init CLI displays policy notices even with no file updates and preserves c
   const applied = run(["--yes"]);
   assert.equal(applied.status, 0, applied.stdout + applied.stderr);
   assert.match(applied.stdout, /loads E conditionally for sign-off/);
-  assert.equal(read(dir, file), Buffer.from(before[file], "base64").toString());
+  assert.equal(read(dir, file), Buffer.from(before[path.normalize(file)], "base64").toString());
 });
 
 test("init notices distinguish omitted guidance and malformed policy from current defaults", t => {

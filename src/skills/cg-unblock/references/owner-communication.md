@@ -23,6 +23,12 @@ Agent evidence lives separately in `.agents/cg/decisions/`, one compact JSON rec
 
 After an answer, save the actual response and exact reviewed proposal internally, update the agreed outcome, and remove the human question. Keep agent records only for active consumers, uncompleted preservation obligations or explicit retention needs. At sign-off preserve useful meaning and required authority in their existing durable owners, then delete irrelevant decision files. Do not archive every decision or merely move an accumulating log. Pending and shared decisions stay linked to their active work. A JSON record's existence is not proof of owner approval.
 
+## Links in chat
+
+Use the current host's supported Markdown file-link format for local proposals, reviews and plan entries. Resolve the file in the active checkout before linking it. In Codex, use an absolute filesystem path, for example `[Sprint plan](/absolute/repository/docs/plans/sprint/roadmap.md)`. To point to a section or item, read the current file and use its verified one-based line number, for example `[Export item](/absolute/repository/docs/plans/sprint/roadmap.md:42)`. Wrap a target containing spaces in angle brackets: `[Sprint plan](</absolute/My Project/docs/plans/sprint/roadmap.md:42>)`. These paths and line numbers are examples; substitute the actual checkout and current location.
+
+Do not use a local `filename.md#section` target in chat when the host cannot open Markdown fragments. If section navigation is unavailable, link the file and name the heading or item in the surrounding text. Keep enough context in the message for the owner to understand the result or choice without opening it. Use ordinary HTTPS links and section anchors for published pages. Repository documents and internal evidence retain their portable relative links and section anchors; do not write machine-specific absolute paths into those files.
+
 ## Progress and results
 
 Report what was checked and what it establishes. Instead of “cg verify passed,” say “Checked that the responsibility map is connected and its declared files exist.” That check alone does not establish that checkout, payments or other product behavior works. Say “Verified that an expired invitation cannot be used” only when the applicable behavioral check actually passed. Explain a failed or unrun check as the resulting uncertainty and its practical impact.

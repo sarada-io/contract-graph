@@ -5,6 +5,8 @@ description: Implement an agreed sprint with internal preparation, dependency-aw
 
 # CG Produce
 
+For CLI commands, follow `.agents/cg/contract-graph-agent.md`'s launcher guidance. Use bare `cg` after a global npm install with lifecycle scripts enabled; if Windows PowerShell blocks `cg.ps1`, use the installed `cg.cmd` fallback throughout this skill and its references with the same arguments and required checks. A blocked `cg.ps1` launcher does not authorize changing execution policy or skipping verification.
+
 For chat, decision reviews and results, read [owner communication](../cg-unblock/references/owner-communication.md). Explain outcomes and choices for functional leaders; keep framework commands and approval mechanics in internal evidence.
 
 Read the selected master plan, root contract, `.agents/cg/profile.json`, `.agents/cg/workflow.md` and the principle families selected for `produce` in `.agents/cg/phases.json`. Run `cg intent verify` and `cg status --programme <slug>`. A and applicable P bind; E is advisory. Resolve the actual requested sprint and execution scope before writing. Use cg-plan when outcomes or material scope remain unsettled; do not substitute technical readiness for owner agreement.
@@ -41,7 +43,7 @@ Keep contracts truthful and binding detectors intact during implementation. Defe
 
 ## Report and next action
 
-At every run-ending review, blocked stop or handoff, show the sprint and a concise table covering all items in the requested run scope, including skipped and not-started items. The Item cell includes stable ID, Feature/Task/Bug, summary, outcome status and an actual link to its master-plan entry.
+At every run-ending review, blocked stop or handoff, show the sprint and a concise table covering all items in the requested run scope, including skipped and not-started items. The Item cell includes stable ID, Feature/Task/Bug, summary, outcome status and an actual link to its master-plan entry. Follow owner communication's chat-link guidance: use a verified file/line target supported by the host, or link the file and name the item when section navigation is unavailable.
 
 | Item — type, summary, status and plan pointer | Code | Test | Docs |
 |---|---|---|---|

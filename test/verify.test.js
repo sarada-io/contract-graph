@@ -612,12 +612,12 @@ test("re-init consolidates owned expert notices with backups and preserves unown
   }
   write(dir, MANIFEST, JSON.stringify(manifest));
   const preview = init(dir, { dryRun: true });
-  assert.equal(preview.removed.filter(file => file.endsWith("/LICENSE")).length, owned.length);
+  assert.equal(preview.removed.filter(file => path.basename(file) === "LICENSE").length, owned.length);
   assert.ok(fs.existsSync(path.join(dir, ".agents/skills/api-expert/LICENSE")), "dry run must retain originals");
   const result = init(dir, {}); sync(dir);
   for (const name of owned) {
     assert.equal(fs.existsSync(path.join(dir, `.agents/skills/${name}/LICENSE`)), false);
-    const backup = result.backups.find(file => file.endsWith(`/skills/${name}/LICENSE`));
+    const backup = result.backups.find(file => file.endsWith(path.join("skills",name,"LICENSE")));
     assert.equal(fs.readFileSync(backup, "utf8"), `Prior notice for ${name}\n`);
   }
   assert.equal(read(dir, ".agents/skills/ui-design-expert/LICENSE"), "Prior notice for ui-design-expert\n");
@@ -672,6 +672,16 @@ test("[9] a skill whose frontmatter name mismatches its folder fails", () => {
     t.replace("name: cg-plan", "name: cg-planning"),
   );
   assertFails(dir, 9, "frontmatter/folder name mismatch");
+});
+
+test("CRLF skill metadata remains valid without rewriting the installed skill", () => {
+  const dir = makeRepo();
+  const relative = ".agents/skills/cg-plan/SKILL.md";
+  edit(dir, relative, text => text.replaceAll("\r\n", "\n").replaceAll("\n", "\r\n"));
+  const before = read(dir, relative);
+  sync(dir);
+  assert.equal(read(dir, relative), before);
+  assert.ok(!verify(dir).failures.some(message => message.includes("frontmatter")));
 });
 
 test("[9] a missing Claude discovery wrapper fails", () => {
@@ -767,7 +777,8 @@ test("the published README is a human landing page", () => {
   assert.match(readme, /cd your-repository/);
   assert.match(readme, /cg modules/);
   assert.match(readme, /cg verify/);
-  assert.match(readme, /```mermaid/);
+  assert.match(readme, /!\[[^\]]+\]\(https:\/\/contractgraph\.dev\/assets\/[^)]+\.svg\)/);
+  assert.doesNotMatch(readme, /```mermaid/);
   assert.doesNotMatch(readme, /## Install and set up/);
   assert.doesNotMatch(readme, /## Shared tools/);
   assert.doesNotMatch(readme, /## Schema URLs/);
@@ -3155,12 +3166,11 @@ test("the published tarball ships consumer sources and no maintainer tooling", t
   t.after(() => fs.rmSync(isolated, { recursive: true, force: true }));
   for (const directory of ["src", "bin", "docs"]) fs.cpSync(path.join(REPO, directory), path.join(isolated, directory), { recursive: true });
   for (const file of ["package.json", "README.md", "LICENSE"]) fs.copyFileSync(path.join(REPO, file), path.join(isolated, file));
-  const npm = process.platform === "win32" ? "npm.cmd" : "npm";
   execFileSync(process.execPath, [path.join(REPO, "bin", "cg.js"), "build", isolated], {
     cwd: isolated,
     stdio: "ignore",
   });
-  const output = execFileSync(npm, ["pack", "./dist/build", "--ignore-scripts", "--dry-run", "--json"], {
+  const output = execFileSync(process.execPath, [process.env.npm_execpath, "pack", "./dist/build", "--ignore-scripts", "--dry-run", "--json"], {
     cwd: isolated,
     encoding: "utf8",
     env: { ...process.env, npm_config_cache: path.join(os.tmpdir(), "cg-npm-cache") },
