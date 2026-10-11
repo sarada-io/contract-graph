@@ -777,7 +777,8 @@ test("the published README is a human landing page", () => {
   assert.match(readme, /cd your-repository/);
   assert.match(readme, /cg modules/);
   assert.match(readme, /cg verify/);
-  assert.match(readme, /```mermaid/);
+  assert.match(readme, /!\[[^\]]+\]\(https:\/\/contractgraph\.dev\/assets\/[^)]+\.svg\)/);
+  assert.doesNotMatch(readme, /```mermaid/);
   assert.doesNotMatch(readme, /## Install and set up/);
   assert.doesNotMatch(readme, /## Shared tools/);
   assert.doesNotMatch(readme, /## Schema URLs/);

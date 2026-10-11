@@ -98,6 +98,10 @@ request. Use this table as the minimum:
 Report the exact checks and outcomes in the pull request. “Tests pass” is not enough when the
 change affects interactive initialization or editor discovery.
 
+## README diagram
+
+The README embeds the hosted [composition spine SVG](https://contractgraph.dev/assets/contract-graph-composition-spine.svg) maintained by the product website. Keep the absolute image URL so npm readers do not require Mermaid rendering. Check the image loads and remains readable when updating its URL.
+
 ## Sprint interaction validation
 
 Exercise mixed Features/Bugs/Tasks with batch review and per-item review, an unanswered decision with independent work, interruption/recovery, and a failed finishing check that returns to production repair. Preserve actual review responses and checks; fixture success does not establish model behavior or user satisfaction. A recorded 2026-09-06 trial exercised the retired 0.6.0 Manager/Engineer workflow with synthetic owner input and mixed-host recovery. It is historical evidence only: its observer tools are retired, and it does not validate the 0.7.0 loop or establish token savings. The original report remains in Git history.
