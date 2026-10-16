@@ -5,9 +5,17 @@ description: Implement an agreed sprint with internal preparation, dependency-aw
 
 # CG Produce
 
-For CLI commands, follow `.agents/cg/contract-graph-agent.md`'s launcher guidance. Use bare `cg` after a global npm install with lifecycle scripts enabled; if Windows PowerShell blocks `cg.ps1`, use the installed `cg.cmd` fallback throughout this skill and its references with the same arguments and required checks. A blocked `cg.ps1` launcher does not authorize changing execution policy or skipping verification.
+Read the shared Lifecycle bootstrap in `.agents/cg/contract-graph-agent.md` once per session; reuse unchanged context and load only the references required for this task.
 
 For chat, decision reviews and results, read [owner communication](../cg-unblock/references/owner-communication.md). Explain outcomes and choices for functional leaders; keep framework commands and approval mechanics in internal evidence.
+
+## Bounded change
+
+When the requested outcome, responsible boundary and verification are clear, proceed under existing execution authority. Inspect current programme obligations first; this shortcut never bypasses an existing receipt, technical queue, acceptance condition or retained repository policy. For standalone bounded work, route to the owner, reproduce or establish the expected behaviour, implement, run relevant checks, update changed contract promises and useful documentation, and report the result and any remaining obligation. No separate roadmap, receipt or queue is required solely for this path.
+
+Default to combined result review without blocking on a cadence answer; honour an existing per-item preference. Run early checks for privacy, migration and destructive-risk changes. Required UX acceptance still requires actual review. If consequential product meaning or authority is missing, pause that dependent work and use planning/unblock while continuing independent work. An in-scope failing check triggers repair under the same request. Interrupted work recovers scope and evidence from existing records and the conversation, without a second ledger.
+
+For standalone bounded work, stop after that result; do not continue into the cadence question below. Before implementation run `cg intent verify` and `cg next --for cg-produce`, and resolve any installation, intent or programme blocker. The remaining sprint procedure applies when a governed programme exists or fuller planning/review is needed.
 
 Read the selected master plan, root contract, `.agents/cg/profile.json`, `.agents/cg/workflow.md` and the principle families selected for `produce` in `.agents/cg/phases.json`. Run `cg intent verify` and `cg status --programme <slug>`. A and applicable P bind; E is advisory. Resolve the actual requested sprint and execution scope before writing. Use cg-plan when outcomes or material scope remain unsettled; do not substitute technical readiness for owner agreement.
 

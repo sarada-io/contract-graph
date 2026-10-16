@@ -53,3 +53,66 @@ test("v2 rejects changed or missing objects, duplicate/unsafe slots, unused obje
     assert.throws(() => decodeDelivery(stored), /invalid v2/);
   }
 });
+
+test('opt-in deltas preserve changing snapshots, deletion, unknown fields and bounded churn size', async () => {
+  const { encodeDeltaDelivery } = await import('../src/scripts/delivery-storage.js');
+  const record = fixture();
+  const files = record.history[0].checkpoint.files;
+  record.history = Array.from({ length: 60 }, (_, i) => {
+    const changed = structuredClone(files);
+    changed[i % changed.length][2] = String(i).padStart(64, '0');
+    if (i % 3 === 0) changed.splice(5, 1);
+    return { checkpoint: { files: changed, writes: ['src'], extension: { i } } };
+  });
+  const v2 = encodeDelivery(record), delta = encodeDeltaDelivery(record);
+  assert.equal(delta.version, 3);
+  assert.ok(JSON.stringify(delta).length < JSON.stringify(v2).length / 2);
+  assert.deepEqual(decodeDelivery(JSON.parse(JSON.stringify(delta))), record);
+  assert.deepEqual(encodeDeltaDelivery(decodeDelivery(delta)), delta);
+  for (const mutate of [
+    s => { delete s.objects[Object.keys(s.objects)[0]]; },
+    s => { s.deltas[Object.keys(s.deltas)[0]].base = 'missing'; },
+    s => { s.deltas[Object.keys(s.deltas)[0]].deleteCount = -1; },
+    s => { s.deltas[Object.keys(s.deltas)[0]].items = []; },
+    s => { s.references.push(s.references[0]); },
+    s => { s.status = 'Iterating'; },
+    s => { s.deltas = Object.fromEntries(Object.entries(s.deltas).reverse()); },
+  ]) {
+    const broken = structuredClone(delta); mutate(broken);
+    assert.throws(() => decodeDelivery(broken), /invalid v3/);
+  }
+  const noisy = { ...record, history: record.history.map((event, i) => ({ ...event, random: String(i).repeat(1500) })) };
+  assert.ok(JSON.stringify(encodeDeltaDelivery(noisy)).length <= JSON.stringify(encodeDelivery(noisy)).length);
+});
+
+test('independent v3 envelopes reject excessive chains and preserve reordered or deleted rows', async () => {
+  const { createHash } = await import('node:crypto');
+  const { encodeDeltaDelivery } = await import('../src/scripts/delivery-storage.js');
+  const hash = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
+  const record = fixture();
+  const original = record.history[0].checkpoint.files;
+  record.history = Array.from({ length: 70 }, (_, i) => {
+    const files = structuredClone(original);
+    files[0][2] = String(i).padStart(64, '0');
+    if (i % 2) files.reverse();
+    if (i % 3) files.splice(3, 2);
+    return { files };
+  });
+  assert.deepEqual(decodeDelivery(encodeDeltaDelivery(record)), record);
+  const objects = {}, deltas = {}, references = [], history = [], payloadHistory = [];
+  let previous;
+  for (let i = 0; i < 34; i++) {
+    const value = [[String(i), 'file', 'a'.repeat(64)]], digest = hash(value);
+    if (i === 0) objects[digest] = value;
+    else deltas[digest] = { base: previous, start: 0, deleteCount: 1, items: value };
+    references.push({ path: ['history', i, 'files'], hash: digest });
+    history.push({ files: value }); payloadHistory.push({ files: null }); previous = digest;
+  }
+  const logical = { version: 1, programme: 'example', status: 'Closed', history };
+  const stored = { version: 3, programme: 'example', status: 'Closed', logicalHash: hash(logical),
+    payload: { ...logical, history: payloadHistory }, objects, references, deltas };
+  assert.throws(() => decodeDelivery(stored), /invalid v3/);
+  const repetitive = fixture();
+  repetitive.history = Array.from({ length: 50 }, () => structuredClone(repetitive.history[0]));
+  assert.equal(encodeDeltaDelivery(repetitive).version, 2, 'whole repeated events favour v2');
+});

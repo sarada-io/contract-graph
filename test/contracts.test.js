@@ -414,3 +414,66 @@ test("a graph may mix a two-level module leaf with a five-kind nest", () => {
     ["repository", "module", "submodule", "component", "library"],
   );
 });
+
+test('suggestions preserve exact matches, explain reordered phrases, avoid unrelated matches and bound hydration', async t => {
+  const { routeSuggestions, hydratedRoutes } = await import('../src/scripts/contracts.js');
+  const dir = fixture(); t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  editContract(dir, ROOT, c => { c.routes = [{ id: 'card-animation', when: ['fix card movement animation'], contracts: [MODULE] }]; });
+  const graph = loadContractGraph(dir);
+  assert.equal(routeSuggestions(graph, 'fix card movement animation')[0].method, 'exact');
+  assert.equal(routeContracts(graph, 'animation movement card repair').length, 0);
+  const suggested = routeSuggestions(graph, 'animation movement card repair');
+  assert.equal(suggested[0].method, 'lexical');
+  assert.deepEqual(suggested[0].evidence, ['card', 'movement', 'animation']);
+  assert.deepEqual(routeSuggestions(graph, 'configure billing refunds'), []);
+  assert.deepEqual(routeSuggestions(graph, 'repair jitter when cards move'), [], 'semantic paraphrase remains an honest unsupported lexical match');
+  const context = hydratedRoutes(graph, suggested, loadBindingPrinciples(dir), { limit: 1 });
+  assert.equal(context.contexts[0].id, graph.byFile.get(MODULE).contract.id);
+  assert.deepEqual(context.contexts[0].rules, contractContext(graph, graph.byFile.get(MODULE), loadBindingPrinciples(dir)).rules.map(rule => rule.id));
+  assert.throws(() => hydratedRoutes(graph, suggested, new Map(), { limit: 0 }), /limit/);
+  const call = (...args) => spawnSync(process.execPath, [path.join(REPO, 'bin/cg.js'), ...args], { encoding: 'utf8' });
+  const routed = call('contract', 'route', dir, '--task', 'animation movement card repair', '--suggest', '--hydrate', '--json');
+  assert.equal(routed.status, 0, routed.stderr); assert.equal(JSON.parse(routed.stdout).candidates[0].method, 'lexical');
+  const advisory = call('guidelines', 'show', dir, '--id', 'E01-01', '--json');
+  assert.equal(advisory.status, 0, advisory.stderr); assert.equal(JSON.parse(advisory.stdout).binding, 'advisory');
+  assert.equal(JSON.parse(advisory.stdout).entries.length, 1);
+  assert.notEqual(call('guidelines', 'show', dir, '--id', 'E99-99').status, 0);
+});
+
+test('routing ties, normalised duplicate words, omissions and advisory intersections stay explicit', async t => {
+  const { routeSuggestions, hydratedRoutes } = await import('../src/scripts/contracts.js');
+  const dir = fixture(); t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  editContract(dir, ROOT, c => { c.routes = [
+    { id: 'first', when: ['billing refund'], contracts: [MODULE] },
+    { id: 'second', when: ['refund billing'], contracts: [MODULE] },
+    { id: 'duplicate', when: ['tokens token otherword'], contracts: [MODULE] },
+  ]; });
+  const graph = loadContractGraph(dir);
+  const ties = routeSuggestions(graph, 'billing and refund');
+  assert.deepEqual(ties.map(m => m.route), ['first', 'second']);
+  assert.deepEqual(routeSuggestions(graph, 'token'), []);
+  const report = hydratedRoutes(graph, ties, new Map(), { limit: 1 });
+  assert.equal(report.ambiguous, true); assert.equal(report.omittedCandidates, 1);
+  assert.equal(report.contexts.length, 1);
+  ties[0].matched = ['x'.repeat(5000)];
+  graph.byFile.get(MODULE).contract.responsibilities.owns = ['x'.repeat(5000)];
+  const bounded = hydratedRoutes(graph, ties);
+  assert.deepEqual(bounded.candidates[0].matched, { omitted: true });
+  assert.ok(bounded.omissions.every(item => item.retrieve));
+  assert.ok(JSON.stringify(bounded).length < 5000);
+  const call = (...args) => spawnSync(process.execPath, [path.join(REPO, 'bin/cg.js'), ...args], { encoding: 'utf8' });
+  const selected = JSON.parse(call('guidelines', 'show', dir, '--id', 'E01-01').stdout).entries[0];
+  const category = JSON.parse(call('guidelines', 'show', dir, '--category', selected.category).stdout);
+  assert.ok(category.entries.some(entry => entry.id === selected.id));
+  assert.ok(category.entries.every(entry => entry.category === selected.category));
+  const both = call('guidelines', 'show', dir, '--category', selected.category, '--id', selected.id);
+  assert.deepEqual(JSON.parse(both.stdout).entries, [selected]);
+  for (const args of [
+    ['guidelines', 'show', dir, '--category', 'unknown'],
+    ['status', dir, '--summary', '--programme', 'example'],
+    ['status', dir, '--select', 'example', '--clear-selection'],
+    ['contract', 'route', dir, '--task', 'billing', '--limit', '2'],
+    ['contract', 'route', dir, '--task', 'billing', '--suggest', '--limit', '1.5'],
+    ['status', dir, '--hydrate'],
+  ]) assert.notEqual(call(...args).status, 0, args.join(' '));
+});

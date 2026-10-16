@@ -846,3 +846,61 @@ export function renderMermaid(graph) {
   }
   return `${lines.join("\n")}\n`;
 }
+
+/** Opt-in lexical discovery. Exact routes keep priority; suggestions never select an owner. */
+export function routeSuggestions(graph, query) {
+  const exact = routeContracts(graph, query);
+  if (exact.length) return exact.map(match => ({ ...match, method: "exact" }));
+  const stop = new Set(["a", "an", "the", "to", "of", "in", "on", "and", "for", "when", "with", "please", "fix", "repair", "change", "update"]);
+  const tokens = text => [...new Set((text.toLowerCase().match(/[a-z0-9]+/g) ?? [])
+    .filter(word => !stop.has(word)).map(word => word.length > 4 && word.endsWith("s") ? word.slice(0, -1) : word))];
+  const requested = new Set(tokens(query));
+  const matches = [];
+  for (const owner of graph.records) for (const route of owner.contract.routes) {
+    const evidence = route.when.map(phrase => {
+      const words = tokens(phrase), shared = words.filter(word => requested.has(word));
+      return { phrase, shared, score: shared.length / Math.max(words.length, requested.size, 1) };
+    }).filter(item => item.shared.length >= 2 && item.score >= 0.5).sort((a, b) => b.score - a.score);
+    if (!evidence.length) continue;
+    matches.push({ owner: owner.contract.id, route: route.id, method: "lexical", score: evidence[0].score,
+      matched: evidence.map(item => item.phrase), evidence: evidence[0].shared,
+      contracts: route.contracts.map(ref => graph.byFile.get(ref)).filter(Boolean) });
+  }
+  return matches.sort((a, b) => b.score - a.score || a.owner.localeCompare(b.owner) || a.route.localeCompare(b.route));
+}
+
+/** Bound records and text independently; omitted content remains retrievable by ID/path. */
+export function hydratedRoutes(graph, matches, rules = new Map(), { limit = 3 } = {}) {
+  if (!Number.isInteger(limit) || limit < 1 || limit > 20) throw new Error("route limit must be an integer from 1 to 20");
+  const records = new Map(), definitions = new Map(), omissions = [];
+  const summary = record => ({ id: bounded(record.contract.id, record.relative, "id"), contract: record.relative, unit: bounded(record.contract.unit, record.relative, "unit") });
+  const bounded = (value, source, field, retrieve = `cg contract show --id ${source} --json`) => {
+    const text = JSON.stringify(value ?? null);
+    if (text.length <= 2048) return value;
+    omissions.push({ source, field, retrieve });
+    return { omitted: true };
+  };
+  const selected = matches.slice(0, limit).map(match => ({ owner: bounded(match.owner, graph.byId.get(match.owner).relative, "id"), route: bounded(match.route, graph.byId.get(match.owner).relative, "route ID"),
+    method: match.method ?? "exact", matched: bounded(match.matched, graph.byId.get(match.owner).relative, "route phrases"), score: match.score,
+    ...(match.evidence ? { evidence: bounded(match.evidence, graph.byId.get(match.owner).relative, "route evidence") } : {}),
+    contracts: match.contracts.slice(0, limit).map(record => {
+      if (!records.has(record.relative)) {
+        const context = contractContext(graph, record, rules);
+        const describe = item => ({ ...summary(item), responsibilities: bounded(item.contract.responsibilities, item.relative, "responsibilities"), forbids: bounded(item.contract.responsibilities.forbids, item.relative, "forbids") });
+        const related = (items, field) => {
+          if (items.length > 20) omissions.push({ source: record.relative, field, count: items.length - 20, retrieve: `cg contract context --id ${record.relative}` });
+          return items.slice(0, 20).map(summary);
+        };
+        records.set(record.relative, { ...describe(record), ancestors: context.ancestors.slice(-20).map(describe),
+          children: related(context.children, "children"), dependencies: related(context.dependencies, "dependencies"), rules: context.rules.slice(0, 100).map(rule => rule.id) });
+        if (context.ancestors.length > 20) omissions.push({ source: record.relative, field: "ancestors", count: context.ancestors.length - 20, retrieve: `cg contract context --id ${record.relative}` });
+        if (context.rules.length > 100) omissions.push({ source: record.relative, field: "rules", count: context.rules.length - 100, retrieve: `cg contract context --id ${record.relative}` });
+        for (const rule of context.rules.slice(0, 100)) definitions.set(rule.id, { ...rule, text: bounded(rule.text, record.relative, rule.id, `cg contract context --id ${record.relative}`), source: /^A/.test(rule.id) ? ".agents/cg/principles/architecture.yaml" : ".agents/cg/guidelines/product.yaml" });
+      }
+      return summary(record);
+    }), omittedContracts: Math.max(0, match.contracts.length - limit) }));
+  return { matched: matches.length > 0, ambiguous: matches.length > 1, candidates: selected,
+    contexts: [...records.values()], rules: [...definitions.values()], omittedCandidates: Math.max(0, matches.length - limit), omissions,
+    retrieve: "cg contract context --id <id>; cg contract show --id <id>",
+    limitation: "Lexical suggestions are candidates, not proof of ownership or semantic equivalence." };
+}

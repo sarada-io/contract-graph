@@ -1,6 +1,7 @@
 // Repository contract: ../../.agent/delivery/contract.md
 /** Read current recovery facts from the queue and receipt; historical reports are not state. */
 import { next } from "./next.js";
+import { readDeliveries } from "./delivery.js";
 import { residue } from "./residue.js";
 
 export function status(repoRoot, options = {}) {
@@ -17,6 +18,7 @@ export function status(repoRoot, options = {}) {
   }
   return {
     programme,
+    selectionSource: current.selectionSource ?? null,
     installation: current.installation,
     intent: current.intent,
     delivery: current.delivery,
@@ -39,4 +41,16 @@ export function status(repoRoot, options = {}) {
       otherProgrammes: documents.residue.filter(item => item.scope === "other") } : null,
     problems,
   };
+}
+
+/** Read every candidate without changing selection or admitting any action. */
+export function statusSummary(repoRoot, options = {}) {
+  const current = next(repoRoot, { ...options, programme: undefined, ignoreSelection: true });
+  const problems = [...current.problems];
+  let receipts = [];
+  try { receipts = readDeliveries(repoRoot); }
+  catch (error) { if (!problems.includes(error.message)) problems.push(error.message); }
+  const names = new Set([...receipts.map(record => record.programme), ...(current.programmes ?? []), ...(current.programme ? [current.programme] : []),
+    ...current.signOffRecovery.candidates.map(item => item.programme)]);
+  return { state: "summary", installation: current.installation, intent: current.intent, problems, programmes: [...names].sort().map(programme => status(repoRoot, { ...options, programme })) };
 }

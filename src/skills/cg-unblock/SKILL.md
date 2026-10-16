@@ -5,7 +5,7 @@ description: Resolve Contract Graph forks through recorded authority and direct 
 
 # CG Unblock
 
-For CLI commands, follow `.agents/cg/contract-graph-agent.md`'s launcher guidance. Use bare `cg` after a global npm install with lifecycle scripts enabled; if Windows PowerShell blocks `cg.ps1`, use the installed `cg.cmd` fallback throughout this skill and its references with the same arguments and required checks. A blocked `cg.ps1` launcher does not authorize changing execution policy or skipping verification.
+Read the shared Lifecycle bootstrap in `.agents/cg/contract-graph-agent.md` once per session; reuse unchanged context and load only the references required for this task.
 
 Read [owner communication](references/owner-communication.md) before presenting decisions or results. It owns functional wording, the four-field review and where user-facing reviews live. Technical records below are internal agent work.
 
@@ -15,7 +15,7 @@ Decide from contracts first. Escalate only when the owner must accept the blast 
 disagreement is not `Blocked by`.
 
 Read `.agents/cg/phases.json` and load the families selected for `unblock`. Shipped defaults
-include `.agents/cg/guidelines/engineering.yaml` on every pass; retained repository phase policy
+include relevant `.agents/cg/guidelines/engineering.yaml` guidance conditionally; retained repository phase policy
 controls loading. Consider applicable E practices as advisory context. They create no acceptance
 criteria, required changes, or blockers unless separately adopted through an authorized binding.
 Do not reopen settled decisions merely because an E preference differs.

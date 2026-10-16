@@ -139,3 +139,58 @@ test("status reports the exact current blocker and recovery action without trust
   assert.deepEqual(JSON.parse(cli.stdout), result);
   assert.deepEqual(fs.readdirSync(path.join(root, "docs/plans/game")).sort(), ["phase_detailed_preparation.md", "roadmap.md", "sign-off-repair.md"]);
 });
+
+test('programme selection is worktree-local, explicit then environment then pointer; stale targets fail closed', async t => {
+  const { selectProgramme } = await import('../src/scripts/next.js');
+  const { statusSummary } = await import('../src/scripts/status.js');
+  const root = fixture(t);
+  const git = (...args) => {
+    const result = spawnSync('git', ['-C', root, ...args], { encoding: 'utf8' });
+    assert.equal(result.status, 0, result.stderr); return result.stdout.trim();
+  };
+  git('init', '-q'); git('config', 'user.name', 'Test'); git('config', 'user.email', 'test@example.invalid');
+  plan(root, 'first', brief(1, 'Ready')); plan(root, 'second', brief(1, 'Blocked', 'None', '', 'owner answer'));
+  git('add', '.'); git('commit', '-qm', 'fixture');
+  const other = path.join(root, 'other-worktree'); git('worktree', 'add', '--detach', other);
+  selectProgramme(root, 'first'); selectProgramme(other, 'second');
+  assert.equal(next(root).programme, 'first'); assert.equal(next(other).programme, 'second');
+  assert.equal(next(root).selectionSource, 'worktree');
+  assert.equal(next(root, { environment: { CG_PROGRAMME: 'second' } }).programme, 'second');
+  assert.equal(next(root, { programme: 'first', environment: { CG_PROGRAMME: 'second' } }).selectionSource, 'explicit');
+  assert.equal(statusSummary(root).programmes.length, 2);
+  fs.rmSync(path.join(root, 'docs/plans/first'), { recursive: true });
+  assert.equal(next(root).state, 'selection-required');
+  assert.equal(permits(next(root), 'cg-produce').allowed, false);
+  assert.match(next(root).reason, /clear-selection/);
+  selectProgramme(root, undefined, { clear: true });
+  assert.equal(next(root).programme, 'second');
+  assert.equal(next(other).programme, 'second');
+});
+
+test('non-Git sessions use explicit/environment selection and standalone bounded work needs no queue', async t => {
+  const { selectProgramme } = await import('../src/scripts/next.js');
+  const root = fixture(t);
+  assert.throws(() => selectProgramme(root, 'work'), /requires Git/);
+  assert.equal(permits(next(root), 'cg-produce').entry, 'bounded-change');
+  plan(root, 'work', brief(1, 'Blocked', 'None', '', 'owner answer'));
+  const result = next(root, { environment: { CG_PROGRAMME: 'work' } });
+  assert.equal(result.selectionSource, 'environment');
+  assert.equal(permits(result, 'cg-produce').executionAllowed, false);
+});
+
+test('summary retains installation and parse failures even with no programme rows', async t => {
+  const { statusSummary } = await import('../src/scripts/status.js');
+  const root = fixture(t);
+  write(root, '.agents/cg/manifest.json', '{}');
+  let summary = statusSummary(root);
+  assert.equal(summary.installation.requiresInit, true);
+  assert.deepEqual(summary.programmes, []);
+  let cli = spawnSync(process.execPath, [CLI, 'status', root, '--summary', '--json'], { encoding: 'utf8' });
+  assert.equal(cli.status, 1);
+  assert.equal(JSON.parse(cli.stdout).installation.requiresInit, true);
+  write(root, '.agents/cg/deliveries/broken.json', '{}');
+  summary = statusSummary(root);
+  assert.match(summary.problems.join('\n'), /malformed delivery/);
+  cli = spawnSync(process.execPath, [CLI, 'status', root, '--summary'], { encoding: 'utf8' });
+  assert.equal(cli.status, 1); assert.match(cli.stdout, /malformed delivery/);
+});

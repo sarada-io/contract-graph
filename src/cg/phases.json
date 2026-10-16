@@ -4,42 +4,47 @@
     "prototype": {
       "always": [
         "A",
-        "P",
-        "E"
+        "P"
       ],
-      "conditional": []
+      "conditional": [
+        "E"
+      ]
     },
     "plan": {
       "always": [
         "A",
-        "P",
-        "E"
+        "P"
       ],
-      "conditional": []
+      "conditional": [
+        "E"
+      ]
     },
     "produce": {
       "always": [
         "A",
-        "P",
-        "E"
+        "P"
       ],
-      "conditional": []
+      "conditional": [
+        "E"
+      ]
     },
     "sign-off": {
       "always": [
         "A",
-        "P",
-        "E"
+        "P"
       ],
-      "conditional": []
+      "conditional": [
+        "E"
+      ]
     },
     "unblock": {
       "always": [
         "A",
-        "P",
-        "E"
+        "P"
       ],
-      "conditional": []
+      "conditional": [
+        "E"
+      ]
     }
   }
 }

@@ -109,8 +109,8 @@ test("default E loading does not grant binding authority", (t) => {
   const file = ".agents/cg/phases.json";
   const phases = JSON.parse(read(dir, file));
   for (const entry of Object.values(phases.phases)) {
-    assert.deepEqual(entry.always, ["A", "P", "E"]);
-    assert.deepEqual(entry.conditional, []);
+    assert.deepEqual(entry.always, ["A", "P"]);
+    assert.deepEqual(entry.conditional, ["E"]);
   }
   write(dir, file, JSON.stringify(phases));
   sync(dir);

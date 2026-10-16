@@ -57,3 +57,5 @@ Verification: `npm test -- test/verify.test.js test/principles.test.js test/cont
 then `npm test`. Policy/schema changes also require `npm run build` and `npm run build:check`;
 follow the disposable-copy rule in [Distribution](../distribution/contract.md) first. Mutation validation
 is documented in [CONTRIBUTING](../../CONTRIBUTING.md#schema-and-migration-validation).
+
+The CLI guidelines show surface filters existing loadEngineeringMap output by E entry/group IDs and category. Unknown selectors fail; filtering does not change advisory authority or retained phase policy.

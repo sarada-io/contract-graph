@@ -273,7 +273,7 @@ There are three authored principle catalogs, one shared schema
   `contract.yaml` points at. `graph.adapters` is the vendor and consumer-adapter split of that
   encapsulation. The protocol fields are not `A` detectors and do not scan imports;
 - `src/cg/guidelines/engineering.yaml` — `family: engineering`, `binding: advisory`. The shipped
-  `E` advisory catalog; read on every lifecycle pass by default and applied when relevant, with no compliance gate; and
+  `E` advisory catalog; loaded when relevant by default and applied when relevant, with no compliance gate; and
 - `product.yaml` — `family: product`, `binding: scoped`. Repository-owned `P` bindings specific
   to the adopting product, initially empty.
 
@@ -385,3 +385,13 @@ Contracts are written from the code and architectural intent one boundary at a t
 many files from a shared prose template creates syntactically valid but useless context. Templates
 provide field shape only. The author must supply distinct purpose, ownership, surface, invariants,
 and edges for each unit, then run `cg verify` before moving on.
+
+Contracts retain observable behaviour, ordering/formulas callers rely on, privacy/trust boundaries, concurrency guarantees and failure semantics. Internal algorithms may live in source, tests or domain specifications only when no caller-visible promise is lost. Give child-owned guarantees one primary owner and retain parent integration promises and discoverable references; preserve invariant IDs and reciprocal verification links when moving them. Length alone is not a reason to split or reject a contract.
+
+A long game-engine contract may legitimately retain the dealer/round/direction formula because players and callers depend on that ordering. By contrast, a parent that repeats a child’s parsing guarantees should link to that child and retain only its integration obligation, such as how parse failure reaches callers. Moving the guarantee must preserve its invariant identity, reciprocal verification references and discoverability. Neither case is decided by counting lines.
+
+For ordinary wording, `cg contract route --task "…" --suggest` keeps exact matches first and otherwise reports deterministic lexical candidates. It normalises case, punctuation and simple plurals, ignores common task verbs, and requires at least two shared words and 50% overlap. It does not infer synonyms: a paraphrase such as “repair jitter when cards move” can still require browsing from the root. Ties remain visible and no candidate grants ownership or execution authority. The original route API and CLI output remain unchanged without these options.
+
+Add `--hydrate` for deduplicated candidate context, ancestor responsibilities/forbids, relation pointers and resolved A/P definitions with provenance. `--limit 1` through `20` bounds candidates (default 3); related lists and ancestors are capped at 20, rules at 100 per context, and individual context values at 2,048 characters. Omissions and retrieval commands are explicit. Full descendant context requires a separate selected-ID query. These optional reports use structured JSON even without `--json`.
+
+`cg guidelines show --id E01-01,E02` selects advisory entries or groups; `--category "Structural Best Practices"` selects a category. Combining filters takes their intersection. Unknown IDs/categories fail. This reads the existing engineering catalogue and neither changes family authority nor overrides an adopter's loading policy.

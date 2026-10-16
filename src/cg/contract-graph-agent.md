@@ -19,8 +19,7 @@ exact path rather than relying on search.
 3. [`.agents/cg/principles/architecture.yaml`](principles/architecture.yaml) — architecture
    principles: `hierarchy.kinds` and `graph` (recurse, selfSufficient, stay / add-child / elsewhere),
    then A detectors.
-4. [`.agents/cg/guidelines/`](guidelines/) — non-binding engineering guidelines and
-   repository-owned product guidelines.
+4. Read `phases.json`; resolve applicable P and load E according to the retained phase policy. Use `cg guidelines show --id <E-ID>` for selected advisory entries; do not automatically read the whole guidelines directory.
 5. [`.agents/cg/workflow.md`](workflow.md) — the repository-owned agent workflow.
 6. Run `cg contract route --task "<request>"` — resolve the first task-to-contract edge from routes
    owned by contracts.
@@ -42,3 +41,18 @@ A launcher failure does not waive required framework checks. Do not replace veri
 ## Communicate with the owner
 
 Address functional leaders in plain language. Explain outcomes, choices, costs and risks; use technical terms only when necessary and explain them. Before presenting a decision or result, read [owner communication](../skills/cg-unblock/references/owner-communication.md). It defines the four-field decision review and separates it from internal evidence.
+
+## Lifecycle bootstrap
+
+Use the launcher guidance above and the root-to-boundary reading order. Reuse unchanged context within the session. Inspect installed policy in `phases.json`: load its always families and relevant conditional families; A binds globally, P binds only its declared scope, and E is advisory. Do not recursively load every skill or reference. Read the selected skill, then only the mode and obligations needed for the request. Retained repository workflow and loading choices remain authoritative; reconcile incompatible routes before dependent execution.
+
+| Evidence | What it permits |
+| --- | --- |
+| Concrete authorised request | Work within its scope, including routine verification and repairs |
+| Programme selection | Addresses that programme; grants no execution or acceptance authority |
+| Agreed plan | Defines outcomes; execution still needs an actual request |
+| Passing tests | Evidence for tested behaviour; never substitutes for required human review |
+| Actual scoped acceptance | Finishing within existing authority while evidence stays current |
+| Verified completion | Reporting completion only after all applicable obligations are satisfied |
+
+For a concrete bounded change, use cg-produce's bounded-change procedure. Existing programme gates and recovery records still apply. Do not create a plan, queue or receipt solely to perform a small correction. Missing consequential authority pauses dependent work while independent authorised work continues. No step grants publication authority.

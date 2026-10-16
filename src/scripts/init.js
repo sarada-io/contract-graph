@@ -340,12 +340,15 @@ function retireSkills(repoRoot, out, dryRun) {
   ]) {
     artifacts.push({ name, relative: `.agents/skills/${name}/assets/${file}` });
   }
+  // Only this exact removed reference is eligible; a manifest entry alone is not
+  // proof that local content is still release-owned.
+  artifacts.push({ name: "cg-plan", relative: ".agents/skills/cg-plan/references/prepared-plan.md", pristineOnly: true });
   // Expert attribution now ships once beside the installed skill directories.
   // Remove old per-expert notices only when the prior manifest establishes ownership.
   for (const name of ["api-expert", "mobile-expert", "web-expert", "ui-design-expert"]) {
     artifacts.push({ name, relative: `.agents/skills/${name}/LICENSE` });
   }
-  for (const { name, relative } of artifacts) {
+  for (const { name, relative, pristineOnly } of artifacts) {
     const file = path.join(repoRoot, relative);
     // Never follow an installed symlink into another checkout, even for a known artifact.
     const parts = relative.split("/");
@@ -358,13 +361,22 @@ function retireSkills(repoRoot, out, dryRun) {
     const isFramework = Boolean(prior[relative]) || (wrapper
       ? text.includes("# Contract Graph Skill Discovery") && text.includes(`.agents/skills/${name}/SKILL.md`)
       : relative.endsWith("/SKILL.md") && new RegExp(`^name: ${name}\\s*$`, "m").test(text));
-    if (!isFramework) continue;
+    if (!isFramework && !pristineOnly) continue;
+    if (pristineOnly && (!prior[relative] || prior[relative].adopted || prior[relative].sha256 !== sha256(file))) {
+      out.policyNotices.push(`Preserved ${relative}: ownership or unchanged release content is unproven. Reconcile its retired prepare/auto-run instructions with cg-produce; retain local edits before removing it.`);
+      continue;
+    }
     const backup = path.join(repoRoot, ".agents/cg/backups/retired-0.7.0", sha256(file), relative);
     out.removed.push(file);
     out.backups.push(backup);
     if (dryRun) continue;
     fs.mkdirSync(path.dirname(backup), { recursive: true });
-    fs.copyFileSync(file, backup);
+    // Back up the exact assessed bytes and recheck before deletion. A failed backup
+    // or an observed concurrent edit leaves the active file recoverable.
+    if (!fs.existsSync(backup)) fs.writeFileSync(backup, text, { flag: "wx" });
+    if (fs.readFileSync(backup, "utf8") !== text || fs.readFileSync(file, "utf8") !== text) {
+      throw new Error(`retirement input changed: ${relative}; preserved active file and backup`);
+    }
     fs.unlinkSync(file);
     let parent = path.dirname(file);
     const boundary = path.join(repoRoot, wrapper ? ".claude/skills" : ".agents/skills");
@@ -388,10 +400,10 @@ function retainedPhaseNotices(repoRoot) {
   if (phases.prepare) notices.push("Preserved .agents/cg/phases.json still names retired prepare; reconcile its route with cg-produce before dependent work.");
   const missing = PHASE_NAMES.filter(name => !phases[name]);
   if (missing.length) notices.push(`Preserved .agents/cg/phases.json has no ${missing.join(", ")} entry; review loading policy before using those skills.`);
-  const conditional = PHASE_NAMES.filter(name => phases[name]?.conditional.includes("E"));
   const absent = PHASE_NAMES.filter(name => phases[name] && !phases[name].always.includes("E") && !phases[name].conditional.includes("E"));
-  if (conditional.length) notices.push(`Preserved .agents/cg/phases.json loads E conditionally for ${conditional.join(", ")}; release defaults load E on every pass. E remains advisory.`);
-  if (absent.length) notices.push(`Preserved .agents/cg/phases.json does not load E for ${absent.join(", ")}; release defaults load E on every pass. E remains advisory.`);
+  const always = PHASE_NAMES.filter(name => phases[name]?.always.includes("E"));
+  if (always.length) notices.push(`Preserved .agents/cg/phases.json loads E on every pass for ${always.join(", ")}; release defaults load relevant E conditionally. E remains advisory.`);
+  if (absent.length) notices.push(`Preserved .agents/cg/phases.json does not load E for ${absent.join(", ")}; release defaults load relevant E conditionally. E remains advisory.`);
   return notices;
 }
 

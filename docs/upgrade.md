@@ -4,9 +4,9 @@ On Windows, global installation with lifecycle scripts enabled corrects the pack
 
 Install or refresh Contract Graph Dev Kit through the `contract-graph` package and `cg init`. The product name does not change package names, commands or repository paths.
 
-## Upgrade to 1.0.0
+## Upgrade to 1.1.0
 
-Install the intended 1.0.0 CLI first. Once published, use `npm install --global contract-graph@1.0.0`; for an unpublished release, install its independently packed tarball. The repository upgrade does not fetch a package or change the global CLI.
+Install the intended 1.1.0 CLI first. Once published, use `npm install --global contract-graph@1.1.0`; for an unpublished release, install its independently packed tarball. The repository upgrade does not fetch a package or change the global CLI.
 
 Stop active coding agents and finish or checkpoint their work before upgrading. Completing every open plan is not required: existing roadmaps, prepared queues, decisions and delivery receipts are preserved. Old auto-run sessions are not automatically converted; reload skills, confirm intent through warmup if needed, and reconcile repository-owned workflow and phase policy before resuming the recorded scope with the new skills.
 
@@ -21,7 +21,18 @@ cg init --yes
 
 The upgrade reuses init: current lifecycle skills and the four experts go into `.agents/skills/`, shared attribution goes alongside them, selected editor discovery wrappers and hooks are refreshed, and repository-owned context is preserved. Known framework-owned `cg-prepare` and `cg-auto-run` files and obsolete sign-off references are backed up under `.agents/cg/backups/retired-0.7.0/` before removal. Custom files and unknown legacy artifacts are not recursively deleted. Older principle schemas use the migration described below; missing product rationale requires owner input and leaves the upgrade incomplete. Successful migration runs sync and verification. Review the diff before resuming work.
 
-## What changes from 0.8.0
+## What changes from 1.0.0
+
+- **Shorter task procedures:** warmup loads intent, adoption or reseed instructions as needed. Concrete bounded corrections can proceed through produce without creating a separate plan, queue or receipt. Existing programme gates and required acceptance still apply.
+- **Local programme selection:** status and next support explicit session/worktree selection and an all-programme summary. Selection does not resume suspended work or grant execution authority. See [programme selection](workflow.md#bounded-corrections-and-programme-selection).
+- **Focused discovery:** optional route suggestions and bounded context hydration extend exact routing; advisory queries select E entries or categories. Existing exact-route APIs remain available. See [contracts](contracts.md).
+- **Receipt storage:** older receipts remain readable; successful close compacts legacy storage losslessly. Optional v3 delta compression requires compatible readers and can be converted back to v2. See [receipt storage](workflow.md#bounded-corrections-and-programme-selection).
+
+Fresh installations load relevant engineering advice conditionally. Existing workflow and phase policy remain preserved, including always-E choices; reconcile them deliberately rather than assuming init changed them. Init retires the exact obsolete prepared-plan reference only with matching prior ownership/hash evidence and a recoverable backup. Modified or unowned copies remain with a notice.
+
+V3 is not enabled automatically for new receipts. Before opting in with `cg delivery compact --programme <slug> --format delta`, coordinate all readers: 1.0.0 cannot read v3. Before reverting to an older CLI, use 1.1.0 to convert affected Closed receipts with `--format v2`; active receipts must complete their normal lifecycle before explicit compaction. Do not edit storage envelopes manually or close work solely to downgrade it.
+
+## What changed from 0.8.0 to 1.0.0
 
 - **Windows PowerShell installation:** global npm installation with lifecycle scripts enabled removes only the verified package-owned `cg.ps1`, allowing bare `cg` to use the existing batch launcher. macOS and Linux installations are unchanged. Script-disabled or unfamiliar-wrapper environments retain the `cg.cmd` fallback; no execution-policy change is required. See [Windows setup](../README.md#windows-powershell).
 - **Chat file links:** refreshed agent guidance uses host-supported local file paths and line numbers for links in chat. Repository Markdown retains portable relative paths and heading anchors.
@@ -52,8 +63,8 @@ New plans use the sprint delivery path described in [workflow](workflow.md). Exi
 ## Update an existing repository with cg init
 
 Install the intended CLI build, then run init in your adopting repository. For an unpublished
-1.0.0 build, run `npm run pack` in the Contract Graph checkout, then
-`npm install --global ./dist/tar/contract-graph-1.0.0.tgz`.
+1.1.0 build, run `npm run pack` in the Contract Graph checkout, then
+`npm install --global ./dist/tar/contract-graph-1.1.0.tgz`.
 
 ```bash
 cd <your-repository>
@@ -77,7 +88,7 @@ Init now performs the upgrade itself:
 | Workflow, phase policy, docs | Preserve repository choices |
 
 Init preview reports concrete retained phase-policy differences: the retired `prepare` entry,
-an absent optional phase entry, and phases that load engineering guidance conditionally or omit
+an absent optional phase entry, and phases that always load engineering guidance or omit
 it. The same notices appear during apply, including when no installed file needs changing.
 They do not overwrite policy or turn engineering advice into a binding. `--check` still reports
 file updates through its exit code; notices alone do not make it fail. Review retained workflow
@@ -188,14 +199,14 @@ or enforcement schema identities still need explicit correction.
 
 After reviewing the migration and successful verification, retain backups outside the catalog
 directories or remove them deliberately. No contract or enforcement rewrite is required by this
-migration. Engineering remains advisory, read on every lifecycle pass by default; adopters can retire
+migration. Engineering remains advisory, loaded when relevant by default; adopters can retire
 all its entries while retaining a valid empty catalog. The package still requires a populated E
 starter catalog. Publishing the release also requires serving the new principles schema at its
 canonical URL; generating a package alone does not publish that URL.
 
 To adopt the new loading default in an existing installation, deliberately amend each lifecycle
-row in `.agents/cg/phases.json` to `always: ["A", "P", "E"]` and `conditional: []`, then align
-the preserved workflow instructions to read E on every pass. `cg init` and catalog migration
+row in `.agents/cg/phases.json` to `always: ["A", "P"]` and `conditional: ["E"]`, then align
+the preserved workflow instructions to load relevant E conditionally. `cg init` and catalog migration
 preserve both files; upgraded skills respect that retained loading policy. This changes context
 loading only, not contract rules or enforcement mappings. Empty adopter E remains valid.
 
@@ -231,3 +242,7 @@ Init now supplies `api-expert`, `mobile-expert`, `web-expert` and `ui-design-exp
 If a supplied expert path already exists without framework ownership in the installation manifest, init stops before modifying repository files. Retain that expert under a distinct project name and update the index before retrying; it is never silently replaced by the new default.
 
 The shared contract authoring template installs at `.agents/cg/templates/contract.template.yaml`. Init backs up and removes the three superseded warmup/produce template files only when the prior manifest establishes ownership; unowned templates and authored contracts remain intact.
+
+The removed `cg-plan/references/prepared-plan.md` is retired only when a prior non-adopted manifest hash matches its current bytes. Init backs it up before removal. Unowned, adopted or modified copies remain in place with a reconciliation notice; review their retired-stage instructions and preserve local policy before deliberately removing them. Preview writes nothing. Init does not search for similarly named files or purge backups. Historical provenance is not inferred from a filename alone.
+
+Warmup now routes to intent, adoption or reseed references; upgraded skills and their links are installed together. Repository-owned workflow and phase files remain preserved. Fresh installations load relevant E advice conditionally; existing always-E choices remain effective until deliberately changed. Reconcile any preserved mandatory process with the bounded-change procedure before relying on the shortcut.

@@ -64,3 +64,5 @@ Changes to preserved policy or installed content also route to the relevant sibl
 Verification: `npm test -- test/init-upgrade.test.js test/sprint-retirement.test.js test/verify.test.js`,
 then `npm test`. Profile changes also need the real-host checks in
 [CONTRIBUTING](../../CONTRIBUTING.md). Release behavior belongs in [docs/upgrade.md](../../docs/upgrade.md).
+
+Retirement of the exact removed planning reference requires a non-adopted prior manifest hash matching current bytes. Uncertain or modified content stays active with a reconciliation notice. Backup failures and observed concurrent edits preserve the active file. No pattern-based retirement or backup cleanup is performed.

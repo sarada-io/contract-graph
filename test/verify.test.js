@@ -1674,10 +1674,7 @@ test("init names an existing split documentation convention instead of silently 
  * "the new files are at least as strong" is an assertion with no evidence behind it.
  */
 test("cg-warmup searches for a predecessor framework before authoring anything", () => {
-  const skill = fs.readFileSync(
-    path.join(SOURCE_ROOT, "skills", "cg-warmup", "SKILL.md"),
-    "utf8",
-  );
+  const skill = warmupProcedure();
   const heading = (text) => skill.indexOf(`\n## ${text}`);
 
   const predecessor = heading("1. Look for the framework that came before");
@@ -1773,10 +1770,7 @@ test("cg-warmup searches for a predecessor framework before authoring anything",
  * Harvesting has to happen while the code is being read, not after the contracts are written.
  */
 test("cg-warmup harvests enforced code rules into the correct authority", () => {
-  const skill = fs.readFileSync(
-    path.join(SOURCE_ROOT, "skills", "cg-warmup", "SKILL.md"),
-    "utf8",
-  );
+  const skill = warmupProcedure();
   const heading = (text) => skill.indexOf(`\n## ${text}`);
 
   const harvest = heading("9. Harvest the rules the code already enforces");
@@ -1814,10 +1808,7 @@ test("cg-warmup harvests enforced code rules into the correct authority", () => 
 });
 
 test("cg-warmup loads a code-inspection catalog distinct from engineering.yaml", () => {
-  const skill = fs.readFileSync(
-    path.join(SOURCE_ROOT, "skills", "cg-warmup", "SKILL.md"),
-    "utf8",
-  );
+  const skill = warmupProcedure();
   const catalog = fs.readFileSync(
     path.join(SOURCE_ROOT, "skills", "cg-warmup", "assets", "warmup.yaml"),
     "utf8",
@@ -1979,8 +1970,7 @@ test("no skill nests a same-length code fence inside another", () => {
  * iterations — each unit's findings go to disk, and `cg modules` is the resume point.
  */
 test("cg-warmup states a resumable per-unit loop, not one linear pass", () => {
-  const file = path.join(SOURCE_ROOT, "skills", "cg-warmup", "SKILL.md");
-  const skill = fs.readFileSync(file, "utf8");
+  const skill = warmupProcedure();
 
   for (const phase of ["# Phase B — repeat", "# Phase D — once", "# Phase C — once"]) {
     assert.ok(skill.includes(`\n${phase}`), `warmup must mark \`${phase}…\``);
@@ -2045,8 +2035,8 @@ test("cg-warmup states a resumable per-unit loop, not one linear pass", () => {
 });
 
 test("cg-warmup has an additive reseed entry distinct from adoption", () => {
-  const skill = fs.readFileSync(path.join(SOURCE_ROOT, "skills", "cg-warmup", "SKILL.md"), "utf8");
-  assert.match(skill, /## Which entry/);
+  const skill = warmupProcedure();
+  assert.match(skill, /## Check readiness before selecting a mode/);
   assert.match(skill, /any \*\*UNMAPPED\*\* or \*\*DESCEND\*\*/);
   assert.match(skill, /exit 0, all governed/);
   assert.match(skill, /## Reseed — additive/);
@@ -2067,10 +2057,7 @@ test("cg-warmup has an additive reseed entry distinct from adoption", () => {
  * catalogs: A for the target node, E for remaining design judgement. E must not add rows.
  */
 test("cg-warmup uses both catalogs for a restructure proposal, not for membership", () => {
-  const skill = fs.readFileSync(
-    path.join(SOURCE_ROOT, "skills", "cg-warmup", "SKILL.md"),
-    "utf8",
-  );
+  const skill = warmupProcedure();
   assert.match(
     skill,
     /Do not consult[\s\S]*engineering\.yaml[\s\S]*whether a folder is a contract/,
@@ -2360,10 +2347,7 @@ test("verify flags a warmup that reported success without finishing", () => {
  * product.
  */
 test("cg-warmup fills the repository contract that nothing else fills", () => {
-  const skill = fs.readFileSync(
-    path.join(SOURCE_ROOT, "skills", "cg-warmup", "SKILL.md"),
-    "utf8",
-  );
+  const skill = warmupProcedure();
   const step = skill.indexOf("\n## 7. Fill the repository contract");
   assert.ok(step > 0, "warmup must own the root contract");
   assert.ok(
@@ -3839,4 +3823,30 @@ test("an archived closure is not advised", () => {
   plan(dir, "archive/prog/phase-1_sign-off.md", "# closed\n");
   plan(dir, "archive/prog/phase-1_detailed_preparation.md", "# p\n\n## Step 1: x\nPriority: 1\nStatus: Complete\n");
   assert.ok(!verify(dir).advisories.some((m) => m.includes("never archived")));
+});
+
+// The entry is now a mode router. Semantic obligations live in its reachable mode references.
+function warmupProcedure() {
+  return ["SKILL.md", "references/intent.md", "references/reseed.md", "references/adoption.md"]
+    .map(file => fs.readFileSync(path.join(SOURCE_ROOT, "skills", "cg-warmup", file), "utf8")).join("\n");
+}
+
+test('mode and closure reference links resolve after fresh init and repeat upgrade', t => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cg-mode-links-'));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  for (let pass = 0; pass < 2; pass++) {
+    init(dir, {}); sync(dir);
+    const files = ['.agents/cg/contract-graph-agent.md',
+      ...['cg-warmup', 'cg-plan', 'cg-produce', 'cg-prototype', 'cg-sign-off', 'cg-unblock'].map(name => `.agents/skills/${name}/SKILL.md`),
+      ...['intent', 'adoption', 'reseed'].map(name => `.agents/skills/cg-warmup/references/${name}.md`),
+      '.agents/skills/cg-sign-off/references/harvest-cohort.md', '.agents/skills/cg-sign-off/references/closure-checks.md'];
+    for (const file of files) {
+      const text = fs.readFileSync(path.join(dir, file), 'utf8').replace(/^```[^\n]*\n[\s\S]*?^```/gm, '');
+      for (const [, target] of text.matchAll(/\]\(([^)]+)\)/g)) {
+        if (/^(?:https?:|#)/.test(target) || target.includes('<')) continue;
+        const [relative] = target.split('#');
+        assert.ok(fs.existsSync(path.resolve(dir, path.dirname(file), relative)), `${file}: missing ${target}`);
+      }
+    }
+  }
 });

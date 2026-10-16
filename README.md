@@ -59,6 +59,8 @@ Improve the dashboard layout and interactions. Launch it and iterate with me.
 Review the preview and give feedback in the same conversation. When the experience is right, explicitly approve it and ask the agent to complete it with `/cg-sign-off`. See the
 [prototype guide](https://contractgraph.dev/docs/prototype/) for the full workflow.
 
+For a concrete bounded correction, ask `/cg-produce` to make and verify it directly. The agent defaults to reviewing the result together, while preserving existing programme gates and any required human acceptance.
+
 ### Plan to Delivery Mode
 
 Use `/cg-plan` when the outcome and its constraints are already clear:

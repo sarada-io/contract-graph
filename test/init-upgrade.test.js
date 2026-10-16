@@ -126,10 +126,10 @@ test("init reports historical phase policy during preview and apply without rewr
   const before = snapshot(dir);
   const preview = init(dir, { dryRun: true });
   assert.deepEqual(snapshot(dir), before);
-  assert.equal(preview.policyNotices.length, 3);
+  assert.equal(preview.policyNotices.length, 2);
   assert.match(preview.policyNotices.join("\n"), /retired prepare/);
   assert.match(preview.policyNotices.join("\n"), /no prototype entry/);
-  assert.match(preview.policyNotices.join("\n"), /loads E conditionally for plan, produce, sign-off, unblock/);
+  assert.doesNotMatch(preview.policyNotices.join("\n"), /loads E on every pass/);
   const applied = init(dir);
   assert.deepEqual(applied.policyNotices, preview.policyNotices);
   assert.equal(read(dir, file), original);
@@ -140,18 +140,18 @@ test("init CLI displays policy notices even with no file updates and preserves c
   const dir = policyFixture(t);
   const file = ".agents/cg/phases.json";
   const policy = JSON.parse(read(dir, file));
-  policy.phases["sign-off"] = { always: ["A", "P"], conditional: ["E"] };
+  policy.phases["sign-off"] = { always: ["A", "P", "E"], conditional: [] };
   write(dir, file, JSON.stringify(policy));
   const before = snapshot(dir);
   const run = extra => spawnSync(process.execPath, [path.join(root, "bin/cg.js"), "init", dir, ...extra], { encoding: "utf8" });
   const preview = run(["--check"]);
   assert.equal(preview.status, 0, preview.stdout + preview.stderr);
-  assert.match(preview.stdout, /loads E conditionally for sign-off/);
+  assert.match(preview.stdout, /loads E on every pass for sign-off/);
   assert.match(preview.stdout, /not automatically reconciled/);
   assert.deepEqual(snapshot(dir), before);
   const applied = run(["--yes"]);
   assert.equal(applied.status, 0, applied.stdout + applied.stderr);
-  assert.match(applied.stdout, /loads E conditionally for sign-off/);
+  assert.match(applied.stdout, /loads E on every pass for sign-off/);
   assert.equal(read(dir, file), Buffer.from(before[path.normalize(file)], "base64").toString());
 });
 

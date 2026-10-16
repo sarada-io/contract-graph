@@ -42,3 +42,5 @@ second parser or a parallel route store in a consumer.
 
 Verification: `npm test -- test/contracts.test.js test/verify.test.js`, then `npm test`.
 Canonical explanation: [docs/contracts.md](../../docs/contracts.md).
+
+routeSuggestions and hydratedRoutes extend the existing engine with opt-in deterministic lexical candidates and bounded, provenance-bearing context. Exact routeContracts behavior remains compatible. Suggestions never prove ownership or semantic equivalence; omitted context is explicitly retrievable.

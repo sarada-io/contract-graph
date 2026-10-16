@@ -59,6 +59,8 @@ contract to read; the last column narrows reading after that contract.
 | Persist, compact or recover receipts; verify delivery evidence for a pull request | [Delivery](delivery/contract.md) | `delivery-storage.js`, `delivery.js`; `cg delivery verify` |
 | What runs next, why a skill is blocked, programme status, queue or recovery action | [Delivery](delivery/contract.md) | `next.js`, `status.js`; `cg next --for`, `cg status` |
 | Leftover plans, unreferenced files, shared ownership or safe scope of cleanup | [Delivery](delivery/contract.md) | `residue.js`; `cg residue` reports evidence, not permission to delete |
+| `cg guidelines show`, selected advisory IDs/categories | [Verification](verification/contract.md) | `model.js`: existing engineering loader; root CLI filtering |
+| Worktree-local programme selection or status summary | [Delivery](delivery/contract.md) | `next.js`: `selectProgramme`, `next`; `status.js`: `statusSummary` |
 | A/E/P rules, architecture principles, engineering advice, product bindings or enforcement | [Verification](verification/contract.md) | `binding.js`, `catalog.js`, policy catalogs; also read architecture policy |
 | Contract/catalog schema fields, validation errors, registered detectors, negative fixtures | [Verification](verification/contract.md) | `src/cg/schema/`, `binding.js`, `verify.js`; Graph also consumes contract shape |
 | Aggregate verification failures, missing skills, phase checks, scaffold validity | [Verification](verification/contract.md#bounded-reading-inside-the-larger-files) | `verify.js`; `cg verify` |

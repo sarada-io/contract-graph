@@ -8,7 +8,7 @@ import process from "node:process";
 import readline from "node:readline";
 
 import { BINDING_FILENAME, loadBindingCatalog } from "./binding.js";
-import { DEFAULT_DOCS_ROOT, loadBindingPrinciples, renderRootReference } from "./model.js";
+import { DEFAULT_DOCS_ROOT, loadEngineeringMap, loadBindingPrinciples, renderRootReference } from "./model.js";
 import {
   contractContext,
   findContract,
@@ -19,7 +19,7 @@ import {
   renderContract,
   renderGraph,
   renderMermaid,
-  routeContracts,
+  routeContracts, routeSuggestions, hydratedRoutes,
 } from "./contracts.js";
 import { build, BuildError } from "./build.js";
 import { init, PACKAGE_VERSION } from "./init.js";
@@ -27,10 +27,10 @@ import { intentAction } from "./intent.js";
 import { migratePrinciples } from "./migrate-principles.js";
 import { HarvestError, checkHarvest } from "./harvest.js";
 import { moduleCoverage, openDescent } from "./modules.js";
-import { next, permits } from "./next.js";
+import { next, permits, selectProgramme } from "./next.js";
 import { deliveryAction, deliveryReadiness } from "./delivery.js";
 import { residue } from "./residue.js";
-import { status } from "./status.js";
+import { status, statusSummary } from "./status.js";
 import { runtimeIdentity } from "./runtime.js";
 import { multiSelect } from "./picker.js";
 import {
@@ -79,9 +79,17 @@ Usage:
   cg graph show [dir] [--format tree|json|mermaid] project the whole composition graph
   cg graph verify [dir]                           verify schema, references, and graph closure
   cg harvest <manifest> [--stage close]           check a decision-harvest manifest
+  cg guidelines show [dir] --id E01-01          selected advisory guidance (also --category)
   cg profiles                                     list editor profiles
 
 Options:
+  --select <slug>   save worktree-local programme selection (status only)
+  --clear-selection clear worktree-local selection (status only)
+  --summary         read all programme obligations without selecting (status only)
+  --suggest         explain lexical fallback routes (contract route only)
+  --hydrate         include bounded context (contract route only)
+  --limit <number>  maximum route candidates (1–20; default 3)
+  --category <name> filter advisory guidance (guidelines show only)
   --report <file>    external assessment report destination (analyse only; command creates no files)
   --profile <list>  add comma-separated editor profiles without the interactive picker (init only)
   --docs <dir>      directory to hold plans/, decisions/, guides/, and manuals/ (init only; default: docs)
@@ -117,6 +125,7 @@ Options:
  * nothing quietly is exactly the upgrade failure this tool should not have.
  */
 const KNOWN_FLAGS = new Set([
+  "select", "clear-selection", "summary", "suggest", "hydrate", "limit", "category",
   "report",
   "unit",
   "entry",
@@ -162,7 +171,7 @@ function parseArgs(argv) {
       }
       continue;
     }
-    const extraValue = /^--(programme|session|evidence|gate|base|reasons|report)(?:=(.*))?$/.exec(arg);
+    const extraValue = /^--(programme|session|evidence|gate|base|reasons|report|select|limit|category)(?:=(.*))?$/.exec(arg);
     if (extraValue) {
       flags[extraValue[1]] = extraValue[2] ?? argv[++i];
       if (typeof flags[extraValue[1]] !== "string" || !flags[extraValue[1]].trim() || flags[extraValue[1]].startsWith("--")) throw new Error(`${extraValue[1]} requires a value`);
@@ -428,6 +437,11 @@ async function main(argv) {
     return 0;
   }
   if (flags.report !== undefined) throw new Error("--report is supported only by analyse");
+  for (const flag of ["select", "clear-selection", "summary"]) if (flags[flag] !== undefined && command !== "status") throw new Error(`--${flag} is supported only by status`);
+  for (const flag of ["suggest", "hydrate", "limit"]) if (flags[flag] !== undefined && !(command === "contract" && positional[0] === "route")) throw new Error(`--${flag} is supported only by contract route`);
+  if (flags.limit !== undefined && !flags.suggest && !flags.hydrate) throw new Error("--limit requires --suggest or --hydrate");
+  if (flags.category !== undefined && command !== "guidelines") throw new Error("--category is supported only by guidelines show");
+
 
   if (command === "contract" && positional[0] === "inspect") {
     const allowed = new Set(["id", "unit", "entry", "json"]);
@@ -474,7 +488,14 @@ async function main(argv) {
 
     if (action === "route") {
       if (!flags.task) throw new Error("usage: cg contract route [dir] --task \"request\"");
-      const matches = routeContracts(graph, flags.task);
+      const matches = flags.suggest ? routeSuggestions(graph, flags.task) : routeContracts(graph, flags.task);
+      if (flags.hydrate || flags.suggest) {
+        if (flags.format && flags.format !== "json") throw new Error("route suggestions and hydration support only JSON format");
+        const report = hydratedRoutes(graph, matches, flags.hydrate ? loadBindingPrinciples(graphRoot) : new Map(), { limit: flags.limit === undefined ? 3 : Number(flags.limit) });
+        if (!flags.hydrate) { delete report.contexts; delete report.rules; }
+        process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+        return matches.length ? 0 : 1;
+      }
       if (flags.json || flags.format === "json") {
         process.stdout.write(`${JSON.stringify(matches.map((match) => ({
           owner: match.owner,
@@ -556,7 +577,7 @@ async function main(argv) {
       else process.stdout.write(`cg delivery: ${result.failures.length ? "FAIL" : "OK"}\n${result.failures.map(f => `  ${f}\n`).join("")}`);
       return result.failures.length ? 1 : 0;
     }
-    const result = deliveryAction(root, action, { programme: flags.programme, evidence: flags.evidence, gate: flags.gate, session: flags.session });
+    const result = deliveryAction(root, action, { programme: flags.programme, evidence: flags.evidence, gate: flags.gate, session: flags.session, format: flags.format });
     // Routine lifecycle output is a view, not another copy of the full evidence archive.
     const summary = record => ({ programme: record.programme, status: record.status,
       file: record.file ?? `.agents/cg/deliveries/${record.programme}.json`,
@@ -855,7 +876,35 @@ async function main(argv) {
     return 0;
   }
 
+  if (command === "guidelines") {
+    for (const flag of Object.keys(flags)) if (!["id", "category", "json"].includes(flag)) throw new Error(`--${flag} is not supported by guidelines show`);
+    if (positional.length > 2 || positional[0] !== "show" || (!flags.id && !flags.category)) throw new Error("usage: cg guidelines show [dir] --id E01,E01-01 or --category <name>");
+    const root = path.resolve(positional[1] ?? ".");
+    const catalog = loadEngineeringMap(root);
+    if (!catalog) throw new Error("engineering catalogue is missing");
+    const ids = flags.id ? flags.id.split(",") : [];
+    const known = new Set(catalog.principles.flatMap(group => [group.id, ...group.rules.map(rule => rule.id)]));
+    for (const id of ids) if (!known.has(id)) throw new Error(`unknown advisory ID: ${id}`);
+    if (flags.category && !catalog.categories.includes(flags.category)) throw new Error(`unknown advisory category: ${flags.category}`);
+    const entries = catalog.principles.filter(group => !flags.category || group.category === flags.category).flatMap(group => group.rules
+      .filter(rule => !ids.length || ids.includes(group.id) || ids.includes(rule.id)).map(rule => ({ ...rule, group: group.id, category: group.category })));
+    process.stdout.write(`${JSON.stringify({ binding: "advisory", source: ".agents/cg/guidelines/engineering.yaml", entries }, null, 2)}\n`);
+    return 0;
+  }
+
   if (command === "status") {
+    if ((flags.select || flags["clear-selection"]) && (flags.programme || flags.summary)) throw new Error("selection mutation cannot be combined with --programme or --summary");
+    if (flags.select && flags["clear-selection"]) throw new Error("choose --select or --clear-selection");
+    if (flags.select || flags["clear-selection"]) {
+      const result = selectProgramme(repoRoot, flags.select, { clear: flags["clear-selection"] });
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`); return 0;
+    }
+    if (flags.summary && flags.programme) throw new Error("--summary cannot be combined with --programme");
+    if (flags.summary) {
+      const result = statusSummary(repoRoot);
+      process.stdout.write(flags.json ? `${JSON.stringify(result, null, 2)}\n` : [...result.problems.map(problem => `Problem: ${problem}\n`), ...(result.installation.requiresInit ? [`${result.installation.reason}\n`] : []), ...result.programmes.map(item => `${item.programme}: ${item.receipt?.status ?? item.state} — ${item.nextAction ?? "resolve blockers"}\n`)].join(""));
+      return result.problems.length || result.installation.requiresInit || result.programmes.some(item => item.problems.length || item.installation.requiresInit) ? 1 : 0;
+    }
     const result = status(repoRoot, { programme: flags.programme });
     if (flags.json) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
     else {

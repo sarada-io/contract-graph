@@ -3,6 +3,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
+import { execFileSync } from "node:child_process";
 
 import { profilePath } from "./profiles.js";
 import { readDeliveries, programmeName, deliveryReviewSnapshot, signOffRecovery } from "./delivery.js";
@@ -181,14 +182,59 @@ export function readQueue(repoRoot, docsRoot = "docs") {
  * are all `Complete`. It lives here rather than only in prose so something other than a model
  * can check it was followed.
  */
-export function next(repoRoot, { docs, programme, skill } = {}) {
+/** Git metadata is per worktree, never tracked policy. Non-Git callers use CG_PROGRAMME. */
+function selectionFile(root) {
+  try {
+    const top = execFileSync("git", ["rev-parse", "--show-toplevel"], { cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim();
+    if (fs.realpathSync(top) !== fs.realpathSync(root)) return null;
+    const dir = execFileSync("git", ["rev-parse", "--absolute-git-dir"], { cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim();
+    return path.join(dir, "cg-active-programme.json");
+  } catch { return null; }
+}
+
+export function selectProgramme(root, programme, { clear = false, docs } = {}) {
+  const file = selectionFile(root);
+  if (!file) throw new Error("persistent selection requires Git; use CG_PROGRAMME for a non-Git session");
+  if (clear) { fs.rmSync(file, { force: true }); return { cleared: true }; }
+  programmeName(programme);
+  const candidate = nextSelected(root, { docs, programme });
+  if (["Closed", "Abandoned"].includes(candidate.receipt?.status)) throw new Error(`cannot select a terminal programme: ${programme} is ${candidate.receipt.status}`);
+  if (["selection-required", "unreadable"].includes(candidate.state)) {
+    throw new Error(candidate.reason ?? candidate.problems.join("; "));
+  }
+  const temporary = `${file}.${process.pid}.tmp`;
+  try { fs.writeFileSync(temporary, JSON.stringify({ programme }), { flag: "wx" }); fs.renameSync(temporary, file); }
+  finally { fs.rmSync(temporary, { force: true }); }
+  return { programme, selectionSource: "worktree" };
+}
+
+export function next(repoRoot, { docs, programme, skill, environment = process.env, ignoreSelection = false } = {}) {
   let recovery;
   try { recovery = signOffRecovery(repoRoot); }
   catch (error) { recovery = { state: "unreadable", candidates: [], reason: error.message }; }
-  const recovered = !programme && skill === "cg-sign-off" && recovery.state === "resumable";
-  const target = recovered ? recovery.candidates[0].programme : programme;
-  return { ...nextSelected(repoRoot, { docs, programme: target }), installation: installationStatus(repoRoot), intent: installedIntent(repoRoot),
-    signOffRecovery: recovery, ...(recovered ? { selectionSource: "completion-request" } : {}) };
+  const common = { installation: installationStatus(repoRoot), intent: installedIntent(repoRoot), signOffRecovery: recovery };
+  let target = programme, selectionSource = programme ? "explicit" : null;
+  if (!target && !ignoreSelection && environment.CG_PROGRAMME) { target = environment.CG_PROGRAMME; selectionSource = "environment"; }
+  if (!target && !ignoreSelection) {
+    const file = selectionFile(repoRoot);
+    if (file && fs.existsSync(file)) {
+      try {
+        const pointer = JSON.parse(fs.readFileSync(file, "utf8"));
+        programmeName(pointer.programme); target = pointer.programme; selectionSource = "worktree";
+      } catch (error) {
+        return { ...common, state: "selection-required", stage: null, briefs: [], problems: [], reason: `invalid local selection: ${error.message}; run cg status --clear-selection` };
+      }
+    }
+  }
+  if (!target && !ignoreSelection && skill === "cg-sign-off" && recovery.state === "resumable") {
+    target = recovery.candidates[0].programme; selectionSource = "completion-request";
+  }
+  const result = nextSelected(repoRoot, { docs, programme: target });
+  if (selectionSource === "worktree" && (["selection-required", "unreadable"].includes(result.state) || ["Closed", "Abandoned"].includes(result.receipt?.status))) {
+    return { ...result, ...common, state: "selection-required", stage: null, selectionSource,
+      reason: `stale local selection ${target}; run cg status --clear-selection or --select <slug>. ${result.reason ?? "Programme is terminal."}` };
+  }
+  return { ...result, ...common, selectionSource: selectionSource ?? (result.programme ? "single-programme" : null) };
 }
 
 /** New roadmaps opt into sprint delivery; existing queues retain their lifecycle. */
@@ -347,6 +393,7 @@ export function permits(result, skill) {
   if (skill === "cg-prototype" && result.delivery === "sprint" && result.receipt && result.receipt.status !== "Closed") {
     return { allowed: false, reason: "This sprint has an active delivery receipt. Continue cg-produce or the accepted cg-sign-off handoff; exploratory work requires an explicit change to the agreed delivery scope." };
   }
+  if (skill === "cg-produce" && ["Closed", "Abandoned", "Suspended"].includes(result.receipt?.status)) return { allowed: false, reason: `${result.receipt.programme}: ${result.receipt.status}; selection does not resume delivery.` };
   if (skill === "cg-sign-off" && result.receipt && result.receipt.status !== "Closed") {
     return { allowed: true, entry: "delivery-completion", handoffReady: result.receipt.status === "Handed off", reason: `${result.receipt.programme}: admit assessment; the user’s requested scope bounds completion; accepted handoff, applicable Step gates, and passing final verification are still required to close` };
   }
@@ -365,6 +412,9 @@ export function permits(result, skill) {
   if (skill === "cg-produce" && result.receipt?.status === "Handed off" &&
       ["ready", "in-progress", "no-queue"].includes(result.state)) {
     return { allowed: true, reason: "Admit scoped implementation repair or its internal preparation; the delivery handoff and existing completion request retain their authority." };
+  }
+  if (skill === "cg-produce" && result.state === "no-queue" && !result.programme && !result.receipt) {
+    return { allowed: true, entry: "bounded-change", reason: "Admit a concrete authorised bounded change; preserve repository policy, verification and required acceptance. Admission creates no execution authority." };
   }
   // Never gated: one resolves blockers, one is the adapter itself, one is pre-lifecycle, and
   // planning is what you run precisely when the queue has nothing to say.

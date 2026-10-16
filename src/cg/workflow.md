@@ -8,6 +8,10 @@ The primary audience is senior leadership in functional roles. Follow `.agents/s
 
 Explain checks by their actual outcome and limits, not command names. A passing framework check does not prove product behavior works. Keep technical results and skill routing in the existing internal evidence. Remove answered questions from the active review list after preserving the answer; completed work removes consumed internal entries and temporary reviews after preserving durable meaning and approval evidence.
 
+## Bounded authorised changes
+
+For a concrete correction whose intended behaviour, ownership and checks are clear, use cg-produce's bounded-change procedure: route, inspect, implement, verify and report. Default to combined result review; reuse explicit per-item preferences. Do not require a roadmap, receipt, queue or cadence answer solely for this path. Existing governed programme obligations, repository policy and required human acceptance remain in force. Consequential unresolved choices pause dependent work; in-scope defects return to repair under the same request.
+
 ## Intent, planning and execution
 
 Both new and existing repositories start with cg-warmup after init. Maintain `.agents/cg/project-context.md` beside the root contract as a concise copy of project intent from repository documentation, with source links and current approved direction. Establish owner-confirmed project intent from existing sources and verify its freshness with `cg intent verify`. Existing code is evidence of conformance, not authority to replace an accepted requirement. Modules refine parent purpose through their contracts.

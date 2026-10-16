@@ -176,3 +176,53 @@ test('re-init preserves unowned old contract templates', t => {
   init(dir); sync(dir);
   assert.equal(fs.readFileSync(path.join(dir, file), 'utf8'), '# repository-owned template');
 });
+
+test('obsolete planning reference retires only with pristine release evidence; modified/unowned copies survive', t => {
+  for (const ownership of ['pristine', 'modified', 'adopted', 'unowned']) {
+    const dir = fixture(t);
+    const relative = '.agents/skills/cg-plan/references/prepared-plan.md';
+    const original = '# Historical prepared plan\nUse cg-prepare then cg-auto-run.\n';
+    write(dir, relative, original);
+    const manifestFile = path.join(dir, '.agents/cg/manifest.json');
+    const manifest = JSON.parse(fs.readFileSync(manifestFile));
+    if (ownership !== 'unowned') manifest.files[relative] = { version: '0.6.0', sha256: crypto.createHash('sha256').update(original).digest('hex'), ...(ownership === 'adopted' ? { adopted: true } : {}) };
+    fs.writeFileSync(manifestFile, JSON.stringify(manifest));
+    if (ownership === 'modified') fs.appendFileSync(path.join(dir, relative), 'Local policy.\n');
+    const before = fs.readFileSync(path.join(dir, relative), 'utf8');
+    const preview = init(dir, { dryRun: true });
+    assert.equal(fs.readFileSync(path.join(dir, relative), 'utf8'), before);
+    const result = init(dir);
+    assert.equal(fs.existsSync(path.join(dir, relative)), ownership !== 'pristine');
+    if (ownership === 'pristine') {
+      assert.ok(preview.removed.includes(path.join(dir, relative)));
+      const backup = result.backups.find(file => file.endsWith(relative));
+      assert.equal(fs.readFileSync(backup, 'utf8'), before);
+    } else {
+      assert.equal(fs.readFileSync(path.join(dir, relative), 'utf8'), before);
+      assert.ok(result.policyNotices.some(note => note.includes(relative) && note.includes('Reconcile')));
+    }
+    assert.deepEqual(init(dir).removed, []);
+  }
+});
+
+test('planning retirement backup failure and concurrent edits preserve active content', t => {
+  for (const fault of ['backup', 'concurrent']) {
+    const dir = fixture(t), relative = '.agents/skills/cg-plan/references/prepared-plan.md';
+    const original = '# old planning instructions\n'; write(dir, relative, original);
+    const manifestFile = path.join(dir, '.agents/cg/manifest.json');
+    const manifest = JSON.parse(fs.readFileSync(manifestFile));
+    manifest.files[relative] = { sha256: crypto.createHash('sha256').update(original).digest('hex') };
+    fs.writeFileSync(manifestFile, JSON.stringify(manifest));
+    const realWrite = fs.writeFileSync;
+    t.mock.method(fs, 'writeFileSync', (file, ...args) => {
+      if (String(file).includes('/backups/') && String(file).endsWith(relative)) {
+        if (fault === 'backup') throw new Error('injected backup failure');
+        realWrite(path.join(dir, relative), 'concurrent local edit');
+      }
+      return realWrite(file, ...args);
+    });
+    assert.throws(() => init(dir), /injected backup failure|retirement input changed/);
+    assert.equal(fs.readFileSync(path.join(dir, relative), 'utf8'), fault === 'backup' ? original : 'concurrent local edit');
+    t.mock.restoreAll();
+  }
+});

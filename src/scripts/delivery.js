@@ -6,7 +6,7 @@ import path from "node:path";
 import crypto from "node:crypto";
 import { execFileSync, spawnSync } from "node:child_process";
 import { profilePath } from "./profiles.js";
-import { encodeDelivery, decodeDelivery } from "./delivery-storage.js";
+import { encodeDelivery, encodeDeltaDelivery, decodeDelivery } from "./delivery-storage.js";
 
 export const DELIVERY_ROOT = ".agents/cg/deliveries";
 const RECORD_ROOTS = [DELIVERY_ROOT, ".agents/cg/prototypes"];
@@ -93,7 +93,7 @@ function writePath(p) {
 // remove delivery code from review. Parent directories subsume their explicitly listed files.
 function reviewWrites(record) {
   const checkpoints = [...(record.sessions ?? []), ...record.history.map(e => e.checkpoint).filter(Boolean)];
-  const writes = [...new Set([...(record.reviewScope ?? []), ...checkpoints.flatMap(s => s.writes)])].sort();
+  const writes = [...new Set([...(record.reviewScope ?? []), ...checkpoints.flatMap(s => [...s.writes, ...(s.evidenceInputs ?? [])])])].sort();
   return writes.filter(p => !writes.some(parent => parent !== p && p.startsWith(`${parent}/`)));
 }
 
@@ -133,6 +133,9 @@ export function validateDelivery(record, file) {
   if ((record.reviewScope !== undefined && (!Array.isArray(record.reviewScope) || !record.reviewScope.length || record.reviewScope.some(p => !writePath(p)))) ||
       record.history.some(e => e.checkpoint && (!Array.isArray(e.checkpoint.writes) || e.checkpoint.writes.some(p => !writePath(p))))) {
     throw new Error(`${file}: malformed delivery review scope`);
+  }
+  for (const checkpoint of [...(record.sessions ?? []), ...record.history.map(event => event.checkpoint).filter(Boolean)]) {
+    if (checkpoint.evidenceInputs !== undefined && (!Array.isArray(checkpoint.evidenceInputs) || checkpoint.evidenceInputs.some(p => !writePath(p)))) throw new Error(`${file}: malformed evidence inputs`);
   }
   if (record.deliveryAttempts !== undefined && !Array.isArray(record.deliveryAttempts)) throw new Error(`${file}: malformed delivery attempts`);
   if (record.handoff && (!nonempty(record.handoff.roadmap) || !nonempty(record.handoff.scope) ||
@@ -194,9 +197,10 @@ function save(root, record, status, event = {}) {
   fs.mkdirSync(path.dirname(file), { recursive: true });
   const temp = path.join(path.dirname(file), `.${record.programme}.${crypto.randomUUID()}.tmp`);
   try {
-    // Existing v1 records migrate only through explicit compact; new and migrated records use v2.
-    const legacy = fs.existsSync(file) && JSON.parse(fs.readFileSync(file, "utf8")).version === 1;
-    const stored = legacy ? record : encodeDelivery(record);
+    // Preserve active v1; closure migrates atomically. V3 may fall back to smaller v2.
+    const version = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, "utf8")).version : 2;
+    const stored = version === 1 && status !== "Closed" ? record : version === 3 ? encodeDeltaDelivery(record) : encodeDelivery(record);
+    if (JSON.stringify(decodeDelivery(stored)) !== JSON.stringify(record)) throw new Error("storage changed receipt evidence");
     fs.writeFileSync(temp, `${JSON.stringify(stored)}\n`, { flag: "wx" });
     fs.renameSync(temp, file);
   } finally { fs.rmSync(temp, { force: true }); }
@@ -214,6 +218,8 @@ function checkpoint(root, record, session, evidence) {
   if (!session || !evidence) throw new Error("checkpoint requires --session and --evidence JSON with writes, state, and note");
   const input = JSON.parse(fs.readFileSync(path.resolve(root, evidence), "utf8"));
   const writes = input.writes;
+  const evidenceInputs = input.evidenceInputs ?? [];
+  if (!Array.isArray(evidenceInputs) || evidenceInputs.some(p => !writePath(p))) throw new Error("evidenceInputs must be repository-relative file/directory paths without globs");
   if (!Array.isArray(writes) || writes.some(p => !writePath(p)) ||
       !["active", "released"].includes(input.state) || !nonempty(input.note) ||
       (input.resources !== undefined && (!Array.isArray(input.resources) || input.resources.some(r => !nonempty(r))))) {
@@ -232,7 +238,7 @@ function checkpoint(root, record, session, evidence) {
       overlappingWrites: writes.filter(p => s.writes.some(w => intersects(p, w))),
       sharedResources: resources.filter(r => s.resources.includes(r)) }));
   const dirty = dirtyPaths(root);
-  const entry = { session, state: input.state, writes, resources, note: input.note, context: context(root),
+  const entry = { session, state: input.state, writes, ...(evidenceInputs.length ? { evidenceInputs } : {}), resources, note: input.note, context: context(root),
     at: new Date().toISOString(), snapshot: deliverySnapshot(root), files, observedChanges, dirty, peers,
     unregisteredProgrammes: records.filter(r => r.programme !== record.programme && r.status !== "Closed" && !r.sessions?.length).map(r => r.programme) };
   record.sessions = [...(record.sessions ?? []).filter(s => s.session !== session), entry];
@@ -317,7 +323,7 @@ export function deliveryAction(root, action, options = {}) {
   } finally { fs.rmSync(lock, { recursive: true, force: true }); }
 }
 
-function performAction(root, action, { programme: name, evidence, gate, session } = {}) {
+function performAction(root, action, { programme: name, evidence, gate, session, format } = {}) {
   let record = readDeliveries(root).find(r => r.programme === name);
   if (record) { record = { ...record }; delete record.file; }
   const event = { action, session: session ?? null, context: context(root) };
@@ -349,7 +355,8 @@ function performAction(root, action, { programme: name, evidence, gate, session 
     if (record.status !== "Closed") throw new Error("only Closed receipts can be compacted; retain active recovery state");
     const file = ownedPath(root, recordPath(root, name));
     const original = fs.readFileSync(file, "utf8");
-    const stored = encodeDelivery(record);
+    if (format && !["delta", "v2"].includes(format)) throw new Error("compact format must be delta or v2");
+    const stored = format === "delta" || (!format && JSON.parse(original).version === 3) ? encodeDeltaDelivery(record) : encodeDelivery(record);
     const output = `${JSON.stringify(stored)}\n`;
     const recovered = validateDelivery(JSON.parse(output), file);
     if (JSON.stringify(recovered) !== JSON.stringify(record)) throw new Error("compaction changed receipt evidence");
@@ -359,7 +366,7 @@ function performAction(root, action, { programme: name, evidence, gate, session 
       if (fs.readFileSync(temp, "utf8") !== output || fs.readFileSync(file, "utf8") !== original) throw new Error("receipt changed during compaction");
       fs.renameSync(temp, file);
     } finally { fs.rmSync(temp, { force: true }); }
-    return { programme: name, status: record.status, storageVersion: 2, bytesBefore: Buffer.byteLength(original),
+    return { programme: name, status: record.status, storageVersion: stored.version, bytesBefore: Buffer.byteLength(original),
       bytesAfter: Buffer.byteLength(output), logicalEvidenceHash: sha(JSON.stringify(recovered)) };
   }
   if (action === "evidence") {
