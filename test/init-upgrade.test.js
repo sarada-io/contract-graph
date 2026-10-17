@@ -291,3 +291,47 @@ test("init updates historical contract/enforcement schema scalars without changi
   sync(dir);
   assert.deepEqual(verify(dir).failures, []);
 });
+
+test('sync upgrades historical shared entries with the required bootstrap and preserves local guidance', t => {
+  const dir = policyFixture(t);
+  const entry = '.agents/cg/contract-graph-agent.md';
+  // Independent older entry: the release only generated its principles index.
+  const historical = '# Existing repository instructions\n\nKeep this local prerequisite.\n\n<!-- BEGIN PRINCIPLES INDEX -->\n<!-- END PRINCIPLES INDEX -->\n\n## Team workflow\n\nRun the team gate before completion.\n';
+  write(dir, entry, historical);
+  const workflow = read(dir, '.agents/cg/workflow.md');
+  const phases = read(dir, '.agents/cg/phases.json');
+  assert.ok(sync(dir, { dryRun: true }).changed.includes(path.join(dir, entry)));
+  assert.equal(read(dir, entry), historical);
+  sync(dir);
+  const updated = read(dir, entry);
+  assert.match(updated, /## Lifecycle bootstrap/);
+  assert.match(updated, /## Run the installed CLI/);
+  assert.match(updated, /Keep this local prerequisite/);
+  assert.match(updated, /Run the team gate before completion/);
+  assert.equal(read(dir, '.agents/cg/workflow.md'), workflow);
+  assert.equal(read(dir, '.agents/cg/phases.json'), phases);
+  assert.deepEqual(sync(dir).changed, []);
+  assert.deepEqual(verify(dir).failures, []);
+});
+
+test('sync adopts exact unmarked bootstrap once and refreshes only its managed block', t => {
+  const dir = policyFixture(t), entry = '.agents/cg/contract-graph-agent.md';
+  const original = read(dir, entry);
+  const unmarked = original.replace(/^<!-- BEGIN CG BOOTSTRAP.*\n/m, '').replace(/^<!-- END CG BOOTSTRAP -->\n/m, '');
+  write(dir, entry, unmarked + '\n## Local note\n\nPreserve custom review policy.\n');
+  sync(dir);
+  let updated = read(dir, entry);
+  assert.equal([...updated.matchAll(/## Lifecycle bootstrap/g)].length, 1);
+  assert.match(updated, /Preserve custom review policy/);
+  write(dir, entry, updated.replace('## Lifecycle bootstrap', '## Obsolete generated instructions'));
+  sync(dir);
+  updated = read(dir, entry);
+  assert.match(updated, /## Lifecycle bootstrap/);
+  assert.doesNotMatch(updated, /Obsolete generated instructions/);
+  assert.match(updated, /Preserve custom review policy/);
+  assert.deepEqual(sync(dir).changed, []);
+  const malformed = updated.replace('<!-- END CG BOOTSTRAP -->', '');
+  write(dir, entry, malformed);
+  assert.throws(() => sync(dir), /unbalanced CG BOOTSTRAP/);
+  assert.equal(read(dir, entry), malformed);
+});

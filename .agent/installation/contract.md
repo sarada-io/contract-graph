@@ -66,3 +66,5 @@ then `npm test`. Profile changes also need the real-host checks in
 [CONTRIBUTING](../../CONTRIBUTING.md). Release behavior belongs in [docs/upgrade.md](../../docs/upgrade.md).
 
 Retirement of the exact removed planning reference requires a non-adopted prior manifest hash matching current bytes. Uncertain or modified content stays active with a reconciliation notice. Backup failures and observed concurrent edits preserve the active file. No pattern-based retirement or backup cleanup is performed.
+
+Sync refreshes the release-owned CG BOOTSTRAP block in the shared agent entry and inserts it into historical entries lacking it. It preserves surrounding repository prose, workflow and phase policy. Exact unmarked early-1.1 bootstrap text is adopted into the block without duplication; custom text is preserved.

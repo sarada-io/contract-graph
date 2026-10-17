@@ -64,3 +64,5 @@ This repository's own [Markdown routing graph](../contract.md) is maintainer con
 skill, new product contract format, or lifecycle stage.
 
 Warmup is a mode router with intent, adoption and reseed references. The generated agent entry owns the shared lifecycle bootstrap and authority table. Standalone bounded corrections use cg-produce without mandatory records or a cadence question; existing programme gates remain authoritative. Fresh phase defaults load E conditionally; retained policy controls upgrades. Declared harvest cohorts load their separate reference only when applicable.
+
+The launcher, owner communication and lifecycle bootstrap sections are one generated CG BOOTSTRAP block in the shared agent template. Sync installs and refreshes that block in existing entries so upgraded skills can resolve their required shared procedure.

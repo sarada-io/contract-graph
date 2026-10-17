@@ -30,6 +30,7 @@ exact path rather than relying on search.
 The principle index in this file is generated. Keep repository-specific instructions in the root
 entry files or other repository-owned context. Regenerate with `cg sync`.
 
+<!-- BEGIN CG BOOTSTRAP — generated from the installed release · do not edit -->
 ## Run the installed CLI
 
 Examples use `cg` as the command name, including Windows PowerShell after a global npm install with lifecycle scripts enabled. The package install hook removes only the verified package-owned `cg.ps1` so bare `cg` reaches npm's batch launcher. Local installs, development links, script-disabled installs and unfamiliar wrappers retain npm's normal launchers; use `cg.cmd` as the fallback if PowerShell blocks `cg.ps1`.
@@ -56,3 +57,4 @@ Use the launcher guidance above and the root-to-boundary reading order. Reuse un
 | Verified completion | Reporting completion only after all applicable obligations are satisfied |
 
 For a concrete bounded change, use cg-produce's bounded-change procedure. Existing programme gates and recovery records still apply. Do not create a plan, queue or receipt solely to perform a small correction. Missing consequential authority pauses dependent work while independent authorised work continues. No step grants publication authority.
+<!-- END CG BOOTSTRAP -->

@@ -59,3 +59,5 @@ follow the disposable-copy rule in [Distribution](../distribution/contract.md) f
 is documented in [CONTRIBUTING](../../CONTRIBUTING.md#schema-and-migration-validation).
 
 The CLI guidelines show surface filters existing loadEngineeringMap output by E entry/group IDs and category. Unknown selectors fail; filtering does not change advisory authority or retained phase policy.
+
+generateCgAgent composes both the principle index and the release-owned CG BOOTSTRAP block. Historical shared entries receive the required launcher/authority instructions without replacing authored surrounding guidance; malformed block markers fail rather than discard content.

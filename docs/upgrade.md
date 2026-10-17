@@ -28,6 +28,8 @@ The upgrade reuses init: current lifecycle skills and the four experts go into `
 - **Focused discovery:** optional route suggestions and bounded context hydration extend exact routing; advisory queries select E entries or categories. Existing exact-route APIs remain available. See [contracts](contracts.md).
 - **Receipt storage:** older receipts remain readable; successful close compacts legacy storage losslessly. Optional v3 delta compression requires compatible readers and can be converted back to v2. See [receipt storage](workflow.md#bounded-corrections-and-programme-selection).
 
+Init and sync refresh the shared agent entry’s marked CG BOOTSTRAP block, including when an older entry has only the generated principles index. Surrounding repository guidance, workflow and phase policy remain preserved.
+
 Fresh installations load relevant engineering advice conditionally. Existing workflow and phase policy remain preserved, including always-E choices; reconcile them deliberately rather than assuming init changed them. Init retires the exact obsolete prepared-plan reference only with matching prior ownership/hash evidence and a recoverable backup. Modified or unowned copies remain with a notice.
 
 V3 is not enabled automatically for new receipts. Before opting in with `cg delivery compact --programme <slug> --format delta`, coordinate all readers: 1.0.0 cannot read v3. Before reverting to an older CLI, use 1.1.0 to convert affected Closed receipts with `--format v2`; active receipts must complete their normal lifecycle before explicit compaction. Do not edit storage envelopes manually or close work solely to downgrade it.

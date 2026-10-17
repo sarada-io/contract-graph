@@ -881,20 +881,34 @@ export function generateCgAgent(repoRoot) {
   const current = readIfPresent(file);
   const legacyFile = path.join(repoRoot, LEGACY_CG_AGENT_ENTRY);
   const legacyPath = !current && exists(legacyFile) ? legacyFile : null;
-  const source = legacyPath ? read(legacyFile) : current || read(CG_AGENT_TEMPLATE);
+  const template = read(CG_AGENT_TEMPLATE);
+  const source = legacyPath ? read(legacyFile) : current || template;
+  const bootstrapBegin = "<!-- BEGIN CG BOOTSTRAP";
+  const bootstrapEnd = "<!-- END CG BOOTSTRAP -->";
+  const start = template.indexOf(bootstrapBegin);
+  const finish = template.indexOf(bootstrapEnd, start);
+  if (start < 0 || finish < start) throw new ContractError(`${CG_AGENT_TEMPLATE}: missing bootstrap block`);
+  const bootstrap = template.slice(start, finish + bootstrapEnd.length);
+  const unmarked = bootstrap.slice(bootstrap.indexOf("\n") + 1, bootstrap.lastIndexOf("\n"));
+  const refreshBootstrap = text => {
+    // Early 1.1 entries contain this exact release text without ownership markers.
+    // Adopt only byte-identical text; preserve other prose outside the managed block.
+    if (!text.includes(bootstrapBegin) && text.includes(unmarked)) text = text.replace(unmarked, bootstrap);
+    return applyBlock(text, bootstrap, file, bootstrapBegin, bootstrapEnd);
+  };
 
   if (source.includes(ROOT_BEGIN_MARKER)) {
     return {
       path: file,
       current,
       legacyPath,
-      desired: applyBlock(
+      desired: refreshBootstrap(applyBlock(
         source,
         renderRootIndex(repoRoot, "", { local: true }),
         file,
         ROOT_BEGIN_MARKER,
         ROOT_END_MARKER,
-      ),
+      )),
     };
   }
 
@@ -909,13 +923,13 @@ export function generateCgAgent(repoRoot) {
       path: file,
       current,
       legacyPath,
-      desired: applyBlock(
+      desired: refreshBootstrap(applyBlock(
         source,
         renderRootIndex(repoRoot, "", { local: true }),
         file,
         ROOT_BEGIN_MARKER,
         ROOT_END_MARKER,
-      ),
+      )),
     };
   }
   throw new ContractError(
