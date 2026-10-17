@@ -395,3 +395,15 @@ For ordinary wording, `cg contract route --task "…" --suggest` keeps exact mat
 Add `--hydrate` for deduplicated candidate context, ancestor responsibilities/forbids, relation pointers and resolved A/P definitions with provenance. `--limit 1` through `20` bounds candidates (default 3); related lists and ancestors are capped at 20, rules at 100 per context, and individual context values at 2,048 characters. Omissions and retrieval commands are explicit. Full descendant context requires a separate selected-ID query. These optional reports use structured JSON even without `--json`.
 
 `cg guidelines show --id E01-01,E02` selects advisory entries or groups; `--category "Structural Best Practices"` selects a category. Combining filters takes their intersection. Unknown IDs/categories fail. This reads the existing engineering catalogue and neither changes family authority nor overrides an adopter's loading policy.
+
+When exact routing finds nothing, retry `cg contract route --task "…" --suggest`.
+If candidates are absent or ambiguous, inspect `cg contract show`, browse
+`cg contract children --id <id>` one boundary at a time and select
+`cg contract context --id <id>`. Lexical search cannot establish semantic ownership.
+
+Add `--compact` to hydrated routing for the opt-in `compact-v1` representation.
+`contexts` reference shared `nodes` by contract path; node responsibilities contain
+forbids once, and shared rules retain their source. Pretty-printed JSON is bounded
+to 64 KiB including its trailing newline. Omitted contexts/candidates/metadata are
+counted and have retrieval guidance; follow those queries for required evidence.
+The expanded default and exact route API remain available.

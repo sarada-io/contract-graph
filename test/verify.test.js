@@ -2967,7 +2967,7 @@ test("init round trip writes exactly the canonical mapped file set", () => {
       expected.push(path.posix.join(rule.target, within));
     }
   }
-  expected.push(PROFILE, MANIFEST);
+  expected.push("src/CLAUDE.md", PROFILE, MANIFEST);
 
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cg-round-trip-"));
   init(dir, {});
@@ -3187,7 +3187,6 @@ test("the published tarball ships consumer sources and no maintainer tooling", t
     "agent/cg/schema/principles.schema.json",
     "agent/profiles/all.scaffolding.conf.json",
     "agent/profiles/agents.scaffolding.conf.json",
-    "agent/templates/module/CLAUDE.md",
     "agent/skills/cg-plan/SKILL.md",
   ]) {
     assert.ok(shipped.includes(required), `${required} must ship`);
@@ -3273,16 +3272,18 @@ test("the manifest keeps the original baseline for preserved context", () => {
   );
 });
 
-test("the shipped module pointer matches what cg sync generates", () => {
-  const expected = renderModulePointer("src", "src");
+test("one module template supplies starter pointers and nested module rendering", () => {
+  const template = fs.readFileSync(path.join(SOURCE_ROOT, "install/templates/module/AGENTS.md"), "utf8");
   assert.equal(
-    fs.readFileSync(path.join(SOURCE_ROOT, "install/templates/module/AGENTS.md"), "utf8"),
-    expected,
+    renderModulePointer("src", "src"),
+    template,
   );
-  assert.equal(
-    fs.readFileSync(path.join(SOURCE_ROOT, "install/templates/module/CLAUDE.md"), "utf8"),
-    expected,
-  );
+  const nested = renderModulePointer("billing/payments", "Payments $&");
+  assert.ok(nested.startsWith("# Payments $& — agent entry point\n"));
+  assert.match(nested, /`\.\.\/\.\.\/\.agents\/cg\/principles\/architecture\.yaml`/);
+  const dir = makeRepo();
+  assert.equal(read(dir, "src/AGENTS.md"), template);
+  assert.equal(read(dir, "src/CLAUDE.md"), template);
 });
 
 test("sync rewrites a module pointer that still names contract.md", () => {

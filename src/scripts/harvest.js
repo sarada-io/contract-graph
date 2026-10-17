@@ -19,7 +19,6 @@ import path from "node:path";
 import {
   BEST_PRACTICE_FAMILIES,
   CORE_BINDING_FAMILIES,
-  FORK_FAMILIES,
   PLAN_TICKET,
   RULE_FAMILIES,
   planPathPattern,
@@ -34,7 +33,6 @@ export const DESTINATIONS = Object.freeze([
   ...CORE_BINDING_FAMILIES,
   ...RULE_FAMILIES,
   ...BEST_PRACTICE_FAMILIES,
-  ...FORK_FAMILIES,
   "drop",
 ]);
 
@@ -201,16 +199,6 @@ export function checkHarvest(
     } else if (BEST_PRACTICE_FAMILIES.includes(entry.destination)) {
       // A best practice is deliberately advisory. It moves to A only after it acquires the
       // structural impact, measure, detector, and negative fixture required above.
-    } else if (FORK_FAMILIES.includes(entry.destination)) {
-      if (!["invariant", "guide"].includes(entry.modality)) {
-        fail(
-          `${name}: ${id} promotes to ${entry.destination} without \`modality\` of invariant or guide`,
-        );
-      } else if (entry.modality === "invariant" && !isNonEmptyString(entry.detector)) {
-        fail(`${name}: ${id} is a ${entry.destination} invariant and owes a detector`);
-      } else if (entry.modality === "guide" && !isNonEmptyString(entry.cost)) {
-        fail(`${name}: ${id} is a ${entry.destination} guide and owes a cost clause`);
-      }
     } else if (!isNonEmptyString(entry.detector)) {
       fail(`${name}: ${id} promotes to ${entry.destination} and owes a detector`);
     }

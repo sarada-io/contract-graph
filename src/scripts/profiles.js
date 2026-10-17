@@ -70,6 +70,21 @@ export function profileChoices(root = PROFILE_CONFIG_ROOT) {
 export const profilePath = (repoRoot) =>
   path.join(repoRoot, ".agents", "cg", "profile.json");
 
+/** Legacy read-only queries tolerate missing/malformed records; delivery fails closed. */
+export function readDocsRoot(repoRoot, { strict = false } = {}) {
+  const read = () => {
+    const file = profilePath(repoRoot);
+    return fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, "utf8")).docs ?? DEFAULT_DOCS_ROOT : DEFAULT_DOCS_ROOT;
+  };
+  if (!strict) {
+    try { return read(); }
+    catch { return DEFAULT_DOCS_ROOT; }
+  }
+  const docs = read();
+  if (typeof docs !== "string" || !/^[^./\\][^/\\]*$/.test(docs) || docs === "..") throw new Error("invalid docs root in profile");
+  return docs;
+}
+
 function fieldError(file, field, message) {
   throw new ProfileError(`${file}: field \`${field}\` ${message}`);
 }

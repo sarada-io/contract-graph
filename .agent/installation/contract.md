@@ -14,7 +14,7 @@ plan, obtains confirmation, applies init, then runs sync and verification when m
 | Catalog refresh, schema-identity updates, backups and apply rollback | [init-catalogs.js](../../src/scripts/init-catalogs.js) |
 | Legacy catalog format conversion | [migrate-principles.js](../../src/scripts/migrate-principles.js) |
 | Derived agent pointers and editor discovery (`cg sync`) | [sync.js](../../src/scripts/sync.js) |
-| Profile configuration and selection (`cg profiles`) | [profiles.js](../../src/scripts/profiles.js), [profile data](../../src/install/profiles) |
+| Profile configuration, selection (`cg profiles`) and shared docs-root reading | [profiles.js](../../src/scripts/profiles.js), [profile data](../../src/install/profiles) |
 | Interactive selection | [picker.js](../../src/scripts/picker.js) |
 | Installed host admission hook | [cg-gate.mjs](../../src/install/hooks/cg-gate.mjs) |
 
@@ -54,6 +54,7 @@ Keep dry-run results useful for review and preserve the existing missing-rationa
   honestly. Catalog rollback does not make the whole init/sync/verify sequence transactional.
 - Init scaffolds `.agents/cg/project-context.md` only when absent and preserves repository-authored context and its approval record on subsequent runs.
 - Sync regenerates derived artifacts; it does not become a second installer.
+- One starter `module/AGENTS.md` template supplies the selected AGENTS/CLAUDE filenames through the existing scaffold enumeration. Sync renders that same body for nested units and continues copying an existing sibling when adding a profile. `profiles.js` owns docs-root reads: legacy read-only queries retain their tolerant fallback, while delivery retains strict validation.
 - Preview and apply report retained retired stages, absent optional phase entries and conditional/missing E loading. These notices do not change `--check`'s file-drift exit semantics, force E adoption or claim workflow reconciliation; malformed policy still fails ordinary verification.
 
 Consumes [Distribution](../distribution/contract.md)'s package layout/identity, [Verification](../verification/contract.md)'s
@@ -68,3 +69,5 @@ then `npm test`. Profile changes also need the real-host checks in
 Retirement of the exact removed planning reference requires a non-adopted prior manifest hash matching current bytes. Uncertain or modified content stays active with a reconciliation notice. Backup failures and observed concurrent edits preserve the active file. No pattern-based retirement or backup cleanup is performed.
 
 Sync refreshes the release-owned CG BOOTSTRAP block in the shared agent entry and inserts it into historical entries lacking it. It preserves surrounding repository prose, workflow and phase policy. Exact unmarked early-1.1 bootstrap text is adopted into the block without duplication; custom text is preserved.
+
+Init preserves repository-owned workflow and reports a routing-recovery notice when retained guidance lacks suggestions; refreshed generated bootstrap carries the recovery sequence.

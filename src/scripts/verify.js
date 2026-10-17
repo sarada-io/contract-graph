@@ -50,7 +50,6 @@ import {
   phaseTokens,
   guidelinesRoot,
   principleFiles,
-  FORK_FAMILIES,
   RULE_FAMILIES as FAMILIES,
   loadEnforcementMap,
   loadEngineeringMap,
@@ -360,7 +359,7 @@ function enforcementRuleIds(fail, repoRoot) {
  * map may not cite a product rule no guideline file defines. Core A enforcement lives in the
  * architecture catalog; engineering guidelines never appear here.
  */
-export function checkPrincipleEnforcement(fail, repoRoot, rules, ids) {
+export function checkPrincipleEnforcement(fail, rules, ids) {
   const productRules = new Map([...rules].filter(([ruleId]) => familyOf(ruleId) === "P"));
   if (ids === null) {
     if (productRules.size) fail(`[10] principles: missing enforcement map \`${ENFORCEMENT_FILENAME}\``);
@@ -398,7 +397,7 @@ export function checkPhases(fail, repoRoot) {
 
   // Every family ships; the phase map is the only thing that decides where each is loaded.
   const present = [...CORE_BINDING_FAMILIES, ...principleFiles(repoRoot).flatMap((info) => info.families)];
-  const known = new Set([...CORE_BINDING_FAMILIES, ...FAMILIES, ...BEST_PRACTICE_FAMILIES, ...FORK_FAMILIES]);
+  const known = new Set([...CORE_BINDING_FAMILIES, ...FAMILIES, ...BEST_PRACTICE_FAMILIES]);
 
   const named = phaseTokens(phases);
   for (const token of named) {
@@ -427,7 +426,7 @@ export function checkPhases(fail, repoRoot) {
       }
     }
     for (const family of entry.always) {
-      if (!binding.includes(family) && !BEST_PRACTICE_FAMILIES.includes(family) && !FORK_FAMILIES.includes(family)) {
+      if (!binding.includes(family) && !BEST_PRACTICE_FAMILIES.includes(family)) {
         fail(
           `[11] phases.json: ${phase}.always contains unknown non-binding family \`${family}\``,
         );
@@ -445,7 +444,7 @@ export function checkPhases(fail, repoRoot) {
 }
 
 /** Verify the non-binding engineering catalog and its enforcement-map exclusions. */
-export function checkForkPrinciples(fail, repoRoot, enforcementIds) {
+export function checkEngineeringPrinciples(fail, repoRoot, enforcementIds) {
   const root = guidelinesRoot(repoRoot);
   if (!exists(root)) return 0;
 
@@ -461,35 +460,13 @@ export function checkForkPrinciples(fail, repoRoot, enforcementIds) {
     return 0;
   }
 
-  const rules = new Map();
-  for (const principle of catalog.principles) {
-    for (const rule of principle.rules) {
-      if (rules.has(rule.id)) fail(`[10] fork principles: duplicate rule ID \`${rule.id}\``);
-      else rules.set(rule.id, rule.modality);
-    }
-  }
-
+  // Catalog validation owns rule identity and shape; E is always advisory.
+  const rules = new Set(catalog.principles.flatMap(principle => principle.rules.map(rule => rule.id)));
   if (enforcementIds === null && rules.size) {
-    fail(`[10] fork principles: missing enforcement map \`${ENFORCEMENT_FILENAME}\``);
+    fail(`[10] engineering principles: missing enforcement map \`${ENFORCEMENT_FILENAME}\``);
   }
-  const ids = enforcementIds ?? [];
-
-  const count = (id) => ids.filter((x) => x === id).length;
-  for (const [ruleId, modality] of rules) {
-    if (modality === "invariant" && count(ruleId) !== 1) {
-      fail(`[10] invariant \`${ruleId}\` must have exactly one enforcement-map row`);
-    }
-    if ((modality === "guide" || modality === "best-practice") && count(ruleId)) {
-      fail(`[10] non-binding ${modality} \`${ruleId}\` must not have an enforcement-map row`);
-    }
-  }
-  for (const ruleId of [...new Set(ids)].sort()) {
-    if (familyOf(ruleId) !== "P" && !rules.has(ruleId)) {
-      fail(`[10] enforcement map references unknown principle ID \`${ruleId}\``);
-    }
-    if (count(ruleId) > 1) {
-      fail(`[10] enforcement map contains duplicate principle ID \`${ruleId}\``);
-    }
+  for (const ruleId of enforcementIds ?? []) {
+    if (rules.has(ruleId)) fail(`[10] non-binding best-practice \`${ruleId}\` must not have an enforcement-map row`);
   }
 
   return rules.size;
@@ -708,8 +685,8 @@ export function verify(repoRoot) {
   checkPhases(fail, repoRoot);
   const skillCount = checkSkills(fail, repoRoot, CORE_CG_SKILLS, profile);
   const enforcementIds = enforcementRuleIds(fail, repoRoot);
-  const engineeringCount = checkForkPrinciples(fail, repoRoot, enforcementIds);
-  checkPrincipleEnforcement(fail, repoRoot, bindingRules, enforcementIds);
+  const engineeringCount = checkEngineeringPrinciples(fail, repoRoot, enforcementIds);
+  checkPrincipleEnforcement(fail, bindingRules, enforcementIds);
   adviseUnarchivedClosures((message) => advisories.push(message), repoRoot, profile.docs);
 
   // Same shape as the orphan wrapper check: narrowing the profile selection must not leave a

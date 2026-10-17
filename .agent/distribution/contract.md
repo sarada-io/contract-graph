@@ -32,6 +32,8 @@ Neither build nor a maintainer helper may introduce a parallel repository-upgrad
 Runtime identity is consumed by Installation and [Delivery](../delivery/contract.md), not evidence of human
 acceptance or proof that a running agent has reloaded instructions.
 
+Runtime identity includes the module starter template because discovery rendering reads it. Build validates authored catalogs and registered source filenames without a compiler-output pipeline; the published manifest and CLI retain the `principles` compiler entry with an empty output list for compatibility.
+
 Before builds or destructive cleanup, resolve global `cg`. If it points into this checkout's
 `dist/build`, or resolution is uncertain, validate in a disposable copy. Tests of the maintainer
 menu can clean/build too. Do not globally install, publish or update adopters during ordinary

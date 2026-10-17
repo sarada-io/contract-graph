@@ -11,7 +11,7 @@ import { fileURLToPath } from "node:url";
 
 import { BINDING_FILENAME, loadCoreBindingRules, validateBindingCatalog } from "./binding.js";
 import { parseContractYaml } from "./contracts.js";
-import { PRINCIPLES_SCHEMA_ID, PRINCIPLES_VERSION, validateGuidelineCatalog } from "./catalog.js";
+import { PRINCIPLES_SCHEMA_ID, validateGuidelineCatalog } from "./catalog.js";
 export { PRINCIPLES_SCHEMA_ID, PRINCIPLES_VERSION } from "./catalog.js";
 
 export const ROOT_BEGIN_MARKER = "<!-- BEGIN PRINCIPLES INDEX";
@@ -24,25 +24,9 @@ export const RULE_FAMILIES = ["P"];
 export const CORE_BINDING_FAMILIES = ["A"];
 export const BEST_PRACTICE_FAMILIES = ["E"];
 
-/** Empty: decision guidance lives in the E catalog, not a second family. */
-export const FORK_FAMILIES = [];
-export const ALL_FAMILIES = [...RULE_FAMILIES, ...BEST_PRACTICE_FAMILIES, ...FORK_FAMILIES];
+export const ALL_FAMILIES = [...RULE_FAMILIES, ...BEST_PRACTICE_FAMILIES];
 
 export const familyOf = (id) => (typeof id === "string" && /^[A-Z]/.test(id) ? id[0] : "");
-
-const FAMILY_ALT = RULE_FAMILIES.join("|");
-const ANY_FAMILY = ALL_FAMILIES.join("|");
-
-export const RULE_START = new RegExp(
-  String.raw`^- \*\*((?:${FAMILY_ALT})\d{2}-\d{2})\*\*\s+—\s+(.*)$`,
-);
-const ANY_RULE_START = new RegExp(
-  String.raw`^- \*\*((?:${ANY_FAMILY})\d{2}-\d{2})\*\*(?: \`(invariant|guide)\`)?\s+—\s+(.*)$`,
-);
-/** Headings are parsed for every family. */
-export const PRINCIPLE_HEADING = new RegExp(
-  String.raw`^#{2,3} ((?:${ANY_FAMILY})\d{2})\. (.+?)\s*$`,
-);
 
 export const FAMILY_BLURB = {
   A: "Architecture Principles — machine-enforced structural integrity supplied by Contract Graph (global MUST).",
@@ -55,43 +39,25 @@ export const PRINCIPLE_FILES = Object.freeze({
   "engineering.yaml": {
     families: [...BEST_PRACTICE_FAMILIES],
     bindingFamilies: [],
-    bestPracticeFamilies: BEST_PRACTICE_FAMILIES,
-    forkFamilies: FORK_FAMILIES,
     boundaryScopedFamilies: [],
-    format: "yaml",
   },
   "product.yaml": {
     families: ["P"],
     bindingFamilies: ["P"],
-    bestPracticeFamilies: [],
-    forkFamilies: [],
     boundaryScopedFamilies: ["P"],
     allowEmpty: true,
-    format: "yaml",
   },
 });
 
-export const ARCHITECTURE_SCHEMA_ID = PRINCIPLES_SCHEMA_ID;
 export const ENGINEERING_SCHEMA_ID = PRINCIPLES_SCHEMA_ID;
-export const ENGINEERING_VERSION = PRINCIPLES_VERSION;
 export const ENGINEERING_FILENAME = ".agents/cg/guidelines/engineering.yaml";
 export const PRODUCT_SCHEMA_ID = PRINCIPLES_SCHEMA_ID;
-export const PRODUCT_VERSION = PRINCIPLES_VERSION;
 export const PRODUCT_FILENAME = ".agents/cg/guidelines/product.yaml";
 const PRINCIPLE_STALE = Object.freeze({
   "engineering.yaml": ["engineering.md", "engineering.json", "design.yaml", "design.md", "design.json"],
   "product.yaml": ["product.md", "product.json"],
 });
 const PRINCIPLE_STALE_NAMES = Object.freeze(Object.values(PRINCIPLE_STALE).flat());
-
-/** Map an installed catalog filename onto its PRINCIPLE_FILES key. */
-export function principleLogicalName(filename) {
-  if (!filename.endsWith(".json")) return filename;
-  const stem = filename.slice(0, -".json".length);
-  if (PRINCIPLE_FILES[`${stem}.md`]) return `${stem}.md`;
-  if (PRINCIPLE_FILES[`${stem}.yaml`]) return `${stem}.yaml`;
-  return `${stem}.md`;
-}
 
 /** Root entry file -> prefix that reaches `.agents/cg/` from that file's directory. */
 export const ROOT_POINTERS = {
@@ -115,15 +81,8 @@ const CG_AGENT_TEMPLATE = fs.existsSync(PACKAGED_CG_AGENT_TEMPLATE)
   ? PACKAGED_CG_AGENT_TEMPLATE
   : path.join(RUNTIME_ROOT, "cg", "contract-graph-agent.md");
 
-/** Default root for the three scaffolded document trees. Overridable at `cg init`. */
+/** Default root for scaffolded document trees. Overridable at `cg init`. */
 export const DEFAULT_DOCS_ROOT = "docs";
-
-/** The document trees `init` creates under the docs root, and what each one is for. */
-export const DOCS_TREES = Object.freeze({
-  plans: "transient — roadmaps, preparation records, and the decision log",
-  decisions: "permanent — decision records a contract may cite",
-  guides: "permanent — operator and product guidance",
-});
 
 /**
  * The Contract Self-Sufficiency Rule, machine-checked. A permanent contract may cite
@@ -171,7 +130,6 @@ export const skillsRoot = (repoRoot) => path.join(repoRoot, ".agents", "skills")
  * Every path the tool reads or writes is named here once, so a rename is
  * one edit rather than a search across three modules and twenty deliverables.
  */
-export const principlesRoot = (repoRoot) => path.join(cgRoot(repoRoot), "principles");
 export const guidelinesRoot = (repoRoot) => path.join(cgRoot(repoRoot), "guidelines");
 export const ENFORCEMENT_SCHEMA_ID =
   "https://contractgraph.dev/schema/enforcement-v1.schema.json";
@@ -179,7 +137,6 @@ export const ENFORCEMENT_VERSION = "1.0";
 export const ENFORCEMENT_FILENAME = ".agents/cg/enforcement.yaml";
 const ENFORCEMENT_RULE = /^P\d{2}-\d{2}$/;
 const ENFORCEMENT_STALE = ["enforcement.md", "enforcement.json"];
-export const architecturePath = (repoRoot) => path.join(principlesRoot(repoRoot), "architecture.yaml");
 export const engineeringPath = (repoRoot) => path.join(guidelinesRoot(repoRoot), "engineering.yaml");
 export const productPath = (repoRoot) => path.join(guidelinesRoot(repoRoot), "product.yaml");
 
@@ -435,15 +392,12 @@ export function principleFiles(repoRoot, { boundaryScopedOnly = false, bindingOn
     .filter((entry) => entry.isFile() && /\.(?:md|json|ya?ml)$/.test(entry.name))
     .filter((entry) => !PRINCIPLE_STALE_NAMES.includes(entry.name))
     .map((entry) => {
-      const logicalName = principleLogicalName(entry.name);
+      const logicalName = entry.name;
       const spec = PRINCIPLE_FILES[logicalName];
       if (!spec) {
         throw new ContractError(
           `invalid guidelines filename ${entry.name}; expected one of ` +
-            `${Object.keys(PRINCIPLE_FILES).flatMap((name) => {
-              const compiled = name.replace(/\.md$/, ".json");
-              return compiled === name ? [name] : [name, compiled];
-            }).join(", ")}`,
+            `${Object.keys(PRINCIPLE_FILES).join(", ")}`,
         );
       }
       return {
@@ -455,265 +409,31 @@ export function principleFiles(repoRoot, { boundaryScopedOnly = false, bindingOn
           : bindingOnly
             ? spec.bindingFamilies
             : spec.families,
-        catalogFamilies: spec.families,
-        bindingFamilies: spec.bindingFamilies,
-        bestPracticeFamilies: spec.bestPracticeFamilies,
-        forkFamilies: spec.forkFamilies,
-        binding: spec.bindingFamilies.length > 0,
-        fork: spec.forkFamilies.length > 0,
-        boundaryScoped: spec.boundaryScopedFamilies.length > 0,
         allowEmpty: Boolean(spec.allowEmpty),
       };
     })
     .filter((info) => info.families.length > 0)
     .sort((a, b) => a.filename.localeCompare(b.filename));
-  const stems = new Map();
-  for (const info of files) {
-    const stem = info.filename.replace(/\.(?:md|json|ya?ml)$/, "");
-    const names = stems.get(stem) ?? [];
-    names.push(info.filename);
-    stems.set(stem, names);
-  }
-  for (const [stem, names] of stems) {
-    if (names.length > 1) {
-      throw new ContractError(
-        `${root}: duplicate principle catalog formats for ${stem}: ${names.join(", ")}`,
-      );
-    }
-  }
   return files;
 }
 
-/** Read one JSON or YAML principle catalog. */
+/** Load a canonical YAML guideline catalog through its family validator. */
 export function readPrincipleCatalog(file) {
-  const logical = principleLogicalName(path.basename(file));
-  if (logical === "engineering.yaml") return loadEngineeringCatalog(file);
-  if (logical === "product.yaml") return loadProductCatalog(file);
-  let catalog;
-  try {
-    catalog = JSON.parse(read(file));
-  } catch (error) {
-    throw new ContractError(`${file}: invalid JSON: ${error.message}`);
-  }
-  if (!catalog || typeof catalog !== "object" || !Array.isArray(catalog.principles)) {
-    throw new ContractError(`${file}: expected a compiled principle catalog`);
-  }
-  if (catalog.categories !== undefined) {
-    if (
-      !Array.isArray(catalog.categories) ||
-      !catalog.categories.length ||
-      catalog.categories.some((category) => typeof category !== "string" || !category.trim()) ||
-      new Set(catalog.categories).size !== catalog.categories.length
-    ) {
-      throw new ContractError(`${file}: categories must be unique non-empty strings`);
-    }
-    const known = new Set(catalog.categories);
-    const invalid = catalog.principles.find(
-      (principle) => typeof principle?.category !== "string" || !known.has(principle.category),
-    );
-    if (invalid) {
-      throw new ContractError(
-        `${file}: principle ${invalid.id ?? "<unknown>"} requires one category declared by the catalog`,
-      );
-    }
-  } else if (catalog.principles.some((principle) => principle && "category" in principle)) {
-    throw new ContractError(`${file}: a principle category requires a catalog categories list`);
-  }
-  const rules = catalog.principles.flatMap((principle) => principle?.rules ?? []);
-  if (rules.some((rule) => !rule || typeof rule.id !== "string" || typeof rule.text !== "string")) {
-    throw new ContractError(`${file}: compiled rules require string id and text fields`);
-  }
-  return catalog;
+  const filename = path.basename(file);
+  if (filename === "engineering.yaml") return loadEngineeringCatalog(file);
+  if (filename === "product.yaml") return loadProductCatalog(file);
+  throw new ContractError(`invalid guidelines filename ${filename}; expected one of ${Object.keys(PRINCIPLE_FILES).join(", ")}`);
 }
 
-/** Yield Markdown lines outside fenced code blocks. Examples must remain visible but inert. */
-function markdownProseLines(text) {
-  const prose = [];
-  let fence = null;
-  for (const line of splitLines(text)) {
-    const marker = /^\s*(`{3,}|~{3,})/.exec(line);
-    if (marker) {
-      const next = marker[1][0];
-      if (fence === null) fence = next;
-      else if (fence === next) fence = null;
-      continue;
-    }
-    if (fence === null) prose.push(line);
-  }
-  return prose;
-}
-
-/**
- * Return {ruleId: single-line full text} from one principles file.
- *
- * A rule is a `- **XX-pp-nn** — ...` bullet whose text may wrap onto indented continuation
- * lines. Continuations are joined and whitespace collapsed so the rule occupies exactly one
- * line in a generated digest, without losing wording.
- *
- * `allowEmpty` exists for `product.yaml`, which ships with no rules by design.
- */
+/** Return binding rule text from one validated YAML catalog. */
 export function parsePrinciples(file, { allowEmpty = false, families = RULE_FAMILIES } = {}) {
   if (!exists(file)) throw new ContractError(`missing principles file: ${file}`);
-
-  if (file.endsWith(".json") || file.endsWith(".yaml") || file.endsWith(".yml")) {
-    const catalog = readPrincipleCatalog(file);
-    const rules = new Map();
-    for (const rule of catalog.principles.flatMap((principle) => principle.rules)) {
-      if (rule.modality !== "binding" || !families.includes(familyOf(rule.id))) continue;
-      if (rules.has(rule.id)) throw new ContractError(`duplicate rule id ${rule.id} in ${file}`);
-      rules.set(rule.id, rule.statement ?? rule.text);
-    }
-    if (!rules.size && !allowEmpty) throw new ContractError(`no XX-pp-nn rules parsed from ${file}`);
-    return rules;
-  }
-
-  const rules = new Map();
-  let currentId = null;
-  let parts = [];
-
-  const flush = () => {
-    if (currentId === null) return;
-    const text = parts.join(" ").split(/\s+/).filter(Boolean).join(" ");
-    if (!text) throw new ContractError(`${currentId} has no rule text in ${file}`);
-    if (rules.has(currentId)) throw new ContractError(`duplicate rule id ${currentId} in ${file}`);
-    rules.set(currentId, text);
-  };
-
-  for (const raw of markdownProseLines(read(file))) {
-    const match = RULE_START.exec(raw);
-    if (match) {
-      flush();
-      if (!families.includes(familyOf(match[1]))) {
-        currentId = null;
-        parts = [];
-        continue;
-      }
-      currentId = match[1];
-      parts = [match[2]];
-      continue;
-    }
-    if (currentId === null) continue;
-    // Continuation lines are indented and non-empty; anything else ends the rule.
-    if (raw.trim() && /^[ \t]/.test(raw) && !raw.trimStart().startsWith("- ")) {
-      parts.push(raw.trim());
-      continue;
-    }
-    flush();
-    currentId = null;
-    parts = [];
-  }
-  flush();
-
-  if (rules.size === 0 && !allowEmpty) {
-    throw new ContractError(`no XX-pp-nn rules parsed from ${file}`);
-  }
+  const catalog = readPrincipleCatalog(file);
+  const rules = new Map(catalog.principles.flatMap(principle => principle.rules)
+    .filter(rule => rule.modality === "binding" && families.includes(familyOf(rule.id)))
+    .map(rule => [rule.id, rule.statement]));
+  if (!rules.size && !allowEmpty) throw new ContractError(`no XX-pp-nn rules parsed from ${file}`);
   return rules;
-}
-
-/**
- * Return [{principle, rules, ruleIds}] for one file, in document order.
- *
- * Rules appearing before any heading are collected under `null`, which the correspondence
- * check rejects by name rather than silently attributing them to nothing.
- */
-export function parseRuleSections(file) {
-  if (file.endsWith(".json") || file.endsWith(".yaml") || file.endsWith(".yml")) {
-    return readPrincipleCatalog(file).principles.map((principle) => ({
-      principle: principle.id,
-      rules: principle.rules.map((rule) => ({ id: rule.id, modality: rule.modality })),
-      ruleIds: principle.rules.map((rule) => rule.id),
-    }));
-  }
-  const logicalName = principleLogicalName(path.basename(file));
-  const spec = PRINCIPLE_FILES[logicalName];
-  const sections = [];
-  let current = { principle: null, rules: [], ruleIds: [] };
-  for (const raw of markdownProseLines(read(file))) {
-    const heading = PRINCIPLE_HEADING.exec(raw);
-    if (heading) {
-      if (current.principle !== null || current.ruleIds.length) sections.push(current);
-      current = { principle: heading[1], rules: [], ruleIds: [] };
-      continue;
-    }
-    const rule = ANY_RULE_START.exec(raw);
-    if (rule) {
-      const family = familyOf(rule[1]);
-      const modality = rule[2] ?? (spec?.bestPracticeFamilies.includes(family) ? "best-practice" : "binding");
-      current.rules.push({ id: rule[1], modality });
-      current.ruleIds.push(rule[1]);
-    }
-  }
-  if (current.principle !== null || current.ruleIds.length) sections.push(current);
-  return sections;
-}
-
-/**
- * Enforce the identity a principles file carries: its family, its headings, and — the part
- * a filename cannot express once a file holds several principles — that every rule sits
- * under the heading matching its own principle number.
- *
- * Without the heading check, `E01-03` filed under `## E04.` parses cleanly and resolves
- * under a principle it does not belong to. That
- * was unreachable while each file held exactly one principle and the filename carried the
- * ID; it became reachable the moment the families were collapsed into one file each.
- */
-function assertPrincipleCorrespondence(
-  { file, filename, catalogFamilies, bindingFamilies, bestPracticeFamilies, forkFamilies },
-  rules,
-) {
-  const sections = parseRuleSections(file);
-  const seen = new Set();
-
-  for (const { principle, rules: sectionRules, ruleIds } of sections) {
-    if (principle === null) {
-      const expected = catalogFamilies.length === 1 ? ` \`## ${catalogFamilies[0]}nn.\` heading` : " principle heading";
-      throw new ContractError(
-        `${filename}: rule(s) ${ruleIds.join(", ")} appear before any${expected}`,
-      );
-    }
-    const principleFamily = familyOf(principle);
-    if (!catalogFamilies.includes(principleFamily)) {
-      throw new ContractError(
-        `${filename} holds ${catalogFamilies.join(", ")} principles; \`## ${principle}.\` belongs in another file`,
-      );
-    }
-    if (seen.has(principle)) {
-      throw new ContractError(`${filename} defines \`## ${principle}.\` more than once`);
-    }
-    seen.add(principle);
-
-    for (const ruleId of ruleIds) {
-      const owner = ruleId.slice(0, ruleId.lastIndexOf("-"));
-      if (owner !== principle) {
-        throw new ContractError(
-          `${filename}: \`${ruleId}\` sits under \`## ${principle}.\` but belongs to ` +
-            `\`## ${owner}.\``,
-        );
-      }
-    }
-    for (const rule of sectionRules) {
-      const family = familyOf(rule.id);
-      if (bindingFamilies.includes(family) && rule.modality !== "binding") {
-        throw new ContractError(`${filename}: binding rule \`${rule.id}\` must not declare a fork modality`);
-      }
-      if (bestPracticeFamilies.includes(family) && rule.modality !== "best-practice") {
-        throw new ContractError(`${filename}: architecture rule \`${rule.id}\` must be a non-binding best practice`);
-      }
-      if (forkFamilies.includes(family) && rule.modality === "binding") {
-        throw new ContractError(
-          `${filename}: fork-loaded rule \`${rule.id}\` requires an \`invariant\` or \`guide\` modality`,
-        );
-      }
-    }
-  }
-
-  for (const ruleId of rules.keys()) {
-    if (!catalogFamilies.some((family) => familyOf(ruleId) === family)) {
-      throw new ContractError(
-        `\`${ruleId}\` is a ${familyOf(ruleId)} rule and does not belong in ${filename}`,
-      );
-    }
-  }
 }
 
 /**
@@ -737,7 +457,6 @@ export function loadBindingPrinciples(repoRoot) {
 function loadPrincipleRules(repoRoot, selection) {
   const merged = new Map();
   const owners = new Map();
-  const principleOwners = new Map();
   const files = principleFiles(repoRoot, selection);
   if (selection.bindingOnly) {
     const present = new Set(files.map((info) => info.logicalName));
@@ -752,7 +471,6 @@ function loadPrincipleRules(repoRoot, selection) {
   for (const info of files) {
     const { file, filename, allowEmpty, families } = info;
     const rules = parsePrinciples(file, { allowEmpty, families });
-    assertPrincipleCorrespondence(info, rules);
     for (const [ruleId, text] of rules) {
       if (merged.has(ruleId)) {
         throw new ContractError(
@@ -761,15 +479,6 @@ function loadPrincipleRules(repoRoot, selection) {
       }
       merged.set(ruleId, text);
       owners.set(ruleId, filename);
-    }
-    for (const { principle } of parseRuleSections(file)) {
-      if (principle === null) continue;
-      if (principleOwners.has(principle)) {
-        throw new ContractError(
-          `${principle} is defined by both ${principleOwners.get(principle)} and ${filename}`,
-        );
-      }
-      principleOwners.set(principle, filename);
     }
   }
   if (merged.size === 0 && !selection.allowEmptyResult) {
@@ -787,47 +496,17 @@ function loadPrincipleRules(repoRoot, selection) {
 export function parsePrincipleIndex(file, { allowEmpty = false, families = RULE_FAMILIES } = {}) {
   if (!exists(file)) throw new ContractError(`missing principles file: ${file}`);
 
-  if (file.endsWith(".json") || file.endsWith(".yaml") || file.endsWith(".yml")) {
-    const index = readPrincipleCatalog(file).principles
-      .filter((principle) => families.includes(familyOf(principle.id)))
-      .map((principle) => ({
-        id: principle.id,
-        title: principle.title,
-        count: principle.rules.filter((rule) => rule.modality === "binding").length,
-      }));
-    if (!index.length && !allowEmpty) {
-      throw new ContractError(`no principle entries found in ${file}`);
-    }
-    const orphan = index.filter((entry) => !entry.count).map((entry) => entry.id);
-    if (orphan.length) throw new ContractError(`principle(s) with no rules in ${file}: ${orphan.join(", ")}`);
-    return index;
-  }
-
-  const index = [];
-  const counts = new Map();
-  for (const raw of markdownProseLines(read(file))) {
-    const heading = PRINCIPLE_HEADING.exec(raw);
-    if (heading) {
-      if (families.includes(familyOf(heading[1]))) {
-        index.push({ id: heading[1], title: heading[2] });
-      }
-      continue;
-    }
-    const rule = RULE_START.exec(raw);
-    if (rule) {
-      const principle = rule[1].slice(0, rule[1].lastIndexOf("-"));
-      counts.set(principle, (counts.get(principle) ?? 0) + 1);
-    }
-  }
-
-  if (index.length === 0 && !allowEmpty) {
-    throw new ContractError(`no \`## XX-nn. Title\` principle headings found in ${file}`);
-  }
-  const orphan = index.filter((e) => !counts.has(e.id)).map((e) => e.id);
-  if (orphan.length) {
-    throw new ContractError(`principle(s) with no rules in ${file}: ${orphan.join(", ")}`);
-  }
-  return index.map((e) => ({ ...e, count: counts.get(e.id) }));
+  const index = readPrincipleCatalog(file).principles
+    .filter(principle => families.includes(familyOf(principle.id)))
+    .map(principle => ({
+      id: principle.id,
+      title: principle.title,
+      count: principle.rules.filter(rule => rule.modality === "binding").length,
+    }));
+  if (!index.length && !allowEmpty) throw new ContractError(`no principle entries found in ${file}`);
+  const orphan = index.filter(entry => !entry.count).map(entry => entry.id);
+  if (orphan.length) throw new ContractError(`principle(s) with no rules in ${file}: ${orphan.join(", ")}`);
+  return index;
 }
 
 /** The merged principle index across every principles file, in family order. */
@@ -1044,29 +723,12 @@ export function modulePointerPrefix(unit) {
   return "../".repeat(Math.max(depth, 1));
 }
 
-/**
- * The short module pointer `cg sync` writes so a newly governed module is openable as a
- * workspace root. Matches `install/templates/module/AGENTS.md` for unit `src`.
- */
+/** Render every module pointer from the single starter template. */
 export function renderModulePointer(unit, name = unit) {
-  const prefix = modulePointerPrefix(unit);
-  return [
-    `# ${name} — agent entry point`,
-    "",
-    "This folder is openable as a workspace root on its own.",
-    "",
-    "**Start here: `.agents/cg/contract.yaml`** — how this module is used by the project, its boundary,",
-    "entry points, and the child contracts that locate narrower responsibilities. Traverse those",
-    "contracts before reading implementation.",
-    "",
-    `The structural rules that bind every boundary are in \`${prefix}.agents/cg/principles/architecture.yaml\`.`,
-    `Repository product and engineering guidelines are under \`${prefix}.agents/cg/guidelines/\`; engineering entries there are`,
-    "SHOULD, not a verify failure.",
-    `For the lifecycle workflow, read \`${prefix}.agents/cg/workflow.md\`.`,
-    "",
-    "Do not put instructions in this file.",
-    "",
-  ].join("\n");
+  const template = path.join(RUNTIME_ROOT, fs.existsSync(PACKAGED_CG_AGENT_TEMPLATE) ? "agent/templates/module/AGENTS.md" : "install/templates/module/AGENTS.md");
+  return read(template)
+    .replace(/^# src — agent entry point/, () => `# ${name} — agent entry point`)
+    .replaceAll("../.agents/cg/", modulePointerPrefix(unit) + ".agents/cg/");
 }
 
 /** Return {path, current, desired} for one module pointer file. */

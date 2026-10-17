@@ -24,14 +24,14 @@ Skill metadata accepts LF and CRLF line endings without rewriting source content
 
 | Task | Start here |
 | --- | --- |
-| Repository paths and default docs layout | `model.js`: `cgRoot`, `skillsRoot`, `principlesRoot`, `guidelinesRoot`, `manifestPath`, `DEFAULT_DOCS_ROOT` |
+| Repository paths and default docs layout | `model.js`: `cgRoot`, `skillsRoot`, `guidelinesRoot`, `manifestPath`, `DEFAULT_DOCS_ROOT` |
 | Enforcement or A/E/P catalog loading | `model.js`: `loadEnforcementCatalog`, `loadPrinciplesCatalog`, `loadEngineeringCatalog`, `loadProductCatalog` |
 | Phase policy and allowed skills | `model.js`: `PHASE_NAMES`, `loadPhases`, `phaseTokens` |
-| Legacy Markdown rules and rule correspondence | `model.js`: `parsePrinciples`, `parseRuleSections`, `loadPrincipleRules`, `parsePrincipleIndex` |
+| Validated YAML rule and index projections | `model.js`: `readPrincipleCatalog`, `parsePrinciples`, `loadPrincipleRules`, `parsePrincipleIndex` |
 | Generated root and module discovery | `model.js`: `renderRootIndex`, `generateCgAgent`, `generateRoot`, `generateModulePointer`; caller is Installation's `sync.js` |
 | Skill metadata and Claude wrappers | `model.js`: `parseSkillMetadata`, `renderClaudeSkillWrapper`, `generateClaudeSkillWrapper` |
 | Scaffold or aggregate verification | `verify.js`: `verify`; follow only the relevant check |
-| Skills, phase policy or binding checks | `verify.js`: `checkSkills`, `checkPhases`, `checkPrincipleEnforcement`, `checkForkPrinciples` |
+| Skills, phase policy or binding checks | `verify.js`: `checkSkills`, `checkPhases`, `checkPrincipleEnforcement`, `checkEngineeringPrinciples` |
 
 These are reading seams, not independently encapsulated modules. If `model.js` is physically
 split later, separate catalog loading from discovery rendering first, inspect all importers,
@@ -47,6 +47,8 @@ architectural promises. It owns the promotion gate, rule classification and amen
 A is global MUST, P scoped MUST, E advisory SHOULD. Contracts list P bindings only. Promote
 guidance only with structural justification, a deterministic invariant, registered blocking
 detector and fail-on-demand fixture; remove the overlapping E rule in the same change.
+
+Runtime catalog projections consume validated canonical YAML once per load. Legacy Markdown/compiled JSON remains a stale-file error; YAML conversion belongs to Installation. The retired fork family has no runtime branches. Module discovery text comes from the single starter AGENTS template, rendered for the governed unit by `renderModulePointer`.
 
 Consumes [Graph](../graph/contract.md)'s parsing and graph checks. Aggregate verification does not prove
 product-intent conformance, execute every contract's product checks or verify arbitrary code

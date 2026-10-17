@@ -35,6 +35,8 @@ authoring template. Schema shape belongs to [Verification](../verification/contr
 Instructions consume [Delivery](../delivery/contract.md)'s state and [Graph](../graph/contract.md)'s routes. They must
 not invent a second acceptance or completion mechanism. [Installation](../installation/contract.md) owns
 replacement/preservation policy; changing an asset does not authorize overwriting adopter policy.
+
+`src/install/templates/module/AGENTS.md` is the single authored module-pointer body. Installation supplies the selected AGENTS/CLAUDE filenames; Verification's renderer adapts that template to the unit name and depth.
 [Distribution](../distribution/contract.md) owns packaging. Keep human docs at one canonical page per topic,
 and preserve durable facts before retiring temporary delivery records.
 
@@ -66,3 +68,5 @@ skill, new product contract format, or lifecycle stage.
 Warmup is a mode router with intent, adoption and reseed references. The generated agent entry owns the shared lifecycle bootstrap and authority table. Standalone bounded corrections use cg-produce without mandatory records or a cadence question; existing programme gates remain authoritative. Fresh phase defaults load E conditionally; retained policy controls upgrades. Declared harvest cohorts load their separate reference only when applicable.
 
 The launcher, owner communication and lifecycle bootstrap sections are one generated CG BOOTSTRAP block in the shared agent template. Sync installs and refreshes that block in existing entries so upgraded skills can resolve their required shared procedure.
+
+Closure applicability separates universal decision/evidence obligations, implementation checks, existing queues, declared harvest cohorts and documentation-only scope. No synthetic queue or cohort is required. Shared bootstrap exposes lexical-route recovery.

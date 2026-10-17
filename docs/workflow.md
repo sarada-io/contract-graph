@@ -239,3 +239,41 @@ A concrete authorised correction with clear ownership, expected behaviour and ch
 Checkpoint evidence may include `evidenceInputs: ["package.json", "config"]` independently of `writes`. Review freshness retains these inputs and all historical writes even after a writer releases or narrows its declaration. Changing, adding or removing a relevant input invalidates scoped review; unrelated files remain outside that established review scope. Legacy unscoped approval and final closure retain whole-repository semantics. Inputs cover Git-visible source only; ignored/generated/external dependencies still need appropriate explicit checks. Declaring an evidence input does not grant write permission or establish that every dependency was discovered.
 
 Successful closure losslessly compacts legacy receipts as part of the atomic final write. `cg delivery compact --programme <slug>` remains available for Closed receipts. `--format delta` opts a closed receipt into v3 snapshot-array splice compression when it is smaller than v2; `--format v2` converts it back losslessly. V3 retains every logical event and unknown field, bounds delta chains at 32, and checks reconstructed digests. Older executables cannot read v3: coordinate readers before opting in. New receipts remain v2 by default, active v1 receipts remain v1 until closure, and later writes to a migrated v3 receipt compare v3 with v2 and may fall back to v2 when smaller. No history is pruned and no fixed size or merge-conflict guarantee follows.
+
+### Explicit standalone admission
+
+For an authorised bounded correction while unrelated programmes are open, write a
+temporary JSON request with `task` and `writes` (repository-relative files/directories,
+no globs), then use `cg next --for cg-produce --standalone <file> --json`.
+It does not change the worktree pointer, plans or receipts. Do not combine it with
+`--programme` or `CG_PROGRAMME`. Installation and intent gates still apply.
+
+Unknown programme scopes return source paths and a fingerprint. Read those sources
+and dependency contracts, then provide `scopeReviews` entries containing `programme`,
+that `fingerprint`, complete affected `paths` and a nonempty `reason` for independence.
+Re-run admission. Known receipt write/evidence overlap cannot be overridden by a
+narrower assessment; changed programme evidence invalidates a review. Shared
+configuration and verification inputs belong in the assessment. Unknown scope
+remains a review prerequisite, not permission to implement. This does not enforce
+write confinement or prove semantic independence. For hook dispatch, set
+`CG_STANDALONE` to the request path in the hook process environment and clear it
+when returning to programme work. Existing completion-chain scope remains binding.
+
+Closed records now recommend no action when their programme plan directory is
+empty. Retained files recommend `cg-sign-off` for cleanup assessment only, with
+`entry: cleanup-review` and `handoffReady: false`; neither production nor another
+closure is authorised. Suspended and Abandoned work still needs an actual resume request.
+
+`cg status --summary --compact --json` shares installation, intent and recovery
+metadata once. Programme rows retain state/action, receipt identity, queue/cleanup
+counts and a detailed retrieval command. `hasProblems` preserves failure status even
+if failing rows are omitted. The compact JSON budget is 64 KiB; counts and retrieval
+expose omissions. Expanded summary remains the default compatibility format.
+
+Compaction gain depends on the record population. Repeated identical evidence may
+already be efficiently interned in v2; changing snapshots can benefit from v3
+splice deltas, while unique historical evidence still occupies space. Compare
+per-record identity, state, format, byte size and reconstructed logical equality
+before drawing aggregate conclusions. A zero-gain subset and a mixed population
+with savings can both be correct. Compaction is not pruning, and a smaller query
+response does not imply a smaller retained receipt.

@@ -43,6 +43,8 @@ A launcher failure does not waive required framework checks. Do not replace veri
 
 Address functional leaders in plain language. Explain outcomes, choices, costs and risks; use technical terms only when necessary and explain them. Before presenting a decision or result, read [owner communication](../skills/cg-unblock/references/owner-communication.md). It defines the four-field decision review and separates it from internal evidence.
 
+Run `cg contract route --task "<request>"` first. If no exact match, retry with `--suggest`; suggestions are lexical candidates, not ownership proof. If absent or ambiguous, inspect `cg contract show`, follow `cg contract children --id <id>` one boundary at a time, then select `cg contract context --id <id>`. Do not add synonyms merely to force a match. Use `--hydrate --compact --json` for shared context with explicit retrieval for omissions.
+
 ## Lifecycle bootstrap
 
 Use the launcher guidance above and the root-to-boundary reading order. Reuse unchanged context within the session. Inspect installed policy in `phases.json`: load its always families and relevant conditional families; A binds globally, P binds only its declared scope, and E is advisory. Do not recursively load every skill or reference. Read the selected skill, then only the mode and obligations needed for the request. Retained repository workflow and loading choices remain authoritative; reconcile incompatible routes before dependent execution.

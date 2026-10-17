@@ -3,9 +3,10 @@
 
 import fs from "node:fs";
 import path from "node:path";
+import crypto from "node:crypto";
 import { execFileSync } from "node:child_process";
 
-import { profilePath } from "./profiles.js";
+import { readDocsRoot } from "./profiles.js";
 import { readDeliveries, programmeName, deliveryReviewSnapshot, signOffRecovery } from "./delivery.js";
 import { installationStatus } from "./runtime.js";
 import { installedIntent } from "./intent.js";
@@ -192,12 +193,93 @@ function selectionFile(root) {
   } catch { return null; }
 }
 
+/** Only inspect programme-owned plan files; links never expand this read set. */
+function programmeFiles(root, docs, programme) {
+  const files = [];
+  const walk = relative => {
+    const full = path.join(root, relative);
+    if (!fs.existsSync(full)) return;
+    const stat = fs.lstatSync(full);
+    if (stat.isSymbolicLink()) throw new Error(`programme scope cannot follow symlink: ${relative}`);
+    if (stat.isDirectory()) for (const name of fs.readdirSync(full).sort()) walk(`${relative}/${name}`);
+    else if (stat.isFile()) files.push(relative);
+    else throw new Error(`unsupported programme evidence: ${relative}`);
+  };
+  // Check ancestors too, rather than following a symlinked plans directory.
+  const relative = `${docs}/plans/${programme}`;
+  if (relative.split('/').some(part => !part || part === '..' || part === '.')) throw new Error('invalid programme evidence path');
+  let current = root;
+  for (const part of relative.split('/')) {
+    current = path.join(current, part);
+    if (fs.existsSync(current) && fs.lstatSync(current).isSymbolicLink()) throw new Error(`programme scope cannot follow symlink: ${relative}`);
+  }
+  walk(relative);
+  return files;
+}
+
+/** Read-only admission evidence, not an approval record or a write-confinement mechanism. */
+function standaloneNext(root, input, docs, query) {
+  const request = typeof input === 'string' ? JSON.parse(fs.readFileSync(path.resolve(root, input), 'utf8')) : input;
+  const docsRoot = docs ?? readDocsRoot(root);
+  const validPath = value => typeof value === 'string' && value.length > 0 && !path.win32.isAbsolute(value) &&
+    !/[\\*?\[\]\x00-\x1f]/.test(value) && value.split('/').every(part => part && part !== '.' && part !== '..');
+  const paths = values => Array.isArray(values) && values.length > 0 && values.every(validPath);
+  if (!request || typeof request.task !== 'string' || !request.task.trim() || !paths(request.writes)) throw new Error('standalone request requires task and nonempty repository-relative writes without globs');
+  const intersects = (a, b) => a === b || a.startsWith(`${b}/`) || b.startsWith(`${a}/`);
+  for (const write of request.writes) {
+    if (['.git', '.agents/cg/deliveries', '.agents/cg/prototypes', `${docsRoot}/plans`].some(folder => intersects(write, folder))) throw new Error('standalone writes cannot alter programme or Git metadata');
+    let current = root;
+    for (const part of write.split('/')) {
+      current = path.join(current, part);
+      if (fs.existsSync(current) && fs.lstatSync(current).isSymbolicLink()) throw new Error(`standalone scope cannot follow symlink: ${write}`);
+    }
+  }
+  if (!validPath(docsRoot)) throw new Error('invalid docs root for standalone scope');
+  programmeFiles(root, docsRoot, 'scope-path-validation');
+  const plansPath = path.join(root, docsRoot, 'plans');
+  if (fs.existsSync(plansPath) && fs.readdirSync(plansPath, { withFileTypes: true }).some(entry => entry.isSymbolicLink())) throw new Error('programme scope cannot follow symlink in plans');
+  const records = query.deliveries(), briefs = query.queue();
+  if (briefs.some(brief => brief.problems.length)) throw new Error('repair unreadable programme queues before assessing standalone scope');
+  const names = new Set([...records.filter(record => record.status !== 'Closed').map(record => record.programme),
+    ...briefs.map(brief => brief.file.slice(`${docsRoot}/plans/`.length).split('/')[0]),
+    ...sprintRoadmaps(root, docsRoot).map(item => item.programme)]);
+  const plans = path.join(root, docsRoot, 'plans');
+  if (fs.existsSync(plans)) for (const entry of fs.readdirSync(plans, { withFileTypes: true })) {
+    if (entry.isDirectory() && entry.name !== 'archive' && fs.existsSync(path.join(plans, entry.name, 'roadmap.md'))) names.add(entry.name);
+  }
+  const reviews = request.scopeReviews ?? [];
+  if (!Array.isArray(reviews) || reviews.some(review => !review || typeof review.programme !== 'string') || new Set(reviews.map(review => review.programme)).size !== reviews.length) throw new Error('scopeReviews must contain unique programme reviews');
+  const scopeReview = [], overlaps = [], unknown = [];
+  for (const programme of [...names].sort()) {
+    programmeName(programme);
+    const record = records.find(item => item.programme === programme);
+    if (record?.status === 'Closed') continue;
+    const files = programmeFiles(root, docsRoot, programme);
+    if (record) files.push(record.file);
+    const fingerprint = crypto.createHash('sha256').update(JSON.stringify(files.map(file => [file, fs.readFileSync(path.join(root, file), 'utf8')]))).digest('hex');
+    const checkpoints = [...(record?.sessions ?? []), ...(record?.history ?? []).map(event => event.checkpoint).filter(Boolean)];
+    const knownPaths = [...new Set([...(record?.reviewScope ?? []), ...checkpoints.flatMap(item => [...item.writes, ...(item.evidenceInputs ?? [])])])];
+    const review = reviews.find(item => item.programme === programme);
+    const reviewed = review?.fingerprint === fingerprint && paths(review.paths) && typeof review.reason === 'string' && review.reason.trim();
+    scopeReview.push({ programme, fingerprint, knownPaths, sources: files, reviewed: Boolean(reviewed) });
+    if (request.writes.some(write => [...knownPaths, ...(reviewed ? review.paths : [])].some(other => intersects(write, other)))) overlaps.push(programme);
+    else if (!reviewed) unknown.push(programme);
+  }
+  const blocked = overlaps.length || unknown.length;
+  return { state: blocked ? 'scope-review-required' : 'standalone-ready', stage: blocked ? null : 'cg-produce',
+    programme: null, selectionSource: 'standalone', briefs: [], problems: [], scopeReview, overlaps, unknown,
+    task: request.task, writes: request.writes,
+    reason: overlaps.length ? `Scope overlaps ${overlaps.join(', ')}; use its existing programme gates.`
+      : unknown.length ? `Review scope of ${unknown.join(', ')} using the listed sources; supply current fingerprint, complete paths and rationale in scopeReviews. Unknown ownership does not admit implementation.`
+        : 'Admit the authorised bounded correction within its reviewed writes. Preserve existing review preferences and checks; scope assessments are not proof of semantic independence or write confinement. Recheck after scope or programme evidence changes.' };
+}
+
 export function selectProgramme(root, programme, { clear = false, docs } = {}) {
   const file = selectionFile(root);
   if (!file) throw new Error("persistent selection requires Git; use CG_PROGRAMME for a non-Git session");
   if (clear) { fs.rmSync(file, { force: true }); return { cleared: true }; }
   programmeName(programme);
-  const candidate = nextSelected(root, { docs, programme });
+  const candidate = createNextQuery(root, { docs }).next({ programme, ignoreSelection: true, environment: {} });
   if (["Closed", "Abandoned"].includes(candidate.receipt?.status)) throw new Error(`cannot select a terminal programme: ${programme} is ${candidate.receipt.status}`);
   if (["selection-required", "unreadable"].includes(candidate.state)) {
     throw new Error(candidate.reason ?? candidate.problems.join("; "));
@@ -208,11 +290,42 @@ export function selectProgramme(root, programme, { clear = false, docs } = {}) {
   return { programme, selectionSource: "worktree" };
 }
 
-export function next(repoRoot, { docs, programme, skill, environment = process.env, ignoreSelection = false } = {}) {
+/** Share inputs within one synchronous query only; the next query rereads disk. */
+export function createNextQuery(repoRoot, { docs } = {}) {
+  const once = load => {
+    let read = false, value, error;
+    return () => {
+      if (!read) {
+        read = true;
+        try { value = load(); } catch (failure) { error = failure; }
+      }
+      if (error) throw error;
+      return value;
+    };
+  };
+  const docsRoot = docs ?? readDocsRoot(repoRoot);
+  const deliveries = once(() => readDeliveries(repoRoot));
+  const queue = once(() => readQueue(repoRoot, docsRoot));
   let recovery;
-  try { recovery = signOffRecovery(repoRoot); }
+  try { recovery = signOffRecovery(repoRoot, deliveries()); }
   catch (error) { recovery = { state: "unreadable", candidates: [], reason: error.message }; }
   const common = { installation: installationStatus(repoRoot), intent: installedIntent(repoRoot), signOffRecovery: recovery };
+  const query = { deliveries, queue, common };
+  return { deliveries, next: (options = {}) => nextFromQuery(repoRoot, { ...options, docs: docsRoot }, query) };
+}
+
+export function next(repoRoot, options = {}) {
+  return createNextQuery(repoRoot, options).next(options);
+}
+
+function nextFromQuery(repoRoot, { docs, programme, skill, standalone, environment = process.env, ignoreSelection = false }, query) {
+  const { common } = query;
+  const recovery = common.signOffRecovery;
+  if (standalone !== undefined) {
+    if (programme || environment.CG_PROGRAMME) return { ...common, state: "scope-review-required", stage: null, briefs: [], problems: [], reason: "Standalone work cannot select a programme; clear --programme and CG_PROGRAMME." };
+    try { return { ...standaloneNext(repoRoot, standalone, docs, query), ...common }; }
+    catch (error) { return { ...common, state: "unreadable", stage: null, briefs: [], problems: [error.message] }; }
+  }
   let target = programme, selectionSource = programme ? "explicit" : null;
   if (!target && !ignoreSelection && environment.CG_PROGRAMME) { target = environment.CG_PROGRAMME; selectionSource = "environment"; }
   if (!target && !ignoreSelection) {
@@ -229,7 +342,7 @@ export function next(repoRoot, { docs, programme, skill, environment = process.e
   if (!target && !ignoreSelection && skill === "cg-sign-off" && recovery.state === "resumable") {
     target = recovery.candidates[0].programme; selectionSource = "completion-request";
   }
-  const result = nextSelected(repoRoot, { docs, programme: target });
+  const result = nextSelected(repoRoot, { docs, programme: target }, query);
   if (selectionSource === "worktree" && (["selection-required", "unreadable"].includes(result.state) || ["Closed", "Abandoned"].includes(result.receipt?.status))) {
     return { ...result, ...common, state: "selection-required", stage: null, selectionSource,
       reason: `stale local selection ${target}; run cg status --clear-selection or --select <slug>. ${result.reason ?? "Programme is terminal."}` };
@@ -252,16 +365,16 @@ export function sprintRoadmaps(root, docs, programme) {
   });
 }
 
-function nextSelected(repoRoot, { docs, programme } = {}) {
+function nextSelected(repoRoot, { docs, programme }, query) {
   const docsRoot = docs ?? readDocsRoot(repoRoot);
   let prototypes;
   try {
     if (programme) programmeName(programme);
-    prototypes = readDeliveries(repoRoot);
+    prototypes = query.deliveries();
   } catch (error) {
     return { state: "unreadable", stage: null, problems: [error.message], briefs: [] };
   }
-  let briefs = readQueue(repoRoot, docsRoot);
+  let briefs = query.queue();
   const active = prototypes.filter(r => !["Closed", "Abandoned"].includes(r.status));
   let sprints;
   try { sprints = sprintRoadmaps(repoRoot, docsRoot, programme); }
@@ -279,6 +392,15 @@ function nextSelected(repoRoot, { docs, programme } = {}) {
   const prototype = prototypes.find(r => r.programme === selected);
   const sprint = sprints.find(s => s.programme === selected);
   const delivery = sprint ? "sprint" : "prepared";
+  if (["Closed", "Suspended", "Abandoned"].includes(prototype?.status)) {
+    let cleanup;
+    try { cleanup = prototype.status === "Closed" ? programmeFiles(repoRoot, docsRoot, selected) : []; }
+    catch (error) { return { state: "unreadable", stage: null, problems: [error.message], briefs }; }
+    return { state: prototype.status.toLowerCase(), stage: cleanup.length ? "cg-sign-off" : null,
+      delivery, programme: selected, receipt: prototype, briefs, problems: [], cleanup,
+      reason: prototype.status === "Closed" ? (cleanup.length ? "Closed delivery retains plan files: inspect cleanup and shared consumers; do not resume production." : "Closed delivery has no retained programme plan files; no next action.")
+        : `${selected}: ${prototype.status}; an actual request to resume is required.` };
+  }
   if (sprint?.status === "Proposed") return { state: "sprint-proposed", stage: "cg-plan", delivery, programme: selected, briefs, problems: [], reason: "Agree the sprint goal and criteria before marking its roadmap Active; execution authority remains separate." };
   if (prototype && !["Handed off", "Closed"].includes(prototype.status)) {
     let stale = false;
@@ -368,16 +490,6 @@ function nextQueue(briefs, docsRoot) {
   };
 }
 
-function readDocsRoot(repoRoot) {
-  const record = profilePath(repoRoot);
-  if (!fs.existsSync(record)) return "docs";
-  try {
-    return JSON.parse(fs.readFileSync(record, "utf8")).docs ?? "docs";
-  } catch {
-    return "docs";
-  }
-}
-
 /** Whether dispatching `skill` right now agrees with what the queue says. */
 export function permits(result, skill) {
   if (["cg-prepare", "cg-auto-run"].includes(skill)) return { allowed: false, reason: `${skill} was retired in 0.7.0. Use cg-plan for readiness and cg-produce for execution and automatic continuation.` };
@@ -389,11 +501,14 @@ export function permits(result, skill) {
     return { allowed: false, reason: `the Step queue does not parse:\n  ${result.problems.join("\n  ")}` };
   }
   if (result.state === "selection-required") return { allowed: false, reason: result.reason };
+  if (result.state === "scope-review-required") return { allowed: false, reason: result.reason };
+  if (result.state === "standalone-ready") return { allowed: skill === "cg-produce", entry: "bounded-change", reason: result.reason };
   if (result.state === "sprint-proposed" && ["cg-produce", "cg-sign-off"].includes(skill)) return { allowed: false, reason: result.reason };
   if (skill === "cg-prototype" && result.delivery === "sprint" && result.receipt && result.receipt.status !== "Closed") {
     return { allowed: false, reason: "This sprint has an active delivery receipt. Continue cg-produce or the accepted cg-sign-off handoff; exploratory work requires an explicit change to the agreed delivery scope." };
   }
   if (skill === "cg-produce" && ["Closed", "Abandoned", "Suspended"].includes(result.receipt?.status)) return { allowed: false, reason: `${result.receipt.programme}: ${result.receipt.status}; selection does not resume delivery.` };
+  if (skill === "cg-sign-off" && result.state === "closed") return { allowed: Boolean(result.cleanup?.length), entry: "cleanup-review", handoffReady: false, reason: result.reason };
   if (skill === "cg-sign-off" && result.receipt && result.receipt.status !== "Closed") {
     return { allowed: true, entry: "delivery-completion", handoffReady: result.receipt.status === "Handed off", reason: `${result.receipt.programme}: admit assessment; the user’s requested scope bounds completion; accepted handoff, applicable Step gates, and passing final verification are still required to close` };
   }

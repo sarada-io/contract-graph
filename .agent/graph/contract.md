@@ -44,3 +44,5 @@ Verification: `npm test -- test/contracts.test.js test/verify.test.js`, then `np
 Canonical explanation: [docs/contracts.md](../../docs/contracts.md).
 
 routeSuggestions and hydratedRoutes extend the existing engine with opt-in deterministic lexical candidates and bounded, provenance-bearing context. Exact routeContracts behavior remains compatible. Suggestions never prove ownership or semantic equivalence; omitted context is explicitly retrievable.
+
+Compact hydration is opt-in: contract paths reference shared nodes, rules retain provenance, and a 64 KiB JSON budget reports omissions with retrieval. Expanded defaults remain compatible. Routing recovery uses exact, lexical suggestion, then bounded child browsing/explicit selection.

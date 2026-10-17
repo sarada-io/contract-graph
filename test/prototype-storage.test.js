@@ -116,3 +116,33 @@ test('independent v3 envelopes reject excessive chains and preserve reordered or
   repetitive.history = Array.from({ length: 50 }, () => structuredClone(repetitive.history[0]));
   assert.equal(encodeDeltaDelivery(repetitive).version, 2, 'whole repeated events favour v2');
 });
+
+test('read-only public storage cohorts explain zero gain and changing-snapshot gain', async t => {
+  const { createHash } = await import('node:crypto');
+  const { encodeDeltaDelivery } = await import('../src/scripts/delivery-storage.js');
+  const old = await import('./fixtures/historical-1.0.0/delivery-storage.mjs');
+  const hash = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
+  // These are public synthetic populations, not copied or purported adopter records.
+  const records = Array.from({ length: 14 }, (_, i) => {
+    const record = fixture(); record.programme = `public-${i}`;
+    if (i < 4) { const files = record.sessions[0].files; delete record.sessions; record.history = Array.from({ length: 20 }, () => ({ checkpoint: { files, writes: ['src'] } })); }
+    if (i >= 4) record.history = Array.from({ length: 20 }, (_, n) => {
+      const files = structuredClone(record.sessions[0].files); files[n % files.length][2] = String(n).padStart(64, '0');
+      return { checkpoint: { session: `session-${n}`, writes: ['src'], files } };
+    });
+    return { directory: i < 9 ? 'deliveries' : 'prototypes', cohort: i < 4 ? 'four-identical' : 'ten-changing', record };
+  });
+  const before = hash(records);
+  for (const { directory, cohort, record } of records) {
+    const current = encodeDelivery(record), candidate = encodeDeltaDelivery(record);
+    assert.deepEqual(old.decodeDelivery(current), record);
+    assert.deepEqual(decodeDelivery(old.encodeDelivery(record)), record);
+    assert.deepEqual(old.decodeDelivery(record), record);
+    assert.deepEqual(decodeDelivery(candidate), record);
+    if (cohort === 'four-identical') assert.deepEqual(candidate, current);
+    else { assert.equal(candidate.version, 3); assert.notEqual(old.decodeDelivery(candidate).version, 1, 'old lifecycle requires logical v1, so v3 is unsupported'); }
+    const bytes = value => Buffer.byteLength(JSON.stringify(value, null, 2) + '\n');
+    t.diagnostic(JSON.stringify({ directory, cohort, programme: record.programme, state: record.status, fixtureHash: hash(record), currentVersion: current.version, candidateVersion: candidate.version, currentBytes: bytes(current), candidateBytes: bytes(candidate), equal: true }));
+  }
+  assert.equal(hash(records), before, 'benchmark must not mutate inputs');
+});

@@ -33,4 +33,8 @@ then `npm test`. Lifecycle changes also need the interaction checks in
 [CONTRIBUTING](../../CONTRIBUTING.md#sprint-interaction-validation).
 Canonical semantics: [intent](../../docs/intent.md) and [workflow](../../docs/workflow.md).
 
+`createNextQuery` shares installation identity, intent, receipts and parsed queue inputs within a synchronous status summary; `createResidueQuery` shares reachability analysis across its programme projections. Each new query rereads disk; there is no process-wide cache or persisted derived state. Programme selection, admission and per-programme error reporting keep their existing owners and semantics.
+
 next.js owns explicit/environment/worktree programme selection and selectProgramme; status.js provides the non-dispatching summary. Git pointers live in worktree metadata; non-Git selection is explicit/environment-only. Standalone no-queue production can admit bounded work without fabricating authority. Review evidenceInputs are distinct from writes and accumulate across history. Close atomically compacts legacy receipts to v2; opt-in compact --format delta uses bounded lossless v3 snapshots only when smaller, with v2 downgrade support. Active legacy records retain their format until close.
+
+Standalone admission reads a temporary task/write-scope request and current programme assessments without changing selection or receipts. Known overlaps block; unknown scopes require review. Closed status offers cleanup assessment only when plan files remain. Compact summaries are opt-in, retain aggregate failure state and retrieve omitted evidence.

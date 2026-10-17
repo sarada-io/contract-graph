@@ -2,6 +2,8 @@
 
 This repository-owned workflow supplies delivery policy for Contract Graph Dev Kit, a framework for agentic software development built around the repository-native contract graph. Contract Graph’s structural authority remains `.agents/cg/principles/architecture.yaml`; changing the delivery sequence cannot remove graph obligations. Init preserves local workflow and phase policy. When retained policy names retired stages, reconcile it explicitly with the 0.7.0 loop before executing dependent work.
 
+Run `cg contract route --task "<request>"` first. If no exact match, retry with `--suggest`; suggestions are lexical candidates, not ownership proof. If absent or ambiguous, inspect `cg contract show`, follow `cg contract children --id <id>` one boundary at a time, then select `cg contract context --id <id>`. Do not add synonyms merely to force a match. Use `--hydrate --compact --json` for shared context with explicit retrieval for omissions.
+
 ## Communication and decision reviews
 
 The primary audience is senior leadership in functional roles. Follow `.agents/skills/cg-unblock/references/owner-communication.md` for user-facing language and decision reviews. Use technical terms only when needed for an informed choice and explain them. User reviews contain only Context/background, Options, Recommendation and Why, with a clear question as their title. Keep unanswered reviews in the central <docs>/plans/decision-log.md. Compact agent evidence lives separately in .agents/cg/decisions/ and is not required reading for the owner.

@@ -22,7 +22,6 @@ import {
 
 export const COMPILED_VERSION = "1.0";
 export const BUILD_DIRECTORY = "dist/build";
-export const PACKAGE_DATA_DIRECTORY = "agent/cg/guidelines";
 
 const PACKAGE_TREE_MAPPINGS = Object.freeze([
   ["src/diagnostics", "agent/diagnostics"],
@@ -56,7 +55,7 @@ const posix = (value) => value.split(path.sep).join("/");
 export class BuildError extends Error {}
 
 /** Reject unexpected catalog sources and require every registered catalog file to exist. */
-export function compilePrincipleAssets(repoRoot) {
+function validatePrincipleAssets(repoRoot) {
   const checks = [
     [path.join(repoRoot, "src", "cg", "guidelines"), new Set(Object.keys(PRINCIPLE_FILES))],
     [path.join(repoRoot, "src", "cg", "principles"), new Set(["architecture.yaml"])],
@@ -77,14 +76,7 @@ export function compilePrincipleAssets(repoRoot) {
       if (!fs.existsSync(file)) throw new BuildError(`missing catalog source: ${posix(path.relative(repoRoot, file))}`);
     }
   }
-  return new Map();
 }
-
-// Each compiler owns a disjoint subtree. Future deterministic compilers are added here so one
-// build command remains the only package build entry point.
-const COMPILERS = Object.freeze([
-  { id: "principles", compile: compilePrincipleAssets },
-]);
 
 function listFiles(root) {
   if (!fs.existsSync(root)) return [];
@@ -170,28 +162,10 @@ export function build(repoRoot, { write = true } = {}) {
   if (!engineering.principles.length) throw new BuildError("the package must ship a populated engineering catalog; adopters may retire entries after installation");
   loadProductCatalog(path.join(root, "src", "cg", "guidelines", "product.yaml"), { repoRoot: root });
 
+  validatePrincipleAssets(root);
   const assets = packageSourceAssets(root);
-  const compilerEntries = [];
-  for (const compiler of COMPILERS) {
-    const outputs = compiler.compile(root);
-    const names = [];
-    for (const [relative, content] of outputs) {
-      if (
-        typeof relative !== "string" ||
-        path.isAbsolute(relative) ||
-        relative.split(/[\\/]/).some((part) => !part || part === "." || part === "..")
-      ) {
-        throw new BuildError(`compiler \`${compiler.id}\` produced unsafe path \`${relative}\``);
-      }
-      if (typeof content !== "string") {
-        throw new BuildError(`compiler \`${compiler.id}\` produced non-text output for \`${relative}\``);
-      }
-      if (assets.has(relative)) throw new BuildError(`two package producers own \`${relative}\``);
-      assets.set(relative, { content: Buffer.from(content), mode: 0o644 });
-      names.push(relative);
-    }
-    compilerEntries.push({ id: compiler.id, outputs: names.sort() });
-  }
+  // Preserve the published manifest/CLI shape: catalogs ship as authored YAML.
+  const compilerEntries = [{ id: "principles", outputs: [] }];
 
   const fileHashes = Object.fromEntries(
     [...assets].sort(([a], [b]) => a.localeCompare(b)).map(([relative, asset]) => [

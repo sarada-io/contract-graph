@@ -420,6 +420,16 @@ test('suggestions preserve exact matches, explain reordered phrases, avoid unrel
   const dir = fixture(); t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
   editContract(dir, ROOT, c => { c.routes = [{ id: 'card-animation', when: ['fix card movement animation'], contracts: [MODULE] }]; });
   const graph = loadContractGraph(dir);
+  const corpus = [
+    ['fix card movement animation', true], ['animation movement card repair', true], ['cards animation movement', true],
+    ['configure billing refunds', false], ['database backup restore', false], ['rename authentication provider', false],
+    ['repair jitter when cards move', true],
+  ];
+  const observed = corpus.map(([task, relevant]) => ({ task, relevant, found: routeSuggestions(graph, task).length > 0 }));
+  assert.equal(observed.filter(x => !x.relevant && x.found).length, 0);
+  assert.equal(observed.filter(x => x.relevant && x.found).length, 3);
+  t.diagnostic('routing-corpus-v1: 3/4 relevant queries retrieved; 0/3 unrelated queries matched; semantic miss uses explicit browse recovery');
+  assert.match(hydratedRoutes(graph, []).recovery, /children --id/);
   assert.equal(routeSuggestions(graph, 'fix card movement animation')[0].method, 'exact');
   assert.equal(routeContracts(graph, 'animation movement card repair').length, 0);
   const suggested = routeSuggestions(graph, 'animation movement card repair');
@@ -476,4 +486,39 @@ test('routing ties, normalised duplicate words, omissions and advisory intersect
     ['contract', 'route', dir, '--task', 'billing', '--suggest', '--limit', '1.5'],
     ['status', dir, '--hydrate'],
   ]) assert.notEqual(call(...args).status, 0, args.join(' '));
+});
+
+test('compact hydration shares ancestor bodies and preserves all context relationships', async t => {
+  const { hydratedRoutes } = await import('../src/scripts/contracts.js');
+  const dir = fixture(); t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  const leaves = [MODULE];
+  for (let i = 0; i < 3; i++) {
+    const c = readContract(dir, MODULE); c.id = `leaf-${i}`; c.unit = `leaf-${i}`;
+    const file = `${c.unit}/.agents/cg/contract.yaml`;
+    fs.mkdirSync(path.dirname(path.join(dir, file)), { recursive: true });
+    fs.writeFileSync(path.join(dir, file), stringifyContractYaml(c)); leaves.push(file);
+  }
+  editContract(dir, ROOT, c => { c.relations.children.push(...leaves.slice(1).map(contract => ({ contract, uses: 'Fixture boundary' }))); c.routes = [{ id: 'fixture', when: ['multi context'], contracts: leaves }]; });
+  const graph = loadContractGraph(dir), rules = loadBindingPrinciples(dir), matches = routeContracts(graph, 'multi context');
+  const start = performance.now(); const expanded = hydratedRoutes(graph, matches, rules, { limit: 4 }); const middle = performance.now();
+  const compact = hydratedRoutes(graph, matches, rules, { limit: 4, compact: true }); const end = performance.now();
+  assert.deepEqual(compact.rules, expanded.rules); assert.deepEqual(compact.candidates, expanded.candidates);
+  for (let i = 0; i < compact.contexts.length; i++) {
+    const actual = compact.contexts[i], expected = expanded.contexts[i];
+    assert.deepEqual(actual.ancestors, expected.ancestors.map(a => a.contract));
+    for (const field of ['children', 'dependencies', 'rules']) assert.deepEqual(actual[field], expected[field]);
+    assert.deepEqual(compact.nodes.find(n => n.contract === actual.contract).responsibilities, expected.responsibilities);
+  }
+  assert.equal(compact.nodes.filter(n => n.contract === ROOT).length, 1);
+  assert.ok(compact.nodes.every(n => !Object.hasOwn(n, 'forbids')));
+  const bytes = value => Buffer.byteLength(JSON.stringify(value, null, 2) + '\n');
+  assert.ok(bytes(compact) < bytes(expanded)); assert.ok(bytes(compact) <= 65536);
+  t.diagnostic(JSON.stringify({ fixture: 'four-contexts-v1', expandedBytes: bytes(expanded), compactBytes: bytes(compact), expandedMs: middle-start, compactMs: end-middle }));
+  const none = hydratedRoutes(graph, [], rules, { compact: true }); assert.equal(none.matched, false); assert.deepEqual(none.contexts, []);
+  const largeRules = new Map(Array.from({ length: 100 }, (_, i) => [`A${String(i).padStart(2, '0')}`, 'x'.repeat(2000)]));
+  const truncated = hydratedRoutes(graph, matches, largeRules, { limit: 4, compact: true });
+  assert.ok(bytes(truncated) <= 65536); assert.ok(truncated.omissions.some(item => item.field === 'context'));
+  assert.ok(truncated.omissions.every(item => item.retrieve));
+  for (const context of truncated.contexts) assert.ok(context.rules.every(id => truncated.rules.some(rule => rule.id === id)));
+
 });

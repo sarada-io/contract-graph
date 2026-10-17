@@ -42,7 +42,7 @@ test("source and packaged layouts identify the same build; same-version edits ch
   const root = fixture(t), compiled = path.join(root, "package");
   fs.mkdirSync(compiled);
   // Construct the shipped runtime layout directly, independently of a pre-existing build/.
-  for (const [source, target] of [["src/scripts", "script"], ["src/skills", "agent/skills"], ["src/install/hooks", "agent/hooks"], ["src/cg/schema", "agent/cg/schema"], ["src/cg/templates", "agent/cg/templates"], ["src/diagnostics", "agent/diagnostics"]]) {
+  for (const [source, target] of [["src/scripts", "script"], ["src/skills", "agent/skills"], ["src/install/hooks", "agent/hooks"], ["src/cg/schema", "agent/cg/schema"], ["src/cg/templates", "agent/cg/templates"], ["src/diagnostics", "agent/diagnostics"], ["src/install/templates/module", "agent/templates/module"]]) {
     fs.cpSync(path.join(ROOT, source), path.join(compiled, target), { recursive: true });
   }
   fs.rmSync(path.join(compiled, "script/dev.js"));
@@ -54,6 +54,11 @@ test("source and packaged layouts identify the same build; same-version edits ch
   fs.appendFileSync(templateFile, "\n# changed authoring guidance\n");
   assert.notEqual(runtimeIdentity(compiled).buildId, source.buildId, "shared template edits change build identity");
   fs.writeFileSync(templateFile, originalTemplate);
+  const pointerTemplate = path.join(compiled, "agent/templates/module/AGENTS.md");
+  const originalPointer = fs.readFileSync(pointerTemplate, "utf8");
+  fs.appendFileSync(pointerTemplate, "\nChanged module pointer guidance.\n");
+  assert.notEqual(runtimeIdentity(compiled).buildId, source.buildId, "module pointer edits change build identity");
+  fs.writeFileSync(pointerTemplate, originalPointer);
   const expertFile = path.join(compiled, "agent/skills/experts/api-expert/SKILL.md");
   const originalExpert = fs.readFileSync(expertFile, "utf8");
   fs.appendFileSync(expertFile, "\nChanged expert guidance.\n");

@@ -335,3 +335,16 @@ test('sync adopts exact unmarked bootstrap once and refreshes only its managed b
   assert.throws(() => sync(dir), /unbalanced CG BOOTSTRAP/);
   assert.equal(read(dir, entry), malformed);
 });
+
+test('retained workflow gets a routing notice while generated bootstrap refreshes idempotently', t => {
+  const dir = fixture(t);
+  const file = path.join(dir, '.agents/cg/workflow.md');
+  fs.writeFileSync(file, '# Local workflow\nUse the exact route and our team gate.\n');
+  const original = fs.readFileSync(file, 'utf8');
+  for (let i = 0; i < 2; i++) {
+    const result = init(dir, i === 0 ? { reasons } : {});
+    assert.match(result.policyNotices.join('\n'), /routing recovery/);
+    assert.equal(fs.readFileSync(file, 'utf8'), original);
+    assert.match(fs.readFileSync(path.join(dir, '.agents/cg/contract-graph-agent.md'), 'utf8'), /--suggest/);
+  }
+});

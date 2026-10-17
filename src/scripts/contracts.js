@@ -870,7 +870,7 @@ export function routeSuggestions(graph, query) {
 }
 
 /** Bound records and text independently; omitted content remains retrievable by ID/path. */
-export function hydratedRoutes(graph, matches, rules = new Map(), { limit = 3 } = {}) {
+export function hydratedRoutes(graph, matches, rules = new Map(), { limit = 3, compact = false } = {}) {
   if (!Number.isInteger(limit) || limit < 1 || limit > 20) throw new Error("route limit must be an integer from 1 to 20");
   const records = new Map(), definitions = new Map(), omissions = [];
   const summary = record => ({ id: bounded(record.contract.id, record.relative, "id"), contract: record.relative, unit: bounded(record.contract.unit, record.relative, "unit") });
@@ -899,8 +899,34 @@ export function hydratedRoutes(graph, matches, rules = new Map(), { limit = 3 } 
       }
       return summary(record);
     }), omittedContracts: Math.max(0, match.contracts.length - limit) }));
-  return { matched: matches.length > 0, ambiguous: matches.length > 1, candidates: selected,
+  const result = { matched: matches.length > 0, ambiguous: matches.length > 1, candidates: selected,
     contexts: [...records.values()], rules: [...definitions.values()], omittedCandidates: Math.max(0, matches.length - limit), omissions,
     retrieve: "cg contract context --id <id>; cg contract show --id <id>",
+    recovery: "Try exact routing, then --suggest; if absent or ambiguous, cg contract show, cg contract children --id <id>, then cg contract context --id <id>.",
     limitation: "Lexical suggestions are candidates, not proof of ownership or semantic equivalence." };
+  return compact ? compactRoutes(result) : result;
+}
+
+/** Stable path references share ancestor bodies across selected contexts. Expanded mode is unchanged. */
+function compactRoutes(report) {
+  const nodes = new Map();
+  const remember = node => {
+    if (!nodes.has(node.contract)) nodes.set(node.contract, { id: node.id, contract: node.contract, unit: node.unit, responsibilities: node.responsibilities });
+    return node.contract;
+  };
+  const contexts = report.contexts.map(context => ({ contract: remember(context),
+    ancestors: context.ancestors.map(remember), children: context.children, dependencies: context.dependencies, rules: context.rules }));
+  const result = { ...report, format: 'compact-v1', contexts, nodes: [...nodes.values()] };
+  // Drop whole contexts only with explicit retrieval, never partial binding definitions.
+  while (Buffer.byteLength(JSON.stringify(result, null, 2)) > 65535 && result.contexts.length) {
+    const omitted = result.contexts.pop();
+    result.omissions.push({ source: omitted.contract, field: 'context', retrieve: `cg contract context --id ${omitted.contract}` });
+    const needed = new Set(result.contexts.flatMap(context => [context.contract, ...context.ancestors]));
+    result.nodes = result.nodes.filter(node => needed.has(node.contract));
+    const rules = new Set(result.contexts.flatMap(context => context.rules));
+    result.rules = result.rules.filter(rule => rules.has(rule.id));
+  }
+  while (Buffer.byteLength(JSON.stringify(result, null, 2)) > 65535 && result.candidates.length) { result.candidates.pop(); result.omittedCandidates++; }
+  while (Buffer.byteLength(JSON.stringify(result, null, 2)) > 65535 && result.omissions.length) { result.omissions.pop(); result.omittedOmissions = (result.omittedOmissions ?? 0) + 1; }
+  return result;
 }

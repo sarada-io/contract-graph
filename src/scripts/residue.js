@@ -19,7 +19,7 @@ import path from "node:path";
 
 import { productHasHarvestedRules } from "./model.js";
 import { loadContractGraph } from "./contracts.js";
-import { profilePath } from "./profiles.js";
+import { readDocsRoot } from "./profiles.js";
 import { readDeliveries, programmeName } from "./delivery.js";
 
 /** Markdown inline links and reference definitions. Bare paths in prose are deliberately ignored. */
@@ -147,9 +147,29 @@ function linksFrom(file, plansRoot) {
 }
 
 export function residue(repoRoot, { docs, programme } = {}) {
+  return createResidueQuery(repoRoot, { docs })(programme);
+}
+
+/** Scan reachability once per status query, then project each programme's ownership. */
+export function createResidueQuery(repoRoot, { docs } = {}, readRecords = () => readDeliveries(repoRoot)) {
+  let documents, failure;
+  return programme => {
+    if (programme !== undefined) programmeName(programme);
+    if (!documents && !failure) {
+      try { documents = scanResidue(repoRoot, docs ?? readDocsRoot(repoRoot), readRecords); }
+      catch (error) { failure = error; }
+    }
+    if (failure) throw failure;
+    const { programmeNames, ...result } = documents;
+    if (programme && !programmeNames.has(programme)) throw new Error(`unknown programme: ${programme}`);
+    const items = result.residue.map(item => ({ ...item,
+      scope: !programme ? "repository" : item.programme === programme ? "selected" : item.programme ? "other" : "shared" }));
+    return { ...result, programme: programme ?? null, residue: items, blocking: items.filter(item => item.scope !== "other") };
+  };
+}
+
+function scanResidue(repoRoot, docsRoot, readRecords) {
   repoRoot = path.resolve(repoRoot);
-  if (programme !== undefined) programmeName(programme);
-  const docsRoot = docs ?? readDocsRoot(repoRoot);
   const plansRoot = path.join(repoRoot, docsRoot, "plans");
   const { files, dirs } = walk(plansRoot);
   const rel = (f) => path.relative(repoRoot, f).split(path.sep).join("/");
@@ -173,7 +193,7 @@ export function residue(repoRoot, { docs, programme } = {}) {
 
   // Receipts are typed consumers of local evidence, including non-Markdown files. Never infer
   // ownership from arbitrary JSON strings or exempt a whole active programme directory.
-  const prototypes = readDeliveries(repoRoot);
+  const prototypes = readRecords();
   const evidenceRoots = prototypes.flatMap(record => record.history.flatMap(event => {
     const p = event.evidence;
     if (typeof p !== "string" || !p.startsWith(`${docsRoot}/plans/${record.programme}/`) ||
@@ -222,29 +242,16 @@ export function residue(repoRoot, { docs, programme } = {}) {
     const parts = path.relative(plansRoot, file).split(path.sep);
     if (parts.length === 2 && (/roadmap/i.test(parts[1]) || /_detailed_preparation\.md$/i.test(parts[1]))) programmeNames.add(parts[0]);
   }
-  if (programme && !programmeNames.has(programme)) throw new Error(`unknown programme: ${programme}`);
   const items = [...unreachable, ...empty].map(item => {
     const parts = item.path.slice(`${docsRoot}/plans/`.length).split("/");
     const owner = programmeNames.has(parts[0]) ? parts[0] : null;
-    return { ...item, programme: owner, scope: !programme ? "repository" : owner === programme ? "selected" : owner ? "other" : "shared" };
+    return { ...item, programme: owner };
   }).sort((a, b) => a.path.localeCompare(b.path));
   return {
     docs: docsRoot,
-    programme: programme ?? null,
+    programmeNames,
     roots: roots.map(rel).sort(),
     claimed: reachable.size,
     residue: items,
-    // Unowned/shared findings require reconciliation; a programme filter cannot hide them.
-    blocking: items.filter(item => item.scope !== "other"),
   };
-}
-
-function readDocsRoot(repoRoot) {
-  const record = profilePath(repoRoot);
-  if (!fs.existsSync(record)) return "docs";
-  try {
-    return JSON.parse(fs.readFileSync(record, "utf8")).docs ?? "docs";
-  } catch {
-    return "docs";
-  }
 }

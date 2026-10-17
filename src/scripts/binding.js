@@ -6,10 +6,8 @@ import path from "node:path";
 
 import { ContractGraphError, parseContractYaml } from "./contracts.js";
 
-import { PRINCIPLES_SCHEMA_ID, PRINCIPLES_VERSION, exactKeys, nonEmpty, validateCatalogHeader, validatePrincipleText } from "./catalog.js";
+import { exactKeys, nonEmpty, validateCatalogHeader, validatePrincipleText } from "./catalog.js";
 export { PRINCIPLES_SCHEMA_ID } from "./catalog.js";
-export const BINDING_SCHEMA_ID = PRINCIPLES_SCHEMA_ID;
-export const BINDING_VERSION = PRINCIPLES_VERSION;
 export const BINDING_FILENAME = ".agents/cg/principles/architecture.yaml";
 
 export const BUILT_IN_DETECTORS = Object.freeze({

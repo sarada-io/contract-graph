@@ -248,3 +248,18 @@ The shared contract authoring template installs at `.agents/cg/templates/contrac
 The removed `cg-plan/references/prepared-plan.md` is retired only when a prior non-adopted manifest hash matches its current bytes. Init backs it up before removal. Unowned, adopted or modified copies remain in place with a reconciliation notice; review their retired-stage instructions and preserve local policy before deliberately removing them. Preview writes nothing. Init does not search for similarly named files or purge backups. Historical provenance is not inferred from a filename alone.
 
 Warmup now routes to intent, adoption or reseed references; upgraded skills and their links are installed together. Repository-owned workflow and phase files remain preserved. Fresh installations load relevant E advice conditionally; existing always-E choices remain effective until deliberately changed. Reconcile any preserved mandatory process with the bounded-change procedure before relying on the shortcut.
+
+The follow-up standalone admission and compact queries require the upgraded runtime
+and matching generated skills/hooks. Old commands and expanded JSON remain supported;
+no receipt format migration is required. A Closed record's next action is corrected
+to cleanup assessment or none, so consumers must allow null rather than assume produce.
+`init` refreshes the managed bootstrap, preserves owned workflow/phase policy and
+reports a routing-recovery notice for older workflow text. Reconcile retained policy
+with exact → lexical suggestion → bounded browsing guidance without overwriting it.
+
+Reader matrix: 1.0.0 and this runtime both read logical v1 and interned v2 receipts;
+only the newer runtime reads optional v3 deltas. The historical decoder leaves v3
+uninterpreted and its lifecycle validator rejects the non-v1 result. This is an
+unsupported combination, not successful reading. Convert Closed receipts back to
+v2 with the newer runtime before an older-reader rollout. Default writes remain
+compatible. A local upgrade does not change a repository's CI pin or publish a package.

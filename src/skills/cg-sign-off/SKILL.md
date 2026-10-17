@@ -17,6 +17,8 @@ Apply the user's explicit scope first. Otherwise recover the applicable completi
 
 A request to finish authorizes necessary in-scope finishing and repairs. An assessment-only request permits inspection and reporting, not edits, acceptance or closure. Reuse actual recorded authority without asking for another stage invocation. Do not create a completion request merely because a plan or delivery record exists.
 
+A Closed record permits only assessment of retained plan cleanup and shared consumers. `entry: cleanup-review` grants no new handoff, production or closure authority. With no retained files, report no next action. Apply the [closure applicability table](references/closure-checks.md#required-outcome); a queue or harvest cohort is required only when it already applies to this scope.
+
 ## Require the shared handoff
 
 Both development loops end at `cg delivery handoff`. Its accepted scope, review snapshot, actual implementation, linked roadmap criteria and remaining obligations are the input to sign-off. A Handed off record is accepted for finishing; it is not proof of production readiness.

@@ -16,6 +16,7 @@ export function runtimeIdentity(root = ROOT) {
     : [["src/scripts", "script"], ["src/skills", "skills"], ["src/install/hooks", "hooks"], ["src/cg/schema", "schema"], ["src/cg/templates", "templates"]];
   const entries = [];
   trees.push([packaged ? "agent/diagnostics" : "src/diagnostics", "diagnostics"]);
+  trees.push([packaged ? "agent/templates/module" : "src/install/templates/module", "module-templates"]);
   const walk = (dir, prefix) => {
     for (const item of fs.readdirSync(dir, { withFileTypes: true })) {
       const key = `${prefix}/${item.name}`, file = path.join(dir, item.name);

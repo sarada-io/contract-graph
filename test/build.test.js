@@ -101,7 +101,7 @@ test("cg build copies architecture and product YAML catalogs", () => {
   assert.deepEqual(product.principles, []);
 });
 
-test("compiled catalogs carry an exact source hash and a verified output manifest", () => {
+test("authored assets carry exact hashes and retain the published manifest shape", () => {
   const dir = fixture();
   build(dir);
   const manifest = readJson(dir, "manifest.json");
@@ -110,11 +110,7 @@ test("compiled catalogs carry an exact source hash and a verified output manifes
     assert.equal(entry.sha256, hash(output), `${relative} output hash`);
     if (process.platform !== "win32") assert.equal(entry.mode, (fs.statSync(path.join(dir, BUILD_DIRECTORY, relative)).mode & 0o777).toString(8).padStart(3, "0"));
   }
-  for (const relative of manifest.compilers.find((entry) => entry.id === "principles").outputs) {
-    const catalog = JSON.parse(fs.readFileSync(path.join(dir, BUILD_DIRECTORY, relative), "utf8"));
-    const source = fs.readFileSync(path.join(dir, catalog.source));
-    assert.equal(catalog.sourceSha256, hash(source), `${relative} source hash`);
-  }
+  assert.deepEqual(manifest.compilers, [{ id: "principles", outputs: [] }], "authored catalogs have no compiled projections");
   assert.ok(manifest.files["script/cli.js"], "the manifest covers runtime package files too");
   assert.ok(manifest.files["agent/cg/schema/contract.schema.json"]);
 });

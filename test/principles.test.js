@@ -571,3 +571,20 @@ test("an existing product rationale is preserved and cannot be overwritten by su
   assert.deepEqual(migratePrinciples(dir, { reasons, write: true }).failures, []);
   assert.equal(loadPrinciplesCatalog(path.join(dir, files.product)).principles[0].entries[0].reason, ownerReason);
 });
+
+test("binding projections read product YAML once and revalidate on the next query", t => {
+  const dir = fixture(t);
+  const product = path.join(dir, files.product);
+  const original = fs.readFileSync;
+  let reads = 0;
+  fs.readFileSync = function(file, ...args) {
+    if (String(file) === product) reads++;
+    return original.call(this, file, ...args);
+  };
+  try {
+    assert.ok(loadBindingPrinciples(dir).has("A01"));
+    assert.equal(reads, 1);
+  } finally { fs.readFileSync = original; }
+  write(dir, files.product, "not: a valid catalog\n");
+  assert.throws(() => loadBindingPrinciples(dir), /missing/);
+});

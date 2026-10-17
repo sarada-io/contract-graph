@@ -183,15 +183,17 @@ test("handoff rejects starter placeholders and incomplete roadmap sections", t =
   assert.equal(action(f, "handoff").status, "Handed off");
 });
 
-test("closed prototype receipts use ordinary phase routing without completion authority", t => {
+test("closed prototype receipts admit cleanup assessment without completion authority", t => {
   const f = fixture(t); action(f, "start"); accepted(f); requestSignOff(f); close(f);
   queue(f, "dashboard", "Ready");
   let permit = permits(next(f.root, { programme: "dashboard" }), "cg-sign-off");
-  assert.equal(permit.entry, undefined);
-  assert.equal(permit.allowed, false);
+  assert.equal(permit.entry, "cleanup-review");
+  assert.equal(permit.handoffReady, false);
+  assert.equal(permit.allowed, true);
   queue(f, "dashboard", "Complete");
   permit = permits(next(f.root, { programme: "dashboard" }), "cg-sign-off");
-  assert.equal(permit.entry, undefined);
+  assert.equal(permit.entry, "cleanup-review");
+  assert.equal(permit.handoffReady, false);
   assert.equal(permit.allowed, true);
   assert.equal(next(f.root, { skill: "cg-sign-off" }).signOffRecovery.state, "none");
   assert.equal(dispatch(f, "cg-sign-off").permissionDecision, "allow");
@@ -1015,4 +1017,38 @@ test('review evidence tracks moved/deleted inputs, shared manifests and newly ex
   const legacy = deliveryReviewSnapshot(f.root, record);
   write(f.root, 'unrelated.txt', 'legacy unscoped approval covers this');
   assert.notEqual(deliveryReviewSnapshot(f.root, record), legacy);
+});
+
+test('Closed actions distinguish retained cleanup from production and cleared records need no action', t => {
+  const f = fixture(t); action(f, 'start'); accepted(f); close(f);
+  assert.equal(status(f.root, { programme: 'dashboard' }).nextAction, 'cg-sign-off');
+  assert.match(status(f.root, { programme: 'dashboard' }).reason, /cleanup/i);
+  fs.rmSync(path.join(f.root, 'docs/plans/dashboard'), { recursive: true });
+  const result = next(f.root, { programme: 'dashboard' });
+  assert.equal(result.stage, null);
+  assert.equal(status(f.root, { programme: 'dashboard' }).nextAction, null);
+  assert.equal(permits(result, 'cg-produce').allowed, false);
+  const cli = spawnSync(process.execPath, [CLI, 'status', f.root, '--summary'], { encoding: 'utf8' });
+  assert.match(cli.stdout, /Closed — None/);
+});
+
+test('standalone CLI and hook agree, retain receipt overlap, and do not mutate selection or evidence', t => {
+  const f = fixture(t); action(f, 'start');
+  checkpoint(f, 'dashboard', 'scope-owner', ['app.txt']);
+  const request = { task: 'Independent helper correction', writes: ['helpers/parser.js'] };
+  const scope = next(f.root, { standalone: request });
+  request.scopeReviews = scope.scopeReview.map(item => ({ programme: item.programme, fingerprint: item.fingerprint, paths: ['other'], reason: 'Assessed plan and shared dependencies' }));
+  const file = path.join(f.root, 'standalone.json');
+  const receiptFile = path.join(f.root, readDeliveries(f.root)[0].file);
+  const before = fs.readFileSync(receiptFile, 'utf8');
+  const run = () => {
+    fs.writeFileSync(file, JSON.stringify(request));
+    const cli = spawnSync(process.execPath, [CLI, 'next', f.root, '--for', 'cg-produce', '--standalone', file, '--json'], { encoding: 'utf8', env: { ...process.env, CG_PROGRAMME: '' } });
+    const hook = spawnSync(process.execPath, [HOOK], { input: JSON.stringify({ cwd: f.root, session_id: 'standalone-test', tool_input: { skill: 'cg-produce' } }), encoding: 'utf8', env: { ...process.env, CG_BIN: CLI, CG_PROGRAMME: '', CG_STANDALONE: file, CG_GATE_CHAIN: '' } });
+    return [JSON.parse(cli.stdout).allowed, JSON.parse(hook.stdout).hookSpecificOutput.permissionDecision];
+  };
+  assert.deepEqual(run(), [true, 'allow']);
+  request.writes = ['app.txt'];
+  assert.deepEqual(run(), [false, 'deny'], 'known checkpoint scope cannot be hidden by review');
+  assert.equal(fs.readFileSync(receiptFile, 'utf8'), before);
 });

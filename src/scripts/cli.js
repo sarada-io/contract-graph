@@ -82,7 +82,12 @@ Usage:
   cg guidelines show [dir] --id E01-01          selected advisory guidance (also --category)
   cg profiles                                     list editor profiles
 
+Routing recovery: exact route, then --suggest; if absent or ambiguous, use
+  cg contract show; cg contract children --id <id>; cg contract context --id <id>
+
 Options:
+  --standalone <file> read task/write-scope JSON for next --for cg-produce
+  --compact         opt-in compact JSON (status --summary or contract route --hydrate)
   --select <slug>   save worktree-local programme selection (status only)
   --clear-selection clear worktree-local selection (status only)
   --summary         read all programme obligations without selecting (status only)
@@ -125,7 +130,7 @@ Options:
  * nothing quietly is exactly the upgrade failure this tool should not have.
  */
 const KNOWN_FLAGS = new Set([
-  "select", "clear-selection", "summary", "suggest", "hydrate", "limit", "category",
+  "select", "clear-selection", "summary", "suggest", "hydrate", "limit", "category", "compact", "standalone",
   "report",
   "unit",
   "entry",
@@ -171,7 +176,7 @@ function parseArgs(argv) {
       }
       continue;
     }
-    const extraValue = /^--(programme|session|evidence|gate|base|reasons|report|select|limit|category)(?:=(.*))?$/.exec(arg);
+    const extraValue = /^--(programme|session|evidence|gate|base|reasons|report|select|limit|category|standalone)(?:=(.*))?$/.exec(arg);
     if (extraValue) {
       flags[extraValue[1]] = extraValue[2] ?? argv[++i];
       if (typeof flags[extraValue[1]] !== "string" || !flags[extraValue[1]].trim() || flags[extraValue[1]].startsWith("--")) throw new Error(`${extraValue[1]} requires a value`);
@@ -436,6 +441,8 @@ async function main(argv) {
     process.stdout.write(flags.json ? `${JSON.stringify(context, null, 2)}\n` : renderAnalysisPrompt(context));
     return 0;
   }
+  if (flags.standalone !== undefined && (command !== "next" || flags.for !== "cg-produce" || flags.programme)) throw new Error("--standalone requires next --for cg-produce without --programme");
+  if (flags.compact && !((command === "status" && flags.summary) || (command === "contract" && positional[0] === "route" && flags.hydrate))) throw new Error("--compact requires status --summary or contract route --hydrate");
   if (flags.report !== undefined) throw new Error("--report is supported only by analyse");
   for (const flag of ["select", "clear-selection", "summary"]) if (flags[flag] !== undefined && command !== "status") throw new Error(`--${flag} is supported only by status`);
   for (const flag of ["suggest", "hydrate", "limit"]) if (flags[flag] !== undefined && !(command === "contract" && positional[0] === "route")) throw new Error(`--${flag} is supported only by contract route`);
@@ -491,7 +498,7 @@ async function main(argv) {
       const matches = flags.suggest ? routeSuggestions(graph, flags.task) : routeContracts(graph, flags.task);
       if (flags.hydrate || flags.suggest) {
         if (flags.format && flags.format !== "json") throw new Error("route suggestions and hydration support only JSON format");
-        const report = hydratedRoutes(graph, matches, flags.hydrate ? loadBindingPrinciples(graphRoot) : new Map(), { limit: flags.limit === undefined ? 3 : Number(flags.limit) });
+        const report = hydratedRoutes(graph, matches, flags.hydrate ? loadBindingPrinciples(graphRoot) : new Map(), { limit: flags.limit === undefined ? 3 : Number(flags.limit), compact: flags.compact });
         if (!flags.hydrate) { delete report.contexts; delete report.rules; }
         process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
         return matches.length ? 0 : 1;
@@ -504,7 +511,7 @@ async function main(argv) {
           contracts: match.contracts.map((record) => ({ id: record.contract.id, unit: record.contract.unit, contract: record.relative })),
         })), null, 2)}\n`);
       } else if (!matches.length) {
-        process.stdout.write("no contract route matched — inspect the root contract and add a precise route if this task recurs\n");
+        process.stdout.write("no contract route matched — retry with --suggest; if absent or ambiguous, browse cg contract show then cg contract children --id <id>, and select cg contract context --id <id>\n");
       } else {
         for (const match of matches) {
           process.stdout.write(`${match.owner}/${match.route} (matched: ${match.matched.join(", ")})\n`);
@@ -901,9 +908,9 @@ async function main(argv) {
     }
     if (flags.summary && flags.programme) throw new Error("--summary cannot be combined with --programme");
     if (flags.summary) {
-      const result = statusSummary(repoRoot);
-      process.stdout.write(flags.json ? `${JSON.stringify(result, null, 2)}\n` : [...result.problems.map(problem => `Problem: ${problem}\n`), ...(result.installation.requiresInit ? [`${result.installation.reason}\n`] : []), ...result.programmes.map(item => `${item.programme}: ${item.receipt?.status ?? item.state} — ${item.nextAction ?? "resolve blockers"}\n`)].join(""));
-      return result.problems.length || result.installation.requiresInit || result.programmes.some(item => item.problems.length || item.installation.requiresInit) ? 1 : 0;
+      const result = statusSummary(repoRoot, { compact: flags.compact });
+      process.stdout.write(flags.json ? `${JSON.stringify(result, null, 2)}\n` : [...result.problems.map(problem => `Problem: ${problem}\n`), ...(result.installation.requiresInit ? [`${result.installation.reason}\n`] : []), ...result.programmes.map(item => `${item.programme}: ${item.receipt?.status ?? item.state} — ${item.nextAction ?? (["closed", "suspended", "abandoned"].includes(item.state) ? "None" : "resolve blockers")}\n`)].join(""));
+      return result.hasProblems || result.problems.length || result.installation.requiresInit || result.programmes.some(item => item.problems.length || item.installation?.requiresInit) ? 1 : 0;
     }
     const result = status(repoRoot, { programme: flags.programme });
     if (flags.json) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
@@ -920,14 +927,14 @@ async function main(argv) {
       for (const item of [...(result.residue?.blocking ?? []), ...(result.residue?.otherProgrammes ?? [])]) {
         process.stdout.write(`  residue [${item.scope}; owner: ${item.programme ?? "shared/unassigned"}]: ${item.path}\n`);
       }
-      process.stdout.write(`  next: ${result.nextAction ?? "resolve selection or reported errors"}${result.programme ? ` (programme ${result.programme})` : ""}\n`);
+      process.stdout.write(`  next: ${result.nextAction ?? (["closed", "suspended", "abandoned"].includes(result.state) ? "None" : "resolve selection or reported errors")}${result.programme ? ` (programme ${result.programme})` : ""}\n`);
       for (const problem of result.problems) process.stderr.write(`  ${problem}\n`);
     }
     return result.problems.length || result.state === "selection-required" || result.installation.requiresInit ? 1 : 0;
   }
 
   if (command === "next") {
-    const result = next(repoRoot, { programme: flags.programme, skill: flags.for });
+    const result = next(repoRoot, { programme: flags.programme, skill: flags.for, standalone: flags.standalone });
     if (flags.json) {
       process.stdout.write(`${JSON.stringify(
         {
@@ -945,6 +952,8 @@ async function main(argv) {
           intent: result.intent, delivery: result.delivery,
           signOffRecovery: result.signOffRecovery,
           selectionSource: result.selectionSource ?? null,
+          ...(result.scopeReview ? { scopeReview: result.scopeReview, overlaps: result.overlaps, unknown: result.unknown, task: result.task, writes: result.writes } : {}),
+          ...(result.cleanup ? { cleanup: result.cleanup } : {}),
           ...(result.receipt ? { receipt: { programme: result.receipt.programme, status: result.receipt.status,
             completionRequest: result.receipt.completionRequest ? { state: result.receipt.completionRequest.state, session: result.receipt.completionRequest.session } : null } } : {}),
           ...(flags.for ? { for: flags.for, ...permits(result, flags.for) } : {}),

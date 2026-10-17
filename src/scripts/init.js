@@ -16,7 +16,6 @@ import { fileURLToPath } from "node:url";
 
 import {
   DEFAULT_DOCS_ROOT,
-  DOCS_TREES,
   governanceContractPath,
   loadPhases,
   manifestPath,
@@ -140,8 +139,8 @@ function applyMappingRule(rule, repoRoot, out, docsRoot, dryRun, modulePointers)
 }
 
 /**
- * The starter module ships both pointer filenames as identical templates. Only the selected
- * profiles' files are copied; `cg sync` creates the other later by copying a sibling.
+ * The starter template supplies both pointer filenames. Only the selected profiles' files
+ * are copied; `cg sync` creates the other later by copying a sibling.
  */
 function skipUnselectedStarterPointer(rule, target, modulePointers) {
   if (rule.mode !== "starter") return false;
@@ -163,10 +162,12 @@ function* walkTree(from, to, rule, relative = "") {
       continue;
     }
     yield { source, target, rule };
+    // One authored body supplies both host-specific starter filenames.
+    if (rule.mode === "starter" && !relative && entry.name === "AGENTS.md") {
+      yield { source, target: path.join(to, "CLAUDE.md"), rule };
+    }
   }
 }
-
-
 
 /** Every {source, target} pair one mapping rule installs, in a stable order. */
 function* enumerateRule(rule, repoRoot, docsRoot) {
@@ -412,6 +413,8 @@ export function init(repoRoot, { profiles, docs, dryRun = false, reasons = {} } 
   const out = { written: [], replaced: [], removed: [], skipped: [], backups: [], catalogUpdates: [] };
   const { written, skipped } = out;
   out.policyNotices = retainedPhaseNotices(repoRoot);
+  const workflow = path.join(repoRoot, ".agents/cg/workflow.md");
+  if (fs.existsSync(workflow) && !fs.readFileSync(workflow, "utf8").includes("--suggest")) out.policyNotices.push("Preserved .agents/cg/workflow.md: review routing recovery in the refreshed bootstrap (exact route, --suggest, then bounded child browsing or explicit ID). Repository-owned workflow was not rewritten.");
 
   const previous = loadProfileSelection(repoRoot, { allowMissing: true });
   const selectedProfiles = expandProfileAliases(

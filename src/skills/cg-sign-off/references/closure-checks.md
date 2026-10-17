@@ -10,24 +10,21 @@ Use `cg-unblock` for unresolved material decisions under the caller's authority.
 
 ## Required outcome
 
-Close the phase only when all thirteen are true. Documentation-only work uses §7.0, §8 and §11;
-only outcomes 10, 12, and 13 apply to it.
+Close only when every applicable obligation below is satisfied. Record why a conditional obligation is
+not applicable in the existing evidence inventory; do not manufacture a queue, cohort or approval.
 
-1. Every prepared Step has a report from the expected accumulated state.
-2. Every Step reached `Complete`; every deferral and resumption was recorded and dependency-safe.
-3. Every Step gate and the repository full gate pass in the final state.
-4. Emergent phase-level tests exist where composition needs proof.
-5. Every discovered defect is fixed or has an explicit, valid disposition.
-6. Every Step and the phase acceptance gate are accounted for.
-7. Contracts and detectors delivered by Steps match the combined implementation, and the final responsibility review under §6.2 has evidence and a valid disposition for every applicable finding.
-8. Every decision harvest classifies one declared producer-phase cohort without capturing another
-   cohort or a pending decision.
-9. Every non-empty decision-harvest cohort has one batch acceptance and a validated first prepared
-   harvest Step whose classification digest and drain IDs exactly equal the eligible decision IDs.
-10. Every in-scope resolved decision has an evidenced disposition under §7.0; project context, durable rationale and product/operator guidance are current and validated.
-11. The phase status and roadmap reflect reality before transient-file cleanup.
-12. No required contract update was displaced from `cg-produce` into a documentation edit.
-13. The result includes the evidence inventory and next route described in §11.
+| Applies to | Required outcome |
+| --- | --- |
+| Every requested completion | Discovered findings have valid dispositions; required acceptance is actual; in-scope decisions are reconciled under §7.0; useful durable records are current; statuses reflect reality; evidence and next action are reported under §11. |
+| Implementation, including accepted exploratory work without a queue | Required repository gates and applicable composition tests pass in the final state; contracts and detectors match source; §6 responsibility review findings have evidence and valid dispositions. No required contract change is displaced into a documentation edit. |
+| Existing technical queue only | Every prepared Step has its accumulated-state report, reaches Complete with dependency-safe deferrals/resumptions, passes its gate, and has its required acceptance accounted for. Preserve baseline and handoff evidence. |
+| Declared harvest cohort only | Classify exactly that producer-phase cohort without capturing pending decisions or another cohort. A non-empty cohort needs batch acceptance and its first validated harvest Step, with matching digest and drain IDs. No declared cohort means no harvest artifacts are required. |
+| Documentation-only request | Apply §7.0 to in-scope decisions, §8 to the changed durable records and §11 to evidence/cleanup. Validate the changed documentation; do not imply implementation acceptance or whole-programme closure. |
+
+Ordinary decision reconciliation applies even without a harvest cohort. Accepted no-queue work
+uses its existing roadmap, receipt and acceptance evidence. A current technical repair queue retains
+all its Step obligations. Cleanup of a Closed record reviews retained files and their consumers;
+it does not reopen implementation or grant another closure.
 
 If a protected decision, unavailable prerequisite, or roadmap correction prevents these outcomes,
 return Incomplete or Blocked from §9 and §10 to the invoking procedure. That is actionable;
@@ -41,16 +38,16 @@ it is not phase completion.
    `cg status --programme <slug>` and inspect `cg residue --programme <slug>` for ownership.
    This scoped inspection does not replace the repository's required final gate.
 3. Run `cg next --programme <slug>` for the already selected programme.
-   Closure starts only when every prepared Step in the exact selected phase is `Complete`.
+   Where a technical queue exists, closure starts only when every prepared Step in the exact selected phase is `Complete`.
    Run the repository's selected-phase guard when present; aggregate routing cannot override it.
 4. Maintain one final evidence inventory in the existing phase acceptance record under [verification](../../cg-produce/references/verification.md).
-   Establish `cg verify`, Step checks, and the repository full gate for the final state; reuse only
+   For implementation establish `cg verify`, applicable Step checks, and the repository full gate for the final state; reuse only
    applicable evidence and execute missing or invalidated checks. Later sections consume this
    inventory rather than triggering duplicate runs.
 
-Do not begin closure until every prepared Step is accounted for and `Complete`; each `Done when`
+Where a technical queue exists, do not begin closure until every prepared Step is accounted for and `Complete`; each `Done when`
 comes from the final accumulated state; the branch or worktree descends from the preparation
-baseline through every Step handoff; every behavior, boundary, or invariant change includes its
+baseline through every Step handoff. For all implementation, every behavior, boundary, or invariant change includes its
 contract and detector; detectors have fail-on-demand evidence; and assumptions, decisions,
 residue, and rollback information are recorded.
 
@@ -167,7 +164,7 @@ role-by-route or isolation matrices unless those contracts or the gate name them
 
 ## 6. Confirm the phase
 
-1. Confirm every Step verification has applicable evidence for the final state in the inventory.
+1. Where a technical queue exists, confirm every Step verification has applicable final-state evidence in the inventory.
 2. Confirm positive and negative evidence.
 3. Confirm all detectors are non-vacuous and fail on demand.
 4. Confirm decisions have one canonical agent record (or unmigrated legacy entry), their selected options or typed solutions
@@ -336,7 +333,7 @@ or decision that unblocks it, and do not dispose of its recovery records as Comp
 ## 10. Close and remove transient records
 
 1. Confirm the phase acceptance gate is green.
-2. Confirm every corrective Step is closed with fresh evidence.
+2. Where a technical queue exists, confirm every corrective Step is closed with fresh evidence.
 3. Mark the phase Complete with the date.
 4. Replace forward-looking instructions with measured results.
 5. Add valid out-of-phase handovers to the roadmap or named future phase.
@@ -356,7 +353,7 @@ continue, yield to its caller, or ask the user. A failed gate keeps the phase in
 not cancel an authorized corrective route. Include a blocker only when something prevents that
 route itself, such as an unanswered decision or unavailable prerequisite.
 
-Report the execution baseline, queue-state history, final gates, defects and dispositions,
+Report applicable evidence only: the execution baseline, existing queue-state history, final gates, defects and dispositions,
 emergent tests, phase acceptance result, contracts and detectors verified, durable documents and
 their validation method, out-of-phase handovers, removed transient paths and any explicitly retained dependencies, and the exact
 final commands. For documentation-only work, report only the artifacts written, their evidence, and

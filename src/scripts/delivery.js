@@ -5,7 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
 import { execFileSync, spawnSync } from "node:child_process";
-import { profilePath } from "./profiles.js";
+import { readDocsRoot } from "./profiles.js";
 import { encodeDelivery, encodeDeltaDelivery, decodeDelivery } from "./delivery-storage.js";
 
 export const DELIVERY_ROOT = ".agents/cg/deliveries";
@@ -22,10 +22,7 @@ export function programmeName(value) {
 }
 
 export function deliveryDocs(root) {
-  const file = profilePath(root);
-  const docs = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, "utf8")).docs ?? "docs" : "docs";
-  if (typeof docs !== "string" || !/^[^./\\][^/\\]*$/.test(docs) || docs === "..") throw new Error("invalid docs root in profile");
-  return docs;
+  return readDocsRoot(root, { strict: true });
 }
 
 function git(root, args) {
@@ -183,8 +180,8 @@ function recordPath(root, name) {
 }
 
 /** Recovery reads attributed intent, never infers it from phase readiness or ledger recency. */
-export function signOffRecovery(root) {
-  const candidates = readDeliveries(root).filter(record => record.completionRequest?.state === "Active")
+export function signOffRecovery(root, records = readDeliveries(root)) {
+  const candidates = records.filter(record => record.completionRequest?.state === "Active")
     .map(record => ({ programme: record.programme, mode: "delivery-completion", record: record.file,
       scope: record.completionRequest.scope }));
   return { state: candidates.length === 1 ? "resumable" : candidates.length > 1 ? "selection-required" : "none", candidates };
