@@ -1,3 +1,7 @@
+/**
+ * @file Check safe retirement of known legacy assets and preservation of repository work.
+ * @see ../src/runtime/installation/.agent/contract.md
+ */
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -6,11 +10,11 @@ import crypto from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import test from 'node:test';
-import { init } from '../src/scripts/init.js';
-import { sync } from '../src/scripts/sync.js';
-import { verify, CORE_CG_SKILLS } from '../src/scripts/verify.js';
-import { next, permits } from '../src/scripts/next.js';
-import { loadContract, stringifyContractYaml } from '../src/scripts/contracts.js';
+import { init } from '../src/runtime/installation/init.js';
+import { sync } from '../src/runtime/installation/sync.js';
+import { verify, CORE_CG_SKILLS } from '../src/runtime/verification/verify.js';
+import { next, permits } from '../src/runtime/delivery/next.js';
+import { loadContract, stringifyContractYaml } from '../src/runtime/graph/contracts.js';
 import { approveFixtureIntent } from './helpers/intent.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));

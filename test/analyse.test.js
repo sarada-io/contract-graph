@@ -1,10 +1,14 @@
+/**
+ * @file Check read-only assessment prompts, resource confinement and non-execution.
+ * @see ../src/runtime/inspection/.agent/contract.md
+ */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { analyse, renderAnalysisPrompt } from '../src/scripts/analyse.js';
+import { analyse, renderAnalysisPrompt } from '../src/runtime/inspection/analyse.js';
 
 function fixture(t) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cg-analyse-'));

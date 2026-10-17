@@ -1,3 +1,7 @@
+/**
+ * @file Check delivery lifecycle actions, evidence freshness and completion admission.
+ * @see ../src/runtime/delivery/.agent/contract.md
+ */
 import { approveFixtureIntent } from "./helpers/intent.mjs";
 import assert from "node:assert/strict";
 import fs from "node:fs";
@@ -6,14 +10,14 @@ import path from "node:path";
 import { execFileSync, spawnSync } from "node:child_process";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
-import { deliveryAction, deliverySnapshot, readDeliveries, deliveryReadiness as checkDelivery, DELIVERY_ROOT } from "../src/scripts/delivery.js";
-import { next, permits } from "../src/scripts/next.js";
-import { residue } from "../src/scripts/residue.js";
-import { status } from "../src/scripts/status.js";
-import { init } from "../src/scripts/init.js";
-import { sync } from "../src/scripts/sync.js";
-import { verify } from "../src/scripts/verify.js";
-import { loadContract, stringifyContractYaml } from "../src/scripts/contracts.js";
+import { deliveryAction, deliverySnapshot, readDeliveries, deliveryReadiness as checkDelivery, DELIVERY_ROOT } from "../src/runtime/delivery/delivery.js";
+import { next, permits } from "../src/runtime/delivery/next.js";
+import { residue } from "../src/runtime/delivery/residue.js";
+import { status } from "../src/runtime/delivery/status.js";
+import { init } from "../src/runtime/installation/init.js";
+import { sync } from "../src/runtime/installation/sync.js";
+import { verify } from "../src/runtime/verification/verify.js";
+import { loadContract, stringifyContractYaml } from "../src/runtime/graph/contracts.js";
 
 const CLI = fileURLToPath(new URL("../bin/cg.js", import.meta.url));
 const HOOK = fileURLToPath(new URL("../src/install/hooks/cg-gate.mjs", import.meta.url));
@@ -938,7 +942,7 @@ test('evidence inputs invalidate review independently of write permission and su
 });
 
 test('selection preserves terminal and suspended state in CLI and hook', async t => {
-  const { selectProgramme } = await import('../src/scripts/next.js');
+  const { selectProgramme } = await import('../src/runtime/delivery/next.js');
   const f = fixture(t); action(f, 'start');
   selectProgramme(f.root, 'dashboard');
   assert.equal(dispatch(f, 'cg-produce', '').permissionDecision, 'deny');
@@ -993,7 +997,7 @@ test('delta and v2 compaction work in both receipt locations and failed close is
 });
 
 test('review evidence tracks moved/deleted inputs, shared manifests and newly expanded scope', async t => {
-  const { deliveryReviewSnapshot } = await import('../src/scripts/delivery.js');
+  const { deliveryReviewSnapshot } = await import('../src/runtime/delivery/delivery.js');
   const f = fixture(t); action(f, 'start');
   write(f.root, 'shared/package.json', '{}');
   checkpoint(f, 'dashboard', 'writer', ['app.txt'], { evidenceInputs: ['shared'] });

@@ -1,2 +1,6 @@
 #!/usr/bin/env node
-import "../src/scripts/cli.js";
+/**
+ * @file Launch the source checkout CLI.
+ * @see ../.agent/contract.md
+ */
+import "../src/runtime/cli.js";

@@ -1,6 +1,8 @@
 #!/usr/bin/env node
-/** Check actual readiness and scoped completion authority before skill dispatch. */
-
+/**
+ * @file Check readiness and scoped completion authority before host skill dispatch.
+ * @see ../../runtime/installation/.agent/contract.md
+ */
 import { execFileSync } from "node:child_process";
 import crypto from "node:crypto";
 import fs from "node:fs";

@@ -1,3 +1,7 @@
+/**
+ * @file Check maintenance-menu selection, command dispatch and disposable package installation.
+ * @see ../src/runtime/distribution/.agent/contract.md
+ */
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';

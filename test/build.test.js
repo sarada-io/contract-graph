@@ -1,3 +1,7 @@
+/**
+ * @file Check reproducible package assembly, drift detection and extracted-package behavior.
+ * @see ../src/runtime/distribution/.agent/contract.md
+ */
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
 import crypto from "node:crypto";
@@ -5,19 +9,20 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { createRequire } from "node:module";
+import { runtimeIdentity } from "../src/runtime/distribution/runtime.js";
 
 import {
   BUILD_DIRECTORY,
   build,
-} from "../src/scripts/build.js";
+} from "../src/runtime/distribution/build.js";
 import {
   ENGINEERING_SCHEMA_ID,
   PRODUCT_SCHEMA_ID,
   loadEngineeringCatalog,
   loadProductCatalog,
-} from "../src/scripts/model.js";
+} from "../src/runtime/verification/model.js";
 
 const TEST_DIR = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(TEST_DIR, "..");
@@ -38,13 +43,39 @@ const readJson = (root, relative) =>
   JSON.parse(fs.readFileSync(path.join(root, BUILD_DIRECTORY, relative), "utf8"));
 const hash = (value) => crypto.createHash("sha256").update(value).digest("hex");
 
+test("maintainer context is excluded from package bytes and runtime identity at every depth", t => {
+  const dir = fixture();
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  build(dir);
+  const before = fs.readFileSync(path.join(dir, BUILD_DIRECTORY, "manifest.json"), "utf8");
+  const identity = runtimeIdentity(dir).buildId;
+  for (const relative of [
+    "src/runtime/graph/.agent/notes.md",
+    "src/skills/.agent/notes.md",
+    "src/skills/cg-warmup/references/.agent/notes.md",
+    "src/install/templates/module/.agent/notes.md",
+    "src/diagnostics/.agent/notes.md",
+  ]) {
+    const file = path.join(dir, relative);
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.writeFileSync(file, "Maintainer-only context\n");
+  }
+  assert.equal(runtimeIdentity(dir).buildId, identity);
+  build(dir);
+  assert.equal(fs.readFileSync(path.join(dir, BUILD_DIRECTORY, "manifest.json"), "utf8"), before);
+  const manifest = readJson(dir, "manifest.json");
+  assert.ok(!Object.keys(manifest.files).some(file => file.split("/").includes(".agent")));
+  assert.equal(runtimeIdentity(path.join(dir, BUILD_DIRECTORY)).buildId, identity);
+  assert.ok(manifest.files["agent/skills/cg-warmup/SKILL.md"]);
+});
+
 test("cg build copies architecture and product YAML catalogs", () => {
   const dir = fixture();
   const output = execFileSync(process.execPath, [CLI, "build", dir], { encoding: "utf8" });
   assert.match(output, /file\(s\) from 1 compiler/);
   assert.equal(readJson(dir, "package.json").devDependencies, undefined, "schema test tooling must not become package metadata");
-  assert.deepEqual(readJson(dir, "package.json").scripts, { postinstall: "node script/windows-launcher.js" });
-  assert.ok(fs.existsSync(path.join(dir, BUILD_DIRECTORY, "script/windows-launcher.js")));
+  assert.deepEqual(readJson(dir, "package.json").scripts, { postinstall: "node script/distribution/windows-launcher.js" });
+  assert.ok(fs.existsSync(path.join(dir, BUILD_DIRECTORY, "script/distribution/windows-launcher.js")));
 
   assert.equal(fs.existsSync(path.join(dir, BUILD_DIRECTORY, "agent/cg/project-context.md")), true);
   assert.equal(fs.existsSync(path.join(dir, BUILD_DIRECTORY, "agent/templates/docs/project-intent.md")), false);
@@ -248,7 +279,7 @@ test("the build refuses reintroduced legacy schemas and requires the shared sche
   assert.throws(() => build(dir), /missing catalog source: src\/cg\/schema\/principles.schema.json/);
 });
 
-test("an extracted tarball resolves shared exports and migrates a repository without source-tree fallbacks", (t) => {
+test("an extracted tarball resolves shared exports and migrates a repository without source-tree fallbacks", async (t) => {
   const dir = fixture();
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
   build(dir);
@@ -278,6 +309,12 @@ test("an extracted tarball resolves shared exports and migrates a repository wit
   assert.equal(fs.existsSync(path.join(packageRoot, "src")), false);
   assert.equal(fs.existsSync(path.join(consumer, "node_modules/ajv")), false);
   const repo = path.join(consumer, "adopter");
+  const engine = await import(pathToFileURL(require.resolve("contract-graph")).href);
+  const contracts = await import(pathToFileURL(require.resolve("contract-graph/contracts")).href);
+  assert.equal(engine.loadContractGraph, contracts.loadContractGraph);
+  assert.equal(typeof engine.loadContractGraph, "function");
+  const packagedRuntime = await import(pathToFileURL(path.join(packageRoot, "script/distribution/runtime.js")).href);
+  assert.equal(packagedRuntime.runtimeIdentity().buildId, runtimeIdentity().buildId);
   const run = (...args) => spawnSync(process.execPath, [path.join(packageRoot, "script/cli.js"), ...args], { cwd: consumer, encoding: "utf8" });
   const success = (...args) => {
     const result = run(...args);

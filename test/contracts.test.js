@@ -1,3 +1,7 @@
+/**
+ * @file Check YAML graph validation, navigation, routing and projections.
+ * @see ../src/runtime/graph/.agent/contract.md
+ */
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
 import fs from "node:fs";
@@ -6,9 +10,9 @@ import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 
-import { init } from "../src/scripts/init.js";
-import { loadBindingPrinciples } from "../src/scripts/model.js";
-import { sync } from "../src/scripts/sync.js";
+import { init } from "../src/runtime/installation/init.js";
+import { loadBindingPrinciples } from "../src/runtime/verification/model.js";
+import { sync } from "../src/runtime/installation/sync.js";
 import {
   CONTRACT_FILENAME,
   CONTRACT_SCHEMA_ID,
@@ -24,7 +28,7 @@ import {
   renderMermaid,
   routeContracts,
   stringifyContractYaml,
-} from "../src/scripts/contracts.js";
+} from "../src/runtime/graph/contracts.js";
 
 const TEST_DIR = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(TEST_DIR, "..");
@@ -416,7 +420,7 @@ test("a graph may mix a two-level module leaf with a five-kind nest", () => {
 });
 
 test('suggestions preserve exact matches, explain reordered phrases, avoid unrelated matches and bound hydration', async t => {
-  const { routeSuggestions, hydratedRoutes } = await import('../src/scripts/contracts.js');
+  const { routeSuggestions, hydratedRoutes } = await import('../src/runtime/graph/contracts.js');
   const dir = fixture(); t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
   editContract(dir, ROOT, c => { c.routes = [{ id: 'card-animation', when: ['fix card movement animation'], contracts: [MODULE] }]; });
   const graph = loadContractGraph(dir);
@@ -451,7 +455,7 @@ test('suggestions preserve exact matches, explain reordered phrases, avoid unrel
 });
 
 test('routing ties, normalised duplicate words, omissions and advisory intersections stay explicit', async t => {
-  const { routeSuggestions, hydratedRoutes } = await import('../src/scripts/contracts.js');
+  const { routeSuggestions, hydratedRoutes } = await import('../src/runtime/graph/contracts.js');
   const dir = fixture(); t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
   editContract(dir, ROOT, c => { c.routes = [
     { id: 'first', when: ['billing refund'], contracts: [MODULE] },
@@ -489,7 +493,7 @@ test('routing ties, normalised duplicate words, omissions and advisory intersect
 });
 
 test('compact hydration shares ancestor bodies and preserves all context relationships', async t => {
-  const { hydratedRoutes } = await import('../src/scripts/contracts.js');
+  const { hydratedRoutes } = await import('../src/runtime/graph/contracts.js');
   const dir = fixture(); t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
   const leaves = [MODULE];
   for (let i = 0; i < 3; i++) {

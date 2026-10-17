@@ -1,11 +1,15 @@
+/**
+ * @file Check parsed language facts, unsupported syntax and non-execution.
+ * @see ../src/runtime/inspection/.agent/contract.md
+ */
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
-import { inspectNative, adapters } from "../src/scripts/inspection/native-languages.js";
-import { inspectContract, inspectionSnapshotChanges } from "../src/scripts/contract-inspection.js";
+import { inspectNative, adapters } from "../src/runtime/inspection/native-languages.js";
+import { inspectContract, inspectionSnapshotChanges } from "../src/runtime/inspection/contract-inspection.js";
 const fixtures = fileURLToPath(new URL("./fixtures/contract-inspection/languages/", import.meta.url));
 const names = r => [...new Set(r.facts.filter(f => f.category === "export").map(f => f.name))].sort();
 const scenarios = [

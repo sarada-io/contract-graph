@@ -1,3 +1,7 @@
+/**
+ * @file Check catalog authority, schema agreement, migration safety and binding detectors.
+ * @see ../src/runtime/verification/.agent/contract.md
+ */
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
@@ -6,14 +10,14 @@ import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 import Ajv2020 from "ajv/dist/2020.js";
-import { init } from "../src/scripts/init.js";
-import { sync } from "../src/scripts/sync.js";
-import { verify } from "../src/scripts/verify.js";
-import { loadPrinciplesCatalog, loadBindingPrinciples } from "../src/scripts/model.js";
-import { parseContractYaml, stringifyContractYaml, loadContractGraph, contractContext, findContract } from "../src/scripts/contracts.js";
-import { migratePrinciples } from "../src/scripts/migrate-principles.js";
-import { validateBindingCatalog } from "../src/scripts/binding.js";
-import { validateGuidelineCatalog } from "../src/scripts/catalog.js";
+import { init } from "../src/runtime/installation/init.js";
+import { sync } from "../src/runtime/installation/sync.js";
+import { verify } from "../src/runtime/verification/verify.js";
+import { loadPrinciplesCatalog, loadBindingPrinciples } from "../src/runtime/verification/model.js";
+import { parseContractYaml, stringifyContractYaml, loadContractGraph, contractContext, findContract } from "../src/runtime/graph/contracts.js";
+import { migratePrinciples } from "../src/runtime/installation/migrate-principles.js";
+import { validateBindingCatalog } from "../src/runtime/verification/binding.js";
+import { validateGuidelineCatalog } from "../src/runtime/verification/catalog.js";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const files = {

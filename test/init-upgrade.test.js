@@ -1,3 +1,7 @@
+/**
+ * @file Check init preview, preservation, catalog recovery and refreshed discovery.
+ * @see ../src/runtime/installation/.agent/contract.md
+ */
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
@@ -5,11 +9,11 @@ import path from "node:path";
 import test from "node:test";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { init } from "../src/scripts/init.js";
-import { sync } from "../src/scripts/sync.js";
-import { verify } from "../src/scripts/verify.js";
-import { parseContractYaml } from "../src/scripts/contracts.js";
-import { planInitCatalogs, applyInitCatalogs } from "../src/scripts/init-catalogs.js";
+import { init } from "../src/runtime/installation/init.js";
+import { sync } from "../src/runtime/installation/sync.js";
+import { verify } from "../src/runtime/verification/verify.js";
+import { parseContractYaml } from "../src/runtime/graph/contracts.js";
+import { planInitCatalogs, applyInitCatalogs } from "../src/runtime/installation/init-catalogs.js";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const paths = {

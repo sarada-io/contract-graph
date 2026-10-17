@@ -1,4 +1,7 @@
-/** Run repository tests with isolated, automatically cleaned scratch storage. */
+/**
+ * @file Run repository tests with isolated, automatically cleaned scratch storage.
+ * @see ../src/runtime/distribution/.agent/contract.md
+ */
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";

@@ -1,6 +1,8 @@
 /**
- * Fail-on-demand coverage for the verifier.
- *
+ * @file Check graph, policy, scaffold and discovery verification with failing fixtures.
+ * @see ../src/runtime/verification/.agent/contract.md
+ */
+/*
  * Every negative case here is load-bearing. A verifier suite that only proves the green
  * path passes is indistinguishable from a verifier that checks nothing — which is the exact
  * failure mode `enforcement.yaml` warns about. Each test mutates one thing in an
@@ -18,34 +20,34 @@ import { PassThrough } from "node:stream";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 
-import { init, PACKAGE_VERSION, SCAFFOLD_MAPPING, SOURCE_ROOT } from "../src/scripts/init.js";
+import { init, PACKAGE_VERSION, SCAFFOLD_MAPPING, SOURCE_ROOT } from "../src/runtime/installation/init.js";
 import {
   BINDING_FILENAME,
   BUILT_IN_DETECTORS,
   loadBindingCatalog,
-} from "../src/scripts/binding.js";
-import { checkHarvest } from "../src/scripts/harvest.js";
-import { detectModuleRoots, moduleCoverage, subBoundaryCount } from "../src/scripts/modules.js";
-import { renderModulePointer } from "../src/scripts/model.js";
-import { next, permits } from "../src/scripts/next.js";
-import { multiSelect, updatePickerState } from "../src/scripts/picker.js";
-import { residue } from "../src/scripts/residue.js";
-import { sync } from "../src/scripts/sync.js";
-import { CORE_CG_SKILLS, verify } from "../src/scripts/verify.js";
+} from "../src/runtime/verification/binding.js";
+import { checkHarvest } from "../src/runtime/verification/harvest.js";
+import { detectModuleRoots, moduleCoverage, subBoundaryCount } from "../src/runtime/graph/modules.js";
+import { renderModulePointer } from "../src/runtime/verification/model.js";
+import { next, permits } from "../src/runtime/delivery/next.js";
+import { multiSelect, updatePickerState } from "../src/runtime/installation/picker.js";
+import { residue } from "../src/runtime/delivery/residue.js";
+import { sync } from "../src/runtime/installation/sync.js";
+import { CORE_CG_SKILLS, verify } from "../src/runtime/verification/verify.js";
 import {
   parsePrinciples,
   loadBindingPrinciples,
   loadPrinciples,
   splitLines,
   ContractError,
-} from "../src/scripts/model.js";
+} from "../src/runtime/verification/model.js";
 import {
   ProfileError,
   availableProfiles,
   loadProfileConfig,
   profileChoices,
   resolveProfiles,
-} from "../src/scripts/profiles.js";
+} from "../src/runtime/installation/profiles.js";
 import {
   CONTRACT_FILENAME,
   contractContext,
@@ -60,7 +62,7 @@ import {
   routeContracts,
   stringifyContractYaml,
   validateContract,
-} from "../src/scripts/contracts.js";
+} from "../src/runtime/graph/contracts.js";
 
 const TEST_DIR = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(TEST_DIR, "..");
@@ -757,7 +759,7 @@ test("the public workflow guide names decomposition and the disk baseline", () =
   assert.match(workflow, /cites a plan path or ticket id/);
   assert.match(workflow, /later session should not need the previous chat/);
   assert.doesNotMatch(workflow, /## Under the hood/);
-  assert.doesNotMatch(workflow, /src\/scripts\/next\.js/);
+  assert.doesNotMatch(workflow, /src\/runtime\/delivery\/next\.js/);
 });
 
 test("the published README is a human landing page", () => {
@@ -2900,6 +2902,7 @@ function filesUnder(root) {
 }
 
 function ruleMatchesSource(rule, relative) {
+  if (relative.split("/").includes(".agent")) return false;
   if (rule.select === "file") return relative === rule.source;
   if (rule.select === "tree") {
     if (rule.exclude?.some(excluded => relative === `${rule.source}/${excluded}` || relative.startsWith(`${rule.source}/${excluded}/`))) return false;
@@ -2916,7 +2919,8 @@ test("scaffold mapping covers every eligible src file exactly once", () => {
   // copied by `init`; its generated target therefore stays out of the installation manifest.
   const eligible = filesUnder(SOURCE_ROOT).filter(
     (file) =>
-      !file.startsWith("scripts/") &&
+      !file.split("/").includes(".agent") &&
+      !file.startsWith("runtime/") &&
       !file.startsWith("diagnostics/") && // Package-only pre-adoption resources, never scaffolded.
       !file.startsWith("install/profiles/") &&
       file !== "cg/contract-graph-agent.md",
@@ -3167,14 +3171,15 @@ test("the published tarball ships consumer sources and no maintainer tooling", t
   );
   const targetFiles = [...Object.keys(targetManifest.files), "manifest.json"].sort();
 
-  assert.ok(!shipped.includes("script/dev.js"), "dev tooling must not ship");
+  assert.ok(!shipped.some(file => /(?:^|\/)(?:dev\.js|try-editor\.mjs)$/.test(file)), "editor fixture tooling must not ship");
   assert.ok(!shipped.some((file) => file.startsWith("src/")), "authoring source layout must not ship");
+  assert.ok(!shipped.some(file => file.split("/").includes(".agent")), "colocated maintainer context must not ship");
   assert.ok(!shipped.some((file) => /^agent\/cg\/principles\/.*\.md$/.test(file)), "principle Markdown sources must not ship");
   assert.deepEqual(shipped.sort(), targetFiles, "the tarball must contain exactly the verified target");
   for (const required of [
     "script/cli.js",
-    "script/contracts.js",
-    "script/picker.js",
+    "script/graph/contracts.js",
+    "script/installation/picker.js",
     "agent/cg/contract.yaml",
     "agent/cg/contract-graph-agent.md",
     "agent/cg/principles/architecture.yaml",

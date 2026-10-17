@@ -72,6 +72,29 @@ Contract YAML uses a deliberately restricted YAML 1.2 profile. Duplicate keys, a
 explicit tags, merge keys, multiple documents, non-string keys, and non-JSON scalar values are
 rejected. The package includes the parser; repositories do not supply executable loaders or tags.
 
+## Compare Dart package dependencies with the graph
+
+Run the opt-in pilot with:
+
+```bash
+cg contract dependencies --ecosystem dart
+cg contract dependencies --ecosystem dart --json
+```
+
+It reads `pubspec.yaml` declarations and the validated contract graph without running Dart, resolving packages or changing files. The report maps each package root to its nearest enclosing contract unit. Multiple packages can belong to one contract; a contract below a package root does not own the whole package. Review those reported mappings before relying on the comparison.
+
+For a resolved local package dependency crossing two owners, this pilot requires a direct `relations.dependencies` edge from the consuming owner to the providing owner. A reverse edge is reported separately. Composition and transitive reachability do not substitute for the direct dependency. A dependency between packages sharing one owner is reported as internal. Runtime `dependencies` and `dev_dependencies` retain distinct provenance and both participate in the comparison. Relationships between mapped owners without package evidence are reported as graph-only: they may describe other architectural coupling and do not automatically constitute errors.
+
+For example, a client package depending on a catalogue package needs client-owner → catalogue-owner. The command reports a missing or reversed edge with both manifests/owners, so the maintainer can inspect the intended architecture and correct the appropriate declaration. It never adds a relationship automatically.
+
+The supported subset includes explicit relative workspace members, nested workspaces, workspace-local package names and repository-contained relative path dependencies. The workspace root participates in resolution. Workspace dependencies can resolve to local members regardless of their declared source; relative path dependencies outside a workspace resolve from the declaring manifest's directory. These follow the documented [Dart workspace](https://dart.dev/tools/pub/workspaces) and [package dependency](https://dart.dev/tools/pub/dependencies) rules. The pilot does not solve SDK or version constraints, so aligned declarations do not establish that Pub can resolve the project.
+
+Workspace globs, effective overrides and `pubspec_overrides.yaml`, absolute/outside paths, symlinked targets and unsupported descriptor/YAML forms produce explicit incomplete coverage. The bundled YAML subset disallows aliases, anchors and merge keys. Overrides can change resolution across an entire workspace; the pilot keeps that affected group unresolved rather than guessing its effective targets. Missing targets, duplicate names within a resolution group, invalid member declarations and package-name mismatches are diagnosed. Hosted, Git and SDK dependencies outside the local workspace are recorded as external, without network access or inferred graph edges.
+
+JSON contains mappings, local/internal/external edges, graph-only relationships, findings, diagnostics and input fingerprints. The inventory visits at most 10,000 entries to depth 64, reads files up to 1 MiB and at most 32 MiB total, and reports excluded generated/dependency/hidden directories. Explicit paths into excluded inventory remain unresolved. Directory and absence fingerprints help detect new manifests, owners or override files; the existing `inspectionSnapshotChanges` API checks saved evidence. Analysis limits or changed inputs prevent a clean result. The graph itself is validated through the existing graph loader.
+
+Exit 0 means `aligned` within the reported manifest-declaration coverage. Exit 1 covers `mismatch`, `incomplete` and `invalid`; inspect the state and diagnostics. No discovered Dart manifest is an incomplete result. Ordinary `cg verify` remains the declaration/scaffold check. Source imports, exported symbols, transitive dependency resolution, product correctness and execution of contract-declared verification commands are outside this pilot. Additional ecosystems require their own fixtures and coverage definition.
+
 ## The recursive model
 
 The composition spine is:

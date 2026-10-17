@@ -7,8 +7,8 @@
     "cg": "bin/cg.js"
   },
   "exports": {
-    ".": "./src/scripts/contracts.js",
-    "./contracts": "./src/scripts/contracts.js",
+    ".": "./src/runtime/graph/contracts.js",
+    "./contracts": "./src/runtime/graph/contracts.js",
     "./schema": "./src/cg/schema/contract.schema.json",
     "./principles-schema": "./src/cg/schema/principles.schema.json",
     "./architecture-schema": "./src/cg/schema/principles.schema.json",
@@ -21,7 +21,6 @@
   "files": [
     "bin",
     "src",
-    "!src/scripts/dev.js",
     "dist/build",
     "docs",
     "README.md",
@@ -32,7 +31,7 @@
   },
   "scripts": {
     "test": "node scripts/test.mjs",
-    "try": "node src/scripts/dev.js",
+    "try": "node scripts/try-editor.mjs",
     "build": "node bin/cg.js build",
     "build:check": "node bin/cg.js build --check",
     "pack": "node bin/cg.js build --quiet && node --input-type=module -e \"import fs from 'node:fs'; fs.mkdirSync('dist/tar', { recursive: true })\" && npm pack --ignore-scripts --pack-destination dist/tar ./dist/build",

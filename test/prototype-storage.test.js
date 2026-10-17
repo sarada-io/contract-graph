@@ -1,6 +1,10 @@
+/**
+ * @file Check lossless receipt encoding and compatibility with historical readers.
+ * @see ../src/runtime/delivery/.agent/contract.md
+ */
 import assert from "node:assert/strict";
 import test from "node:test";
-import { encodeDelivery, decodeDelivery } from "../src/scripts/delivery-storage.js";
+import { encodeDelivery, decodeDelivery } from "../src/runtime/delivery/delivery-storage.js";
 
 const fixture = () => {
   const files = Array.from({ length: 40 }, (_, i) => [`src/unit-${i}.js`, "file", "a".repeat(64)]);
@@ -55,7 +59,7 @@ test("v2 rejects changed or missing objects, duplicate/unsafe slots, unused obje
 });
 
 test('opt-in deltas preserve changing snapshots, deletion, unknown fields and bounded churn size', async () => {
-  const { encodeDeltaDelivery } = await import('../src/scripts/delivery-storage.js');
+  const { encodeDeltaDelivery } = await import('../src/runtime/delivery/delivery-storage.js');
   const record = fixture();
   const files = record.history[0].checkpoint.files;
   record.history = Array.from({ length: 60 }, (_, i) => {
@@ -87,7 +91,7 @@ test('opt-in deltas preserve changing snapshots, deletion, unknown fields and bo
 
 test('independent v3 envelopes reject excessive chains and preserve reordered or deleted rows', async () => {
   const { createHash } = await import('node:crypto');
-  const { encodeDeltaDelivery } = await import('../src/scripts/delivery-storage.js');
+  const { encodeDeltaDelivery } = await import('../src/runtime/delivery/delivery-storage.js');
   const hash = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
   const record = fixture();
   const original = record.history[0].checkpoint.files;
@@ -119,7 +123,7 @@ test('independent v3 envelopes reject excessive chains and preserve reordered or
 
 test('read-only public storage cohorts explain zero gain and changing-snapshot gain', async t => {
   const { createHash } = await import('node:crypto');
-  const { encodeDeltaDelivery } = await import('../src/scripts/delivery-storage.js');
+  const { encodeDeltaDelivery } = await import('../src/runtime/delivery/delivery-storage.js');
   const old = await import('./fixtures/historical-1.0.0/delivery-storage.mjs');
   const hash = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
   // These are public synthetic populations, not copied or purported adopter records.

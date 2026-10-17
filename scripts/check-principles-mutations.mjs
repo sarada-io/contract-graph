@@ -1,4 +1,7 @@
-/** Verify that targeted behavioral regressions are detected, using disposable source copies. */
+/**
+ * @file Check that targeted behavioral regressions fail verification in disposable source copies.
+ * @see ../src/runtime/distribution/.agent/contract.md
+ */
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -7,18 +10,18 @@ import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const cases = [
-  ["family binding is ignored", "src/scripts/catalog.js", "catalog.binding !== FAMILY_BINDING[family]", "false"],
-  ["blank reasons are accepted", "src/scripts/catalog.js", 'for (const key of ["statement", "reason"])', 'for (const key of ["statement"])'],
-  ["promotion requirements are string-coerced", "src/scripts/binding.js",
+  ["family binding is ignored", "src/runtime/verification/catalog.js", "catalog.binding !== FAMILY_BINDING[family]", "false"],
+  ["blank reasons are accepted", "src/runtime/verification/catalog.js", 'for (const key of ["statement", "reason"])', 'for (const key of ["statement"])'],
+  ["promotion requirements are string-coerced", "src/runtime/verification/binding.js",
     'catalog.promotion.requires.length !== required.length ||\n        catalog.promotion.requires.some((item, index) => item !== required[index])',
     'catalog.promotion.requires.join(",") !== required.join(",")'],
-  ["unregistered A detector implementations are accepted", "src/scripts/binding.js", 'const registered = BUILT_IN_DETECTORS[detector.id];', 'const registered = [detector.implementation, detector.negativeFixture];'],
-  ["A rules disappear from contract context", "src/scripts/binding.js", 'return new Map(catalog.principles.map((rule) => [rule.id, rule.statement]));', 'return new Map();'],
-  ["a valid preview writes files", "src/scripts/migrate-principles.js", 'if (!write || result.failures.length) return result;', 'if (result.failures.length) return result;'],
-  ["backups contain converted data instead of originals", "src/scripts/migrate-principles.js", 'fs.writeFileSync(item.backup, item.original,', 'fs.writeFileSync(item.backup, item.text,'],
-  ["failed commits do not restore earlier files", "src/scripts/migrate-principles.js", 'if (!result.written.includes(item.relative)) continue;', 'if (true) continue;'],
+  ["unregistered A detector implementations are accepted", "src/runtime/verification/binding.js", 'const registered = BUILT_IN_DETECTORS[detector.id];', 'const registered = [detector.implementation, detector.negativeFixture];'],
+  ["A rules disappear from contract context", "src/runtime/verification/binding.js", 'return new Map(catalog.principles.map((rule) => [rule.id, rule.statement]));', 'return new Map();'],
+  ["a valid preview writes files", "src/runtime/installation/migrate-principles.js", 'if (!write || result.failures.length) return result;', 'if (result.failures.length) return result;'],
+  ["backups contain converted data instead of originals", "src/runtime/installation/migrate-principles.js", 'fs.writeFileSync(item.backup, item.original,', 'fs.writeFileSync(item.backup, item.text,'],
+  ["failed commits do not restore earlier files", "src/runtime/installation/migrate-principles.js", 'if (!result.written.includes(item.relative)) continue;', 'if (true) continue;'],
   ["P rationale is optional in the schema", "src/cg/schema/principles.schema.json", null, null, "principles", schema => { schema.$defs.productEntry.required = ["id", "statement"]; }],
-  ["legacy product export points to a deleted schema", "src/scripts/build.js", '"./product-schema": "./agent/cg/schema/principles.schema.json"', '"./product-schema": "./agent/cg/schema/product.schema.json"', "build"],
+  ["legacy product export points to a deleted schema", "src/runtime/distribution/build.js", '"./product-schema": "./agent/cg/schema/principles.schema.json"', '"./product-schema": "./agent/cg/schema/product.schema.json"', "build"],
 ];
 
 let caught = 0;

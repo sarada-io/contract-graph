@@ -1,3 +1,7 @@
+/**
+ * @file Check programme recovery, selection and current status projections.
+ * @see ../src/runtime/delivery/.agent/contract.md
+ */
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
@@ -5,9 +9,9 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
-import { next, permits, parseQueueDocument } from "../src/scripts/next.js";
-import { residue } from "../src/scripts/residue.js";
-import { status } from "../src/scripts/status.js";
+import { next, permits, parseQueueDocument } from "../src/runtime/delivery/next.js";
+import { residue } from "../src/runtime/delivery/residue.js";
+import { status } from "../src/runtime/delivery/status.js";
 
 const CLI = fileURLToPath(new URL("../bin/cg.js", import.meta.url));
 function write(root, file, body) {
@@ -141,8 +145,8 @@ test("status reports the exact current blocker and recovery action without trust
 });
 
 test('programme selection is worktree-local, explicit then environment then pointer; stale targets fail closed', async t => {
-  const { selectProgramme } = await import('../src/scripts/next.js');
-  const { statusSummary } = await import('../src/scripts/status.js');
+  const { selectProgramme } = await import('../src/runtime/delivery/next.js');
+  const { statusSummary } = await import('../src/runtime/delivery/status.js');
   const root = fixture(t);
   const git = (...args) => {
     const result = spawnSync('git', ['-C', root, ...args], { encoding: 'utf8' });
@@ -168,7 +172,7 @@ test('programme selection is worktree-local, explicit then environment then poin
 });
 
 test('non-Git sessions use explicit/environment selection and standalone bounded work needs no queue', async t => {
-  const { selectProgramme } = await import('../src/scripts/next.js');
+  const { selectProgramme } = await import('../src/runtime/delivery/next.js');
   const root = fixture(t);
   assert.throws(() => selectProgramme(root, 'work'), /requires Git/);
   assert.equal(permits(next(root), 'cg-produce').entry, 'bounded-change');
@@ -179,7 +183,7 @@ test('non-Git sessions use explicit/environment selection and standalone bounded
 });
 
 test('summary retains installation and parse failures even with no programme rows', async t => {
-  const { statusSummary } = await import('../src/scripts/status.js');
+  const { statusSummary } = await import('../src/runtime/delivery/status.js');
   const root = fixture(t);
   write(root, '.agents/cg/manifest.json', '{}');
   let summary = statusSummary(root);
@@ -237,7 +241,7 @@ test('standalone scope reviews expire, overlaps block and invalid scope never se
 });
 
 test('sixteen-programme compact summary shares metadata and retains actions and failure state', async t => {
-  const { statusSummary } = await import('../src/scripts/status.js');
+  const { statusSummary } = await import('../src/runtime/delivery/status.js');
   const root = fixture(t);
   for (let n = 0; n < 16; n++) plan(root, `programme-${String(n).padStart(2, '0')}`, brief(1, n % 2 ? 'Ready' : 'Blocked', 'None', '', n % 2 ? 'None' : 'owner answer'));
   const start = performance.now(); const expanded = statusSummary(root); const middle = performance.now();
@@ -260,7 +264,7 @@ test('sixteen-programme compact summary shares metadata and retains actions and 
 });
 
 test("status summary shares source and queue reads while fresh queries see edits", async t => {
-  const { statusSummary } = await import('../src/scripts/status.js');
+  const { statusSummary } = await import('../src/runtime/delivery/status.js');
   const root = fixture(t);
   for (const programme of ['first', 'second', 'third']) plan(root, programme, brief(1, 'Ready'));
   const original = fs.readFileSync;
@@ -273,7 +277,7 @@ test("status summary shares source and queue reads while fresh queries see edits
   let summary;
   try { summary = statusSummary(root); }
   finally { fs.readFileSync = original; }
-  assert.equal(counts.get(fileURLToPath(new URL('../src/scripts/cli.js', import.meta.url))), 1);
+  assert.equal(counts.get(fileURLToPath(new URL('../src/runtime/cli.js', import.meta.url))), 1);
   for (const item of summary.programmes) {
     // Queue parsing and residue link analysis each read once, independent of programme count.
     assert.equal(counts.get(path.join(root, 'docs/plans', item.programme, 'phase_detailed_preparation.md')), 2);
@@ -286,8 +290,8 @@ test("status summary shares source and queue reads while fresh queries see edits
 });
 
 test("shared docs-root reads preserve tolerant queries and strict delivery behavior", async t => {
-  const { readDocsRoot } = await import('../src/scripts/profiles.js');
-  const { deliveryDocs } = await import('../src/scripts/delivery.js');
+  const { readDocsRoot } = await import('../src/runtime/installation/profiles.js');
+  const { deliveryDocs } = await import('../src/runtime/delivery/delivery.js');
   const root = fixture(t);
   assert.equal(readDocsRoot(root), 'docs');
   assert.equal(deliveryDocs(root), 'docs');

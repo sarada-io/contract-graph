@@ -1,6 +1,10 @@
+/**
+ * @file Provide explicit synthetic owner intent evidence for delivery fixtures.
+ * @see ../../src/runtime/delivery/.agent/contract.md
+ */
 import fs from "node:fs";
 import path from "node:path";
-import { intentAction, intentFile } from "../../src/scripts/intent.js";
+import { intentAction, intentFile } from "../../src/runtime/delivery/intent.js";
 
 export const fixtureIntent = `# Fixture project intent
 
