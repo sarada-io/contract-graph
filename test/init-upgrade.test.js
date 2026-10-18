@@ -340,6 +340,126 @@ test('sync adopts exact unmarked bootstrap once and refreshes only its managed b
   assert.equal(read(dir, entry), malformed);
 });
 
+test('upgrade refreshes bounded skill entry instructions without changing retained loading policy', t => {
+  const dir = policyFixture(t), entry = '.agents/cg/contract-graph-agent.md';
+  // An older release's managed block and repository-authored reading order coexist.
+  write(dir, entry, '# Team entry\n\nRead our release prerequisites.\n\n<!-- BEGIN PRINCIPLES INDEX -->\n<!-- END PRINCIPLES INDEX -->\n\n<!-- BEGIN CG BOOTSTRAP -->\nLoad every roadmap before starting a skill.\n<!-- END CG BOOTSTRAP -->\n');
+  const policy = JSON.parse(read(dir, '.agents/cg/phases.json'));
+  policy.phases.produce = { always: ['A', 'P', 'E'], conditional: [] };
+  write(dir, '.agents/cg/phases.json', JSON.stringify(policy, null, 2) + '\n');
+  const retained = read(dir, '.agents/cg/phases.json');
+  const workflow = read(dir, '.agents/cg/workflow.md');
+  // Init replaces release-owned skills; sync also refreshes preserved shared entries.
+  write(dir, '.agents/skills/cg-prototype/SKILL.md', 'Obsolete prototype instructions.\n');
+  init(dir);
+  sync(dir);
+  const updated = read(dir, entry);
+  assert.match(updated, /Read our release prerequisites/);
+  assert.doesNotMatch(updated, /Load every roadmap/);
+  assert.match(updated, /### Start with the requested action/);
+  assert.match(updated, /A bare skill name is not a task description/);
+  assert.match(updated, /Context reuse does not waive fresh intent/);
+  assert.match(updated, /one `cg status`/);
+  assert.match(updated, /\*\*Selection gate:\*\*/);
+  assert.match(updated, /stop discovery and ask/);
+  assert.match(updated, /Do not persist a guessed `--select`/);
+  assert.match(updated, /before opening the root contract, workflow/);
+  assert.match(updated, /or the owner-communication reference/);
+  for (const name of ['warmup', 'plan', 'produce', 'prototype', 'sign-off', 'unblock']) {
+    assert.ok(updated.includes(`| cg-${name} |`));
+    assert.match(read(dir, `.agents/skills/cg-${name}/SKILL.md`), /shared Lifecycle bootstrap/);
+    assert.match(read(dir, `.agents/skills/cg-${name}/SKILL.md`), /selection check immediately after this skill and the bootstrap/);
+  }
+  const prototype = read(dir, '.agents/skills/cg-prototype/SKILL.md');
+  assert.match(prototype, /do not ask whether to launch/);
+  assert.match(prototype, /If selection is required, stop and ask/);
+  assert.match(prototype, /For preview-only recovery, use the recorded launch instructions/);
+  assert.match(prototype, /Opening an existing preview alone needs no speculative write declaration/);
+  assert.equal(read(dir, '.agents/cg/phases.json'), retained);
+  assert.equal(read(dir, '.agents/cg/workflow.md'), workflow);
+  assert.deepEqual(sync(dir).changed, []);
+  assert.deepEqual(verify(dir).failures, []);
+});
+
+test('fresh shared entry presents recovery selection before the root task-reading links', t => {
+  const dir = policyFixture(t);
+  const entry = read(dir, '.agents/cg/contract-graph-agent.md');
+  const selection = entry.indexOf('### Start with the requested action');
+  const rootLink = entry.indexOf('**For selected work, start here:');
+  const order = entry.indexOf('## Required reading order');
+  assert.ok(selection >= 0 && rootLink > selection && order > selection);
+  assert.equal([...entry.matchAll(/## Lifecycle bootstrap/g)].length, 1);
+  assert.deepEqual(sync(dir).changed, []);
+});
+
+test('sync retires exact historical reading sections across profiles and preserves surrounding guidance', t => {
+  const dir = policyFixture(t);
+  init(dir, { profiles: ['all'] });
+  sync(dir);
+  const historical = read(root, 'test/fixtures/discovery/legacy-root.md');
+  const shared = read(root, 'test/fixtures/discovery/legacy-shared.md');
+  const suffix = '\n\n## Team policy\n\nKeep our release approval and deployment gate.\n';
+  for (const file of ['AGENTS.md', 'CLAUDE.md', '.github/copilot-instructions.md']) {
+    const source = file.startsWith('.github/')
+      ? historical.replaceAll('[`.agents/cg/', '[`../.agents/cg/').replaceAll('](.agents/cg/', '](../.agents/cg/')
+      : file === 'CLAUDE.md' ? historical.replace(/^Read[^\n]+\n/, '@.agents/cg/contract-graph-agent.md\n') : historical;
+    write(dir, file, source + suffix);
+  }
+  const entry = '.agents/cg/contract-graph-agent.md';
+  write(dir, entry, shared + suffix);
+  const before = read(dir, entry);
+  const workflow = read(dir, '.agents/cg/workflow.md'), phases = read(dir, '.agents/cg/phases.json');
+  assert.ok(sync(dir, { dryRun: true }).changed.includes(path.join(dir, entry)));
+  assert.equal(read(dir, entry), before);
+  sync(dir);
+  for (const file of ['AGENTS.md', 'CLAUDE.md', '.github/copilot-instructions.md', entry]) {
+    const updated = read(dir, file);
+    assert.doesNotMatch(updated, /## Required reading order/);
+    assert.ok(updated.endsWith(suffix));
+    if (file !== entry) {
+      assert.doesNotMatch(updated, /contract\.yaml|workflow\.md/);
+      assert.match(updated, /contract-graph-agent\.md/);
+      assert.match(updated, /## Task entry/);
+    } else {
+      assert.match(updated, /Follow \[Lifecycle bootstrap\]\(#lifecycle-bootstrap\)/);
+      assert.match(updated, /\*\*For selected work, start here:/);
+    }
+  }
+  assert.equal(read(dir, '.agents/cg/workflow.md'), workflow);
+  assert.equal(read(dir, '.agents/cg/phases.json'), phases);
+  assert.deepEqual(sync(dir).changed, []);
+  assert.deepEqual(verify(dir).failures, []);
+});
+
+test('changed or extended historical reading sections remain repository-owned', t => {
+  const dir = policyFixture(t);
+  for (const [file, fixture] of [['AGENTS.md', 'legacy-root.md'], ['.agents/cg/contract-graph-agent.md', 'legacy-shared.md']]) {
+    const original = read(root, `test/fixtures/discovery/${fixture}`);
+    const start = original.indexOf('## Required reading order');
+    const variants = [
+      original.replace('— repository contract and graph root.', '— team-specific preflight policy.'),
+      original.trimEnd() + '\n\nRun the team policy check before selection.\n',
+      original.replace('1. [', '0. Check the team incident first.\n1. ['),
+    ];
+    for (const source of variants) {
+      write(dir, file, source);
+      sync(dir);
+      assert.ok(read(dir, file).endsWith(source.slice(start)), `${file}: custom section must survive byte-for-byte`);
+    }
+  }
+});
+
+test('historical CRLF sections migrate without rewriting custom CRLF guidance', t => {
+  const dir = policyFixture(t);
+  const source = read(root, 'test/fixtures/discovery/legacy-root.md').replaceAll('\n', '\r\n');
+  const suffix = '\r\n## Local policy\r\n\r\nKeep this CRLF text.\r\n';
+  write(dir, 'AGENTS.md', source + suffix);
+  sync(dir);
+  assert.doesNotMatch(read(dir, 'AGENTS.md'), /## Required reading order/);
+  assert.ok(read(dir, 'AGENTS.md').endsWith(suffix));
+  assert.deepEqual(sync(dir).changed, []);
+});
+
 test('retained workflow gets a routing notice while generated bootstrap refreshes idempotently', t => {
   const dir = fixture(t);
   const file = path.join(dir, '.agents/cg/workflow.md');

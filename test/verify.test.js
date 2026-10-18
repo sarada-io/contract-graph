@@ -28,7 +28,7 @@ import {
 } from "../src/runtime/verification/binding.js";
 import { checkHarvest } from "../src/runtime/verification/harvest.js";
 import { detectModuleRoots, moduleCoverage, subBoundaryCount } from "../src/runtime/graph/modules.js";
-import { renderModulePointer } from "../src/runtime/verification/model.js";
+import { renderModulePointer } from "../src/runtime/installation/discovery.js";
 import { next, permits } from "../src/runtime/delivery/next.js";
 import { multiSelect, updatePickerState } from "../src/runtime/installation/picker.js";
 import { residue } from "../src/runtime/delivery/residue.js";
@@ -40,7 +40,7 @@ import {
   loadPrinciples,
   splitLines,
   ContractError,
-} from "../src/runtime/verification/model.js";
+} from "../src/runtime/verification/policy.js";
 import {
   ProfileError,
   availableProfiles,

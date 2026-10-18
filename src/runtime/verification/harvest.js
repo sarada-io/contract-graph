@@ -24,7 +24,7 @@ import {
   RULE_FAMILIES,
   planPathPattern,
   splitLines,
-} from "./model.js";
+} from "./policy.js";
 
 export class HarvestError extends Error {}
 

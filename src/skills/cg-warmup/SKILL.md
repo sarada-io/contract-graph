@@ -5,9 +5,9 @@ description: Establish owner-confirmed project intent in new and existing reposi
 
 # CG Warmup
 
-Read the shared Lifecycle bootstrap in `.agents/cg/contract-graph-agent.md` once per session; reuse unchanged context and load only the references required for this task.
+Read the shared Lifecycle bootstrap in `.agents/cg/contract-graph-agent.md` once per session. For programme recovery, perform its selection check immediately after this skill and the bootstrap, before following links to the root contract, workflow, catalogs or other references. Reuse unchanged context.
 
-For chat, decision reviews and results, read [owner communication](../cg-unblock/references/owner-communication.md). Explain outcomes and choices for functional leaders; keep framework commands and approval mechanics in internal evidence.
+After scope is known, for chat, decision reviews and results, read [owner communication](../cg-unblock/references/owner-communication.md). Explain outcomes and choices for functional leaders; keep framework commands and approval mechanics in internal evidence.
 
 Warmup establishes intent for every repository after init: greenfield, brownfield and reseed. Accepted intent describes what the repository is for; contracts describe its current structure. Existing code is evidence of conformance, not authority to discard an accepted requirement. Complete the shared intent step before claiming adoption readiness.
 
@@ -35,7 +35,7 @@ work while recording the response.
 
 ## Choose the work
 
-Read [intent](references/intent.md) for initial intent or stale approval; reuse unchanged approved intent. Greenfield work stops after intent and root verification; do not run adoption against an empty repository. Load only the selected mode, not every linked reference.
+Inspect `cg intent status --json` and existing readiness/module evidence before opening mode references. Read [intent](references/intent.md) for initial intent or stale approval; reuse unchanged approved intent. Greenfield work stops after intent and root verification; do not run adoption against an empty repository. Load only the selected mode, not every linked reference. The adoption survey and recursive audit remain required when adoption is selected; an ordinary reseed or unchanged-intent recovery does not restart that survey. Apply the shared bootstrap's ownership checkpoint before bounded source reading.
 
 ## Check readiness before selecting a mode
 

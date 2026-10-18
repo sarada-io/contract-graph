@@ -106,6 +106,8 @@ The README embeds the hosted [composition spine SVG](https://contractgraph.dev/a
 
 Exercise mixed Features/Bugs/Tasks with batch review and per-item review, an unanswered decision with independent work, interruption/recovery, and a failed finishing check that returns to production repair. Preserve actual review responses and checks; fixture success does not establish model behavior or user satisfaction. A recorded 2026-09-06 trial exercised the retired 0.6.0 Manager/Engineer workflow with synthetic owner input and mixed-host recovery. It is historical evidence only: its observer tools are retired, and it does not validate the 0.7.0 loop or establish token savings. The original report remains in Git history.
 
+For skill-entry changes, exercise a bare invocation with one selected outcome, ambiguous outcomes, a missing target, a failed preview launch, feedback that changes a known boundary, retained always-E policy, unchanged-intent reseed and scoped sign-off recovery. Check contract descent before source reading, reuse of actual answers, preview presentation before acceptance, and preservation of required adoption/final checks. For independent agent trials, record time to usable preview or first useful action, source reads before that action, unrelated reads and redundant questions. Report static walkthroughs, scaffold/upgrade tests and live host trials separately; instruction assertions do not establish an agent's behavior or token savings.
+
 Measure request-to-first-preview, feedback-to-next-preview, time to acceptance and final delivery, discarded automation and reopened defects when evaluating a live workflow. Separate agent work from human wait and disclose host, scope and environment differences. Do not claim speed, cost or reliability improvements from fixture success.
 
 ## Schema and migration validation
@@ -357,5 +359,11 @@ For communication changes, walk through a material product choice, an already-au
 ### Colocated maintainer contracts
 
 Start at `.agent/contract.md`, then follow the owner contract beside its source: `src/runtime/<owner>/.agent/contract.md` or `src/skills/.agent/contract.md`. One `src/skills/.agent/` covers all lifecycle and expert skills, including their references, assets and host metadata; individual skills do not get separate maintainer contracts. Create deeper contracts only for distinct responsibility boundaries, not every folder. JSDoc `@see` links point to the local owner. Move an existing contract rather than duplicate its promises centrally.
+
+Run `npm run check:maintainer` for a dependency-free check of local contract links, parent
+backlinks, root reachability and runtime/script/launcher ownership pointers. `npm test` includes
+the check and negative fixtures. It checks navigation, not whether the prose promises match
+implementation; that remains part of review. This tool is repository-only and does not change
+consumer YAML validation or installed assets.
 
 Build, runtime identity and source-checkout init exclude `.agent/` entries recursively. These maintainer contracts do not ship, affect build identity or install into adopter repositories. The shipped `agent/` package tree and installed `.agents/cg/` YAML governance remain unchanged. Keep the three exclusions aligned and cover source/package equivalence when changing them.

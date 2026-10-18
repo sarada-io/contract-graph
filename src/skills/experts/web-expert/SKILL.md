@@ -7,6 +7,8 @@ description: Use for a bounded web UI implementation or review assignment involv
 
 ## 1. Establish the assignment
 
+Use the shared Lifecycle bootstrap in `.agents/cg/contract-graph-agent.md` once per session. Reuse current assignment and contract context supplied by the coordinator; retrieve missing or changed evidence without restarting programme discovery.
+
 Read the request or brief, relevant project constraints in `.agents/cg/experts.md` if present, then the owning contracts before implementation. Identify: requested result, review/design versus implementation, allowed changes, active stage and required evidence. Recover known answers from context before asking.
 
 Before proposing or editing paths, run `cg contract route --task "<assignment outcome>"` and follow the matched contracts to the smallest responsible boundary. Read `.agents/cg/principles/architecture.yaml` and apply `hierarchy.kinds` and the `graph` walk: **stay** within that responsibility, **add-child** only for a distinct self-sufficient responsibility required by the graph, or **elsewhere** when another boundary owns the work. Do not create an API, web, mobile or UI technical-layer module merely to house this assignment; expertise does not define ownership. If placement exceeds the assigned scope, return the boundary decision before dependent edits.

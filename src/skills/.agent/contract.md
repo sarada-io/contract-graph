@@ -38,7 +38,7 @@ Instructions consume [Delivery](../../runtime/delivery/.agent/contract.md)'s sta
 not invent a second acceptance or completion mechanism. [Installation](../../runtime/installation/.agent/contract.md) owns
 replacement/preservation policy; changing an asset does not authorize overwriting adopter policy.
 
-`src/install/templates/module/AGENTS.md` is the single authored module-pointer body. Installation supplies the selected AGENTS/CLAUDE filenames; Verification's renderer adapts that template to the unit name and depth.
+`src/install/templates/module/AGENTS.md` is the single authored module-pointer body. Installation supplies the selected AGENTS/CLAUDE filenames; its `discovery.js` renderer adapts that template to the unit name and depth.
 [Distribution](../../runtime/distribution/.agent/contract.md) owns packaging. Keep human docs at one canonical page per topic,
 and preserve durable facts before retiring temporary delivery records.
 
@@ -72,7 +72,9 @@ Fixtures, frozen readers, vendor assets and generated copies retain their existi
 
 Warmup owns mode routing and intent, adoption and reseed references within this shared skills boundary. The generated agent entry owns the shared lifecycle bootstrap and authority table. Standalone bounded corrections use cg-produce without mandatory records or a cadence question; existing programme gates remain authoritative. Fresh phase defaults load E conditionally; retained policy controls upgrades. Declared harvest cohorts load their separate reference only when applicable.
 
-The launcher, owner communication and lifecycle bootstrap sections are one generated CG BOOTSTRAP block in the shared agent template. Sync installs and refreshes that block in existing entries so upgraded skills can resolve their required shared procedure.
+The launcher, owner communication and lifecycle bootstrap sections are one generated CG BOOTSTRAP block in the shared agent template. Its selection instructions precede task context in fresh entries; each lifecycle skill directs recovery to that gate before following task-reading links. Installation reconciles exact historical framework reading orders into pointers to the current shared procedure while preserving customised orders and surrounding repository prose. Simple target selection needs no communication reference; material decisions and results retain that reference's requirements.
+
+The shared bootstrap owns task selection, per-skill recovery entry and bounded context loading. Programme recovery starts with one text `cg status` query; unresolved selection stops for a scope question before task catalogs, receipts or history. Do not inspect every candidate or persist a guessed selection. After selection, retrieve only missing evidence; explicitly needed aggregate views use compact summary. Retained phase policy and fresh checks remain authoritative. Experts reuse current assignment context. Prototype invocation opens or reuses the clearly selected preview without another launch permission. Preview-only recovery uses recorded launch information without speculative write declarations or implementation catalog reading; required policy still applies before repairs/feedback edits. Report actual launch/visual evidence, and retain explicit acceptance and completion boundaries. Warmup adoption surveys and sign-off's applicable final checks remain complete.
 
 Closure applicability separates universal decision/evidence obligations, implementation checks, existing queues, declared harvest cohorts and documentation-only scope. No synthetic queue or cohort is required. Shared bootstrap exposes lexical-route recovery.
 

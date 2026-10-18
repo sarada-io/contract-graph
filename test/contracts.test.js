@@ -11,7 +11,7 @@ import test from "node:test";
 import { fileURLToPath } from "node:url";
 
 import { init } from "../src/runtime/installation/init.js";
-import { loadBindingPrinciples } from "../src/runtime/verification/model.js";
+import { loadBindingPrinciples } from "../src/runtime/verification/policy.js";
 import { sync } from "../src/runtime/installation/sync.js";
 import {
   CONTRACT_FILENAME,

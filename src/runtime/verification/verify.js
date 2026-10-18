@@ -18,17 +18,8 @@ import {
   splitLines,
   planPathPattern,
   PLAN_TICKET,
-  generateCgAgent,
-  generateClaudeSkillWrapper,
-  generateRoot,
-  renderRootReference,
   loadBindingPrinciples,
   loadPhases,
-  ROOT_POINTERS,
-  MODULE_POINTERS,
-  selectedModulePointers,
-  isGeneratedModulePointer,
-  ROOT_BEGIN_MARKER,
   CORE_BINDING_FAMILIES,
   BEST_PRACTICE_FAMILIES,
   ENFORCEMENT_FILENAME,
@@ -42,9 +33,20 @@ import {
   productHasHarvestedRules,
   ENGINEERING_FILENAME,
   governanceContractPath,
+} from "./policy.js";
+import {
+  generateCgAgent,
+  generateClaudeSkillWrapper,
+  generateRoot,
+  renderRootReference,
+  ROOT_POINTERS,
+  MODULE_POINTERS,
+  selectedModulePointers,
+  isGeneratedModulePointer,
+  ROOT_BEGIN_MARKER,
   CG_AGENT_ENTRY,
   LEGACY_CG_AGENT_ENTRY,
-} from "./model.js";
+} from "../installation/discovery.js";
 import { moduleCoverage, openDescent } from "../graph/modules.js";
 import { ProfileError, resolveProfileSelection } from "../installation/profiles.js";
 

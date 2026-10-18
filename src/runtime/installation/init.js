@@ -16,20 +16,19 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import {
-  DEFAULT_DOCS_ROOT,
   governanceContractPath,
   loadPhases,
-  manifestPath,
-  MODULE_POINTERS,
   PHASE_NAMES,
   phasesPath,
-  selectedModulePointers,
-} from "../verification/model.js";
+} from "../verification/policy.js";
+import { MODULE_POINTERS, selectedModulePointers } from "./discovery.js";
 import { loadContract, stringifyContractYaml } from "../graph/contracts.js";
 import { PROJECT_CONTEXT } from "../delivery/intent.js";
 import { runtimeIdentity } from "../distribution/runtime.js";
 import { planInitCatalogs, applyInitCatalogs } from "./init-catalogs.js";
 import {
+  DEFAULT_DOCS_ROOT,
+  manifestPath,
   expandProfileAliases,
   loadProfileSelection,
   profilePath,

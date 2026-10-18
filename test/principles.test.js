@@ -13,7 +13,7 @@ import Ajv2020 from "ajv/dist/2020.js";
 import { init } from "../src/runtime/installation/init.js";
 import { sync } from "../src/runtime/installation/sync.js";
 import { verify } from "../src/runtime/verification/verify.js";
-import { loadPrinciplesCatalog, loadBindingPrinciples } from "../src/runtime/verification/model.js";
+import { loadPrinciplesCatalog, loadBindingPrinciples } from "../src/runtime/verification/policy.js";
 import { parseContractYaml, stringifyContractYaml, loadContractGraph, contractContext, findContract } from "../src/runtime/graph/contracts.js";
 import { migratePrinciples } from "../src/runtime/installation/migrate-principles.js";
 import { validateBindingCatalog } from "../src/runtime/verification/binding.js";

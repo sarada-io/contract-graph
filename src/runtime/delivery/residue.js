@@ -18,7 +18,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import { productHasHarvestedRules } from "../verification/model.js";
+import { productHasHarvestedRules } from "../verification/policy.js";
 import { loadContractGraph } from "../graph/contracts.js";
 import { readDocsRoot } from "../installation/profiles.js";
 import { readDeliveries, programmeName } from "./delivery.js";

@@ -18,6 +18,7 @@ retain older files. A recorded package version does not prove those files were c
 | Catalog refresh, schema-identity updates, backups and apply rollback | [init-catalogs.js](../init-catalogs.js) |
 | Legacy catalog format conversion | [migrate-principles.js](../migrate-principles.js) |
 | Derived agent pointers and editor discovery (`cg sync`) | [sync.js](../sync.js) |
+| Root/module pointer rendering, shared agent bootstrap and Claude skill wrappers | [discovery.js](../discovery.js) |
 | Profile configuration, selection (`cg profiles`) and shared docs-root reading | [profiles.js](../profiles.js), [profile data](../../../install/profiles) |
 | Interactive selection | [picker.js](../picker.js) |
 | Installed host admission hook | [cg-gate.mjs](../../../install/hooks/cg-gate.mjs) |
@@ -37,6 +38,8 @@ retain older files. A recorded package version does not prove those files were c
 | Apply catalog changes with stale-input protection, backups and rollback | `init-catalogs.js`: `applyInitCatalogs` |
 | Convert legacy catalog syntax while retaining authored rules | `migrate-principles.js`: `migratePrinciples`, called by catalog planning |
 | Prompts, `--check`, confirmation and post-init sync/verify | [cli.js](../../cli.js): init branch of `main`, `chooseDocsRoot`, `chooseProfiles` |
+| Generated principle index, root/module pointers or skill-wrapper output | `discovery.js`: `generateCgAgent`, `generateRoot`, `renderModulePointer`, `generateClaudeSkillWrapper`; called by sync and consumed by verification |
+| Default docs root and installation manifest path | `profiles.js`: `DEFAULT_DOCS_ROOT`, `manifestPath` |
 
 `init.js` owns the installation sequence. `init-catalogs.js` and
 `migrate-principles.js` are existing collaborators inside this owner, not alternative upgrade
@@ -64,7 +67,7 @@ Keep dry-run results useful for review and preserve the existing missing-rationa
 - Preview and apply report retained retired stages, absent optional phase entries and conditional/missing E loading. These notices do not change `--check`'s file-drift exit semantics, force E adoption or claim workflow reconciliation; malformed policy still fails ordinary verification.
 
 Consumes [Distribution](../../distribution/.agent/contract.md)'s package layout/identity, [Verification](../../verification/.agent/contract.md)'s
-catalog loaders and pointer renderers, [Graph](../../graph/.agent/contract.md)'s YAML operations, and
+validated policy catalogs and index projections, [Graph](../../graph/.agent/contract.md)'s YAML operations, and
 [Authoring](../../../skills/.agent/contract.md)'s assets. The hook consumes [Delivery](../../delivery/.agent/contract.md)'s admission decisions.
 Changes to preserved policy or installed content also route to the relevant sibling.
 
@@ -75,5 +78,13 @@ then `npm test`. Profile changes also need the real-host checks in
 Retirement of the exact removed planning reference requires a non-adopted prior manifest hash matching current bytes. Uncertain or modified content stays active with a reconciliation notice. Backup failures and observed concurrent edits preserve the active file. No pattern-based retirement or backup cleanup is performed.
 
 Sync refreshes the release-owned CG BOOTSTRAP block in the shared agent entry and inserts it into historical entries lacking it. It preserves surrounding repository prose, workflow and phase policy. Exact unmarked early-1.1 bootstrap text is adopted into the block without duplication; custom text is preserved.
+
+Discovery also reconciles the complete, exact historical framework reading sections in root profile pointers and the shared agent entry. Recognised root sections point to the shared entry; the known shared section points to Lifecycle bootstrap. Exact old root-first lead-ins are removed from root pointers or qualified for selected work in the shared entry. LF/CRLF historical text is recognised; changed wording, extra requirements within a section, other headings and surrounding custom prose remain repository-owned. Dry-run reports these generated changes; repeat sync is stable. Never retire a section merely because it has the same heading or familiar paths.
+
+`discovery.js` owns render/generate operations and canonical skill metadata reads for wrappers.
+It consumes Verification's policy projections and returns `{path, current, desired}` records;
+sync owns writes. Malformed block markers fail rather than discard content. Source and packaged
+layouts use the same authored templates. Verification checks these expected outputs; it does
+not own or duplicate the renderer. The CLI uses the same discovery reference for init preview.
 
 Init preserves repository-owned workflow and reports a routing-recovery notice when retained guidance lacks suggestions; refreshed generated bootstrap carries the recovery sequence.

@@ -9,7 +9,8 @@ import process from "node:process";
 import readline from "node:readline";
 
 import { BINDING_FILENAME, loadBindingCatalog } from "./verification/binding.js";
-import { DEFAULT_DOCS_ROOT, loadEngineeringMap, loadBindingPrinciples, renderRootReference } from "./verification/model.js";
+import { loadEngineeringMap, loadBindingPrinciples } from "./verification/policy.js";
+import { renderRootReference } from "./installation/discovery.js";
 import {
   contractContext,
   findContract,
@@ -35,6 +36,7 @@ import { status, statusSummary } from "./delivery/status.js";
 import { runtimeIdentity } from "./distribution/runtime.js";
 import { multiSelect } from "./installation/picker.js";
 import {
+  DEFAULT_DOCS_ROOT,
   expandProfileAliases,
   loadProfileSelection,
   profileChoices,

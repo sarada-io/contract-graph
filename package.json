@@ -30,6 +30,7 @@
     "node": ">=18.17"
   },
   "scripts": {
+    "check:maintainer": "node scripts/check-maintainer-contracts.mjs",
     "test": "node scripts/test.mjs",
     "try": "node scripts/try-editor.mjs",
     "build": "node bin/cg.js build",

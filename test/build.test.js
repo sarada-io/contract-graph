@@ -22,7 +22,7 @@ import {
   PRODUCT_SCHEMA_ID,
   loadEngineeringCatalog,
   loadProductCatalog,
-} from "../src/runtime/verification/model.js";
+} from "../src/runtime/verification/policy.js";
 
 const TEST_DIR = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(TEST_DIR, "..");

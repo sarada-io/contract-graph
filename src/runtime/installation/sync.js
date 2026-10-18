@@ -17,7 +17,7 @@ import {
   MODULE_POINTERS,
   selectedModulePointers,
   skillsRoot,
-} from "../verification/model.js";
+} from "./discovery.js";
 import { loadContractGraph } from "../graph/contracts.js";
 import { resolveProfileSelection } from "./profiles.js";
 

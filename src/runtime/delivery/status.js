@@ -11,7 +11,8 @@ export function status(repoRoot, options = {}) {
 
 function programmeStatus(repoRoot, options, current, readResidue = programme => residue(repoRoot, { ...options, programme })) {
   const programme = current.programme ?? options.programme ?? null;
-  const briefs = current.briefs ?? [];
+  // Selection discovery is not a request to inspect every candidate's technical queue.
+  const briefs = current.state === "selection-required" ? [] : current.briefs ?? [];
   const step = brief => ({ number: brief.number, title: brief.title, file: brief.file,
     status: brief.status, dependsOn: brief.dependsOn, blockedBy: brief.blockedBy });
   const problems = [...current.problems];

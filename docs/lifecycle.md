@@ -63,6 +63,8 @@ adopting repository whose installed catalog is missing a key is stale. Refresh i
 
 ## The lifecycle skills
 
+Each skill starts with the requested outcome and existing progress, then reads the contracts and evidence needed for its next action. Recovery checks selection after the skill and shared startup instructions, before opening the root contract or workflow for task discovery. Ambiguity pauses for a target question before inspecting candidate plans or histories. Unchanged shared context is reused. Recovery does not restart an entire programme survey, and a targeted change does not require reading unrelated implementations. Warmup still performs its selected adoption survey, while sign-off retains the complete applicable final checks. Recorded answers and existing execution authority are reused.
+
 The 0.7.0 delivery path is plan → produce → sign-off, with review and repair loops. Preparation belongs partly to planning readiness and partly to production. Automatic continuation is part of an authorised sprint-completion request.
 
 | Skill | Responsibility |

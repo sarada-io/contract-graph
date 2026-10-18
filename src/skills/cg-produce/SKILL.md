@@ -5,11 +5,13 @@ description: Implement an agreed sprint with internal preparation, dependency-aw
 
 # CG Produce
 
-Read the shared Lifecycle bootstrap in `.agents/cg/contract-graph-agent.md` once per session; reuse unchanged context and load only the references required for this task.
+Read the shared Lifecycle bootstrap in `.agents/cg/contract-graph-agent.md` once per session. For programme recovery, perform its selection check immediately after this skill and the bootstrap, before following links to the root contract, workflow, catalogs or other references. Reuse unchanged context.
 
-For chat, decision reviews and results, read [owner communication](../cg-unblock/references/owner-communication.md). Explain outcomes and choices for functional leaders; keep framework commands and approval mechanics in internal evidence.
+After scope is known, for chat, decision reviews and results, read [owner communication](../cg-unblock/references/owner-communication.md). Explain outcomes and choices for functional leaders; keep framework commands and approval mechanics in internal evidence.
 
 ## Bounded change
+
+Apply the shared selection gate and recover the requested outcome's current item/checkpoint before loading execution references or implementation. A bare invocation resumes clearly selected eligible work; `selection-required` stops discovery for one scope question. Read only the selected item and its prerequisite evidence initially; expand for affected contracts and consumers, not to reconstruct the whole programme.
 
 When the requested outcome, responsible boundary and verification are clear, proceed under existing execution authority. Inspect current programme obligations first; this shortcut never bypasses an existing receipt, technical queue, acceptance condition or retained repository policy. For standalone bounded work, route to the owner, reproduce or establish the expected behaviour, implement, run relevant checks, update changed contract promises and useful documentation, and report the result and any remaining obligation. No separate roadmap, receipt or queue is required solely for this path.
 

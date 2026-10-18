@@ -11,6 +11,8 @@ Improve the dashboard layout and interactions. Launch the application
 and iterate with me until the experience is right.
 ```
 
+Invoking `/cg-prototype` again reopens the clearly selected prototype for feedback. The agent checks selection once and uses the existing checkout and launch instructions, opens or reuses the preview, and shows where to review it. If several programmes are active without a clear selection, it asks which experience you want before investigating their plans or histories. You can name the target directly, for example `/cg-prototype bottom-navigation`. Reopening an existing preview does not require surveying application code or editing-policy catalogs. A launch or access failure is reported as a concrete prerequisite; reading source alone does not establish that the experience works. Reopening a preview does not accept it or request final completion.
+
 Give feedback normally. Within the agreed scope, the agent continues in the same working context.
 It defers application test authoring, test suites, and browser regression testing. It still runs
 what is needed to present the preview, keeps contracts truthful, and preserves binding detectors.

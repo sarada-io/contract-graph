@@ -6,7 +6,11 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { DEFAULT_DOCS_ROOT } from "../verification/model.js";
+/** Default root for scaffolded document trees. Overridable at `cg init`. */
+export const DEFAULT_DOCS_ROOT = "docs";
+
+/** Installation records consumed by init and runtime identity checks. */
+export const manifestPath = (repoRoot) => path.join(repoRoot, ".agents", "cg", "manifest.json");
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const RUNTIME_ROOT = path.join(HERE, "../..");

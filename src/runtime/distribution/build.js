@@ -19,7 +19,7 @@ import {
   loadEngineeringCatalog,
   loadEnforcementCatalog,
   loadProductCatalog,
-} from "../verification/model.js";
+} from "../verification/policy.js";
 
 export const COMPILED_VERSION = "1.0";
 export const BUILD_DIRECTORY = "dist/build";

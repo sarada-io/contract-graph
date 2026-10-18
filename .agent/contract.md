@@ -45,7 +45,7 @@ contract to read; the last column narrows reading after that contract.
 | Greenfield/brownfield setup, existing source, custom docs folder, saved profile selection | [Installation](../src/runtime/installation/.agent/contract.md) | `init.js`, `profiles.js`; interactive choices in `cli.js` |
 | Catalog refresh, old schema URLs, missing product rationale, migration failure or rollback | [Installation](../src/runtime/installation/.agent/contract.md#where-an-init-or-upgrade-change-belongs) | `init-catalogs.js`, `migrate-principles.js`; `cg migrate-principles` is format conversion |
 | Claude, Codex, Cursor, Copilot, Antigravity; profile selection or picker | [Installation](../src/runtime/installation/.agent/contract.md) | `profiles.js`, `picker.js`, `src/install/profiles/` |
-| Missing/stale AGENTS or CLAUDE pointers, skill wrappers, regenerated editor discovery | [Installation](../src/runtime/installation/.agent/contract.md) | `sync.js`; shared rendering helpers are indexed by Verification |
+| Missing/stale AGENTS or CLAUDE pointers, skill wrappers, regenerated editor discovery | [Installation](../src/runtime/installation/.agent/contract.md) | `sync.js`, `discovery.js` |
 | Claude admission hook, hook installation or wiring | [Installation](../src/runtime/installation/.agent/contract.md) | `src/install/hooks/cg-gate.mjs`; admission decisions belong to Delivery |
 | Parse/load a contract, invalid YAML, parent/child links, cycles, duplicate ownership | [Graph](../src/runtime/graph/.agent/contract.md#boundary-promises) | `contracts.js`: parser, contract validation and graph loading |
 | Find a contract by ID/path, show parents/children/surface, resolve context or route a task | [Graph](../src/runtime/graph/.agent/contract.md#boundary-promises) | `contracts.js`: selection, context and routing |
@@ -61,13 +61,14 @@ contract to read; the last column narrows reading after that contract.
 | Persist, compact or recover receipts; verify delivery evidence for a pull request | [Delivery](../src/runtime/delivery/.agent/contract.md) | `delivery-storage.js`, `delivery.js`; `cg delivery verify` |
 | What runs next, why a skill is blocked, programme status, queue or recovery action | [Delivery](../src/runtime/delivery/.agent/contract.md) | `next.js`, `status.js`; `cg next --for`, `cg status` |
 | Leftover plans, unreferenced files, shared ownership or safe scope of cleanup | [Delivery](../src/runtime/delivery/.agent/contract.md) | `residue.js`; `cg residue` reports evidence, not permission to delete |
-| `cg guidelines show`, selected advisory IDs/categories | [Verification](../src/runtime/verification/.agent/contract.md) | `model.js`: existing engineering loader; root CLI filtering |
+| `cg guidelines show`, selected advisory IDs/categories | [Verification](../src/runtime/verification/.agent/contract.md) | `policy.js`: existing engineering loader; root CLI filtering |
 | Worktree-local programme selection or status summary | [Delivery](../src/runtime/delivery/.agent/contract.md) | `next.js`: `selectProgramme`, `next`; `status.js`: `statusSummary` |
 | A/E/P rules, architecture principles, engineering advice, product bindings or enforcement | [Verification](../src/runtime/verification/.agent/contract.md) | `binding.js`, `catalog.js`, policy catalogs; also read architecture policy |
 | Contract/catalog schema fields, validation errors, registered detectors, negative fixtures | [Verification](../src/runtime/verification/.agent/contract.md) | `src/cg/schema/`, `binding.js`, `verify.js`; Graph also consumes contract shape |
 | Aggregate verification failures, missing skills, phase checks, scaffold validity | [Verification](../src/runtime/verification/.agent/contract.md#bounded-reading-inside-the-larger-files) | `verify.js`; `cg verify` |
 | Decision-harvest manifest, classify/close checks, prepared drain route | [Verification](../src/runtime/verification/.agent/contract.md) | `harvest.js`; `cg harvest` |
-| Shared path helpers, policy loaders, legacy Markdown rules or pointer rendering | [Verification](../src/runtime/verification/.agent/contract.md#bounded-reading-inside-the-larger-files) | `model.js`; inspect the specific export and its caller |
+| Policy loaders, rule projections or stale legacy policy files | [Verification](../src/runtime/verification/.agent/contract.md#bounded-reading-inside-the-larger-files) | `policy.js`; inspect the specific export and its caller |
+| Docs defaults or installation metadata paths | [Installation](../src/runtime/installation/.agent/contract.md) | `profiles.js`: `DEFAULT_DOCS_ROOT`, `manifestPath` |
 | Warmup intent/adoption/reseed procedures and shared responsibility review | [Authoring](../src/skills/.agent/contract.md#warmup-reading-routes) | Shared skills contract routes to the entry, references, assets and host metadata |
 | Planning, production, prototype, sign-off or unblock instructions | [Authoring](../src/skills/.agent/contract.md) | Relevant `src/skills/cg-*/SKILL.md` and `src/cg/workflow.md` |
 | Functional leadership language, four-field decision reviews, internal decision evidence and cleanup | [Authoring](../src/skills/.agent/contract.md) | `cg-unblock/references/owner-communication.md`, decision template and sign-off closure checks |
@@ -141,8 +142,9 @@ This is the minimal maintainer graph: `.agent/contract.md` →
 Authoring lives at `src/skills/.agent/contract.md`: one shared boundary for all lifecycle
 and expert skills, including their references, assets and host metadata.
 Source headers point back to their owning node. These comments refer to the source checkout;
-the maintainer nodes are not packaged or scaffolded. No detector or verification script is
-needed for this Markdown hierarchy.
+the maintainer nodes are not packaged or scaffolded. `npm run check:maintainer` checks this
+checkout's local contract links, parent backlinks, root reachability and runtime/tool ownership
+pointers without loading the consumer YAML graph.
 
 The runtime is JavaScript ES modules, including the adapter that parses TypeScript.
 The `.ts` files under `test/fixtures/contract-inspection/` are inspected input, not runtime
@@ -160,9 +162,11 @@ justify another command or driver. Repository-only tools live under root `script
   A new responsibility needs a child and a route here; a moved responsibility needs both owners updated.
 - Split a child only when a distinct responsibility needs its own promise. Keep current facts
   and constraints here, with detailed explanations linked to their canonical homes.
-- Do not hide cross-boundary work in shared helpers. `model.js` is an existing mixed concern
-  documented under Verification; inspect the relevant export and its consumers before editing.
+- Keep policy loading in Verification's `policy.js`, discovery rendering in Installation's
+  `discovery.js`, and installation settings in `profiles.js`. Consumers import the responsible
+  owner directly; do not recreate a cross-boundary helper bag.
 
 Validation follows [CONTRIBUTING.md](../CONTRIBUTING.md#choose-validation-from-the-change-surface).
-For this Markdown graph, check local links and ownership against actual files and CLI dispatch.
-No claim of automated drift prevention follows from these prose contracts.
+For this Markdown graph, run `npm run check:maintainer` (also covered by `npm test`).
+Review ownership promises and CLI dispatch against implementation; the lightweight check does
+not prove semantic ownership, import confinement or implementation conformance.

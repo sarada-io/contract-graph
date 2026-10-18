@@ -68,6 +68,34 @@ test("multiple ordinary programmes require selection without any prototype recei
   assert.equal(next(root, { programme: "typo" }).state, "selection-required");
 });
 
+test("selection discovery reports candidates without expanding their execution queues", t => {
+  const root = fixture(t);
+  const names = ['alpha', 'bravo', 'charlie', 'delta', 'echo', 'foxtrot'];
+  for (const name of names) {
+    plan(root, name, Array.from({ length: 20 }, (_, i) => brief(i + 1, 'Ready')).join(''));
+  }
+  const unresolved = status(root);
+  assert.equal(unresolved.state, 'selection-required');
+  assert.deepEqual(unresolved.programmes, names);
+  assert.deepEqual(unresolved.queueFiles, []);
+  assert.deepEqual(unresolved.remainingSteps, []);
+  assert.equal(unresolved.currentStep, null);
+  assert.equal(unresolved.residue, null);
+  const call = spawnSync(process.execPath, [CLI, 'status', root], {
+    encoding: 'utf8', env: { ...process.env, CG_PROGRAMME: '' },
+  });
+  assert.equal(call.status, 1, call.stderr);
+  assert.match(call.stdout, /selection-required/);
+  assert.match(call.stdout, /programmes: alpha, bravo, charlie, delta, echo, foxtrot/);
+  assert.doesNotMatch(call.stdout, /Work \d|phase_detailed_preparation/);
+  assert.ok(Buffer.byteLength(call.stdout) < 1500);
+  const selected = status(root, { programme: 'bravo' });
+  assert.equal(selected.programme, 'bravo');
+  assert.equal(selected.remainingSteps.length, 20);
+  assert.ok(selected.remainingSteps.every(step => step.file.includes('/bravo/')));
+  assert.equal(status(root).state, 'selection-required', 'inspection must not persist a selection');
+});
+
 test("misplaced global residue admits internal repair without editing the gate or admitting closure", t => {
   const root = fixture(t);
   const text = brief(4, "Complete") + brief(5, "Blocked", "Step 4", gate("npm test && node /tool/bin/cg.js residue"), "Other programme evidence");
