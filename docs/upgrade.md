@@ -39,7 +39,7 @@ See [Windows setup](../README.md#windows-powershell).
 | Current `product.yaml` | Validate and preserve byte-for-byte, including authored rules and comments |
 | Contracts, enforcement, project context and intent records | Preserve repository content |
 | Workflow, phase policy, docs, plans and delivery records | Preserve repository choices and history |
-| Shared agent entry | Refresh the generated CG BOOTSTRAP block; preserve surrounding guidance |
+| Shared agent entry and root discovery | Refresh the generated CG BOOTSTRAP block; reconcile exact legacy framework reading orders; preserve customised guidance |
 
 Init reports retained workflow and phase-policy differences without rewriting them. Notices
 alone do not make `--check` fail. Review deliberate stage restrictions and always-E or missing-E
@@ -74,7 +74,7 @@ matching cannot prove that a running agent reread its skills. Repository upgrade
 - **Focused discovery:** optional route suggestions and bounded context hydration extend exact routing; advisory queries select E entries or categories. Existing exact-route APIs remain available. See [contracts](contracts.md).
 - **Receipt storage:** older receipts remain readable; successful close compacts legacy storage losslessly. Optional v3 delta compression requires compatible readers and can be converted back to v2. See [receipt storage](workflow.md#bounded-corrections-and-programme-selection).
 
-Init and sync refresh the shared agent entry’s marked CG BOOTSTRAP block, including when an older entry has only the generated principles index. Surrounding repository guidance, workflow and phase policy remain preserved.
+Init and sync refresh the shared agent entry’s marked CG BOOTSTRAP block, including when an older entry has only the generated principles index. They also replace recognised, complete legacy framework reading orders in root discovery and the shared entry with pointers to the current shared procedure. Changed or extended reading orders remain repository-owned; a familiar heading alone does not authorise replacement. Surrounding custom guidance, workflow and phase policy remain preserved. Use `cg sync --check` to preview generated-entry changes and reload the agent host after applying the upgrade.
 
 Fresh installations load relevant engineering advice conditionally. Existing workflow and phase policy remain preserved, including always-E choices; reconcile them deliberately rather than assuming init changed them. Init retires the exact obsolete prepared-plan reference only with matching prior ownership/hash evidence and a recoverable backup. Modified or unowned copies remain with a notice.
 
