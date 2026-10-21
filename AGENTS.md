@@ -49,4 +49,6 @@ Keep one master plan with a concise Executive Summary above full agent detail. D
 the shipped lifecycle merely to maintain its implementation; temporary plans under ignored
 `docs/plan/` must not be required to understand the product.
 
-The public website is a separate build target in this repository. Route website work through [its maintenance contract](web/.agent/contract.md); keep canonical guide prose in `docs/` and schema semantics with Verification. Follow [public repository safety](CONTRIBUTING.md#public-repository-safety) for imports, sensitive records and publication checks.
+This is the sole contributor entry for both the npm library and public website. The public website is a separate build target in this repository. Route website work through [its maintenance contract](web/.agent/contract.md); keep canonical guide prose in `docs/` and schema semantics with Verification. Follow [public repository safety](CONTRIBUTING.md#public-repository-safety) for imports, sensitive records and publication checks.
+
+Use root `./urun` (`urun.cmd` on Windows) for both targets; its Website menu and `./urun web build|check|serve` commands reuse the website operations. Preserve the existing website design and routes during maintenance. Durable website decisions live with their owning contracts, rather than in a second agent guide.

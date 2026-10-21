@@ -35,7 +35,7 @@ function parseSitemap(xml) {
   return urls;
 }
 
-test('sitemap lists every indexable HTML page with lastmod', () => {
+test('sitemap lists every indexable HTML page without invented lastmod dates', () => {
   const xml = fs.readFileSync(path.join(root, 'public/sitemap.xml'), 'utf8');
   const urls = parseSitemap(xml);
   const listed = new Set(urls.map(url => url.loc));
@@ -48,7 +48,7 @@ test('sitemap lists every indexable HTML page with lastmod', () => {
   }
   assert.deepEqual([...listed].sort(), [...indexable].sort());
   for (const url of urls) {
-    assert.match(url.lastmod, /^\d{4}-\d{2}-\d{2}$/, url.loc);
+    assert.equal(url.lastmod, undefined, url.loc);
   }
 });
 

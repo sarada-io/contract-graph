@@ -11,7 +11,7 @@ maintainer development/release tooling.
 - [package.json](../../../../package.json), [package-lock.json](../../../../package-lock.json): exports,
   runtime dependencies, supported Node version and npm commands.
 - [try-editor.mjs](../../../../scripts/try-editor.mjs): `npm run try`, editor development fixtures; repository-only and outside the packaged runtime.
-- [urun.mjs](../../../../scripts/urun.mjs), [urun](../../../../urun), [urun.cmd](../../../../urun.cmd): local maintainer menu.
+- [urun.mjs](../../../../scripts/urun.mjs), [urun](../../../../urun), [urun.cmd](../../../../urun.cmd): single local maintainer menu for npm and website operations, including `./urun web build|check|serve`. Website commands reuse [Operations](../../../../web/scripts/.agent/contract.md); they never publish or install the CLI.
 - [test.mjs](../../../../scripts/test.mjs): test runner scratch isolation;
   [check-principles-mutations.mjs](../../../../scripts/check-principles-mutations.mjs): mutation validation harness.
 - [check-maintainer-contracts.mjs](../../../../scripts/check-maintainer-contracts.mjs):
@@ -21,7 +21,7 @@ maintainer development/release tooling.
   no consumer graph validation or semantic architecture enforcement.
 - [ci.yml](../../../../.github/workflows/ci.yml): CI orchestration of tests, package checks and the reusable public-source workflow. Its main-only website deployment waits for all checks and uses the Website owner's build/configuration;
   assertions and fixtures remain with the behavior's owner.
-- [check-public-source.mjs](../../../../scripts/check-public-source.mjs): dependency-free check of candidate public file names, private working records, local-machine paths and obvious credential patterns. [security.yml](../../../../.github/workflows/security.yml), called by CI on pull requests and main pushes, also runs pinned Gitleaks over history and the checkout with redacted diagnostics; no detector proves the absence of all sensitive information.
+- [check-public-source.mjs](../../../../scripts/check-public-source.mjs): dependency-free check of candidate public file names, private working records (including all ignored maintainer plans), local-machine paths and obvious credential patterns. [security.yml](../../../../.github/workflows/security.yml), called by CI on pull requests and main pushes, also runs pinned Gitleaks over history and the checkout with redacted diagnostics; no detector proves the absence of all sensitive information.
 
 Package `src/diagnostics/` as `agent/diagnostics/`, include it in runtime identity, and keep it outside Installation’s scaffold mappings. The portable skill is available for user-level harness installation without configuring a harness or changing a target repository.
 

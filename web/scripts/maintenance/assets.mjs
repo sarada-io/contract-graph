@@ -4,9 +4,10 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
+import { loadGuides } from '../../site/documentation.mjs';
 import { repositoryRoot } from '../paths.mjs';
 
-export function getRequiredPaths() {
+export function getRequiredPaths(root = repositoryRoot) {
   return [
     'public/index.html',
     'public/styles.css',
@@ -18,9 +19,7 @@ export function getRequiredPaths() {
     'public/ways-to-work/index.html',
     'public/whats-included/index.html',
     'public/docs/index.html',
-    'public/docs/architecture/index.html',
-    'public/docs/intent/index.html',
-    'public/docs/experts/index.html',
+    ...loadGuides(root).map(guide => `public/docs/${guide.slug}/index.html`),
     'public/schema/index.html',
     'public/schema/contract-v1.schema.json',
     'public/schema/principles-v1.schema.json',
@@ -31,7 +30,7 @@ export function getRequiredPaths() {
 
 export function checkSiteFiles(root = repositoryRoot, log = line => process.stdout.write(`${line}\n`)) {
   const missing = [];
-  for (const relative of getRequiredPaths()) {
+  for (const relative of getRequiredPaths(root)) {
     const full = path.join(root, relative);
     if (fs.existsSync(full)) log(`ok   ${relative}`);
     else {

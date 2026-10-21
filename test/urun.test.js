@@ -13,6 +13,9 @@ import { fileURLToPath } from 'node:url';
 import {
   getMenuItems,
   getMoreItems,
+  getWebsiteItems,
+  parseArgs,
+  runWebsiteMenu,
   getPackageVersion,
   invokeMenuItem,
   invokeRepoCommand,
@@ -449,4 +452,42 @@ test('posix urun launcher starts the Node menu', { skip: process.platform === 'w
 test('urun repositoryRoot is this checkout', () => {
   assert.equal(fs.realpathSync(repositoryRoot), fs.realpathSync(root));
   assert.ok(fs.existsSync(path.join(repositoryRoot, 'package.json')));
+});
+
+test('root menu contains website actions using the existing build gates', async () => {
+  assert.ok(getMenuItems().some(item => item.kind === 'website'));
+  const actions = getWebsiteItems();
+  for (const script of ['web:build', 'web:check']) assert.ok(actions.some(item => item.script === script));
+  const calls = [];
+  let visits = 0;
+  const outcome = await runWebsiteMenu({
+    readMenuChoice: async title => {
+      assert.equal(title, 'Website');
+      return visits++ === 0 ? actions.findIndex(item => item.script === 'web:build') : actions.length - 1;
+    },
+    invokeRepoCommand: (command, args) => { calls.push([command, args]); return 17; },
+    pauseAfterCommand: async (status, destination) => { assert.equal(status, 17); assert.equal(destination, 'Website'); return 'menu'; },
+  });
+  assert.deepEqual(calls, [['npm', ['run', 'web:build']]]);
+  assert.deepEqual(outcome, { status: 17, exit: false });
+});
+
+test('website cleanup cancellation preserves files and approval only removes its local state', async () => {
+  const removed = [];
+  const hooks = { exists: () => true, remove: target => removed.push(target), readMenuChoice: async () => -1 };
+  assert.equal(await invokeMenuItem({ kind: 'web-clean' }, hooks), null);
+  assert.deepEqual(removed, []);
+  hooks.readMenuChoice = async () => 1;
+  assert.equal(await invokeMenuItem({ kind: 'web-clean' }, hooks), 0);
+  assert.deepEqual(removed, [path.join(root, 'web', '.wrangler')]);
+});
+
+test('root launcher parses website commands and rejects malformed ports and unknown actions', () => {
+  assert.deepEqual(parseArgs(['web', 'build']), { command: 'build' });
+  assert.deepEqual(parseArgs(['web', 'check']), { command: 'check' });
+  assert.deepEqual(parseArgs(['web', 'serve', '--port', '8000']), { command: 'serve', port: 8000 });
+  for (const args of [['web', 'serve', '--port', '8000x'], ['web', 'serve', '--port', '0'], ['web', 'serve', '--port'], ['web', 'publish'], ['unknown']]) assert.throws(() => parseArgs(args));
+  const result = spawnSync(process.execPath, [path.join(root, 'scripts/urun.mjs'), 'web', 'publish'], { encoding: 'utf8' });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /Usage/);
 });

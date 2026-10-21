@@ -84,3 +84,66 @@ test('every local article link resolves and all generated HTML IDs are unique', 
     }
   }
 });
+
+test('one indexed Markdown file automatically gains a page, navigation, links and sitemap entry', t => {
+  const root = fixture(t);
+  const docs = path.join(root, '../docs');
+  const index = path.join(docs, 'README.md');
+  fs.writeFileSync(index, fs.readFileSync(index, 'utf8').replace('\n\n<!-- public-guides:end -->', '\n| [New & useful](new-guide.md) | A shared description with <characters> |\n<!-- public-guides:end -->'));
+  fs.writeFileSync(path.join(docs, 'new-guide.md'), '# A new canonical guide\n\n## First section\n\nGo to [contracts](contracts.md) or [another guide](vision.md).\n');
+  fs.appendFileSync(path.join(docs, 'contracts.md'), '\nSee [the new guide](new-guide.md#first-section).\n');
+  fs.writeFileSync(path.join(docs, 'unlisted.md'), '# Never published\n');
+  fs.mkdirSync(path.join(docs, 'plan'));
+  fs.writeFileSync(path.join(docs, 'plan/working.md'), '# Private working plan\n');
+  const files = assembleSite(root);
+  const guide = files.get('docs/new-guide/index.html').toString();
+  assert.match(guide, /<h1>A new canonical guide<\/h1>/);
+  assert.match(guide, /href="#first-section"/);
+  assert.match(guide, /href="\/docs\/contracts\/"/);
+  assert.match(guide, /A shared description with &lt;characters&gt;/);
+  assert.match(files.get('docs/index.html').toString(), /New &amp; useful/);
+  assert.match(files.get('docs/index.html').toString(), /href="\/docs\/new-guide\/"/);
+  assert.match(files.get('docs/contracts/index.html').toString(), /href="\/docs\/new-guide\/#first-section"/);
+  assert.match(files.get('sitemap.xml').toString(), /https:\/\/contractgraph.dev\/docs\/new-guide\//);
+  assert.equal([...files.keys()].some(name => /unlisted|working|plan/.test(name)), false);
+  assert.throws(() => readSharedInput(root, 'docs/unlisted.md'), /Undeclared shared input/);
+});
+
+test('public index rejects traversal, hidden inputs, duplicate routes and malformed declarations', t => {
+  const root = fixture(t);
+  const index = path.join(root, '../docs/README.md');
+  const original = fs.readFileSync(index, 'utf8');
+  for (const row of [
+    '| [Private](plan/working.md) | Private |',
+    '| [Private](../AGENTS.md) | Private |',
+    '| [Private](.private.md) | Private |',
+    '| [Private](agents.md) | Private |',
+    '| [Duplicate](contracts.md) | Duplicate |',
+    '| [Conflicting route](architecture.md) | Duplicate |',
+    '| no linked file | Missing |',
+  ]) {
+    // A legacy route must not collide with a newly indexed filename.
+    fs.writeFileSync(path.join(root, '../docs/architecture.md'), '# Architecture\n');
+    fs.writeFileSync(index, original.replace('\n\n<!-- public-guides:end -->', '\n' + row + '\n<!-- public-guides:end -->'));
+    assert.throws(() => assembleSite(root), /Public guide|Duplicate public guide/);
+  }
+  fs.writeFileSync(index, original.replace('\n\n<!-- public-guides:end -->', ''));
+  assert.throws(() => assembleSite(root), /public-guides table/);
+});
+
+test('guide title validation and a symlinked public index preserve the last successful build', t => {
+  const root = fixture(t);
+  buildSite({ root });
+  const homepage = fs.readFileSync(path.join(root, 'public/index.html'));
+  const guide = path.join(root, '../docs/analyse.md');
+  const before = fs.readFileSync(guide, 'utf8');
+  fs.writeFileSync(guide, before + '\n# A competing title\n');
+  assert.throws(() => buildSite({ root }), /one opening title/);
+  assert.deepEqual(fs.readFileSync(path.join(root, 'public/index.html')), homepage);
+  fs.writeFileSync(guide, before);
+  const index = path.join(root, '../docs/README.md');
+  fs.renameSync(index, index + '.original');
+  fs.symlinkSync(index + '.original', index);
+  assert.throws(() => buildSite({ root }), /without symlinks/);
+  assert.deepEqual(fs.readFileSync(path.join(root, 'public/index.html')), homepage);
+});

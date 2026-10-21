@@ -1,6 +1,6 @@
 # contractgraph.dev website target
 
-This directory builds the public website from the same repository as the `contract-graph` npm package. Plain HTML, CSS and JavaScript retain the existing design and browser behaviour; the Node assembler adds canonical Markdown guides using a root development dependency. Read [AGENTS.md](AGENTS.md), [the maintenance contract](.agent/contract.md) and [site/EDITING.md](site/EDITING.md) before changing website code.
+This directory builds the public website from the same repository as the `contract-graph` npm package. Plain HTML, CSS and JavaScript retain the existing design and browser behaviour; the Node assembler adds canonical Markdown guides using a root development dependency. Read [root AGENTS.md](../AGENTS.md), [the maintenance contract](.agent/contract.md) and [site/EDITING.md](site/EDITING.md) before changing website code.
 
 The reviewed source snapshot came from `sarada-io/contract-graph-web` commit `cc807595cf8dc40ded01d214ba75756828718c54`. Git history, installed `.agents/` content, delivery receipts, intent records, local working plans, deployment state and credentials were excluded. The original repository remains unchanged. Published paper sources retain their own attribution and licence under [papers](../papers/README.md), outside both build outputs.
 
@@ -12,16 +12,19 @@ Start at [the website application contract](.agent/contract.md). Its [Publicatio
 
 | Content | Canonical source |
 | --- | --- |
-| Ten technical guides | Root `docs/*.md`, explicitly selected by `site/documentation.mjs` |
+| Technical guides | Root Markdown files selected by the public guide table in `docs/README.md` |
 | Contract, principles and enforcement schemas | Root `src/cg/schema/`, emitted byte-for-byte at both `/schema/` and `/contract-graph/schema/` |
 | Homepage, product pages and documentation hub | `site/pages/` |
-| Guide hero, metadata and compatibility fragments | Guide shells under `site/pages/docs/`; article prose is generated |
+| Guide layout and metadata | One `site/pages/docs/guide.html` template, docs hub metadata defaults, canonical Markdown H1 and index description |
+| Guide discovery and sitemap | Generated from the canonical public index and rendered page routes; no per-guide website entry |
 | Shared HTML and navigation | `site/shell/` |
 | Ordered CSS and browser behaviour | `site/presentation/entry.json` and `site/interactions/entry.json` |
 | Shared WebP brand marks | Root `docs/assets/`, emitted without source duplication |
 | Other images, fonts, redirects and host metadata | `site/static/` and the explicit publication manifest |
 
-Do not edit generated `public/`, duplicate guide prose in HTML, or restore copied schema definitions. Existing architecture figure presentations are derived snapshots of the Mermaid blocks in the canonical guide, guarded by SHA-256 in `figures.json`. The lifecycle diagram uses the same mechanism. When changing a diagram, update its accessible presentation and source hash together; a mismatch blocks publication. Old article anchors remain available through the explicit compatibility map in `documentation.mjs`.
+To publish a new guide, write a root `docs/<name>.md` file starting with one H1 and add a row to the marked public table in `docs/README.md`. Its page, hub card, translated links and sitemap entry follow automatically. Other Markdown files and subdirectories are not published.
+
+Do not edit generated `public/`, duplicate guide prose in HTML, or restore copied schema definitions. Existing architecture figure presentations are derived snapshots of the Mermaid blocks in the canonical guide, guarded by SHA-256 in `figures.json`. The lifecycle diagram uses the same mechanism. A guide containing Mermaid blocks also requires derived presentations and `figures.json` under `site/pages/docs/<slug>/`. When changing a diagram, update its accessible presentation and source hash together; a mismatch blocks publication. Old article anchors remain available through the explicit compatibility map in `documentation.mjs`.
 
 ## Local commands
 
@@ -35,7 +38,7 @@ npm run web:serve
 npm run check:public
 ```
 
-`web:build` assembles the complete site, checks required files, runs all website tests and verifies output freshness. `web:serve` builds and serves the site at `http://localhost:4173`; reload after content edits. Restart the preview after changing the assembler or shared renderer modules. From this directory, `./urun` or `.\urun.cmd` opens the website menu and `./urun serve --port 8000` previews on a different port. Root `./urun` continues to own npm development activities.
+`web:build` assembles the complete site, checks required files, runs all website tests and verifies output freshness. `web:serve` builds and serves the site at `http://localhost:4173`; reload after content edits. Restart the preview after changing the assembler or shared renderer modules. Root `./urun` or `.\urun.cmd` offers both npm and Website menus. Run `./urun web build`, `./urun web check` or `./urun web serve --port 8000` from the root for noninteractive use. From this directory use `../urun web serve`; the duplicate website launchers have been removed.
 
 The assembler selects allowlisted inputs and rejects traversal, symlinks, missing sources, unknown slots and output collisions before replacing output. Only `web/public/` is uploaded to Cloudflare; no package installation or website build publishes anything. The npm target remains `dist/build/`, with archives in `dist/tar/`; web files, papers and Markdown build dependencies are excluded from that package.
 

@@ -18,6 +18,9 @@ test('public-source checks catch staged ignored files and redact credentials', t
   fs.writeFileSync(path.join(root, '.env'), 'PLACEHOLDER=local\n');
   assert.deepEqual(checkPublicSource(root), []);
   execFileSync('git', ['add', '-f', '.env'], { cwd: root });
+  const oldPlan = path.join(root, 'docs/plan/windows-launcher.md');
+  fs.mkdirSync(path.dirname(oldPlan), { recursive: true }); fs.writeFileSync(oldPlan, '# Obsolete working record\n');
+  assert.ok(checkPublicSource(root).some(error => error.includes('docs/plan/windows-launcher.md: private')));
   assert.ok(checkPublicSource(root).some(error => error.includes('.env: private')));
   fs.writeFileSync(path.join(root, 'source.js'), 'export const value = 1;\n');
   const candidate = ['ghp', '_', 'x'.repeat(36)].join('');

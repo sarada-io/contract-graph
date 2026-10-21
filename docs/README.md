@@ -16,6 +16,8 @@ the `/cg-*` skills and `.agents/cg/workflow.md`. Those files tell a model what t
 This directory tells you what you are agreeing to, what you should see on disk, and what is
 supposed to remain after a plan is deleted.
 
+<!-- public-guides:start -->
+
 | Read | What it answers |
 |---|---|
 | [Pre-adoption assessment](analyse.md) | Read-only diagnosis, portable skill and adoption follow-up |
@@ -29,6 +31,8 @@ supposed to remain after a plan is deleted.
 | [Lifecycle](lifecycle.md) | The stages you run, and the structural walk they share |
 | [Upgrade](upgrade.md) | Refresh an installation, preserve repository choices and confirm adoption readiness |
 
+<!-- public-guides:end -->
+
 Contributor validation methods live in [CONTRIBUTING](../CONTRIBUTING.md); superseded proposals and review reports remain in Git history.
 
 Start with vision if you are deciding
@@ -39,4 +43,4 @@ A dated technical note of the claim: [doi:10.5281/zenodo.22301753](https://doi.o
 
 Maintain one canonical page per topic and link to it from related pages. Update existing explanations instead of appending implementation diaries, repeated release summaries or test-run logs. Maintainer plans and review scratch under `docs/plan/` are local working material, not required documentation.
 
-These ten product guides are also the source for the corresponding website articles. Edit them here; the website keeps only its shell, metadata, compatible anchors and presentation. Canonical schema definitions live under `src/cg/schema/` and feed both publication targets. See [website development](../web/README.md) and [contributor validation](../CONTRIBUTING.md#website-target-and-shared-sources) for build and release responsibilities.
+The table marked `public-guides` selects the guides published on the website. Add a direct Markdown filename there to publish a guide with its shared page layout, discovery card and sitemap entry; unlisted documents and subdirectories are never discovered. Each guide starts with one H1. Its filename supplies the route, its H1 supplies the page title, and the table supplies the navigation label and description. The existing architecture guide retains its published `/docs/architecture/` route. Edit guide prose here; the website keeps only shared templates, compatible anchors and derived figure presentation. Canonical schema definitions live under `src/cg/schema/` and feed both publication targets. See [website development](../web/README.md) and [contributor validation](../CONTRIBUTING.md#website-target-and-shared-sources) for build and release responsibilities.
