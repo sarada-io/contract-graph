@@ -313,7 +313,7 @@ entries (`categories: []`, `principles: []`); architecture still requires a non-
 Catalog shape is validated even for advisory entries. An invalid E document fails format
 validation; disagreement with a valid E statement does not fail verification.
 
-The build manifest records the SHA-256 of every package file. Authored YAML catalogs are copied,
+The build manifest records the SHA-256 of each selected package file except the manifest itself. Authored YAML catalogs are copied,
 not compiled to JSON. `cg build --check` verifies the complete target without changing it.
 `npm run pack` rebuilds it and passes only that directory to npm, so the verified directory and
 the tarball cannot select files from different sources.

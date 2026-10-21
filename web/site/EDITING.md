@@ -50,14 +50,14 @@ npm run web:serve             # regenerate and preview; reload to apply source e
 npm run check:maintainer      # validate the repository and website Markdown graph
 ```
 
-Root `./urun` (Windows: `.\urun.cmd`) has a Website submenu alongside the npm activities. Noninteractive commands are `./urun web build`, `./urun web check` and `./urun web serve --port 8000`. These call the same build/check/preview paths. From `web/`, use `../urun web serve`; there is no second launcher.
+Root `./urun` (Windows: `.\urun.cmd`) has a Website submenu alongside the npm activities. Noninteractive commands are `./urun web build`, `./urun web check` and `./urun web serve --port 8000`. These call the same build/check/preview paths. From `web/`, use `../urun web serve` on macOS/Linux or `..\urun.cmd web serve` on Windows; there is no second launcher.
 
 Keep accepted website product/page decisions in their [owning maintenance contracts](../.agent/contract.md); the root [AGENTS.md](../../AGENTS.md) is the sole contributor entry. A source move is
 not a copy or design change. Preserve CSS ordering, query tokens, compatibility
 hashes and the legacy video dialog. Change cache tokens in affected page metadata
 when changing the corresponding CSS or script content.
 
-`public/` is ignored generated output. GitHub Actions runs the same build gate before production upload; pull requests only validate and hosted previews stay disabled. See [deployment and cutover](../DEPLOY.md).
+`public/` is ignored generated output. GitHub Actions runs the same build gate before production upload; pull requests only validate and hosted previews stay disabled. See [deployment and rollback](../DEPLOY.md).
 
 ## Composition order
 

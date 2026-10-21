@@ -68,8 +68,10 @@ matching cannot prove that a running agent reread its skills. Repository upgrade
 
 ## What changes from 1.0.0
 
+The published 1.1.0 release includes the following changes. Schema format versions remain independent of the npm version.
+
 - **Shorter task procedures:** warmup loads intent, adoption or reseed instructions as needed. Concrete bounded corrections can proceed through produce without creating a separate plan, queue or receipt. Existing programme gates and required acceptance still apply.
-- **Local programme selection:** status and next support explicit session/worktree selection and an all-programme summary. Selection does not resume suspended work or grant execution authority. See [programme selection](workflow.md#bounded-corrections-and-programme-selection).
+- **Local programme selection:** `cg status` and `cg next` resolve explicit, environment and worktree programme selection; `cg status --summary` provides an all-programme view. Selection does not resume suspended work or grant execution authority. See [programme selection](workflow.md#bounded-corrections-and-programme-selection).
 - **Focused discovery:** optional route suggestions and bounded context hydration extend exact routing; advisory queries select E entries or categories. Existing exact-route APIs remain available. See [contracts](contracts.md).
 - **Dart dependency diagnostic:** `cg contract dependencies --ecosystem dart` compares local package manifest declarations with contract relationships. It is opt-in and does not execute Dart or prove source-import confinement. See [dependency comparison](contracts.md#compare-dart-package-dependencies-with-the-graph).
 - **Receipt storage:** older receipts remain readable; successful close compacts legacy storage losslessly. Optional v3 delta compression requires compatible readers and can be converted back to v2. See [receipt storage](workflow.md#bounded-corrections-and-programme-selection).

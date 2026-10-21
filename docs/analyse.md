@@ -33,7 +33,7 @@ No aggregate score, measured token savings or delivery improvement is claimed. S
 
 ## Optional portable harness skill
 
-The package bundles a portable `cg-analyse/SKILL.md` outside the repository installation assets. Find its absolute path in `cg analyse --json` under `resources.harnessSkill`. Copy its containing `cg-analyse` folder to your harness’s documented personal skill directory and reload skills. The skill resolves current resources through the trusted installed CLI, so its copy does not contain stale package paths. No harness installer or configuration is supplied in this prototype. `cg init` does not copy this skill into target repositories. The fixed chat prompt also works without installing the skill.
+The package bundles a portable `cg-analyse/SKILL.md` outside the repository installation assets. Find its absolute path in `cg analyse --json` under `resources.harnessSkill`. Copy its containing `cg-analyse` folder to your harness’s documented personal skill directory and reload skills. The skill resolves current resources through the trusted installed CLI, so its copy does not contain stale package paths. The diagnostic supplies no harness installer or host configuration. `cg init` does not copy this skill into target repositories. The fixed chat prompt also works without installing the skill.
 
 ## From assessment to adoption
 
