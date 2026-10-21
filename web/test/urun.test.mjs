@@ -1,6 +1,6 @@
 /**
  * @file Urun.test for the website target.
- * @see ../.agent/contract.md
+ * @see ../scripts/.agent/contract.md
  */
 import assert from 'node:assert/strict';
 import { spawn, spawnSync } from 'node:child_process';

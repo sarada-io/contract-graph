@@ -1,6 +1,6 @@
 /**
  * @file Server for the website target.
- * @see ../../.agent/contract.md
+ * @see ../.agent/contract.md
  */
 import fs from 'node:fs';
 import path from 'node:path';

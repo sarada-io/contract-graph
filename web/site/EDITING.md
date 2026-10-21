@@ -1,6 +1,8 @@
 # Editing the website
 
-Edit source here, then run `./urun serve`. Restart the server after changes to assembler or renderer modules. Opening or reloading a page regenerates
+Start at [the website application contract](../.agent/contract.md), then [Publication](.agent/contract.md) or [Operations](../scripts/.agent/contract.md) and the selected child. This index names concrete editing surfaces; the linked contracts own their promises.
+
+From `web/`, edit source here, then run `./urun serve`. Restart the server after changes to assembler or renderer modules. Opening or reloading a page regenerates
 `public/`. Do not fix generated output by hand.
 
 | Change | Edit here |
@@ -37,22 +39,23 @@ it. Never add `.agents/`, `AGENTS.md` or development documents as copied assets.
 Literal shell slots use `{{name}}`; unknown or missing slots fail the build. There
 is no template expression language.
 
-Commands from the repository root:
+Commands from the combined repository root:
 
 ```sh
-./urun build                  # regenerate public/
-./urun check                  # reject stale, missing or extra generated files
-./urun serve                  # regenerate and preview; reload to apply source edits
-node scripts/build-site.mjs   # full deployment build gate
+npm run web:build             # regenerate public/ and run the deployment build checks
+npm run web:check             # reject stale, missing or extra generated files
+npm run web:serve             # regenerate and preview; reload to apply source edits
+npm run check:maintainer      # validate the repository and website Markdown graph
 ```
 
-Keep the accepted product/page decisions in the root `AGENTS.md`. A source move is
+From `web/`, `./urun build`, `./urun check` and `./urun serve` enter the same website implementation. Root `./urun` owns npm development activities.
+
+Keep accepted website product/page decisions in [web/AGENTS.md](../AGENTS.md). A source move is
 not a copy or design change. Preserve CSS ordering, query tokens, compatibility
 hashes and the legacy video dialog. Change cache tokens in affected page metadata
 when changing the corresponding CSS or script content.
 
-`public/` is ignored generated output. Cloudflare runs the same build gate before
-production and non-production uploads. See [deployment and cutover](../DEPLOY.md).
+`public/` is ignored generated output. GitHub Actions runs the same build gate before production upload; pull requests only validate and hosted previews stay disabled. See [deployment and cutover](../DEPLOY.md).
 
 ## Composition order
 

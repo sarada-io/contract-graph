@@ -1,6 +1,6 @@
 /**
  * @file Render canonical repository guides and schema payloads for the website.
- * @see ../.agent/contract.md
+ * @see .agent/contract.md
  */
 import fs from 'node:fs';
 import path from 'node:path';

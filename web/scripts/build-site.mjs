@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * @file Build site for the website target.
- * @see ../.agent/contract.md
+ * @see .agent/contract.md
  */
 /** Cloudflare build gate: generate, validate and test before its deploy command runs. */
 import fs from 'node:fs';

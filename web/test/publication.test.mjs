@@ -1,6 +1,6 @@
 /**
  * @file Publication.test for the website target.
- * @see ../.agent/contract.md
+ * @see ../site/.agent/contract.md
  */
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -69,14 +69,18 @@ test('private source files are excluded and cannot be smuggled through the manif
   fs.writeFileSync(path.join(hidden, 'contract.yaml'), 'internal');
   fs.writeFileSync(path.join(root, 'site/static/AGENTS.md'), 'internal');
   assert.ok([...assembleSite(root).keys()].every(name => !name.includes('.agents') && !name.includes('AGENTS.md')));
-  editManifest(root, m => m.copies.push({ source: 'static/nested/.agents/cg/contract.yaml', output: 'leak.txt' }));
-  assert.throws(() => buildSite({ root }), /Private or unsafe/);
+  const manifest = fs.readFileSync(path.join(root, 'site/manifest.json'));
+  for (const source of ['static/nested/.agents/cg/contract.yaml', 'pages/.agent/contract.md']) {
+    fs.writeFileSync(path.join(root, 'site/manifest.json'), manifest);
+    editManifest(root, m => m.copies.push({ source, output: 'leak.txt' }));
+    assert.throws(() => buildSite({ root }), /Private or unsafe/);
+  }
 });
 
 test('path traversal, private output and duplicate output fail before publication', t => {
   const root = fixture(t);
   const original = fs.readFileSync(path.join(root, 'site/manifest.json'));
-  for (const output of ['../README.md', '/absolute.html', 'nested/.agents/contract.yaml', 'nested/AGENTS.md', 'index.html', 'INDEX.html', 'docs']) {
+  for (const output of ['../README.md', '/absolute.html', 'nested/.agents/contract.yaml', 'nested/.agent/contract.md', 'nested/AGENTS.md', 'index.html', 'INDEX.html', 'docs']) {
     fs.writeFileSync(path.join(root, 'site/manifest.json'), original);
     editManifest(root, m => m.copies.push({ source: 'presentation/theme/tokens.css', output }));
     assert.throws(() => buildSite({ root }), /path|collision/i, output);
