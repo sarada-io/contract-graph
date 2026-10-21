@@ -1,0 +1,60 @@
+/* ---------- Sections ---------- */
+section { padding-block: clamp(3.5rem, 8vw, 5.75rem); }
+
+h2 {
+  font-size: clamp(1.5rem, 3vw, 1.95rem);
+  color: var(--ink);
+}
+
+.eyebrow,
+.status-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--teal-soft);
+}
+
+.eyebrow { margin-bottom: 1.1rem; }
+.status-label { margin-bottom: 1rem; }
+
+/* ---------- Buttons ---------- */
+.page-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.75rem;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.85rem;
+  padding: 0.65rem 1.05rem;
+  border: 1px solid var(--button-border);
+  border-radius: 999px;
+  background: var(--button-bg);
+  color: var(--button-fg);
+  font-size: 0.93rem;
+  font-weight: 600;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.button:hover {
+  background: var(--button-hover-bg);
+  border-color: var(--button-hover-border);
+}
+
+.button-secondary {
+  background: var(--button-secondary-bg);
+  color: var(--button-secondary-fg);
+  border-color: var(--button-secondary-border);
+}
+
+.button-secondary:hover {
+  background: var(--button-secondary-hover-bg);
+  color: var(--ink);
+  border-color: var(--accent);
+}
+

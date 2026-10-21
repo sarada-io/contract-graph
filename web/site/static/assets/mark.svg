@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-hidden="true">
+  <title>Contract Graph mark</title>
+  <rect width="64" height="64" rx="14" fill="#082844"/>
+  <rect x="10" y="10" width="44" height="44" rx="8" fill="none" stroke="#11B7A5" stroke-width="2.2"/>
+  <rect x="18" y="18" width="20" height="20" rx="5" fill="none" stroke="#7EE7DA" stroke-width="2"/>
+  <circle cx="28" cy="28" r="3.2" fill="#2F6FE8"/>
+  <circle cx="44" cy="44" r="3.2" fill="#11B7A5"/>
+  <path d="M31 31 L41 41" fill="none" stroke="#2F6FE8" stroke-width="2" stroke-linecap="round"/>
+</svg>

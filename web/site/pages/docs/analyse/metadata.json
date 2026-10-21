@@ -1,0 +1,19 @@
+{
+  "output": "docs/analyse/index.html",
+  "title": "Assess before adopting \u2014 Contract Graph Dev Kit",
+  "description": "Ask your coding agent to assess your repository without changing it, review the findings, and choose whether to adopt Contract Graph.",
+  "canonical": "https://contractgraph.dev/docs/analyse/",
+  "ogType": "article",
+  "ogTitle": "Assess before adopting \u2014 Contract Graph Dev Kit",
+  "ogDescription": "See what already works well, where responsibilities are unclear, and a practical first step.",
+  "twitterCard": "summary_large_image",
+  "socialImage": "https://contractgraph.dev/assets/contract-graph-og-v2.jpg",
+  "socialWidth": "",
+  "socialHeight": "",
+  "socialAlt": "",
+  "faviconIco": false,
+  "bodyClass": "",
+  "current": "",
+  "styleVersion": "20260924-40",
+  "scriptVersion": "20260923-1"
+}

@@ -38,3 +38,5 @@ Use the skills when you are *doing* the work with an agent.
 A dated technical note of the claim: [doi:10.5281/zenodo.22301753](https://doi.org/10.5281/zenodo.22301753).
 
 Maintain one canonical page per topic and link to it from related pages. Update existing explanations instead of appending implementation diaries, repeated release summaries or test-run logs. Maintainer plans and review scratch under `docs/plan/` are local working material, not required documentation.
+
+These ten product guides are also the source for the corresponding website articles. Edit them here; the website keeps only its shell, metadata, compatible anchors and presentation. Canonical schema definitions live under `src/cg/schema/` and feed both publication targets. See [website development](../web/README.md) and [contributor validation](../CONTRIBUTING.md#website-target-and-shared-sources) for build and release responsibilities.

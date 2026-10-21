@@ -1,0 +1,192 @@
+/* ---------- Header ---------- */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 8;
+  padding-block: 0.7rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--header-bg);
+  box-shadow: var(--header-shadow);
+  backdrop-filter: blur(14px);
+}
+
+.header-inner {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  color: var(--ink);
+  min-width: 0;
+}
+
+.brand-mark {
+  width: 2rem;
+  height: 2rem;
+  flex: 0 0 auto;
+  display: block;
+  background-color: currentColor;
+  -webkit-mask: url("/assets/contract-graph-mark.svg") center / contain no-repeat;
+          mask: url("/assets/contract-graph-mark.svg") center / contain no-repeat;
+}
+
+.brand-name {
+  font-size: clamp(1.06rem, 1.6vw, 1.2rem);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-left: auto;
+}
+
+.theme-toggle,
+.nav-toggle {
+  display: inline-grid;
+  width: 2.55rem;
+  height: 2.55rem;
+  flex: 0 0 auto;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.theme-icon {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+[data-theme="dark"] .theme-icon-moon,
+[data-theme="light"] .theme-icon-sun { display: none; }
+
+.nav-toggle-bars,
+.nav-toggle-bars::before,
+.nav-toggle-bars::after {
+  display: block;
+  width: 1.15rem;
+  height: 2.5px;
+  border-radius: 1px;
+  background: var(--ink);
+  transform-origin: center;
+  transition: transform 0.2s ease, opacity 0.2s ease, background 0.2s ease;
+}
+
+.nav-toggle-bars { position: relative; }
+.nav-toggle-bars::before,
+.nav-toggle-bars::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+}
+.nav-toggle-bars::before { transform: translateY(-7px); }
+.nav-toggle-bars::after { transform: translateY(7px); }
+
+.nav-toggle[aria-expanded="true"] .nav-toggle-bars {
+  background: transparent;
+}
+.nav-toggle[aria-expanded="true"] .nav-toggle-bars::before {
+  transform: rotate(45deg);
+}
+.nav-toggle[aria-expanded="true"] .nav-toggle-bars::after {
+  transform: rotate(-45deg);
+}
+
+.site-header nav {
+  display: none;
+  position: absolute;
+  top: calc(100% + 0.55rem);
+  left: 0;
+  right: 0;
+  z-index: 9;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.55rem;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--nav-bg);
+  box-shadow: var(--nav-shadow);
+}
+
+.site-header nav.is-open { display: flex; }
+
+.site-header nav a {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  padding: 0.7rem 0.85rem;
+  border-radius: 10px;
+}
+
+.site-header nav a:hover {
+  color: var(--ink);
+  background: var(--nav-hover);
+}
+
+.site-header nav a[aria-current="page"] {
+  color: var(--ink);
+  background: var(--nav-current);
+}
+
+.site-header #site-nav a.nav-start {
+  padding: 0.6rem 1rem;
+  border: 1px solid var(--button-border);
+  border-radius: 999px;
+  background: var(--button-bg);
+  color: var(--button-fg);
+  font-weight: 600;
+}
+
+.site-header #site-nav a.nav-start:hover {
+  background: var(--button-hover-bg);
+  border-color: var(--button-hover-border);
+}
+
+#whats-included, #skills { scroll-margin-top: 6rem; }
+
+.nav-external {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.45rem 0.2rem;
+}
+
+.site-header nav a.header-icon {
+  display: inline-grid;
+  width: 2.15rem;
+  height: 2.15rem;
+  padding: 0;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.header-icon svg {
+  width: 1.05rem;
+  height: 1.05rem;
+  display: block;
+}
+
+.site-header nav a.header-icon:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--surface);
+}
+

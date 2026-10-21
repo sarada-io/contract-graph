@@ -1,0 +1,19 @@
+{
+  "output": "start/index.html",
+  "title": "Get started — Contract Graph Dev Kit",
+  "description": "Install Contract Graph Dev Kit with npm install -g contract-graph and cg init. Then run /cg-warmup and confirm the project context before delivery.",
+  "canonical": "https://contractgraph.dev/start/",
+  "ogType": "article",
+  "ogTitle": "Get started — Contract Graph Dev Kit",
+  "ogDescription": "npm install -g contract-graph, cg init, then /cg-warmup.",
+  "twitterCard": "summary_large_image",
+  "socialImage": "https://contractgraph.dev/assets/contract-graph-og-v2.jpg",
+  "socialWidth": "",
+  "socialHeight": "",
+  "socialAlt": "Contract Graph title card with a network diagram and the text “Give every AI coding session the map.”",
+  "faviconIco": false,
+  "bodyClass": "start-page",
+  "current": "start",
+  "styleVersion": "20260924-40",
+  "scriptVersion": "20260923-1"
+}

@@ -1,0 +1,7 @@
+@media (min-width: 760px) {
+  .document-grid, .docs-index, .workflow-steps, .mechanics-grid, .adoption-grid, .setup-pair {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .footer-grid { grid-template-columns: 1.3fr 0.9fr; align-items: start; }
+}
+

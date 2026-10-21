@@ -1,0 +1,19 @@
+{
+  "output": "docs/upgrade/index.html",
+  "title": "Upgrade — Contract Graph Dev Kit",
+  "description": "Update an existing Contract Graph installation: install the CLI, preview with cg init --check, then apply with confirmation.",
+  "canonical": "https://contractgraph.dev/docs/upgrade/",
+  "ogType": "article",
+  "ogTitle": "Upgrade — Contract Graph Dev Kit",
+  "ogDescription": "cg init is the sole first-adoption and upgrade entry. Preview with --check, then confirm intent through warmup.",
+  "twitterCard": "summary_large_image",
+  "socialImage": "https://contractgraph.dev/assets/contract-graph-og-v2.jpg",
+  "socialWidth": "",
+  "socialHeight": "",
+  "socialAlt": "",
+  "faviconIco": false,
+  "bodyClass": "",
+  "current": "",
+  "styleVersion": "20260924-40",
+  "scriptVersion": "20260923-1"
+}

@@ -1,5 +1,9 @@
 # Assess before adopting
 
+## Assessment
+
+Install the CLI with `npm install -g contract-graph` first; Node.js 18.17 or newer is required. The target repository needs no Contract Graph setup or contracts.
+
 In Windows PowerShell, use `cg.cmd` with the same arguments if PowerShell blocks `cg.ps1`. See [Windows PowerShell setup](../README.md#windows-powershell).
 
 `cg analyse [directory]` prepares a ready-to-paste agent prompt; it does not run an LLM or produce an architectural assessment itself. A local coding agent follows the prompt to read evidence and save a report outside the target repository. Contract Graph does not need to be installed in that repository.
@@ -17,7 +21,15 @@ cg analyse /absolute/path/to/repository --report /external/directory/assessment.
 
 The command writes no files. It emits absolute pointers to bundled instructions, warmup’s shared responsibility review, source-inspection commands, existing guidance and a proposed report destination. `--json` exposes the same context for integrations. The agent creates the external report after checking the destination again. Existing reports and destinations inside the target are rejected. This is a procedural read-only workflow, not an operating-system sandbox.
 
-Reports lead with findings and severity, distinguish source facts from judgments, include confidence and practical consequences, acknowledge strengths, and give exploratory change traces and coverage limits. Missing contracts are not defects. No aggregate score, measured token savings or delivery improvement is claimed. Source inspection supports JavaScript, TypeScript, Dart, Java, Kotlin, Python, Go and C# with parser-specific limitations; documentation, unsupported languages and semantic responsibility comparisons require agent reading.
+## Report
+
+Reports lead with findings and severity, distinguish source facts from judgments, include confidence and practical consequences, acknowledge strengths, and give exploratory change traces and coverage limits. Missing contracts are not defects. The report can recommend no adoption when existing structure and guidance suffice.
+
+## Limits
+
+Assessment must not execute the target repository's scripts, tests or builds, install its dependencies, initialise Contract Graph, create contracts, or refactor the target. The agent rechecks the external report destination before writing. These are procedural constraints, not an operating-system sandbox.
+
+No aggregate score, measured token savings or delivery improvement is claimed. Source inspection supports JavaScript, TypeScript, Dart, Java, Kotlin, Python, Go and C# with parser-specific limitations; documentation, unsupported languages and semantic responsibility comparisons require agent reading.
 
 ## Optional portable harness skill
 

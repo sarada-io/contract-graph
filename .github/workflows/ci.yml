@@ -9,6 +9,9 @@ permissions:
   contents: read
 
 jobs:
+  source-safety:
+    uses: ./.github/workflows/security.yml
+
   test:
     runs-on: ubuntu-latest
     strategy:
@@ -24,6 +27,11 @@ jobs:
         run: npm ci
       - name: Test
         run: npm test
+      - name: Shared website build and public-source checks
+        run: |
+          npm run check:public
+          npm run web:build
+          npm run web:check
       - name: Packed install — the published command must verify a scaffolded repository
         run: |
           npm run pack
@@ -55,3 +63,49 @@ jobs:
         run: |
           $env:CG_WINDOWS_LIFECYCLE = '1'
           npm test -- test/windows-launcher.test.js test/windows-npm.test.js test/build.test.js test/urun.test.js
+
+  deploy-website:
+    name: Deploy contractgraph.dev
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [test, windows-package, source-safety]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: website-production
+      url: https://contractgraph.dev
+    concurrency:
+      group: website-production
+      cancel-in-progress: false
+    env:
+      WRANGLER_VERSION: "4.151.3"
+      WRANGLER_SEND_METRICS: "false"
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24.x"
+      - name: Build and verify website
+        run: |
+          npm ci --include=dev
+          npm run web:build
+          npm run web:check
+      - name: Install pinned deployment CLI outside the checkout
+        run: npm install --prefix "$RUNNER_TEMP/cloudflare-cli" --no-save --package-lock=false "wrangler@$WRANGLER_VERSION"
+      - name: Validate Cloudflare configuration without publishing
+        run: '"$RUNNER_TEMP/cloudflare-cli/node_modules/.bin/wrangler" deploy --config web/wrangler.jsonc --dry-run'
+      - name: Deploy current main to the existing Worker
+        shell: bash
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          current_main="$(git ls-remote --exit-code origin refs/heads/main | cut -f1)"
+          if [ "$current_main" != "$GITHUB_SHA" ]; then
+            echo "::notice::Skipping deployment because main has a newer commit."
+            exit 0
+          fi
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "::error::Configure CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID in the website-production environment or repository Actions secrets. See web/DEPLOY.md."
+            exit 1
+          fi
+          "$RUNNER_TEMP/cloudflare-cli/node_modules/.bin/wrangler" deploy --config web/wrangler.jsonc

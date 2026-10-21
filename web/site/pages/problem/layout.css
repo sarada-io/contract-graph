@@ -1,0 +1,24 @@
+.section-heading.drift-statement { max-width: none; }
+
+.drift-page #why { padding-bottom: 0; }
+
+.drift-page #symptoms,
+.drift-page #causes { padding-top: clamp(2.5rem, 5vw, 4rem); }
+
+.drift-page #symptoms { padding-bottom: 0; }
+
+.drift-page .section-heading { margin-bottom: 2rem; }
+.drift-page #why .section-heading { margin-bottom: 0; }
+
+.drift-page .drift-definition {
+  max-width: none;
+  margin-top: 0;
+  margin-bottom: 0;
+  color: var(--ink);
+  font-size: clamp(1.45rem, 2.6vw, 1.85rem);
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.drift-page .drift-definition { margin-top: 1rem; }
+

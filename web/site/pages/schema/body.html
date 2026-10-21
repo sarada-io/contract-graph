@@ -1,0 +1,21 @@
+
+  <main id="main">
+    <section class="page-hero">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb"><a href="/">Home</a><span aria-hidden="true">/</span><span>Schemas</span></nav>
+        <p class="eyebrow">Canonical machine-readable resources</p>
+        <h1>Public schemas</h1>
+        <p class="page-lede">Stable JSON Schema identities used by Contract Graph contracts, structural principles, repository guidelines, and enforcement maps.</p>
+      </div>
+    </section>
+    <section>
+      <div class="container">
+        <div class="document-grid">
+          <article class="document-card"><h3>Contract</h3><p>Shape and invariants for every graph node.</p><a href="/schema/contract-v1.schema.json">contract-v1.schema.json →</a></article>
+          <article class="document-card"><h3>Principles</h3><p>Shared architecture, engineering, and product catalogs with distinct global, advisory, and scoped authority.</p><a href="/schema/principles-v1.schema.json">principles-v1.schema.json →</a></article>
+          <article class="document-card"><h3>Enforcement</h3><p>Repository enforcement-map declarations.</p><a href="/schema/enforcement-v1.schema.json">enforcement-v1.schema.json →</a></article>
+        </div>
+        <div class="callout"><p>These files are served as static JSON from <code>/schema/</code>. Each file’s <code>$id</code> is its public URL on contractgraph.dev. The principles schema uses <code>principlesVersion: "1.0"</code> across all three catalogs; architecture also carries the graph protocol. Contract and enforcement retain their separate v1 schemas. The former <code>/contract-graph/schema/</code> path provides aliases for these current files.</p></div>
+      </div>
+    </section>
+  </main>

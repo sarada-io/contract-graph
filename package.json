@@ -36,7 +36,11 @@
     "build": "node bin/cg.js build",
     "build:check": "node bin/cg.js build --check",
     "pack": "node bin/cg.js build --quiet && node --input-type=module -e \"import fs from 'node:fs'; fs.mkdirSync('dist/tar', { recursive: true })\" && npm pack --ignore-scripts --pack-destination dist/tar ./dist/build",
-    "clean": "node --input-type=module -e \"import fs from 'node:fs'; for (const dir of ['build', 'dist', 'tmp', 'compiled']) fs.rmSync(dir, { recursive: true, force: true })\""
+    "clean": "node --input-type=module -e \"import fs from 'node:fs'; for (const dir of ['build', 'dist', 'tmp', 'compiled']) fs.rmSync(dir, { recursive: true, force: true })\"",
+    "web:build": "node web/scripts/build-site.mjs",
+    "web:check": "node web/site/publication.mjs --check",
+    "web:serve": "node web/scripts/urun.mjs serve",
+    "check:public": "node scripts/check-public-source.mjs"
   },
   "keywords": [
     "contract-graph",
@@ -73,6 +77,7 @@
     "yaml": "^2.9.0"
   },
   "devDependencies": {
-    "ajv": "^8.20.0"
+    "ajv": "^8.20.0",
+    "markdown-it": "14.3.3"
   }
 }

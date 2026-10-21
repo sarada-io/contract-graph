@@ -1,0 +1,24 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "contract-graph-web",
+  "compatibility_date": "2026-09-12",
+  "observability": {
+    "enabled": true
+  },
+  "workers_dev": true,
+  "preview_urls": false,
+  // Only generated ./public is uploaded. All checked-in source is publicly readable in Git.
+  "assets": {
+    "directory": "./public"
+  },
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "routes": [
+    { "pattern": "contractgraph.dev", "custom_domain": true },
+    { "pattern": "www.contractgraph.dev", "custom_domain": true },
+    // Zone Workers Route so Domains → Workers Routes lists this Worker,
+    // matching sarada.io (`*.sarada.io/*` → sarada-website).
+    { "pattern": "*.contractgraph.dev/*", "zone_name": "contractgraph.dev" }
+  ]
+}

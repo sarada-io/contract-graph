@@ -1,0 +1,155 @@
+/* ============================================================
+   Contract Graph — contractgraph.dev
+   Plain CSS, mobile-first. Palette shared with Sarada; type is IBM Plex.
+   Latin subsets are self-hosted; see assets/fonts/OFL.txt.
+   ============================================================ */
+
+@font-face {
+  font-family: "IBM Plex Sans";
+  font-style: normal;
+  font-weight: 400 700;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/assets/fonts/ibm-plex-sans-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/assets/fonts/ibm-plex-mono-latin-400.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/assets/fonts/ibm-plex-mono-latin-500.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+:root,
+[data-theme="dark"] {
+  color-scheme: dark;
+  --ink: #EAF6F7;
+  --teal: #3ECFBF;
+  --teal-soft: #8BB8C4;
+  --accent: #11B7A5;
+  --blue: #7AA3F5;
+
+  --bg: #07131F;
+  --surface: #0C1F30;
+
+  --text: #D7E7EE;
+  --text-muted: #9BB4C0;
+  --border: rgba(186, 216, 224, 0.14);
+
+  --header-bg: rgba(7, 19, 31, 0.88);
+  --header-shadow: 0 8px 30px rgba(0, 0, 0, 0.28);
+  --nav-bg: rgba(12, 31, 48, 0.98);
+  --nav-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+  --nav-hover: rgba(17, 183, 165, 0.12);
+  --nav-current: rgba(17, 183, 165, 0.18);
+
+  --card-bg: rgba(12, 31, 48, 0.94);
+  --card-shadow: 0 18px 50px rgba(0, 0, 0, 0.28);
+
+  --code-bg: #050B14;
+  --code-fg: #EFFBFB;
+  --inline-code-bg: rgba(17, 183, 165, 0.14);
+
+  --button-bg: #11B7A5;
+  --button-fg: #061422;
+  --button-border: #11B7A5;
+  --button-hover-bg: #2ED3C0;
+  --button-hover-border: #2ED3C0;
+  --button-secondary-bg: transparent;
+  --button-secondary-fg: var(--ink);
+  --button-secondary-border: rgba(186, 216, 224, 0.28);
+  --button-secondary-hover-bg: rgba(234, 246, 247, 0.06);
+
+  --section-tint: rgba(17, 183, 165, 0.06);
+  --callout-bg: rgba(17, 183, 165, 0.1);
+  --principle-bg: rgba(17, 183, 165, 0.08);
+  --warn-border: #E2A84B;
+  --warn-bg: rgba(226, 168, 75, 0.12);
+  --glow-teal: rgba(17, 183, 165, 0.18);
+  --glow-blue: rgba(47, 111, 232, 0.16);
+  --link-line: rgba(62, 207, 191, 0.38);
+
+  --footer-from: #040D16;
+  --footer-to: #061824;
+  --footer-text: #EAF6F7;
+  --footer-muted: #AFC7CE;
+  --footer-link: #C5DCE1;
+  --footer-rule: rgba(234, 246, 247, 0.14);
+
+  --diagram-bg: #F4F7F8;
+
+  --radius: 18px;
+  --container: 70rem;
+  --header-h: 4.15rem;
+}
+
+[data-theme="light"] {
+  --ink: #082844;
+  --teal: #077B87;
+  --teal-soft: #397389;
+  --accent: #11B7A5;
+  --blue: #2F6FE8;
+
+  --bg: #F4F7F8;
+  --surface: #FFFFFF;
+
+  --text: #102F49;
+  --text-muted: #466579;
+  --border: rgba(8, 40, 68, 0.13);
+
+  --header-bg: rgba(255, 255, 255, 0.92);
+  --header-shadow: 0 8px 30px rgba(8, 40, 68, 0.035);
+  --nav-bg: rgba(255, 255, 255, 0.98);
+  --nav-shadow: 0 16px 40px rgba(8, 40, 68, 0.12);
+  --nav-hover: rgba(7, 123, 135, 0.08);
+  --nav-current: rgba(17, 183, 165, 0.12);
+
+  --card-bg: rgba(255, 255, 255, 0.94);
+  --card-shadow: 0 18px 50px rgba(8, 40, 68, 0.08);
+
+  --code-bg: #082844;
+  --code-fg: #EFFBFB;
+  --inline-code-bg: rgba(7, 123, 135, 0.08);
+
+  --button-bg: #082844;
+  --button-fg: #fff;
+  --button-border: #082844;
+  --button-hover-bg: #077B87;
+  --button-hover-border: #077B87;
+  --button-secondary-bg: transparent;
+  --button-secondary-fg: #082844;
+  --button-secondary-border: rgba(8, 40, 68, 0.3);
+  --button-secondary-hover-bg: #fff;
+
+  --section-tint: rgba(7, 123, 135, 0.035);
+  --callout-bg: rgba(17, 183, 165, 0.09);
+  --principle-bg: rgba(255, 255, 255, 0.65);
+  --warn-border: #E2A84B;
+  --warn-bg: rgba(226, 168, 75, 0.11);
+  --glow-teal: rgba(17, 183, 165, 0.16);
+  --glow-blue: rgba(47, 111, 232, 0.1);
+  --link-line: rgba(7, 123, 135, 0.3);
+
+  --footer-from: #082844;
+  --footer-to: #061B2E;
+  --footer-text: #EAF6F7;
+  --footer-muted: #AFC7CE;
+  --footer-link: #C5DCE1;
+  --footer-rule: rgba(234, 246, 247, 0.15);
+
+  --diagram-bg: #FFFFFF;
+  color-scheme: light;
+}
+

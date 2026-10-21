@@ -1,0 +1,19 @@
+{
+  "output": "ways-to-work/index.html",
+  "title": "How it works — Contract Graph Dev Kit",
+  "description": "Two ways to use Contract Graph Dev Kit. Plan and deliver when the outcome is understood. Explore through prototyping when the experience still needs to be seen.",
+  "canonical": "https://contractgraph.dev/ways-to-work/",
+  "ogType": "article",
+  "ogTitle": "How it works — Contract Graph Dev Kit",
+  "ogDescription": "Plan and deliver with /cg-plan, /cg-produce, and /cg-sign-off. Explore through prototyping with /cg-prototype, then /cg-sign-off.",
+  "twitterCard": "summary_large_image",
+  "socialImage": "https://contractgraph.dev/assets/contract-graph-og-v2.jpg",
+  "socialWidth": "",
+  "socialHeight": "",
+  "socialAlt": "Contract Graph title card with a network diagram and the text “Give every AI coding session the map.”",
+  "faviconIco": false,
+  "bodyClass": "",
+  "current": "ways",
+  "styleVersion": "20260924-40",
+  "scriptVersion": "20260923-1"
+}

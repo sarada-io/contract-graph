@@ -1,0 +1,78 @@
+
+
+  <main id="main" class="home">
+    <section class="home-stage" data-track-section="home" data-section-title="Contract Graph home">
+      <div class="container home-hero-layout">
+        <div class="home-feature">
+          <p class="status-label">Open source · Public beta</p>
+          <h1>Give your coding agent lasting context and a clear workflow.</h1>
+          <p class="home-feature-copy">Contract Graph Dev Kit is a framework for agentic software development. Its skills and tools keep project intent, responsibilities, and dependencies alongside your code, and guide agents through planning, implementation, review, and verification.</p>
+          <p class="home-feature-copy">Each new session can use that shared context to understand your software, locate the right place for a change, and carry agreed work through to completion.</p>
+          <div class="home-commands" id="quick-start">
+            <div class="home-commands-top"><p class="status-label">Get started</p></div>
+            <div class="home-start-panel">
+              <p class="home-step-label">Step 1: Install in a terminal</p>
+              <pre><code>npm install -g contract-graph</code></pre>
+              <p class="home-step-label">Step 2: Choose an option</p>
+              <div class="home-start-tabs" role="tablist" aria-label="How to get started">
+                <button type="button" role="tab" id="home-setup-tab" data-quick-tab="setup" aria-controls="home-setup-panel" aria-selected="true" tabindex="0">Set up the project</button>
+                <button type="button" role="tab" id="home-assessment-tab" data-quick-tab="assessment" aria-controls="home-assessment-panel" aria-selected="false" tabindex="-1">Unsure of adaptation?</button>
+              </div>
+              <div class="home-start-panel" id="home-setup-panel" role="tabpanel" aria-labelledby="home-setup-tab" tabindex="0">
+                <p class="home-step-label">In the repository’s terminal</p>
+                <pre><code>cg init</code></pre>
+                <p class="home-commands-note">On Windows PowerShell, run <code>cg.cmd init</code> when <code>cg</code> does not start.</p>
+                <p class="home-step-label">Then, in your coding agent</p>
+                <p class="home-warmup"><code>/cg-warmup</code></p>
+                <p class="home-commands-note">Confirm project context before delivery. <a href="/start/">Full setup guide</a>.</p>
+              </div>
+              <div class="home-start-panel" id="home-assessment-panel" role="tabpanel" aria-labelledby="home-assessment-tab" tabindex="0" hidden>
+                <p class="home-step-label">In your coding agent</p>
+                <p class="home-warmup" id="home-assessment-prompt">Use "cg analyse" (or "cg.cmd analyse" on Windows PowerShell) to assess this repository for Contract Graph adoption.</p>
+                <p class="home-commands-note"><button class="copy-btn" type="button" data-copy="home-assessment-prompt" aria-label="Copy assessment prompt">Copy prompt</button></p>
+                <p class="home-commands-note">Your repository stays unchanged. <a href="/docs/analyse/">Assessment guide</a>.</p>
+              </div>
+            </div>
+            <p class="home-commands-note">Requires Node.js 18.17+.</p>
+          </div>
+        </div>
+        <div class="home-aside">
+          <a class="home-video" href="#watch" aria-haspopup="dialog" aria-controls="contract-video-dialog" aria-label="Watch Overview">
+            <span class="home-video-frame">
+              <img src="/assets/contract-graph-overview.jpg" width="480" height="360" alt="">
+              <span class="home-video-play" aria-hidden="true">▶</span>
+            </span>
+            <span class="home-video-caption">Watch Overview</span>
+          </a>
+          <div class="home-roles" id="roles">
+            <a class="home-role" href="/problem/">
+              <p class="status-label">Beyond the prototype</p>
+              <h2>Why do we need a Dev Kit?</h2>
+              <p>A narrow session leaves the shape of the software to the model. The kit gives the next session a shape to follow.</p>
+              <span class="home-role-go">Start with the problem</span>
+            </a>
+            <a class="home-role home-role-tech" href="/ways-to-work/">
+              <p class="status-label">Two modes</p>
+              <h2>How do I use it?</h2>
+              <p>Plan and deliver an understood outcome, or explore an uncertain experience through prototyping.</p>
+              <span class="home-role-go">See the two ways</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <dialog class="video-dialog" id="contract-video-dialog" aria-labelledby="video-dialog-title">
+    <div class="video-dialog-shell">
+      <div class="video-dialog-heading">
+        <h2 id="video-dialog-title">Contract Graph overview</h2>
+        <button type="button" class="video-dialog-close" data-video-close aria-label="Close video">×</button>
+      </div>
+      <div class="video-dialog-frame">
+        <iframe id="contract-video-frame" data-src="https://www.youtube.com/embed/wddXz-8AmlE?rel=0&amp;autoplay=1&amp;playsinline=1" title="Contract Graph Dev Kit: Keep AI Coding Agents Aligned as Repositories Grow" referrerpolicy="strict-origin-when-cross-origin" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+      </div>
+    </div>
+  </dialog>
+

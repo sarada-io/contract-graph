@@ -1,0 +1,19 @@
+{
+  "output": "problem/index.html",
+  "title": "Why do we need a Dev Kit? — Contract Graph Dev Kit",
+  "description": "Drift is the gap between the software you think you have and the software your coding agent has actually built for you.",
+  "canonical": "https://contractgraph.dev/problem/",
+  "ogType": "article",
+  "ogTitle": "Why do we need a Dev Kit? — Contract Graph Dev Kit",
+  "ogDescription": "Drift is the gap between the software you think you have and the software your coding agent has actually built for you.",
+  "twitterCard": "summary_large_image",
+  "socialImage": "https://contractgraph.dev/assets/contract-graph-og-v2.jpg",
+  "socialWidth": "",
+  "socialHeight": "",
+  "socialAlt": "Contract Graph title card with a network diagram and the text “Give every AI coding session the map.”",
+  "faviconIco": false,
+  "bodyClass": "",
+  "current": "problem",
+  "styleVersion": "20260924-40",
+  "scriptVersion": "20260923-1"
+}

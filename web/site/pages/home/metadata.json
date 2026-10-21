@@ -1,0 +1,20 @@
+{
+  "output": "index.html",
+  "title": "Contract Graph Dev Kit",
+  "description": "A working prototype is only the start. Contract Graph Dev Kit gives coding agents a shared map of responsibilities and dependencies for the changes that follow.",
+  "canonical": "https://contractgraph.dev/",
+  "ogType": "website",
+  "ogTitle": "Contract Graph Dev Kit",
+  "ogDescription": "A working prototype is only the start. Give every coding agent a shared map for the changes that follow.",
+  "twitterCard": "summary_large_image",
+  "socialImage": "https://contractgraph.dev/assets/contract-graph-og-v2.jpg",
+  "socialWidth": "1200",
+  "socialHeight": "630",
+  "socialAlt": "Contract Graph title card with a network diagram and the text \u201cGive every AI coding session the map.\u201d",
+  "faviconIco": true,
+  "bodyClass": "home-page",
+  "current": "home",
+  "styleVersion": "20260928-bordered-tabs",
+  "scriptVersion": "20260926-video",
+  "structuredData": true
+}

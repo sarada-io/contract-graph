@@ -1,0 +1,25 @@
+<figure class="composition-figure">
+            <p class="visually-hidden" id="fig2-title">Example commerce ownership graph</p>
+            <p class="visually-hidden" id="fig2-desc">A commerce repository owns billing and inventory modules. Billing decomposes into subscriptions and monetary arithmetic; subscriptions owns renewal scheduling. Renewal scheduling depends on monetary arithmetic. Inventory and the arithmetic library are leaves.</p>
+            <div class="arch-diagram" role="img" aria-labelledby="fig2-title" aria-describedby="fig2-desc">
+              <p class="arch-node">Repository: commerce</p>
+              <p class="arch-arrow">composes</p>
+              <div class="arch-split arch-split-2">
+                <div class="arch-cluster">
+                  <p>Billing</p>
+                  <p class="arch-node">Module: billing</p>
+                  <p class="arch-arrow">composes</p>
+                  <p class="arch-node">Submodule: subscriptions</p>
+                  <p class="arch-arrow">composes</p>
+                  <p class="arch-node">Component: renewals</p>
+                  <p class="arch-arrow">also composes</p>
+                  <p class="arch-node is-muted">Library: arithmetic — leaf</p>
+                  <p class="arch-arrow is-dashed">renewals consume that library’s declared surface</p>
+                </div>
+                <div class="arch-cluster">
+                  <p>Inventory</p>
+                  <p class="arch-node">Module: inventory — leaf</p>
+                </div>
+              </div>
+            </div>
+          </figure>

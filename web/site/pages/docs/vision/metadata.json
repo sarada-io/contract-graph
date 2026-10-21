@@ -1,0 +1,19 @@
+{
+  "output": "docs/vision/index.html",
+  "title": "Vision — Contract Graph Dev Kit",
+  "description": "Why Contract Graph gives coding agents durable architectural context before they read or change implementation.",
+  "canonical": "https://contractgraph.dev/docs/vision/",
+  "ogType": "article",
+  "ogTitle": "Vision — Contract Graph Dev Kit",
+  "ogDescription": "A durable, traversable context graph for model-driven software development.",
+  "twitterCard": "summary_large_image",
+  "socialImage": "https://contractgraph.dev/assets/contract-graph-og-v2.jpg",
+  "socialWidth": "",
+  "socialHeight": "",
+  "socialAlt": "",
+  "faviconIco": false,
+  "bodyClass": "",
+  "current": "",
+  "styleVersion": "20260924-40",
+  "scriptVersion": "20260923-1"
+}

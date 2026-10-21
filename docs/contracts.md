@@ -394,6 +394,10 @@ library owns parsing, traversal, rendering, and verification.
 The loop that consumes those contracts — plan, queue, Step, and the disk baseline a later
 session is supposed to trust — is [workflow](workflow.md).
 
+## Public schemas
+
+The canonical schema URLs are [contract-v1](https://contractgraph.dev/schema/contract-v1.schema.json), [principles-v1](https://contractgraph.dev/schema/principles-v1.schema.json) and [enforcement-v1](https://contractgraph.dev/schema/enforcement-v1.schema.json). Architecture, engineering and product catalogs share principles-v1. Each document retains its canonical `$id`; the existing `/contract-graph/schema/` URLs serve byte-identical compatibility aliases. Schema format versions are independent of npm package versions.
+
 ## Preserve accepted promises when contracts change
 
 A contract's purpose explains how its unit serves its parent. Project intent supplies the wider product meaning; a module can refine that meaning through its purpose, responsibility and surface without a mandatory separate intent document. A module cannot silently change its parent's promise. Establish authority for an actual product change and update affected callers and contracts together.

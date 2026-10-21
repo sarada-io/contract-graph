@@ -1,0 +1,91 @@
+
+
+  <main id="main">
+    <section class="page-hero">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb"><a href="/">Home</a><span aria-hidden="true">/</span><span>Get started</span></nav>
+        <p class="eyebrow">Get started</p>
+        <h1>Install, then confirm the project.</h1>
+        <p class="page-lede">Installation is two commands. Adoption continues in your coding agent: run <code>/cg-warmup</code> and confirm the project context before you start delivery. New repositories and existing ones follow the same path. Needs Node.js 18.17 or newer.</p>
+      </div>
+    </section>
+
+    <section>
+      <div class="container">
+        <div class="start-steps">
+          <article class="prose">
+        <h2>In a terminal</h2>
+        <div class="yaml-card">
+          <p class="code-title">Install, then set up the repository</p>
+          <pre><code>npm install -g contract-graph
+cg init</code></pre>
+        </div>
+        <p>Run <code>cg init</code> inside the repository you want to change. <code>npm install -g contract-graph</code> installs the <code>cg</code> command. On Windows PowerShell, run <code>cg.cmd init</code> when <code>cg</code> does not start. Init prepares that repository: schemas, skills, and editor support. It does not add Contract Graph to your application. Reload your editor when it asks you to, so your coding agent can see the kit.</p>
+          </article>
+          <article class="prose">
+        <h2>In your coding agent</h2>
+        <div class="yaml-card">
+          <p class="code-title">Confirm project context before delivery</p>
+          <pre><code>/cg-warmup</code></pre>
+        </div>
+        <p>Warmup does not run by itself. After init, ask for <code>/cg-warmup</code> and confirm the project context before <code>/cg-plan</code> or <code>/cg-prototype</code>. Init creates <code>.agents/cg/project-context.md</code> beside the root <code>contract.yaml</code>. Warmup fills it with a concise, self-contained copy of accepted project intent, including references to its sources, and asks you to confirm that reading.</p>
+          </article>
+        </div>
+        <div class="prose start-workflow">
+        <h2>Choose your first workflow</h2>
+        <p>When the outcome is already understood, plan and deliver with <code>/cg-plan</code>, <code>/cg-produce</code>, and <code>/cg-sign-off</code>. When you still need to see the experience, explore with <code>/cg-prototype</code>, then <code>/cg-sign-off</code>. <a href="/ways-to-work/">How those two paths work</a>.</p>
+        <p>Later skills use the other <code>cg</code> commands. You do not need those commands to use the kit.</p>
+        <div class="page-actions">
+          <a class="button" href="/ways-to-work/">How to use</a>
+          <a class="button button-secondary" href="/start/#whats-included">What's included</a>
+        </div>
+        </div>
+      </div>
+    </section>
+    <section id="whats-included">
+      <div class="container">
+        <div class="section-heading executive-heading">
+          <p class="status-label">Inside the Dev Kit</p>
+          <h2>What’s included?</h2>
+          <p>The open-source package includes the <code>cg</code> command, agent skills, contracts, schemas, and editor support. It runs inside Antigravity, Claude Code, Codex, Cursor, or GitHub Copilot in VS Code. Support varies by host.</p>
+        </div>
+        <div class="executive-grid">
+          <article><h3>Agent skills</h3><p>The <code>/cg-*</code> skills guide planning, implementation, review, and verification. They use the CLI tools as work progresses.</p></article>
+          <article><h3>CLI tools</h3><p>The <code>cg</code> command prepares your repository and provides tools for working with and checking the contract graph.</p></article>
+          <article><h3>Contracts and project files</h3><p>Init prepares schemas, skills, and editor support, with <code>.agents/cg/project-context.md</code> beside the root <code>contract.yaml</code>. These files keep project intent and responsibilities alongside the code.</p></article>
+        </div>
+        <p class="section-copy">Running <code>cg init</code> again refreshes the kit while keeping your repository’s own contracts and decisions. The Dev Kit is Apache-2.0 licensed and does not become part of your application.</p>
+      </div>
+    </section>
+
+    <section class="section-tint" id="skills">
+      <div class="container">
+        <div class="section-heading executive-heading">
+          <p class="status-label">Skills</p>
+          <h2>What each skill is for.</h2>
+          <p>You describe the work. These skills are part of the kit. They carry the work, and they run the <code>cg</code> tools that keep the graph correct. You do not need those tools yourself.</p>
+        </div>
+        <ul class="skill-list">
+          <li class="skill-row"><strong>Warmup</strong><span>Confirm project intent and establish or refresh the contract graph. Run this yourself after init, before delivery, on a new or existing repository.</span></li>
+          <li class="skill-row"><strong>Plan</strong><span>Agree a sprint or an epic: the outcome, the scope, and what you will accept. Agreeing the plan does not start the build.</span></li>
+          <li class="skill-row"><strong>Produce</strong><span>Implement the agreed scope. Ask whether to review the selected work together or each item, then continue independent work while an open decision waits.</span></li>
+          <li class="skill-row"><strong>Prototype</strong><span>Explore a working experience through feedback when the result still needs to be seen.</span></li>
+          <li class="skill-row"><strong>Sign-off</strong><span>Complete outstanding implementation, required tests, documentation, verification, and decision consolidation inside the authorized scope.</span></li>
+          <li class="skill-row"><strong>Unblock</strong><span>Record a consequential decision the work is waiting on, then resume eligible work.</span></li>
+        </ul>
+        <p class="section-copy">In chat they appear as <code>/cg-plan</code>, <code>/cg-produce</code>, <code>/cg-prototype</code>, <code>/cg-sign-off</code>, <code>/cg-warmup</code>, and <code>/cg-unblock</code>.</p>
+      </div>
+    </section>
+
+    <section>
+      <div class="container">
+        <div class="section-heading">
+          <p class="status-label">Go further</p>
+          <h2>The written guides.</h2>
+          <p>The <a href="/docs/">docs</a> explain the map, the two styles, and how to update an existing installation. Public schema files are at <a href="/schema/">Schemas</a>. Source is on <a href="https://github.com/sarada-io/contract-graph" target="_blank" rel="noopener">GitHub<span class="visually-hidden"> (opens in a new tab)</span></a>.</p>
+        </div>
+        <div class="callout"><p>The skills are bundled with the framework. They keep the contract graph correct while they plan, build, review, and finish, using the kit’s tools as they go. The guides explain what those checks cover.</p></div>
+      </div>
+    </section>
+  </main>
+

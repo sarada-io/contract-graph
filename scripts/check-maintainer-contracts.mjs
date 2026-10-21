@@ -21,7 +21,7 @@ export function checkMaintainerContracts(root = repository) {
       else if (item.isFile()) files.push(file);
     }
   }
-  for (const directory of ["src", "scripts", "bin"]) walk(path.resolve(root, directory));
+  for (const directory of ["src", "scripts", "bin", "web/site", "web/scripts", "web/.agent"]) walk(path.resolve(root, directory));
   const contracts = new Set([entry, ...files.filter(file =>
     file.endsWith(path.join(".agent", "contract.md")))]);
   const edges = new Map();
@@ -64,8 +64,9 @@ export function checkMaintainerContracts(root = repository) {
   }
 
   for (const file of files.filter(file => /\.(?:js|mjs)$/.test(file) &&
-    ["src/runtime/", "scripts/", "bin/"].some(prefix =>
-      path.relative(root, file).split(path.sep).join("/").startsWith(prefix)))) {
+    (["src/runtime/", "scripts/", "bin/", "web/scripts/"].some(prefix =>
+      path.relative(root, file).split(path.sep).join("/").startsWith(prefix)) ||
+      (path.relative(root, file).split(path.sep).join("/").startsWith("web/site/") && file.endsWith(".mjs"))))) {
     const pointer = fs.readFileSync(file, "utf8").slice(0, 2048).match(/@see\s+(\S+)/)?.[1];
     if (!pointer || !contracts.has(resolve(file, pointer))) {
       report(file, "missing or unknown @see maintainer contract");

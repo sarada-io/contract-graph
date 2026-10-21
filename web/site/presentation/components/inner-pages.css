@@ -1,0 +1,34 @@
+/* ---------- Inner pages ---------- */
+.page-hero {
+  padding: clamp(2rem, 3vw, 2.5rem) 0 clamp(2rem, 4vw, 3.5rem);
+  background:
+    radial-gradient(44rem 26rem at 88% -18%, var(--glow-teal), transparent 66%),
+    radial-gradient(30rem 22rem at 102% 100%, var(--glow-blue), transparent 72%);
+}
+
+.page-hero ~ section { padding-block: clamp(3.5rem, 7vw, 5rem); }
+.page-hero + section { padding-top: clamp(2rem, 4vw, 3rem); }
+
+.breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-bottom: 2rem;
+  color: var(--text-muted);
+  font-size: 0.86rem;
+}
+
+.breadcrumb a {
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--link-line);
+}
+
+.breadcrumb a:hover { color: var(--ink); border-bottom-color: var(--accent); }
+.breadcrumb span[aria-hidden="true"] { color: var(--teal-soft); }
+
+.page-hero h1 {
+  max-width: 16ch;
+  font-size: clamp(1.85rem, 8vw, 3.8rem);
+  color: var(--ink);
+}
+
