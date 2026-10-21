@@ -457,18 +457,18 @@ test('urun repositoryRoot is this checkout', () => {
 test('root menu contains website actions using the existing build gates', async () => {
   assert.ok(getMenuItems().some(item => item.kind === 'website'));
   const actions = getWebsiteItems();
-  for (const script of ['web:build', 'web:check']) assert.ok(actions.some(item => item.script === script));
+  for (const kind of ['web-build', 'web-check']) assert.ok(actions.some(item => item.kind === kind));
   const calls = [];
   let visits = 0;
   const outcome = await runWebsiteMenu({
     readMenuChoice: async title => {
       assert.equal(title, 'Website');
-      return visits++ === 0 ? actions.findIndex(item => item.script === 'web:build') : actions.length - 1;
+      return visits++ === 0 ? actions.findIndex(item => item.kind === 'web-build') : actions.length - 1;
     },
     invokeRepoCommand: (command, args) => { calls.push([command, args]); return 17; },
     pauseAfterCommand: async (status, destination) => { assert.equal(status, 17); assert.equal(destination, 'Website'); return 'menu'; },
   });
-  assert.deepEqual(calls, [['npm', ['run', 'web:build']]]);
+  assert.deepEqual(calls, [[process.execPath, ['web/scripts/build-site.mjs']]]);
   assert.deepEqual(outcome, { status: 17, exit: false });
 });
 
@@ -490,4 +490,15 @@ test('root launcher parses website commands and rejects malformed ports and unkn
   const result = spawnSync(process.execPath, [path.join(root, 'scripts/urun.mjs'), 'web', 'publish'], { encoding: 'utf8' });
   assert.equal(result.status, 1);
   assert.match(result.stderr, /Usage/);
+});
+
+
+test('website commands dispatch directly to the current Node runtime without a package-manager shell', async () => {
+  const calls = [];
+  const hooks = { invokeRepoCommand: (command, args) => { calls.push([command, args]); return 19; } };
+  for (const kind of ['web-build', 'web-check']) assert.equal(await invokeMenuItem({ kind }, hooks), 19);
+  assert.deepEqual(calls, [
+    [process.execPath, ['web/scripts/build-site.mjs']],
+    [process.execPath, ['web/site/publication.mjs', '--check']],
+  ]);
 });

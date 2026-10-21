@@ -44,9 +44,9 @@ export function getMoreItems() {
 
 export function getWebsiteItems() {
   return [
-    { label: 'Build & Test Website', detail: 'Generate web/public and run the website deployment checks.', script: 'web:build' },
+    { label: 'Build & Test Website', detail: 'Generate web/public and run the website deployment checks.', kind: 'web-build' },
     { label: 'Run Local Website Server', detail: `Build and preview at http://localhost:${DEV_PORT}. Ctrl+C stops the server.`, kind: 'web-serve' },
-    { label: 'Check Website Build', detail: 'Reject stale, missing or extra generated files.', script: 'web:check' },
+    { label: 'Check Website Build', detail: 'Reject stale, missing or extra generated files.', kind: 'web-check' },
     { label: 'Open the Live Website', detail: 'Open contractgraph.dev without publishing.', kind: 'web-live' },
     { label: 'How the Website Deploys', detail: 'Show the merge-to-main publication path.', kind: 'web-deploy' },
     { label: 'Clean Local Cloudflare State', detail: 'Ask before deleting web/.wrangler; preserves source and credentials elsewhere.', kind: 'web-clean' },
@@ -241,6 +241,10 @@ export async function invokeMenuItem(item, hooks = {}) {
       const outcome = await runWebsiteMenu(hooks);
       return outcome.status;
     }
+    case 'web-build':
+      return run(process.execPath, ['web/scripts/build-site.mjs']);
+    case 'web-check':
+      return run(process.execPath, ['web/site/publication.mjs', '--check']);
     case 'web-serve': {
       const start = hooks.startLocalServer ?? (await import('../web/scripts/preview/server.mjs')).startLocalServer;
       return start({ open: isInteractive() });
@@ -421,7 +425,7 @@ export function parseArgs(argv) {
 
 export async function startRepositoryMenu(argv = process.argv.slice(2)) {
   const options = parseArgs(argv);
-  if (options.command === 'build' || options.command === 'check') return invokeRepoCommand('npm', ['run', `web:${options.command}`]);
+  if (options.command === 'build' || options.command === 'check') return invokeMenuItem({ kind: `web-${options.command}` });
   if (options.command === 'serve') {
     const { startLocalServer } = await import('../web/scripts/preview/server.mjs');
     return startLocalServer({ port: options.port, open: isInteractive() });
