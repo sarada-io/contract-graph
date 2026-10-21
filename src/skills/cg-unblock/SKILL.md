@@ -5,20 +5,16 @@ description: Resolve Contract Graph forks through recorded authority and direct 
 
 # CG Unblock
 
-For CLI commands, follow `.agents/cg/contract-graph-agent.md`'s launcher guidance. Use bare `cg` after a global npm install with lifecycle scripts enabled; if Windows PowerShell blocks `cg.ps1`, use the installed `cg.cmd` fallback throughout this skill and its references with the same arguments and required checks. A blocked `cg.ps1` launcher does not authorize changing execution policy or skipping verification.
+Read the shared Lifecycle bootstrap in `.agents/cg/contract-graph-agent.md` once per session. For programme recovery, perform its selection check immediately after this skill and the bootstrap, before following links to the root contract, workflow, catalogs or other references. Reuse unchanged context.
 
-Read [owner communication](references/owner-communication.md) before presenting decisions or results. It owns functional wording, the four-field review and where user-facing reviews live. Technical records below are internal agent work.
+After scope is known, read [owner communication](references/owner-communication.md) before presenting decisions or results. It owns functional wording, the four-field review and where user-facing reviews live. Technical records below are internal agent work.
 
 For sprint work, scope each canonical decision to the programme, sprint ID/name and affected Feature/Bug/Task IDs. One decision spanning items remains one entry linked from those items. Preserve the actual answer, rationale, authority and implementation impact; resolving an item does not approve the whole sprint.
 
+Start with the named question and its affected item or boundary. Apply the shared selection gate if programme scope is unresolved. Recover its actual recorded answer and scope before reading related implementation; do not scan every decision or restart programme discovery. A bare invocation with no identifiable blocker needs one question about what is blocked. Use the shared bootstrap's reading and `unblock` loading policy.
+
 Decide from contracts first. Escalate only when the owner must accept the blast radius. An `E`
 disagreement is not `Blocked by`.
-
-Read `.agents/cg/phases.json` and load the families selected for `unblock`. Shipped defaults
-include `.agents/cg/guidelines/engineering.yaml` on every pass; retained repository phase policy
-controls loading. Consider applicable E practices as advisory context. They create no acceptance
-criteria, required changes, or blockers unless separately adopted through an authorized binding.
-Do not reopen settled decisions merely because an E preference differs.
 
 ## Required outcome
 
@@ -87,7 +83,7 @@ Escalation does not pause unrelated work.
 
 ## D-4 — Assumption ledger
 
-During roadmap planning and phase preparation, enumerate every decision execution will need.
+During roadmap planning and phase preparation, identify decisions needed for the selected increment; add later decisions when their scope becomes concrete rather than surveying every speculative implementation path.
 Resolve choices covered by D-2 and record bounded assumptions in the relevant plan or preparation:
 
 ```markdown

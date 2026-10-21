@@ -1,3 +1,7 @@
+/**
+ * @file Check runtime identity, installed-build mismatch and host admission.
+ * @see ../src/runtime/distribution/.agent/contract.md
+ */
 import { approveFixtureIntent } from "./helpers/intent.mjs";
 import assert from "node:assert/strict";
 import fs from "node:fs";
@@ -6,9 +10,9 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
-import { init } from "../src/scripts/init.js";
-import { runtimeIdentity, installationStatus } from "../src/scripts/runtime.js";
-import { next, permits } from "../src/scripts/next.js";
+import { init } from "../src/runtime/installation/init.js";
+import { runtimeIdentity, installationStatus } from "../src/runtime/distribution/runtime.js";
+import { next, permits } from "../src/runtime/delivery/next.js";
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const CLI = path.join(ROOT, "bin/cg.js");
@@ -42,10 +46,9 @@ test("source and packaged layouts identify the same build; same-version edits ch
   const root = fixture(t), compiled = path.join(root, "package");
   fs.mkdirSync(compiled);
   // Construct the shipped runtime layout directly, independently of a pre-existing build/.
-  for (const [source, target] of [["src/scripts", "script"], ["src/skills", "agent/skills"], ["src/install/hooks", "agent/hooks"], ["src/cg/schema", "agent/cg/schema"], ["src/cg/templates", "agent/cg/templates"], ["src/diagnostics", "agent/diagnostics"]]) {
+  for (const [source, target] of [["src/runtime", "script"], ["src/skills", "agent/skills"], ["src/install/hooks", "agent/hooks"], ["src/cg/schema", "agent/cg/schema"], ["src/cg/templates", "agent/cg/templates"], ["src/diagnostics", "agent/diagnostics"], ["src/install/templates/module", "agent/templates/module"]]) {
     fs.cpSync(path.join(ROOT, source), path.join(compiled, target), { recursive: true });
   }
-  fs.rmSync(path.join(compiled, "script/dev.js"));
   fs.copyFileSync(path.join(ROOT, "package.json"), path.join(compiled, "package.json"));
   const source = runtimeIdentity(), packaged = runtimeIdentity(compiled);
   assert.equal(packaged.buildId, source.buildId);
@@ -54,12 +57,17 @@ test("source and packaged layouts identify the same build; same-version edits ch
   fs.appendFileSync(templateFile, "\n# changed authoring guidance\n");
   assert.notEqual(runtimeIdentity(compiled).buildId, source.buildId, "shared template edits change build identity");
   fs.writeFileSync(templateFile, originalTemplate);
+  const pointerTemplate = path.join(compiled, "agent/templates/module/AGENTS.md");
+  const originalPointer = fs.readFileSync(pointerTemplate, "utf8");
+  fs.appendFileSync(pointerTemplate, "\nChanged module pointer guidance.\n");
+  assert.notEqual(runtimeIdentity(compiled).buildId, source.buildId, "module pointer edits change build identity");
+  fs.writeFileSync(pointerTemplate, originalPointer);
   const expertFile = path.join(compiled, "agent/skills/experts/api-expert/SKILL.md");
   const originalExpert = fs.readFileSync(expertFile, "utf8");
   fs.appendFileSync(expertFile, "\nChanged expert guidance.\n");
   assert.notEqual(runtimeIdentity(compiled).buildId, source.buildId, "expert edits must invalidate installed identity");
   fs.writeFileSync(expertFile, originalExpert);
-  fs.appendFileSync(path.join(compiled, "script/next.js"), "\n// distinct development build\n");
+  fs.appendFileSync(path.join(compiled, "script/delivery/next.js"), "\n// distinct development build\n");
   const changed = runtimeIdentity(compiled);
   assert.equal(changed.version, source.version);
   assert.notEqual(changed.buildId, source.buildId);

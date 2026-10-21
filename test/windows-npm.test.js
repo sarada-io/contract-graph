@@ -1,4 +1,7 @@
-// Repository contract: ../.agent/distribution/contract.md
+/**
+ * @file Check real Windows npm lifecycle and PowerShell launching in disposable prefixes.
+ * @see ../src/runtime/distribution/.agent/contract.md
+ */
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
@@ -6,7 +9,7 @@ import os from "node:os";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
-import { build } from "../src/scripts/build.js";
+import { build } from "../src/runtime/distribution/build.js";
 
 const repo = fileURLToPath(new URL("../", import.meta.url));
 function copySourceTree(from, to) {
@@ -92,7 +95,7 @@ test("packed Windows npm lifecycle supports bare cg in Restricted PowerShell", {
   const recovery = `$ErrorActionPreference='Stop'; Import-Module Microsoft.PowerShell.Security; Set-ExecutionPolicy -Scope Process Restricted -Force; if ((Get-Command cg).CommandType -ne 'ExternalScript') { exit 36 }; & $env:CG_NODE $env:CG_HOOK; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; if ((Get-Command cg).Source -ne $env:CG_EXPECTED_CMD) { exit 37 }; cg --version --json; exit $LASTEXITCODE`;
   run(shells[0],["-NoProfile","-ExecutionPolicy","Bypass","-Command",recovery],{env:{...env,
     npm_config_global:"true",npm_config_prefix:prefix,CG_NODE:process.execPath,
-    CG_HOOK:path.join(prefix,"node_modules/contract-graph/script/windows-launcher.js"),CG_EXPECTED_CMD:path.join(prefix,"cg.cmd")}});
+    CG_HOOK:path.join(prefix,"node_modules/contract-graph/script/distribution/windows-launcher.js"),CG_EXPECTED_CMD:path.join(prefix,"cg.cmd")}});
   assert.equal(fs.existsSync(ps1),false);
   install();
   assert.equal(fs.existsSync(ps1),false);

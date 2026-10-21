@@ -31,7 +31,7 @@ For each task, an agent starts at the repository contract and follows only the r
 
 ## Supported languages and frameworks
 
-- **Direct source inspection (0.7.0):** C# (.NET), Dart (Flutter), Go, Java, JavaScript, Kotlin, Python and TypeScript.
+- **Direct source inspection:** C# (.NET), Dart (Flutter), Go, Java, JavaScript, Kotlin, Python and TypeScript.
 - **Other languages (e.g. C++, Rust and Swift):** use the same contract graph and lifecycle, with source facts supplied by agents, owners or repository-specific tools.
 
 Inspection proposes facts for review; it does not prove implementation or framework behaviour. See [contract verification limits](https://contractgraph.dev/docs/contracts/#enforced).
@@ -58,6 +58,8 @@ Improve the dashboard layout and interactions. Launch it and iterate with me.
 
 Review the preview and give feedback in the same conversation. When the experience is right, explicitly approve it and ask the agent to complete it with `/cg-sign-off`. See the
 [prototype guide](https://contractgraph.dev/docs/prototype/) for the full workflow.
+
+For a concrete bounded correction, ask `/cg-produce` to make and verify it directly. The agent defaults to reviewing the result together, while preserving existing programme gates and any required human acceptance.
 
 ### Plan to Delivery Mode
 

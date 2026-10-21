@@ -1,14 +1,18 @@
 # Upgrade
 
-On Windows, global installation with lifecycle scripts enabled corrects the package-owned PowerShell wrapper so the commands below use bare `cg`. If npm prohibits install hooks or PowerShell still blocks `cg.ps1`, use `cg.cmd` with the same arguments. See [Windows PowerShell setup](../README.md#windows-powershell).
+`cg init` handles both first installation and upgrades. **0.8.0 is the oldest supported
+upgrade source; 1.0.0 is the baseline.** Both can upgrade directly to 1.1.0 with the same
+command. An intermediate installation of 1.0.0 is unnecessary. Both releases already
+use the shared principles schema, so their standard catalogs need no format conversion.
 
-Install or refresh Contract Graph Dev Kit through the `contract-graph` package and `cg init`. The product name does not change package names, commands or repository paths.
+## Upgrade to 1.1.0
 
-## Upgrade to 1.0.0
+Install the intended 1.1.0 CLI first. Once published, use `npm install --global contract-graph@1.1.0`;
+for an unpublished release, install its independently packed tarball. Repository initialization
+does not fetch packages or change the global CLI.
 
-Install the intended 1.0.0 CLI first. Once published, use `npm install --global contract-graph@1.0.0`; for an unpublished release, install its independently packed tarball. The repository upgrade does not fetch a package or change the global CLI.
-
-Stop active coding agents and finish or checkpoint their work before upgrading. Completing every open plan is not required: existing roadmaps, prepared queues, decisions and delivery receipts are preserved. Old auto-run sessions are not automatically converted; reload skills, confirm intent through warmup if needed, and reconcile repository-owned workflow and phase policy before resuming the recorded scope with the new skills.
+Stop active coding agents and finish or checkpoint their work. Open plans need not be completed:
+roadmaps, queues, decisions and delivery receipts are preserved.
 
 ```bash
 cd <your-repository>
@@ -17,111 +21,105 @@ cg init --check
 cg init --yes
 ```
 
-`--check` previews without writes and exits 1 when changes are needed. Omit `--yes` for interactive confirmation. Saved docs roots and profiles are reused; older installations without saved choices can supply `--docs` and `--profile`. `cg init` is the sole entry point for both first adoption and upgrades; no separate upgrade command or script is needed.
+`--check` previews without writes and exits 1 when changes are needed. Omit `--yes` for
+interactive confirmation. Saved docs roots and profiles are reused; supply `--docs` and
+`--profile` if those choices were not recorded. Successful init runs sync and verification.
+Review the diff, reload your agent's skills, then run `/cg-warmup` to reconcile retained policy
+and confirm intent where needed before continuing work.
 
-The upgrade reuses init: current lifecycle skills and the four experts go into `.agents/skills/`, shared attribution goes alongside them, selected editor discovery wrappers and hooks are refreshed, and repository-owned context is preserved. Known framework-owned `cg-prepare` and `cg-auto-run` files and obsolete sign-off references are backed up under `.agents/cg/backups/retired-0.7.0/` before removal. Custom files and unknown legacy artifacts are not recursively deleted. Older principle schemas use the migration described below; missing product rationale requires owner input and leaves the upgrade incomplete. Successful migration runs sync and verification. Review the diff before resuming work.
+On Windows, use `cg.cmd` with the same arguments if PowerShell blocks `cg.ps1`.
+See [Windows setup](../README.md#windows-powershell).
 
-## What changes from 0.8.0
+## What init updates
+
+| File | Upgrade behavior |
+| --- | --- |
+| Skills, hooks, schemas, selected editor discovery | Refresh from the installed release |
+| `architecture.yaml`, `engineering.yaml` | Back up changed files, then install release defaults |
+| Current `product.yaml` | Validate and preserve byte-for-byte, including authored rules and comments |
+| Contracts, enforcement, project context and intent records | Preserve repository content |
+| Workflow, phase policy, docs, plans and delivery records | Preserve repository choices and history |
+| Shared agent entry and root discovery | Refresh the generated CG BOOTSTRAP block; reconcile exact legacy framework reading orders; preserve customised guidance |
+
+Init reports retained workflow and phase-policy differences without rewriting them. Notices
+alone do not make `--check` fail. Review deliberate stage restrictions and always-E or missing-E
+choices during warmup; a clean scaffold check does not prove that repository policy is reconciled.
+To adopt conditional engineering loading, deliberately change lifecycle rows in
+`.agents/cg/phases.json` to `always: ["A", "P"]`, `conditional: ["E"]` and align the workflow.
+Engineering remains advisory.
+
+Changed catalogs are backed up under `.agents/cg/backups/init/<content-hash>/`. Unchanged runs
+do not add backups. Review previous A/E amendments before reapplying them; init installs release
+defaults rather than merging local preferences. Catalog application attempts rollback on failure;
+the whole init/sync/verify sequence is not one filesystem transaction.
+
+Known obsolete framework files are retired with backups under the historical
+`.agents/cg/backups/retired-0.7.0/` path. Custom files are preserved. The removed
+`cg-plan/references/prepared-plan.md` requires a matching, non-adopted prior manifest hash:
+modified or unowned copies stay in place with a notice. Superseded warmup/produce contract
+templates and per-expert notices require prior ownership evidence. No backup purge occurs.
+
+The four supplied expert skills refresh on re-init; `.agents/cg/experts.md` is preserved.
+An existing default expert path without framework ownership blocks writes. Retain custom experts
+under distinct names and update the index before retrying. See [experts](experts.md).
+
+Use the intended CLI for init and subsequent work: `cg --version --json` reports its path and
+content identity, and init records that identity. Reloading agents is still necessary; identity
+matching cannot prove that a running agent reread its skills. Repository upgrades do not update CI pins.
+
+## What changes from 1.0.0
+
+- **Shorter task procedures:** warmup loads intent, adoption or reseed instructions as needed. Concrete bounded corrections can proceed through produce without creating a separate plan, queue or receipt. Existing programme gates and required acceptance still apply.
+- **Local programme selection:** status and next support explicit session/worktree selection and an all-programme summary. Selection does not resume suspended work or grant execution authority. See [programme selection](workflow.md#bounded-corrections-and-programme-selection).
+- **Focused discovery:** optional route suggestions and bounded context hydration extend exact routing; advisory queries select E entries or categories. Existing exact-route APIs remain available. See [contracts](contracts.md).
+- **Dart dependency diagnostic:** `cg contract dependencies --ecosystem dart` compares local package manifest declarations with contract relationships. It is opt-in and does not execute Dart or prove source-import confinement. See [dependency comparison](contracts.md#compare-dart-package-dependencies-with-the-graph).
+- **Receipt storage:** older receipts remain readable; successful close compacts legacy storage losslessly. Optional v3 delta compression requires compatible readers and can be converted back to v2. See [receipt storage](workflow.md#bounded-corrections-and-programme-selection).
+
+Init and sync refresh the shared agent entry’s marked CG BOOTSTRAP block, including when an older entry has only the generated principles index. They also replace recognised, complete legacy framework reading orders in root discovery and the shared entry with pointers to the current shared procedure. Changed or extended reading orders remain repository-owned; a familiar heading alone does not authorise replacement. Surrounding custom guidance, workflow and phase policy remain preserved. Use `cg sync --check` to preview generated-entry changes and reload the agent host after applying the upgrade.
+
+Fresh installations load relevant engineering advice conditionally. Existing workflow and phase policy remain preserved, including always-E choices; reconcile them deliberately rather than assuming init changed them. Init retires the exact obsolete prepared-plan reference only with matching prior ownership/hash evidence and a recoverable backup. Modified or unowned copies remain with a notice.
+
+V3 is not enabled automatically for new receipts. Before opting in with `cg delivery compact --programme <slug> --format delta`, coordinate all readers: 1.0.0 cannot read v3. Before reverting to an older CLI, use 1.1.0 to convert affected Closed receipts with `--format v2`; active receipts must complete their normal lifecycle before explicit compaction. Do not edit storage envelopes manually or close work solely to downgrade it.
+
+## What changed from 0.8.0 to 1.0.0
 
 - **Windows PowerShell installation:** global npm installation with lifecycle scripts enabled removes only the verified package-owned `cg.ps1`, allowing bare `cg` to use the existing batch launcher. macOS and Linux installations are unchanged. Script-disabled or unfamiliar-wrapper environments retain the `cg.cmd` fallback; no execution-policy change is required. See [Windows setup](../README.md#windows-powershell).
 - **Chat file links:** refreshed agent guidance uses host-supported local file paths and line numbers for links in chat. Repository Markdown retains portable relative paths and heading anchors.
 
 The 1.0.0 baseline retains the contract formats, CLI commands and lifecycle introduced in earlier releases. Refresh installed skills with `cg init` and reload your agent host. Existing repository-owned context, workflow and phase policy remain preserved.
 
-## Changes introduced after 0.7.0
+## Shared delivery records and sign-off
 
-- **Assessment before adoption:** `cg analyse` prepares a read-only assessment prompt with bundled guidance and an optional portable personal skill. It does not install contracts or produce a report by itself. See [assessment and adoption follow-up](analyse.md).
-- **Responsibility review:** the refreshed skills compare relevant implementations for overlapping ownership and missing boundaries during adoption, planning and sign-off. This is an evidence-based agent review, not a new automatic detector of duplicate code.
-- **Clearer owner decisions:** unanswered questions stay in the central human decision log, using Context/background, Options, Recommendation and Why. Compact agent evidence lives separately in `.agents/cg/decisions/`. Answered questions and obsolete evidence are removed after their necessary meaning and authority have been preserved. See [decision records](workflow.md).
-- **Documentation audiences:** technical procedures belong in guides; product-user instructions belong in manuals. Existing documents are not automatically moved or overwritten.
+Delivery records live in `.agents/cg/deliveries/`. Existing `.agents/cg/prototypes/` records
+remain readable and writable in place, and `cg prototype` remains an alias. Init does not move
+or delete these records. Duplicate programme records across both directories are rejected.
+There is no automatic conversion of old queues or auto-run sessions; reconcile retained workflow
+before resuming their recorded scope. See [delivery workflow](workflow.md).
 
-Init preserves existing decision logs, workflow and documentation templates. During warmup, reconcile those retained files with the refreshed instructions. Preserve pending questions and actual approvals when separating an older combined log; the harvest reader still accepts legacy Markdown during migration. Do not replace it with an empty starter or treat installation as proof that reconciliation is complete. Reload the host's skills before continuing work.
+1.0.0 and 1.1.0 both read logical v1 and interned v2 receipts. Only 1.1.0 reads optional v3
+deltas; default writes remain compatible. Convert Closed receipts back to v2 with the newer
+runtime before rolling readers back. Status/next expose `receipt`; sign-off uses
+`delivery-completion` and `handoffReady`. A Closed receipt can have a null next action when
+no cleanup remains.
 
-The changes below describe capabilities retained from 0.7.0 and the migration path for older installations. Historical backup directory names remain unchanged.
+## Legacy content recovery
 
-## Source-assisted contract inspection
+A repository may retain older content even after its CLI was updated. Compatibility recovery
+is based on those files, not the recorded package version; this does not extend the supported
+release range below 0.8.0. Known historical contract/enforcement schema URLs are updated without
+changing authored content, graph edges or commands. Unknown formats block conversion.
 
-The 0.7.0 CLI includes `cg contract inspect` for JavaScript/TypeScript ESM, Java, Kotlin, Python, Go, .NET/C# and Dart/Flutter. It produces read-only evidence and proposed field values; it does not migrate or overwrite authored contracts. There is no contract-schema change or new adoption command. Re-run `cg init` through the existing preview/confirmation flow to refresh the authoring skills, then follow the [inspection guide](contracts.md#inspect-implementation-facts-before-authoring). Reports separate unknowns, language visibility and implementation imports from architectural promises. The packaged parsers require no adopter toolchains; unsupported syntax stays explicit.
+For legacy product rules missing rationale, init preserves `product.yaml`, refreshes installed
+files and returns exit code 1 with a `/cg-warmup` handoff. Sync and verification wait until the
+owner confirms the missing reasons. Warmup prepares that input and finishes init; it must not
+invent placeholder policy. Prepared input can also be supplied with
+`cg init --yes --reasons reasons.json`. Invalid catalogs or supplied reasons block writes.
+An empty legacy product catalog needs no rationale; omit the reasons file once migration succeeds.
 
-## Intent approval and sprint delivery
-
-Project intent lives in preserved `.agents/cg/project-context.md` alongside the root contract. After init, use `/cg-warmup` to draft context from repository documentation and confirm it with the owner. Fresh installations receive a draft rather than approval and are not delivery-ready merely because `cg verify` passes. Init preserves existing project context and `.agents/cg/intent.json`; changed context or binding sources require renewed review. See [intent approval](intent.md).
-
-New plans use the sprint delivery path described in [workflow](workflow.md). Existing unmarked roadmaps, prepared queues and delivery records retain their formats and history. Re-init preserves `.agents/cg/workflow.md` and phase policy: review any deliberate stage restrictions before adopting automatic sprint completion. Do not discard existing policy or rename an in-flight roadmap to bypass it. The executable and refreshed skills must still have matching build identity.
-
-## Update an existing repository with cg init
-
-Install the intended CLI build, then run init in your adopting repository. For an unpublished
-1.0.0 build, run `npm run pack` in the Contract Graph checkout, then
-`npm install --global ./dist/tar/contract-graph-1.0.0.tgz`.
-
-```bash
-cd <your-repository>
-cg --version --json
-cg init --check --docs docs
-cg init --yes --docs docs
-cg verify
-```
-
-Keep your existing docs root and profiles. `--check` previews without writing and returns 1
-when an update is needed. Without `--yes`, init asks before replacing existing files.
-
-Init now performs the upgrade itself:
-
-| File | Upgrade behavior |
-| --- | --- |
-| Skills, hooks, schemas | Refresh from the installed release |
-| `architecture.yaml`, `engineering.yaml` | Back up the previous files, then install release defaults |
-| `product.yaml` | Convert legacy format, retaining IDs, statements, groups, and comments |
-| Contracts and enforcement | Preserve content; update only known legacy schema URL declarations |
-| Workflow, phase policy, docs | Preserve repository choices |
-
-Init preview reports concrete retained phase-policy differences: the retired `prepare` entry,
-an absent optional phase entry, and phases that load engineering guidance conditionally or omit
-it. The same notices appear during apply, including when no installed file needs changing.
-They do not overwrite policy or turn engineering advice into a binding. `--check` still reports
-file updates through its exit code; notices alone do not make it fail. Review retained workflow
-and phase choices during warmup before dependent execution. A matching package version and a
-clean scaffold check do not establish that repository-owned workflow has been reconciled.
-
-Backups for updated catalogs and schema declarations are stored under
-`.agents/cg/backups/init/<content-hash>/`. Repeated unchanged init runs do not add backups.
-Review backed-up A/E amendments before reapplying them; init refreshes those catalogs rather
-than merging local preferences into the release. Catalog changes are staged together with
-rollback on an apply failure. Init as a whole is not a filesystem-wide transaction; a later
-sync or verification failure is reported for correction.
-
-For the usual interactive upgrade, run `cg init`, reload editor skills, then invoke
-`/cg-warmup` in your coding agent. Keep the saved docs root and profiles.
-
-Legacy product rules may lack the `reason` required by the new schema. Init updates installed
-files but leaves that product catalog byte-identical. It names the missing IDs and directs you
-to `/cg-warmup`. Sync and verification are deferred, and init returns exit code 1 to signal an
-incomplete upgrade. Repeating init retains the same handoff until the reasons are resolved.
-
-Warmup examines existing rules, contracts, implementation, and recorded decisions, proposes
-rationale for your confirmation, then prepares the migration input itself and finishes init,
-sync, and verification. You do not need to write JSON. It continues into adoption or reseed
-after the upgrade. Missing rationale is never replaced with invented placeholder policy.
-
-For automation or already-prepared rationale, `cg init --yes --reasons reasons.json` remains
-available. Malformed catalogs and invalid supplied reasons still block writes.
-
-An empty legacy product catalog needs no rationale input. Already-current valid product catalogs
-remain byte-identical; omit the reasons file on later runs. Unknown fields or schema identities
-block conversion rather than dropping content. The older
-`https://sarada.io/contract-graph/schema/` catalog identities are recognized, and known v1
-contract/enforcement `$schema` values are updated to the canonical host without reformatting
-the rest of those files. Init never rewrites rule IDs, graph edges, or verification commands.
-
-After verification, review the Git diff and reload the editor's skills. The new skills do not
-automatically replace your repository-owned workflow; see the workflow retirement section below.
-
-## Shared principles format
-
-Architecture, engineering, and product now use
-`https://contractgraph.dev/schema/principles-v1.schema.json`. This is a new catalog format,
-not just a URL replacement. Contract and enforcement keep their existing v1 formats and IDs.
+This is only needed when a repository retains older catalog content. Fresh 0.8.0 and
+1.0.0 installations already use
+`https://contractgraph.dev/schema/principles-v1.schema.json`. Converting an older catalog changes its format,
+not just its schema URL. Contract and enforcement keep their existing v1 formats and IDs.
 
 | Catalog | Fixed family / binding | Conversion |
 |---|---|---|
@@ -188,14 +186,14 @@ or enforcement schema identities still need explicit correction.
 
 After reviewing the migration and successful verification, retain backups outside the catalog
 directories or remove them deliberately. No contract or enforcement rewrite is required by this
-migration. Engineering remains advisory, read on every lifecycle pass by default; adopters can retire
+migration. Engineering remains advisory, loaded when relevant by default; adopters can retire
 all its entries while retaining a valid empty catalog. The package still requires a populated E
 starter catalog. Publishing the release also requires serving the new principles schema at its
 canonical URL; generating a package alone does not publish that URL.
 
 To adopt the new loading default in an existing installation, deliberately amend each lifecycle
-row in `.agents/cg/phases.json` to `always: ["A", "P", "E"]` and `conditional: []`, then align
-the preserved workflow instructions to read E on every pass. `cg init` and catalog migration
+row in `.agents/cg/phases.json` to `always: ["A", "P"]` and `conditional: ["E"]`, then align
+the preserved workflow instructions to load relevant E conditionally. `cg init` and catalog migration
 preserve both files; upgraded skills respect that retained loading policy. This changes context
 loading only, not contract rules or enforcement mappings. Empty adopter E remains valid.
 
@@ -203,31 +201,3 @@ Init may leave the three legacy `architecture.schema.json`, `engineering.schema.
 `product.schema.json` files in an older installation. Converted catalogs use only
 `principles.schema.json`; the legacy files can be removed after migration. Contract and
 enforcement schemas remain in use.
-
-## Older installations and recovery
-
-Use the same `cg init` entry point for 0.6.0 and earlier installations. Keep the saved docs root and profiles; older installations without saved settings must supply them explicitly. Init refreshes framework files and retains repository context, with legacy principle conversion as described above. Unknown formats and missing product rationale remain explicit migration failures, not permission to discard content.
-
-After refreshing, reload editor skills and use warmup to confirm intent and inspect mapping gaps. Unmapped boundaries need adoption; an already mapped graph needs an additive reseed only where current evidence calls for it. Reseed preserves authored purpose, exclusions and P IDs; it does not move application code or prove complete implementation correspondence. An unchanged reseed should write nothing.
-
-`cg --version --json` reports the CLI path and content identity; init records that identity. Status and lifecycle admission detect an installation mismatch. Use the intended CLI for both init and subsequent work. Identity matching cannot prove that an already-running agent reread its skills, so stop active agents before upgrading and reload afterward.
-
-## Workflow retirement in 0.7.0
-
-This release removes cg-prepare and cg-auto-run. Planning now includes technical readiness; production owns incremental preparation, implementation and the dependency-aware continuation loop. Sign-off completes deferred tests/docs and verification, returning implementation defects to produce. Produce asks for batch or per-item review and reports item-level Code/Test/Docs progress.
-
-There is no legacy execution adapter or automatic conversion of old queues and auto-run ledgers. Init retires known framework-owned skill files and discovery wrappers with recoverable backups and removes their root skill-catalog entries. Repository-owned plans, evidence, workflow and phase policy remain intact. Reconcile retained policy with the new skill responsibilities before using it for delivery; extra files added inside a retired skill directory are preserved. Retained historical preparation-family policy is inactive and does not restore the retired stage.
-
-### Shared delivery records and sign-off
-
-Both planned production and exploratory work now end at `cg delivery handoff` and use one sign-off procedure. New metadata is `.agents/cg/deliveries/<programme>.json`. Existing `.agents/cg/prototypes/` records remain readable and writable in place; init neither moves nor deletes them. Do not copy a programme record into both directories: duplicates are rejected rather than choosing one history. `cg prototype` remains an alias to the same commands. Status/next JSON now exposes `receipt`; sign-off entry is `delivery-completion` with `handoffReady` distinguishing accepted handoffs from early assessment.
-
-Re-init backs up manifest-owned prototype-completion, sprint-completion and phase-sign-off references before retiring them. Custom reference files, delivery evidence, plans and repository-owned workflow policy remain preserved. Reconcile any retained policy that names separate sign-off procedures; a narrow phase request still limits scope but does not require a different completion loop.
-
-## Expert skills
-
-Init now supplies `api-expert`, `mobile-expert`, `web-expert` and `ui-design-expert` alongside the six lifecycle skills. It creates `.agents/cg/experts.md` only when absent. Keep project constraints and selections there, or add a distinctly named `<name>-expert` skill; shipped default files are refreshed on re-init. Custom files not shipped by the release are preserved. Run sync for selected host discovery. Experts do not require lifecycle phase or root catalog changes. See [adding experts](experts.md).
-
-If a supplied expert path already exists without framework ownership in the installation manifest, init stops before modifying repository files. Retain that expert under a distinct project name and update the index before retrying; it is never silently replaced by the new default.
-
-The shared contract authoring template installs at `.agents/cg/templates/contract.template.yaml`. Init backs up and removes the three superseded warmup/produce template files only when the prior manifest establishes ownership; unowned templates and authored contracts remain intact.

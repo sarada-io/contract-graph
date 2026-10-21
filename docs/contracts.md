@@ -72,6 +72,29 @@ Contract YAML uses a deliberately restricted YAML 1.2 profile. Duplicate keys, a
 explicit tags, merge keys, multiple documents, non-string keys, and non-JSON scalar values are
 rejected. The package includes the parser; repositories do not supply executable loaders or tags.
 
+## Compare Dart package dependencies with the graph
+
+Run the opt-in pilot with:
+
+```bash
+cg contract dependencies --ecosystem dart
+cg contract dependencies --ecosystem dart --json
+```
+
+It reads `pubspec.yaml` declarations and the validated contract graph without running Dart, resolving packages or changing files. The report maps each package root to its nearest enclosing contract unit. Multiple packages can belong to one contract; a contract below a package root does not own the whole package. Review those reported mappings before relying on the comparison.
+
+For a resolved local package dependency crossing two owners, this pilot requires a direct `relations.dependencies` edge from the consuming owner to the providing owner. A reverse edge is reported separately. Composition and transitive reachability do not substitute for the direct dependency. A dependency between packages sharing one owner is reported as internal. Runtime `dependencies` and `dev_dependencies` retain distinct provenance and both participate in the comparison. Relationships between mapped owners without package evidence are reported as graph-only: they may describe other architectural coupling and do not automatically constitute errors.
+
+For example, a client package depending on a catalogue package needs client-owner → catalogue-owner. The command reports a missing or reversed edge with both manifests/owners, so the maintainer can inspect the intended architecture and correct the appropriate declaration. It never adds a relationship automatically.
+
+The supported subset includes explicit relative workspace members, nested workspaces, workspace-local package names and repository-contained relative path dependencies. The workspace root participates in resolution. Workspace dependencies can resolve to local members regardless of their declared source; relative path dependencies outside a workspace resolve from the declaring manifest's directory. These follow the documented [Dart workspace](https://dart.dev/tools/pub/workspaces) and [package dependency](https://dart.dev/tools/pub/dependencies) rules. The pilot does not solve SDK or version constraints, so aligned declarations do not establish that Pub can resolve the project.
+
+Workspace globs, effective overrides and `pubspec_overrides.yaml`, absolute/outside paths, symlinked targets and unsupported descriptor/YAML forms produce explicit incomplete coverage. The bundled YAML subset disallows aliases, anchors and merge keys. Overrides can change resolution across an entire workspace; the pilot keeps that affected group unresolved rather than guessing its effective targets. Missing targets, duplicate names within a resolution group, invalid member declarations and package-name mismatches are diagnosed. Hosted, Git and SDK dependencies outside the local workspace are recorded as external, without network access or inferred graph edges.
+
+JSON contains mappings, local/internal/external edges, graph-only relationships, findings, diagnostics and input fingerprints. The inventory visits at most 10,000 entries to depth 64, reads files up to 1 MiB and at most 32 MiB total, and reports excluded generated/dependency/hidden directories. Explicit paths into excluded inventory remain unresolved. Directory and absence fingerprints help detect new manifests, owners or override files; the existing `inspectionSnapshotChanges` API checks saved evidence. Analysis limits or changed inputs prevent a clean result. The graph itself is validated through the existing graph loader.
+
+Exit 0 means `aligned` within the reported manifest-declaration coverage. Exit 1 covers `mismatch`, `incomplete` and `invalid`; inspect the state and diagnostics. No discovered Dart manifest is an incomplete result. Ordinary `cg verify` remains the declaration/scaffold check. Source imports, exported symbols, transitive dependency resolution, product correctness and execution of contract-declared verification commands are outside this pilot. Additional ecosystems require their own fixtures and coverage definition.
+
 ## The recursive model
 
 The composition spine is:
@@ -273,7 +296,7 @@ There are three authored principle catalogs, one shared schema
   `contract.yaml` points at. `graph.adapters` is the vendor and consumer-adapter split of that
   encapsulation. The protocol fields are not `A` detectors and do not scan imports;
 - `src/cg/guidelines/engineering.yaml` — `family: engineering`, `binding: advisory`. The shipped
-  `E` advisory catalog; read on every lifecycle pass by default and applied when relevant, with no compliance gate; and
+  `E` advisory catalog; loaded when relevant by default and applied when relevant, with no compliance gate; and
 - `product.yaml` — `family: product`, `binding: scoped`. Repository-owned `P` bindings specific
   to the adopting product, initially empty.
 
@@ -385,3 +408,25 @@ Contracts are written from the code and architectural intent one boundary at a t
 many files from a shared prose template creates syntactically valid but useless context. Templates
 provide field shape only. The author must supply distinct purpose, ownership, surface, invariants,
 and edges for each unit, then run `cg verify` before moving on.
+
+Contracts retain observable behaviour, ordering/formulas callers rely on, privacy/trust boundaries, concurrency guarantees and failure semantics. Internal algorithms may live in source, tests or domain specifications only when no caller-visible promise is lost. Give child-owned guarantees one primary owner and retain parent integration promises and discoverable references; preserve invariant IDs and reciprocal verification links when moving them. Length alone is not a reason to split or reject a contract.
+
+A long game-engine contract may legitimately retain the dealer/round/direction formula because players and callers depend on that ordering. By contrast, a parent that repeats a child’s parsing guarantees should link to that child and retain only its integration obligation, such as how parse failure reaches callers. Moving the guarantee must preserve its invariant identity, reciprocal verification references and discoverability. Neither case is decided by counting lines.
+
+For ordinary wording, `cg contract route --task "…" --suggest` keeps exact matches first and otherwise reports deterministic lexical candidates. It normalises case, punctuation and simple plurals, ignores common task verbs, and requires at least two shared words and 50% overlap. It does not infer synonyms: a paraphrase such as “repair jitter when cards move” can still require browsing from the root. Ties remain visible and no candidate grants ownership or execution authority. The original route API and CLI output remain unchanged without these options.
+
+Add `--hydrate` for deduplicated candidate context, ancestor responsibilities/forbids, relation pointers and resolved A/P definitions with provenance. `--limit 1` through `20` bounds candidates (default 3); related lists and ancestors are capped at 20, rules at 100 per context, and individual context values at 2,048 characters. Omissions and retrieval commands are explicit. Full descendant context requires a separate selected-ID query. These optional reports use structured JSON even without `--json`.
+
+`cg guidelines show --id E01-01,E02` selects advisory entries or groups; `--category "Structural Best Practices"` selects a category. Combining filters takes their intersection. Unknown IDs/categories fail. This reads the existing engineering catalogue and neither changes family authority nor overrides an adopter's loading policy.
+
+When exact routing finds nothing, retry `cg contract route --task "…" --suggest`.
+If candidates are absent or ambiguous, inspect `cg contract show`, browse
+`cg contract children --id <id>` one boundary at a time and select
+`cg contract context --id <id>`. Lexical search cannot establish semantic ownership.
+
+Add `--compact` to hydrated routing for the opt-in `compact-v1` representation.
+`contexts` reference shared `nodes` by contract path; node responsibilities contain
+forbids once, and shared rules retain their source. Pretty-printed JSON is bounded
+to 64 KiB including its trailing newline. Omitted contexts/candidates/metadata are
+counted and have retrieval guidance; follow those queries for required evidence.
+The expanded default and exact route API remain available.

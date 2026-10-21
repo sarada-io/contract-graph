@@ -5,42 +5,32 @@ description: Build a working prototype and refine it through manual human feedba
 
 # CG Prototype
 
-For CLI commands, follow `.agents/cg/contract-graph-agent.md`'s launcher guidance. Use bare `cg` after a global npm install with lifecycle scripts enabled; if Windows PowerShell blocks `cg.ps1`, use the installed `cg.cmd` fallback throughout this skill and its references with the same arguments and required checks. A blocked `cg.ps1` launcher does not authorize changing execution policy or skipping verification.
+Read the shared Lifecycle bootstrap in `.agents/cg/contract-graph-agent.md` once per session. For programme recovery, perform its selection check immediately after this skill and the bootstrap, before following links to the root contract, workflow, catalogs or other references. Reuse unchanged context.
 
-For chat, decision reviews and results, read [owner communication](../cg-unblock/references/owner-communication.md). Explain outcomes and choices for functional leaders; keep framework commands and approval mechanics in internal evidence.
+After scope is known, for chat, decision reviews and results, read [owner communication](../cg-unblock/references/owner-communication.md). Explain outcomes and choices for functional leaders; keep framework commands and approval mechanics in internal evidence.
 
-Run `cg intent verify` before dependent delivery. Missing or stale intent routes to cg-warmup; independent inspection and clarification remain available. Preserve repository-owned workflow restrictions and never fabricate owner approval.
+Apply the shared selection gate before loading repository contracts, policy catalogs, plan/receipt history or implementation. Run `cg intent verify` before dependent delivery once scope is known. Missing or stale intent routes to cg-warmup; independent inspection and clarification remain available. Preserve repository-owned workflow restrictions and never fabricate owner approval.
 
 Reach a usable preview early. Iterate with the user until the intended result is accepted, then
 hand the actual implementation and remaining delivery work to the standard lifecycle. Prototype
 approval is not final sign-off. Do not invent human acceptance or silently begin delivery.
 
-Read `.agents/cg/phases.json` and load the families selected for `prototype`. Shipped defaults
-include `.agents/cg/guidelines/engineering.yaml` on every pass; retained repository phase policy
-controls loading. Consider applicable E practices as advisory context. They create no acceptance
-criteria, required changes, or blockers unless separately adopted through an authorized binding.
-Do not reopen settled decisions merely because an E preference differs.
+Use the shared bootstrap's loading policy for `prototype`; retained phase policy controls loading and E remains advisory.
 
 ## 1. Route, start, launch — once per session
 
-Read the root contract and `.agents/cg/workflow.md`. Route through contract-owned routes to the
-smallest responsible boundary before reading implementation. Apply `hierarchy.kinds` and `graph`
-from `.agents/cg/principles/architecture.yaml`; resolve applicable P rules and product intent.
-Apply relevant E guidance to a remaining choice. Keep structural bindings and detectors.
+First recover the requested experience and intended checkout. A bare `/cg-prototype` resumes the clearly selected prototype and opens its preview; do not ask whether to launch. Run `cg status` once, or `cg status --programme <slug>` for an explicit target. If selection is required, stop and ask which listed experience to open; do not inspect candidates or Git history to choose. If no outcome exists, ask what experience to explore. Once selected, read only its roadmap's checkpoint, scope and launch instructions; read a scoped receipt only for a missing state/evidence field. Do not offer acceptance before showing the experience.
 
-Resolve `<docs>` from `.agents/cg/profile.json`, select one programme, and inspect `cg delivery
-status` and `cg next`. Start with `cg delivery start --programme <slug>` or recover its existing
-record and roadmap. Use a Git worktree containing the intended starting changes; preserve unrelated
-work. The command creates the starter roadmap, not a branch or commit.
+Resolve `<docs>` from `.agents/cg/profile.json` after selection. Reuse the status result rather than requesting delivery history. Before state-changing delivery or implementation, check `cg next --for cg-prototype --programme <slug>`; preview-only recovery does not need a second admission query merely to reopen the existing app. Start a new record only for a new selected outcome with `cg delivery start --programme <slug>`; preserve an existing record and roadmap. Use the intended checkout with its starting changes and preserve unrelated work. Start creates the starter roadmap, not a branch or commit.
 
-Read [session setup](references/session-setup.md) once to declare writes and resolve any older
-installation conflict. Load [concurrent work](references/concurrent-work.md) only when another
-writer or shared resource needs coordination. Revisit setup when scope, ownership, or policy
-changes; do not reload it for ordinary feedback turns.
+For preview-only recovery, use the recorded launch instructions; do not load architecture/product catalogs or application source solely to serve an existing build unless retained policy requires it. Check the recorded endpoint and process/build location together where possible. If the correct preview responds, present it immediately. Otherwise start it using the recorded command, check readiness once and present it. Poll again only if still starting or failed, not after readiness is established. State build freshness uncertainty rather than infer source/build equivalence from timestamps. Before launch repair or feedback edits, load the root contract, product intent, retained workflow and required families, descend to the owning boundary and apply architecture `graph` and applicable P rules.
+
+Read [session setup](references/session-setup.md) once when declaring writes or resolving an older installation conflict. Opening an existing preview alone needs no speculative write declaration. Load [concurrent work](references/concurrent-work.md) only when another writer or shared resource needs coordination. Revisit setup when scope, ownership, or policy changes; do not reload it for ordinary feedback turns.
 
 Use the existing application launch path. Do not prepare Steps, enumerate all future files, run
 application test suites, or finish the roadmap before showing a preview. Fix launch problems
 inside scope; report the exact access or environment prerequisite if the preview cannot run.
+Present the working URL or host preview and the next feedback action. If launch or browser access is unavailable, state what was actually checked and the missing prerequisite; source inspection alone does not establish that the interface works or looks correct. Do not replace the preview with a source-file inventory or a generic continue/accept menu.
 
 For useful, permitted delegation, read the shared [coordinator and specialists](../cg-produce/references/coordination.md) procedure. The coordinator owns feedback, accepted choices, preview integration and review; bounded specialists follow prototype timing and return evidence. Keep small iterations direct when coordination would delay the preview. Delegation does not introduce production Steps, application test automation or a second owner conversation.
 

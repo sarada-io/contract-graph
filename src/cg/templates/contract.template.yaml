@@ -102,3 +102,5 @@ agent:
 assumptions: []
 # [] unless an actual owner-approved rule exception exists; never invent approval to pass a check.
 exceptions: []
+
+# Contracts retain observable behaviour, ordering/formulas callers rely on, privacy/trust boundaries, concurrency guarantees and failure semantics. Internal algorithms may live in source, tests or domain specifications only when no caller-visible promise is lost. Give child-owned guarantees one primary owner and retain parent integration promises and discoverable references; preserve invariant IDs and reciprocal verification links when moving them. Length alone is not a reason to split or reject a contract.

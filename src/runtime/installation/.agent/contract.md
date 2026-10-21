@@ -1,0 +1,90 @@
+# Installation contract
+
+Parent: [repository](../../../../.agent/contract.md). Owns adoption and refresh of an installed CG release in a
+target repository, including editor integration and upgrade recovery.
+
+## Surface and implementation
+
+`cg init` is the sole installation and upgrade entry point. CLI orchestration previews the
+plan, obtains confirmation, applies init, then runs sync and verification when migration is ready.
+The supported upgrade range starts at 0.8.0, with 1.0.0 as the baseline. Both use the
+current catalog format and upgrade directly through init; no version-by-version driver is needed.
+Legacy content recovery remains format-driven because previously upgraded repositories can
+retain older files. A recorded package version does not prove those files were converted.
+
+| Component | Owned implementation |
+| --- | --- |
+| Scaffold mapping, file ownership, replacement, preservation and retirement | [init.js](../init.js) |
+| Catalog refresh, schema-identity updates, backups and apply rollback | [init-catalogs.js](../init-catalogs.js) |
+| Legacy catalog format conversion | [migrate-principles.js](../migrate-principles.js) |
+| Derived agent pointers and editor discovery (`cg sync`) | [sync.js](../sync.js) |
+| Root/module pointer rendering, shared agent bootstrap and Claude skill wrappers | [discovery.js](../discovery.js) |
+| Profile configuration, selection (`cg profiles`) and shared docs-root reading | [profiles.js](../profiles.js), [profile data](../../../install/profiles) |
+| Interactive selection | [picker.js](../picker.js) |
+| Installed host admission hook | [cg-gate.mjs](../../../install/hooks/cg-gate.mjs) |
+
+## Boundary promises
+
+### Where an init or upgrade change belongs
+
+| Change | Existing seam to edit |
+| --- | --- |
+| What gets installed, replaced or preserved | `init.js`: `SCAFFOLD_MAPPING`, `copyFile`, `applyMappingRule`, `scaffoldFiles` |
+| Greenfield versus brownfield starter selection | `init.js`: `shouldScaffoldModule`, `clearStarterComposition` |
+| Retire a known framework artifact on upgrade | `init.js`: `retireSkills`; preserve ownership checks and backups |
+| Order of installation, saved profile selection and manifest updates | `init.js`: `init`, `writeManifest` |
+| Retained phase-policy differences after an upgrade | `init.js`: `retainedPhaseNotices`; `init` returns `policyNotices`, and CLI preview displays them without rewriting policy |
+| Preview catalog refresh or schema-identity migration | `init-catalogs.js`: `planInitCatalogs` |
+| Apply catalog changes with stale-input protection, backups and rollback | `init-catalogs.js`: `applyInitCatalogs` |
+| Convert legacy catalog syntax while retaining authored rules | `migrate-principles.js`: `migratePrinciples`, called by catalog planning |
+| Prompts, `--check`, confirmation and post-init sync/verify | [cli.js](../../cli.js): init branch of `main`, `chooseDocsRoot`, `chooseProfiles` |
+| Generated principle index, root/module pointers or skill-wrapper output | `discovery.js`: `generateCgAgent`, `generateRoot`, `renderModulePointer`, `generateClaudeSkillWrapper`; called by sync and consumed by verification |
+| Default docs root and installation manifest path | `profiles.js`: `DEFAULT_DOCS_ROOT`, `manifestPath` |
+
+`init.js` owns the installation sequence. `init-catalogs.js` and
+`migrate-principles.js` are existing collaborators inside this owner, not alternative upgrade
+workflows. Extend the relevant seam for the next release. A helper extraction must remain
+called through init, preserve preview/apply behavior, and be recorded in this table.
+
+### Installation flow
+
+Source-checkout scaffold enumeration skips `.agent/` entries at every tree depth, matching package assembly. Local maintainer contracts and guidance are never installed into adopting repositories.
+
+CLI selection and preview → `init(..., { dryRun: true })` → confirmation →
+`init(...)` → sync and verification when migration is ready. Within init, catalog planning
+and application use the catalog helper; scaffold mapping and retirement stay with init.
+Keep dry-run results useful for review and preserve the existing missing-rationale outcome.
+
+- Release-specific upgrades extend init's existing preview, confirmation, backup, preservation
+  and retirement path. Do not add `cg upgrade` or a standalone release-upgrade script.
+- `cg migrate-principles` already exists as a format-only conversion surface. It preserves
+  local catalog content; it does not own release installation or replace the init workflow.
+- Preserve repository-owned content and missing product rationale. Report incomplete migration
+  honestly. Catalog rollback does not make the whole init/sync/verify sequence transactional.
+- Init scaffolds `.agents/cg/project-context.md` only when absent and preserves repository-authored context and its approval record on subsequent runs.
+- Sync regenerates derived artifacts; it does not become a second installer.
+- One starter `module/AGENTS.md` template supplies the selected AGENTS/CLAUDE filenames through the existing scaffold enumeration. Sync renders that same body for nested units and continues copying an existing sibling when adding a profile. `profiles.js` owns docs-root reads: legacy read-only queries retain their tolerant fallback, while delivery retains strict validation.
+- Preview and apply report retained retired stages, absent optional phase entries and conditional/missing E loading. These notices do not change `--check`'s file-drift exit semantics, force E adoption or claim workflow reconciliation; malformed policy still fails ordinary verification.
+
+Consumes [Distribution](../../distribution/.agent/contract.md)'s package layout/identity, [Verification](../../verification/.agent/contract.md)'s
+validated policy catalogs and index projections, [Graph](../../graph/.agent/contract.md)'s YAML operations, and
+[Authoring](../../../skills/.agent/contract.md)'s assets. The hook consumes [Delivery](../../delivery/.agent/contract.md)'s admission decisions.
+Changes to preserved policy or installed content also route to the relevant sibling.
+
+Verification: `npm test -- test/init-upgrade.test.js test/sprint-retirement.test.js test/verify.test.js`,
+then `npm test`. Profile changes also need the real-host checks in
+[CONTRIBUTING](../../../../CONTRIBUTING.md). Release behavior belongs in [docs/upgrade.md](../../../../docs/upgrade.md).
+
+Retirement of the exact removed planning reference requires a non-adopted prior manifest hash matching current bytes. Uncertain or modified content stays active with a reconciliation notice. Backup failures and observed concurrent edits preserve the active file. No pattern-based retirement or backup cleanup is performed.
+
+Sync refreshes the release-owned CG BOOTSTRAP block in the shared agent entry and inserts it into historical entries lacking it. It preserves surrounding repository prose, workflow and phase policy. Exact unmarked early-1.1 bootstrap text is adopted into the block without duplication; custom text is preserved.
+
+Discovery also reconciles the complete, exact historical framework reading sections in root profile pointers and the shared agent entry. Recognised root sections point to the shared entry; the known shared section points to Lifecycle bootstrap. Exact old root-first lead-ins are removed from root pointers or qualified for selected work in the shared entry. LF/CRLF historical text is recognised; changed wording, extra requirements within a section, other headings and surrounding custom prose remain repository-owned. Dry-run reports these generated changes; repeat sync is stable. Never retire a section merely because it has the same heading or familiar paths.
+
+`discovery.js` owns render/generate operations and canonical skill metadata reads for wrappers.
+It consumes Verification's policy projections and returns `{path, current, desired}` records;
+sync owns writes. Malformed block markers fail rather than discard content. Source and packaged
+layouts use the same authored templates. Verification checks these expected outputs; it does
+not own or duplicate the renderer. The CLI uses the same discovery reference for init preview.
+
+Init preserves repository-owned workflow and reports a routing-recovery notice when retained guidance lacks suggestions; refreshed generated bootstrap carries the recovery sequence.

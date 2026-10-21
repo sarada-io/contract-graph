@@ -64,10 +64,10 @@ Earlier uncommitted chat-link and `cg.cmd` guidance edits remain preserved. They
 
 | Responsibility | Owner and existing seam |
 | --- | --- |
-| npm release layout and permitted install hook metadata | [Distribution](../../.agent/distribution/contract.md); `src/scripts/build.js`, `package.json` and existing package tests. |
+| npm release layout and permitted install hook metadata | [Distribution](../../src/runtime/distribution/.agent/contract.md); `src/scripts/build.js`, `package.json` and existing package tests. |
 | Package installation hook and Windows wrapper cleanup | Distribution; add one bounded package-install helper only after recording its owner and packaged entry point. |
-| Repository adoption and upgrades | [Installation](../../.agent/installation/contract.md); `cg init` remains the sole repository initialization/upgrade entry point. |
-| User setup and agent launcher guidance | [Authoring](../../.agent/authoring/contract.md); README, upgrade guide, shared agent entry and relevant skills. |
+| Repository adoption and upgrades | [Installation](../../src/runtime/installation/.agent/contract.md); `cg init` remains the sole repository initialization/upgrade entry point. |
+| User setup and agent launcher guidance | [Authoring](../../src/skills/.agent/contract.md); README, upgrade guide, shared agent entry and relevant skills. |
 | Windows lifecycle checks | `.github/workflows/ci.yml`, package tests and focused hook tests. |
 
 The npm hook installs no governance files and does not run init, sync or verification against a discovered repository. npm distribution setup and repository adoption remain separate responsibilities.

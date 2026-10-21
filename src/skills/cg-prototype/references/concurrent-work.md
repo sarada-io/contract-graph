@@ -28,7 +28,7 @@ Run `cg delivery checkpoint --programme <programme> --session <id> --evidence <f
 The checkpoint records the worktree, branch, commit, whole-source snapshot, dirty-path inventory,
 declared file fingerprints, observed changes since this session's previous checkpoint, and peer
 declarations in this worktree. History retains each checkpoint. V2 storage shares repeated evidence values within the receipt;
-use `cg delivery status --json` to read the reconstructed record. Do not checkpoint ordinary feedback
+use `cg delivery status --programme <programme> --json` only when the reconstructed record is needed. Do not checkpoint ordinary feedback
 or unchanged scope repeatedly just to document activity. At review, the CLI fingerprints the union of this programme’s
 current and earlier declared writes, including released writers. Approval and handoff reuse that
 scope; expansion or changed scoped files needs review. Unrelated source edits do not invalidate

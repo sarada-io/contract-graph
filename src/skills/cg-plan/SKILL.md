@@ -5,9 +5,11 @@ description: Agree a goal and observable outcomes in one Sprint or Epic Plan wit
 
 # CG Plan
 
-For CLI commands, follow `.agents/cg/contract-graph-agent.md`'s launcher guidance. Use bare `cg` after a global npm install with lifecycle scripts enabled; if Windows PowerShell blocks `cg.ps1`, use the installed `cg.cmd` fallback throughout this skill and its references with the same arguments and required checks. A blocked `cg.ps1` launcher does not authorize changing execution policy or skipping verification.
+Read the shared Lifecycle bootstrap in `.agents/cg/contract-graph-agent.md` once per session. For programme recovery, perform its selection check immediately after this skill and the bootstrap, before following links to the root contract, workflow, catalogs or other references. Reuse unchanged context.
 
-For chat, decision reviews and results, read [owner communication](../cg-unblock/references/owner-communication.md). Explain outcomes and choices for functional leaders; keep framework commands and approval mechanics in internal evidence.
+After scope is known, for chat, decision reviews and results, read [owner communication](../cg-unblock/references/owner-communication.md). Explain outcomes and choices for functional leaders; keep framework commands and approval mechanics in internal evidence.
+
+Apply the shared selection gate before expanding discovery. Recover the named goal, existing plan's agreement/current increment and pending choices. A bare invocation with no identifiable outcome needs one goal question, not a repository-wide survey. Reuse existing readiness evidence while its scope and inputs remain valid; investigate the next unresolved question under the shared bootstrap's reading procedure.
 
 Agree what success means before implementation. Run `cg intent verify`; if intent is incomplete or stale, use cg-warmup to draft and confirm it while continuing independent discovery. Planning may explore an unanswered question but must not label its dependent outcome agreed. Read the root contract, `.agents/cg/workflow.md`, profile and the families selected for `plan` in `.agents/cg/phases.json`. Route with `cg contract route --task "<outcome>"` before bounded source reading. A and applicable P are binding; E remains advisory.
 
@@ -28,7 +30,7 @@ Assign stable sprint IDs/names and stable item IDs with an explicit Feature/Bug/
 
 ## Establish and agree the outcome
 
-Read `.agents/cg/project-context.md` and its binding sources, relevant contracts, existing decisions, specifications and the measured baseline. Separate existing failures from requested changes. State goal, objectives, included outcomes, exclusions, UX/review conditions and final completion evidence. Where current code violates accepted intent, record a discrepancy; do not redefine the intent or weaken a test to match the code.
+Read `.agents/cg/project-context.md`, selected contracts and the relevant measured baseline. Follow binding sources, specifications and scoped decisions where needed to establish an unresolved requirement or investigate changed intent; do not reopen every linked source. Separate existing failures from requested changes. State goal, objectives, included outcomes, exclusions, UX/review conditions and final completion evidence. Where current code violates accepted intent, record a discrepancy; do not redefine the intent or weaken a test to match the code.
 
 Ask only for unresolved product choices. Reuse explicit instructions and prior agreement. Record the owner's actual answer and its scope under Agreement; do not manufacture approval from silence, plan existence or a green test. Plan agreement, execution authority and acceptance of the implemented experience are separate facts. A request to complete a sprint/epic supplies execution and finishing authority for that scope, but does not pre-approve unseen UX or authorize publication.
 

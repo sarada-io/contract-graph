@@ -7,7 +7,7 @@ Read `.agents/skills/cg-unblock/SKILL.md` when a fork remains unresolved by the 
 and accepted decisions, or requires owner authority. Check existing authority first, then ask the user directly under D-6 when necessary. Record the answer and continue independent work.
 
 Read `.agents/cg/phases.json` and load the families selected for `produce`. Shipped defaults
-include `.agents/cg/guidelines/engineering.yaml` on every pass; retained repository phase policy
+include relevant `.agents/cg/guidelines/engineering.yaml` guidance conditionally; retained repository phase policy
 controls loading. Consider applicable E practices as advisory context. They create no acceptance
 criteria, required changes, or blockers unless separately adopted through an authorized binding.
 Do not reopen settled decisions merely because an E preference differs.

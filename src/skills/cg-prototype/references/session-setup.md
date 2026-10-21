@@ -1,6 +1,6 @@
 # Set up the prototype session
 
-Read this at entry or when execution context changes. Keep ordinary feedback in cg-prototype §2.
+Read this before editing or when an installation conflict or execution-context change needs resolution. Merely reopening an existing preview does not require declaring future writes. Keep ordinary feedback in cg-prototype §2.
 
 ## Preserved installation policy
 

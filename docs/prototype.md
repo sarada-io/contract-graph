@@ -11,6 +11,8 @@ Improve the dashboard layout and interactions. Launch the application
 and iterate with me until the experience is right.
 ```
 
+Invoking `/cg-prototype` again reopens the clearly selected prototype for feedback. The agent checks selection once and uses the existing checkout and launch instructions, opens or reuses the preview, and shows where to review it. If several programmes are active without a clear selection, it asks which experience you want before investigating their plans or histories. You can name the target directly, for example `/cg-prototype bottom-navigation`. Reopening an existing preview does not require surveying application code or editing-policy catalogs. A launch or access failure is reported as a concrete prerequisite; reading source alone does not establish that the experience works. Reopening a preview does not accept it or request final completion.
+
 Give feedback normally. Within the agreed scope, the agent continues in the same working context.
 It defers application test authoring, test suites, and browser regression testing. It still runs
 what is needed to present the preview, keeps contracts truthful, and preserves binding detectors.
@@ -43,7 +45,7 @@ same metadata exclusions. The agent expands scope for related edits or records w
 unrelated. This is an observation at review time; it does not infer who edited a file or block
 approval because unrelated work is dirty.
 
-## Receipt storage in 0.7.0
+## Receipt storage and compatibility
 
 New receipts use storage version 2: repeated large JSON values are stored once in a local evidence
 table and referenced by SHA-256. Readers reconstruct the complete logical record and check every
@@ -69,6 +71,9 @@ receipts and migrated receipts continue using v2 on later updates, including res
 Upgrade all writers and CI readers to 0.7.0 or newer before creating or migrating v2 receipts;
 older tooling cannot read them. Hashes detect damaged evidence, not deliberate forgery by someone
 able to rewrite the whole receipt. No history pruning or age-based deletion is supported.
+
+Version 1.1.0 also supports optional v3 delta compression; new receipts still default to v2.
+See [receipt compatibility](upgrade.md#shared-delivery-records-and-sign-off) before opting in or rolling back to an older CLI.
 
 ## Working side by side
 

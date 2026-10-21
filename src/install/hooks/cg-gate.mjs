@@ -1,6 +1,8 @@
 #!/usr/bin/env node
-/** Check actual readiness and scoped completion authority before skill dispatch. */
-
+/**
+ * @file Check readiness and scoped completion authority before host skill dispatch.
+ * @see ../../runtime/installation/.agent/contract.md
+ */
 import { execFileSync } from "node:child_process";
 import crypto from "node:crypto";
 import fs from "node:fs";
@@ -118,7 +120,9 @@ try {
 try {
   const [bin, prefix] = cgCommand();
   const programme = process.env.CG_PROGRAMME || store.completionProgramme;
-  const selection = programme ? ["--programme", programme] : [];
+  const selection = process.env.CG_STANDALONE && skill === "cg-produce"
+    ? ["--standalone", process.env.CG_STANDALONE, ...(process.env.CG_PROGRAMME ? ["--programme", process.env.CG_PROGRAMME] : [])]
+    : programme ? ["--programme", programme] : [];
   const stdout = execFileSync(bin, [...prefix, "next", repoRoot, "--json", "--for", skill, ...selection], {
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
@@ -130,6 +134,7 @@ try {
     result = JSON.parse(error.stdout ?? "");
   } catch {
     if (expectedBuild) deny("Blocked by cg-gate: the selected cg could not report its build identity. Update the global CLI and re-run cg init with the existing docs root and profiles; do not interpret this as a product or phase blocker.");
+    if (process.env.CG_STANDALONE && skill === "cg-produce") deny("Standalone scope could not be validated by the selected CLI; update/reconcile the runtime and scope request before dispatch.");
     allow(
       `cg-gate: NOT GATING — \`cg next\` did not run. Install a Contract Graph build that has it, ` +
         `or set CG_BIN to one. (${error.message.split("\n")[0]})`,

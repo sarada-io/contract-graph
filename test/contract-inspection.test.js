@@ -1,3 +1,7 @@
+/**
+ * @file Check confined source reports, syntax facts, uncertainty and stale snapshots.
+ * @see ../src/runtime/inspection/.agent/contract.md
+ */
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
@@ -6,10 +10,10 @@ import crypto from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 import test from "node:test";
-import { inspectContract, inspectionSnapshotChanges, renderInspection, INSPECTION_LIMITS } from "../src/scripts/contract-inspection.js";
-import { inspectSource } from "../src/scripts/inspection/javascript.js";
-import { init } from "../src/scripts/init.js";
-import { loadContract, stringifyContractYaml, loadContractGraph } from "../src/scripts/contracts.js";
+import { inspectContract, inspectionSnapshotChanges, renderInspection, INSPECTION_LIMITS } from "../src/runtime/inspection/contract-inspection.js";
+import { inspectSource } from "../src/runtime/inspection/javascript.js";
+import { init } from "../src/runtime/installation/init.js";
+import { loadContract, stringifyContractYaml, loadContractGraph } from "../src/runtime/graph/contracts.js";
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const CLI = path.join(REPO, "bin/cg.js");

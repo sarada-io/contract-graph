@@ -5,29 +5,26 @@ selected scope. They do not select a programme or decide stage continuation. The
 delivery-completion procedure owns those decisions. Return corrective findings
 to that procedure; never apply a different procedure's yield rule.
 
-Read §§1–11 for closure of the selected scope. Step-history requirements apply only where a technical queue exists; do not invent historical Steps for accepted work. For documentation-only work, apply §7.0 to decisions within that narrow scope, then §8 and §11.
+Load the applicable sections for the selected obligations: §§1–2 and §§4–6 for implementation, §3 only for a technical queue, §7.0 for decisions, §§8–11 for durable records and cleanup. Step-history requirements apply only where a technical queue exists; do not invent historical Steps for accepted work. For documentation-only work, apply §7.0 to decisions within that narrow scope, then §8 and §11.
 Use `cg-unblock` for unresolved material decisions under the caller's authority. Follow its direct-user decision protocol after checking existing authority.
 
 ## Required outcome
 
-Close the phase only when all thirteen are true. Documentation-only work uses §7.0, §8 and §11;
-only outcomes 10, 12, and 13 apply to it.
+Close only when every applicable obligation below is satisfied. Record why a conditional obligation is
+not applicable in the existing evidence inventory; do not manufacture a queue, cohort or approval.
 
-1. Every prepared Step has a report from the expected accumulated state.
-2. Every Step reached `Complete`; every deferral and resumption was recorded and dependency-safe.
-3. Every Step gate and the repository full gate pass in the final state.
-4. Emergent phase-level tests exist where composition needs proof.
-5. Every discovered defect is fixed or has an explicit, valid disposition.
-6. Every Step and the phase acceptance gate are accounted for.
-7. Contracts and detectors delivered by Steps match the combined implementation, and the final responsibility review under §6.2 has evidence and a valid disposition for every applicable finding.
-8. Every decision harvest classifies one declared producer-phase cohort without capturing another
-   cohort or a pending decision.
-9. Every non-empty decision-harvest cohort has one batch acceptance and a validated first prepared
-   harvest Step whose classification digest and drain IDs exactly equal the eligible decision IDs.
-10. Every in-scope resolved decision has an evidenced disposition under §7.0; project context, durable rationale and product/operator guidance are current and validated.
-11. The phase status and roadmap reflect reality before transient-file cleanup.
-12. No required contract update was displaced from `cg-produce` into a documentation edit.
-13. The result includes the evidence inventory and next route described in §11.
+| Applies to | Required outcome |
+| --- | --- |
+| Every requested completion | Discovered findings have valid dispositions; required acceptance is actual; in-scope decisions are reconciled under §7.0; useful durable records are current; statuses reflect reality; evidence and next action are reported under §11. |
+| Implementation, including accepted exploratory work without a queue | Required repository gates and applicable composition tests pass in the final state; contracts and detectors match source; §6 responsibility review findings have evidence and valid dispositions. No required contract change is displaced into a documentation edit. |
+| Existing technical queue only | Every prepared Step has its accumulated-state report, reaches Complete with dependency-safe deferrals/resumptions, passes its gate, and has its required acceptance accounted for. Preserve baseline and handoff evidence. |
+| Declared harvest cohort only | Classify exactly that producer-phase cohort without capturing pending decisions or another cohort. A non-empty cohort needs batch acceptance and its first validated harvest Step, with matching digest and drain IDs. No declared cohort means no harvest artifacts are required. |
+| Documentation-only request | Apply §7.0 to in-scope decisions, §8 to the changed durable records and §11 to evidence/cleanup. Validate the changed documentation; do not imply implementation acceptance or whole-programme closure. |
+
+Ordinary decision reconciliation applies even without a harvest cohort. Accepted no-queue work
+uses its existing roadmap, receipt and acceptance evidence. A current technical repair queue retains
+all its Step obligations. Cleanup of a Closed record reviews retained files and their consumers;
+it does not reopen implementation or grant another closure.
 
 If a protected decision, unavailable prerequisite, or roadmap correction prevents these outcomes,
 return Incomplete or Blocked from §9 and §10 to the invoking procedure. That is actionable;
@@ -41,16 +38,16 @@ it is not phase completion.
    `cg status --programme <slug>` and inspect `cg residue --programme <slug>` for ownership.
    This scoped inspection does not replace the repository's required final gate.
 3. Run `cg next --programme <slug>` for the already selected programme.
-   Closure starts only when every prepared Step in the exact selected phase is `Complete`.
+   Where a technical queue exists, closure starts only when every prepared Step in the exact selected phase is `Complete`.
    Run the repository's selected-phase guard when present; aggregate routing cannot override it.
 4. Maintain one final evidence inventory in the existing phase acceptance record under [verification](../../cg-produce/references/verification.md).
-   Establish `cg verify`, Step checks, and the repository full gate for the final state; reuse only
+   For implementation establish `cg verify`, applicable Step checks, and the repository full gate for the final state; reuse only
    applicable evidence and execute missing or invalidated checks. Later sections consume this
    inventory rather than triggering duplicate runs.
 
-Do not begin closure until every prepared Step is accounted for and `Complete`; each `Done when`
+Where a technical queue exists, do not begin closure until every prepared Step is accounted for and `Complete`; each `Done when`
 comes from the final accumulated state; the branch or worktree descends from the preparation
-baseline through every Step handoff; every behavior, boundary, or invariant change includes its
+baseline through every Step handoff. For all implementation, every behavior, boundary, or invariant change includes its
 contract and detector; detectors have fail-on-demand evidence; and assumptions, decisions,
 residue, and rollback information are recorded.
 
@@ -167,7 +164,7 @@ role-by-route or isolation matrices unless those contracts or the gate name them
 
 ## 6. Confirm the phase
 
-1. Confirm every Step verification has applicable evidence for the final state in the inventory.
+1. Where a technical queue exists, confirm every Step verification has applicable final-state evidence in the inventory.
 2. Confirm positive and negative evidence.
 3. Confirm all detectors are non-vacuous and fail on demand.
 4. Confirm decisions have one canonical agent record (or unmigrated legacy entry), their selected options or typed solutions
@@ -220,60 +217,7 @@ For the selected completion scope, inspect the central human review list, resolv
 6. Check active consumers and declared harvest cohorts before draining anything. Entries required by unfinished work remain with their dependency/owner named. For a declared cohort, §§7.1–7.2 still govern its classification, acceptance, route and drain timing; this reconciliation must not bypass those gates or add unsupported manifest destinations. After successful closure stores the evidence, delete consumed resolved JSON records and accounted-for legacy entries. Design-record retirement and any context/source updates must already be included in the final verified source snapshot, not performed after close. Remove answered questions from the human log after recording their answers; do not add a completed section. Retain only pending/shared agent records with an active consumer or explicit preservation obligation. Preserve high-water counters in `.agents/cg/decisions/_sequence.json`; never reuse removed IDs. Before removing a legacy counter, transfer its high-water value. A retained shell is not an archive exemption.
 7. Verify context approval, graph truth and live links after cleanup. Completion requires a disposition for every in-scope resolved decision; unexplained accumulation or deletion is unfinished work. Do not reopen unchanged decisions merely to produce a sign-off ceremony.
 
-### 7.1 Classify one declared producer-phase cohort
-
-Use the JSON directory for migrated evidence and the original Markdown path for an unmigrated cohort. Complete a mixed cohort’s migration before checking the directory. If no decision directory exists and the declared cohort is empty, omit `--decision-log`; never omit eligibility evidence for a non-empty cohort.
-
-When the active roadmap and preparation declare a decision-harvest cohort, classify only that
-cohort. Do not default to every resolved decision in the log.
-
-Before draining an entry, check active decision and phase dependencies. Preserve its authority
-and relevant user-response evidence at an accessible destination and update transient consumers;
-otherwise leave it in the log and report the harvest prerequisite. The original design answer
-does not authorize a different harvest classification. Permanent contracts cannot cite plan IDs.
-
-1. Create one versioned JSON manifest in the closure-owned phase-close path reserved by
-   `cg-produce`.
-2. Copy the cohort's stable ID and exact eligible decision IDs from the accepted roadmap scope.
-3. Classification IDs must exactly equal the eligible decision IDs.
-4. Each eligible ID must have a resolved agent JSON record (or appear in the legacy log’s `Resolved` section during migration). A pending or unknown ID is never
-   eligible.
-5. Classify each eligible decision once through `cg-unblock` D-5a: module contract, architecture
-   principle, engineering guideline, product guideline, or drop. A `drop` carries one line saying
-   why.
-6. State each proposed permanent rule without citing its source decision, a plan ticket, or a
-   `<docs>/plans/` path. Binding and invariant destinations name their detector. An `A` destination
-   is valid only when the destination phase changes the verifier that registers its detector;
-   otherwise retain it as `E`, adopt it as `P`, or record an upstream A proposal.
-7. Run:
-
-```bash
-cg harvest <decision-harvest.json> --decision-log .agents/cg/decisions
-```
-
-The manifest is transient. Sign-off proposes classifications; it does not write promoted rules or
-detectors outside an execution Step. Do not proceed until this detector passes.
-
-### 7.2 Obtain one batch acceptance and validate the drain route
-
-After classification passes, obtain one batch acceptance for the complete cohort. Acceptance
-approves the proposed promotions; it does not reopen the underlying decisions.
-
-1. Record `acceptance.status` as `accepted`, the owner in `acceptedBy`, an unambiguous UTC instant
-   in `acceptedAt`, and `acceptedDecisionIds` exactly equal to the eligible decision IDs.
-2. Route a non-empty accepted cohort to the next already-planned destination phase through
-   `cg-produce`. If no matching phase exists, return the work to `cg-plan` first.
-   Use cg-produce’s internal preparation for the exact destination work list, preserving the source dependency; do not execute destination work before its prerequisites pass.
-3. The first prepared harvest Step must name the exact source manifest, cohort ID, classification digest, and drain IDs exactly equal the eligible decision IDs. That Step stays `Blocked` on source-phase completion; later Steps stay `Waiting` behind it.
-4. Validate before closing the source:
-
-```bash
-cg harvest <decision-harvest.json> --decision-log .agents/cg/decisions \
-  --stage close --preparation <destination-preparation.md>
-```
-
-A source phase cannot close until this gate passes. No permanent rule or detector is edited during
-acceptance or routing. A valid empty cohort closes without acceptance or a route.
+For a declared producer-phase harvest cohort only, read [cohort classification and drain](harvest-cohort.md). No cohort means no batch harvest machinery; §7.0 still applies.
 
 ### 7.3 Classify other durable knowledge
 
@@ -389,7 +333,7 @@ or decision that unblocks it, and do not dispose of its recovery records as Comp
 ## 10. Close and remove transient records
 
 1. Confirm the phase acceptance gate is green.
-2. Confirm every corrective Step is closed with fresh evidence.
+2. Where a technical queue exists, confirm every corrective Step is closed with fresh evidence.
 3. Mark the phase Complete with the date.
 4. Replace forward-looking instructions with measured results.
 5. Add valid out-of-phase handovers to the roadmap or named future phase.
@@ -409,7 +353,7 @@ continue, yield to its caller, or ask the user. A failed gate keeps the phase in
 not cancel an authorized corrective route. Include a blocker only when something prevents that
 route itself, such as an unanswered decision or unavailable prerequisite.
 
-Report the execution baseline, queue-state history, final gates, defects and dispositions,
+Report applicable evidence only: the execution baseline, existing queue-state history, final gates, defects and dispositions,
 emergent tests, phase acceptance result, contracts and detectors verified, durable documents and
 their validation method, out-of-phase handovers, removed transient paths and any explicitly retained dependencies, and the exact
 final commands. For documentation-only work, report only the artifacts written, their evidence, and

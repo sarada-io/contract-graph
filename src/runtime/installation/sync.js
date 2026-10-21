@@ -1,0 +1,109 @@
+/**
+ * @file Regenerate selected editor discovery files and managed agent-entry content.
+ * @see .agent/contract.md
+ */
+/*
+ * Contracts remain authored YAML. Sync is idempotent: the second run writes nothing, as required by verification’s drift check.
+ */
+
+import fs from "node:fs";
+import path from "node:path";
+
+import {
+  generateCgAgent,
+  generateClaudeSkillWrapper,
+  generateModulePointer,
+  generateRoot,
+  MODULE_POINTERS,
+  selectedModulePointers,
+  skillsRoot,
+} from "./discovery.js";
+import { loadContractGraph } from "../graph/contracts.js";
+import { resolveProfileSelection } from "./profiles.js";
+
+function write(file, text) {
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, text, "utf8");
+}
+
+/** Apply one {path, current, desired} triple. Returns true when it changed the file. */
+function apply(unit, changed, dryRun) {
+  if (unit.current === unit.desired) return false;
+  if (!dryRun) write(unit.path, unit.desired);
+  changed.push(unit.path);
+  return true;
+}
+
+export function sync(repoRoot, { dryRun = false } = {}) {
+  const graph = loadContractGraph(repoRoot, { throwOnError: true });
+  const profile = resolveProfileSelection(repoRoot);
+  const changed = [];
+
+  // Generate the same units in both modes; `apply` is the only place that suppresses writes for
+  // a dry run, so `cg sync --check` reports exactly what a real sync would change.
+  const projectName = path.basename(repoRoot);
+  const canonical = generateCgAgent(repoRoot);
+  apply(canonical, changed, dryRun);
+  if (canonical.legacyPath) {
+    if (!dryRun) fs.rmSync(canonical.legacyPath);
+    changed.push(canonical.legacyPath);
+  }
+  for (const [relPath, prefix] of Object.entries(profile.rootPointers)) {
+    apply(generateRoot(repoRoot, relPath, prefix, projectName), changed, dryRun);
+  }
+
+  const modulePointers = selectedModulePointers(profile.rootPointers);
+  for (const record of graph.records) {
+    if (record.contract.kind !== "module") continue;
+    const unit = record.contract.unit;
+    const existing = [];
+    const missing = [];
+    for (const pointer of modulePointers) {
+      (fs.existsSync(path.join(repoRoot, unit, pointer)) ? existing : missing).push(pointer);
+    }
+    // Repair drift on files already present, then create any new name by copying a sibling
+    // so adding a profile does not invent a second body for the same pointer.
+    for (const pointer of existing) {
+      apply(generateModulePointer(repoRoot, record.contract, pointer), changed, dryRun);
+    }
+    for (const pointer of missing) {
+      apply(newModulePointer(repoRoot, record.contract, pointer), changed, dryRun);
+    }
+  }
+
+  const skills = skillsRoot(repoRoot);
+  let wrapperCount = 0;
+  if (profile.skillWrappers && fs.existsSync(skills)) {
+    for (const name of fs.readdirSync(skills).sort()) {
+      const skillFile = path.join(skills, name, "SKILL.md");
+      if (!fs.existsSync(skillFile)) continue;
+      wrapperCount += 1;
+      apply(generateClaudeSkillWrapper(repoRoot, skillFile), changed, dryRun);
+    }
+  }
+
+  return {
+    changed,
+    counts: {
+      folders: graph.records.filter((record) => record.contract.unit !== ".").length,
+      roots: Object.keys(profile.rootPointers).length,
+      wrappers: wrapperCount,
+    },
+  };
+}
+
+/**
+ * A newly selected pointer filename starts as a copy of a sibling that already exists in the
+ * module folder (any `MODULE_POINTERS` name, including one left by a previous selection).
+ * Generate only when this module has none yet.
+ */
+function newModulePointer(repoRoot, contract, relPath) {
+  const generated = generateModulePointer(repoRoot, contract, relPath);
+  for (const sibling of MODULE_POINTERS) {
+    if (sibling === relPath) continue;
+    const file = path.join(repoRoot, contract.unit, sibling);
+    if (!fs.existsSync(file)) continue;
+    return { ...generated, desired: fs.readFileSync(file, "utf8") };
+  }
+  return generated;
+}

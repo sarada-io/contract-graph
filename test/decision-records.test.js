@@ -1,9 +1,13 @@
+/**
+ * @file Check decision-harvest eligibility from temporary compact decision evidence.
+ * @see ../src/runtime/verification/.agent/contract.md
+ */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { resolvedDecisionIds, checkHarvest } from '../src/scripts/harvest.js';
+import { resolvedDecisionIds, checkHarvest } from '../src/runtime/verification/harvest.js';
 function fixture(t) {
   const dir=fs.mkdtempSync(path.join(os.tmpdir(),'cg-decisions-'));
   t.after(()=>fs.rmSync(dir,{recursive:true,force:true}));

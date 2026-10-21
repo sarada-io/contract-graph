@@ -1,14 +1,18 @@
+/**
+ * @file Check Dart and Flutter syntax evidence, privacy, manifests and grammar integrity.
+ * @see ../src/runtime/inspection/.agent/contract.md
+ */
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
-import { inspectNative } from "../src/scripts/inspection/native-languages.js";
-import { inspectContract } from "../src/scripts/contract-inspection.js";
-import { detectModuleRoots, subBoundaryNames } from "../src/scripts/modules.js";
-import { init } from "../src/scripts/init.js";
-import { loadContract, stringifyContractYaml } from "../src/scripts/contracts.js";
+import { inspectNative } from "../src/runtime/inspection/native-languages.js";
+import { inspectContract } from "../src/runtime/inspection/contract-inspection.js";
+import { detectModuleRoots, subBoundaryNames } from "../src/runtime/graph/modules.js";
+import { init } from "../src/runtime/installation/init.js";
+import { loadContract, stringifyContractYaml } from "../src/runtime/graph/contracts.js";
 const inspect = text => inspectNative("api.dart", text);
 const names = r => [...new Set(r.facts.filter(f => f.category === "export").map(f => f.name))].sort();
 function fixture(t) {

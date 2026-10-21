@@ -1,0 +1,1060 @@
+#!/usr/bin/env node
+/**
+ * @file Parse commands and options, coordinate interactive choices, dispatch to owners and report results.
+ * @see ../../.agent/contract.md
+ */
+import fs from "node:fs";
+import path from "node:path";
+import process from "node:process";
+import readline from "node:readline";
+
+import { BINDING_FILENAME, loadBindingCatalog } from "./verification/binding.js";
+import { loadEngineeringMap, loadBindingPrinciples } from "./verification/policy.js";
+import { renderRootReference } from "./installation/discovery.js";
+import {
+  contractContext,
+  findContract,
+  graphTree,
+  loadContractGraph,
+  parentChain,
+  renderContext,
+  renderContract,
+  renderGraph,
+  renderMermaid,
+  routeContracts, routeSuggestions, hydratedRoutes,
+} from "./graph/contracts.js";
+import { build, BuildError } from "./distribution/build.js";
+import { init, PACKAGE_VERSION } from "./installation/init.js";
+import { intentAction } from "./delivery/intent.js";
+import { migratePrinciples } from "./installation/migrate-principles.js";
+import { HarvestError, checkHarvest } from "./verification/harvest.js";
+import { moduleCoverage, openDescent } from "./graph/modules.js";
+import { next, permits, selectProgramme } from "./delivery/next.js";
+import { deliveryAction, deliveryReadiness } from "./delivery/delivery.js";
+import { residue } from "./delivery/residue.js";
+import { status, statusSummary } from "./delivery/status.js";
+import { runtimeIdentity } from "./distribution/runtime.js";
+import { multiSelect } from "./installation/picker.js";
+import {
+  DEFAULT_DOCS_ROOT,
+  expandProfileAliases,
+  loadProfileSelection,
+  profileChoices,
+  resolveProfiles,
+  selectableProfiles,
+} from "./installation/profiles.js";
+import { sync } from "./installation/sync.js";
+import { verify } from "./verification/verify.js";
+
+const PACKAGE_JSON = [
+  new URL("../package.json", import.meta.url),
+  new URL("../../package.json", import.meta.url),
+].find((candidate) => fs.existsSync(candidate));
+
+const VERSION = JSON.parse(fs.readFileSync(PACKAGE_JSON, "utf8")).version;
+
+const USAGE = `cg — Contract Graph Dev Kit
+
+A framework for agentic software development with repository-native contracts as a graph at its core.
+
+Usage:
+  cg analyse [dir] [--report file] [--json]       prepare a read-only adoption assessment prompt; defaults to cwd
+  cg build [dir] [--check]                         assemble the package target under dist/build/
+  cg init [--profile a,b] [--docs dir] [--reasons file]  install or update CG
+  cg migrate-principles [dir] [--reasons file] [--write]  preview or apply legacy catalog conversion
+  cg intent <action> [dir] [--evidence file]     status, review, approve, verify project intent
+  cg next [dir] [--json] [--for skill]            what runs next, derived from delivery records, roadmaps and Step queues
+  cg delivery <action> [dir] --programme slug   start, checkpoint, review, approve, handoff, request-sign-off, suspend, resume, abandon, close, compact, evidence, status
+  cg delivery verify [dir] --base ref --gate cmd check delivery receipts for a pull request
+  cg status [dir] [--programme slug] [--json]    current queue, blockers, recovery action, and residue owners
+  cg residue [dir] [--programme slug] [--json]   unreferenced plan files; scoped checks retain shared findings
+  cg sync [dir] [--check]                         regenerate derived artifacts
+  cg verify [dir] [--warn]                        verify governance
+  cg modules [dir]                                list detected module roots, coverage, and unfinished descent
+  cg contract show [dir] [--id id] [--json]       render one canonical contract
+  cg contract context [dir] [--id id] [--json]    resolve ancestors, relations, and rule text
+  cg contract children [dir] [--id id]            list direct child contracts
+  cg contract parents [dir] [--id id]             list the path from root to the selected contract
+  cg contract surface [dir] [--id id]             show the boundary's public surface
+  cg contract dependencies [dir] --ecosystem dart [--json]  compare local Dart manifest edges
+  cg contract inspect [dir] --id id|--unit path [--entry file] [--json]  propose fields from source evidence; never write contracts
+  cg contract route [dir] --task "request"         route a task through contract-owned routes
+  cg contract verify [dir]                        verify schema, references, and graph closure
+  cg graph show [dir] [--format tree|json|mermaid] project the whole composition graph
+  cg graph verify [dir]                           verify schema, references, and graph closure
+  cg harvest <manifest> [--stage close]           check a decision-harvest manifest
+  cg guidelines show [dir] --id E01-01          selected advisory guidance (also --category)
+  cg profiles                                     list editor profiles
+
+Routing recovery: exact route, then --suggest; if absent or ambiguous, use
+  cg contract show; cg contract children --id <id>; cg contract context --id <id>
+
+Options:
+  --standalone <file> read task/write-scope JSON for next --for cg-produce
+  --compact         opt-in compact JSON (status --summary or contract route --hydrate)
+  --select <slug>   save worktree-local programme selection (status only)
+  --clear-selection clear worktree-local selection (status only)
+  --summary         read all programme obligations without selecting (status only)
+  --suggest         explain lexical fallback routes (contract route only)
+  --hydrate         include bounded context (contract route only)
+  --limit <number>  maximum route candidates (1–20; default 3)
+  --category <name> filter advisory guidance (guidelines show only)
+  --report <file>    external assessment report destination (analyse only; command creates no files)
+  --profile <list>  add comma-separated editor profiles without the interactive picker (init only)
+  --docs <dir>      directory to hold plans/, decisions/, guides/, and manuals/ (init only; default: docs)
+  --stage <name>    harvest stage: classify (default) or close
+  --decision-log <path>  agent decision directory or legacy log for cohort eligibility (harvest only)
+  --preparation <path>   prepared drain route to validate at --stage close (harvest only)
+  --json            machine-readable output; full delivery evidence (next, status, residue, delivery, contract, graph)
+  --id <id>         contract id, governed unit, or repository-relative contract path
+  --unit <path>     explicit unit to inspect, including before adoption (inspect only)
+  --entry <file>    unit-relative entry file; repeatable (inspect only)
+  --task <text>     task description to match against contract routes
+  --format <name>   output format: markdown, tree, json, or mermaid
+  --for <skill>     exit 0 only if dispatching that skill agrees with the queue (next only)
+  --programme <slug> select one programme (delivery, next, status, residue)
+  --evidence <file> checkpoint/approval/completion-request JSON or final sign-off document
+  --session <id>    identify the acting session; required for delivery checkpoints
+  --gate <command>  execute the repository delivery gate before closing a delivery
+  --base <ref>      trusted target ref with fetched history (delivery verify)
+  --check           verify build/init/sync output without changing it
+  --yes             accept the displayed installation and catalog updates (init only)
+  --write           apply a validated principles migration, with backups (migration only)
+  --reasons <file>  JSON object of missing rationale by principle ID (init or migration)
+  --warn            report findings and exit 0 (verify only)
+  --quiet           suppress successful build output
+  --version [--json] print version; JSON also identifies the executable and CLI/skills build
+  -h, --help        show this message
+`;
+
+/**
+ * Every option the CLI accepts. An unrecognised `--flag` is refused rather than ignored:
+ * a retired flag that is silently swallowed scaffolds a repository missing whatever it
+ * asked for, and its value is then read as a positional argument. `--packs saas` doing
+ * nothing quietly is exactly the upgrade failure this tool should not have.
+ */
+const KNOWN_FLAGS = new Set([
+  "select", "clear-selection", "summary", "suggest", "hydrate", "limit", "category", "compact", "standalone",
+  "report",
+  "ecosystem",
+  "unit",
+  "entry",
+  "write",
+  "reasons",
+  "profile",
+  "docs",
+  "stage",
+  "decision-log",
+  "preparation",
+  "check",
+  "json",
+  "id",
+  "task",
+  "format",
+  "for",
+  "programme",
+  "session",
+  "evidence",
+  "gate",
+  "base",
+  "yes",
+  "warn",
+  "quiet",
+  "help",
+]);
+
+function parseArgs(argv) {
+  const positional = [];
+  const flags = {};
+  // Keep parsing deliberately small: commands share boolean flags, while the init selection
+  // options consume values (in either `--name x` or `--name=x` form).
+  for (let i = 0; i < argv.length; i += 1) {
+    const arg = argv[i];
+    const inspectionValue = /^--(unit|entry)(?:=(.*))?$/.exec(arg);
+    if (inspectionValue) {
+      const value = inspectionValue[2] ?? argv[++i];
+      if (!value || value.startsWith("--")) throw new Error(`${inspectionValue[1]} requires a value`);
+      if (inspectionValue[1] === "entry") (flags.entry ??= []).push(value);
+      else {
+        if (flags.unit !== undefined) throw new Error("--unit may be specified only once");
+        flags.unit = value;
+      }
+      continue;
+    }
+    const extraValue = /^--(programme|session|evidence|gate|base|reasons|report|select|limit|category|standalone|ecosystem)(?:=(.*))?$/.exec(arg);
+    if (extraValue) {
+      flags[extraValue[1]] = extraValue[2] ?? argv[++i];
+      if (typeof flags[extraValue[1]] !== "string" || !flags[extraValue[1]].trim() || flags[extraValue[1]].startsWith("--")) throw new Error(`${extraValue[1]} requires a value`);
+    } else if (arg === "--profile") {
+      flags.profile = argv[++i] ?? "";
+    } else if (arg.startsWith("--profile=")) {
+      flags.profile = arg.slice("--profile=".length);
+    } else if (arg === "--stage") {
+      flags.stage = argv[++i] ?? "";
+    } else if (arg.startsWith("--stage=")) {
+      flags.stage = arg.slice("--stage=".length);
+    } else if (arg === "--decision-log") {
+      flags["decision-log"] = argv[++i] ?? "";
+    } else if (arg.startsWith("--decision-log=")) {
+      flags["decision-log"] = arg.slice("--decision-log=".length);
+    } else if (arg === "--preparation") {
+      flags.preparation = argv[++i] ?? "";
+    } else if (arg.startsWith("--preparation=")) {
+      flags.preparation = arg.slice("--preparation=".length);
+    } else if (arg === "--for") {
+      flags.for = argv[++i] ?? "";
+    } else if (arg.startsWith("--for=")) {
+      flags.for = arg.slice("--for=".length);
+    } else if (arg === "--docs") {
+      flags.docs = argv[++i] ?? "";
+    } else if (arg.startsWith("--docs=")) {
+      flags.docs = arg.slice("--docs=".length);
+    } else if (arg === "--id") {
+      flags.id = argv[++i] ?? "";
+    } else if (arg.startsWith("--id=")) {
+      flags.id = arg.slice("--id=".length);
+    } else if (arg === "--task") {
+      flags.task = argv[++i] ?? "";
+    } else if (arg.startsWith("--task=")) {
+      flags.task = arg.slice("--task=".length);
+    } else if (arg === "--format") {
+      flags.format = argv[++i] ?? "";
+    } else if (arg.startsWith("--format=")) {
+      flags.format = arg.slice("--format=".length);
+    } else if (arg.startsWith("--")) {
+      const name = arg.slice(2);
+      if (!KNOWN_FLAGS.has(name)) {
+        throw new Error(
+          `unknown option \`${arg}\`. Valid options: ` +
+            `${[...KNOWN_FLAGS].filter((f) => f !== "help").map((f) => `--${f}`).join(", ")}`,
+        );
+      }
+      flags[name] = true;
+    } else {
+      positional.push(arg);
+    }
+  }
+  return { positional, flags };
+}
+
+/**
+ * One readline interface for a whole exchange. Opening a fresh one per question closes
+ * stdin after the first answer, so any follow-up question reads EOF immediately.
+ */
+function prompter() {
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+  // Pulling lines from the async iterator rather than using `rl.question` keeps answers
+  // that were already buffered readable, and turns end-of-input into an ordinary error
+  // instead of an await that never settles.
+  const lines = rl[Symbol.asyncIterator]();
+  return {
+    async ask(question) {
+      process.stdout.write(question);
+      const { value, done } = await lines.next();
+      if (done) throw new Error("no answer received before input closed");
+      return value.trim();
+    },
+    close: () => rl.close(),
+  };
+}
+
+/**
+ * `cg init` with no directory means the current working directory. Confirm that path so a
+ * missed `.` in a README cannot silently scaffold the wrong tree. `cg init .` and any other
+ * named path skip this prompt: the location was already chosen.
+ */
+async function confirmInitLocation(repoRoot, namedDirectory, flags) {
+  if (namedDirectory) return true;
+
+  process.stdout.write(`cg init: about to install at\n  ${repoRoot}\n`);
+  if (flags.yes || flags.check || !process.stdin.isTTY) return true;
+
+  const rl = prompter();
+  try {
+    const answer = (await rl.ask("  Continue? [Y/n] ")).toLowerCase();
+    if (answer === "" || answer === "y" || answer === "yes") return true;
+    process.stdout.write("cg init: cancelled, nothing was written\n");
+    return false;
+  } finally {
+    rl.close();
+  }
+}
+
+const isUsableRootName = (name) =>
+  Boolean(name) && !name.startsWith(".") && name.split(/[\\/]/).length === 1;
+
+const DOCS_SUBTREES = ["plans", "decisions", "guides"];
+const LEGACY_DOCS_SUBTREES = ["design"];
+
+/**
+ * Find documentation trees this repository already keeps under a *split* convention —
+ * `docs-plans/`, `doc-decisions/` — rather than nested inside one root.
+ *
+ * `chooseDocsRoot` cannot adopt these: the model is one root holding three subdirectories,
+ * and there is no single directory to point at. But saying nothing is worse. A repository
+ * with populated `docs-plans/` silently gains an empty `docs/plans/`, and now two files
+ * both look like the decision log — which is exactly the finding that came back from the
+ * first brownfield run. Naming it at init costs one line and saves that discovery.
+ */
+function detectRivalDocTrees(repoRoot, chosenRoot) {
+  let entries;
+  try {
+    entries = fs.readdirSync(repoRoot, { withFileTypes: true });
+  } catch {
+    return [];
+  }
+
+  return entries
+    .filter((entry) => entry.isDirectory() && entry.name !== chosenRoot)
+    .map((entry) => entry.name)
+    .filter((name) => {
+      const match = /^[a-z]+[-_](plans?|design|decisions?|guides?)$/.exec(name);
+      if (!match) return false;
+      const subtree = match[1].replace(/s$/, "");
+      return [...DOCS_SUBTREES, ...LEGACY_DOCS_SUBTREES].some(
+        (known) => known.replace(/s$/, "") === subtree,
+      );
+    })
+    .filter((name) => {
+      try {
+        return fs.readdirSync(path.join(repoRoot, name)).length > 0;
+      } catch {
+        return false;
+      }
+    })
+    .sort();
+}
+
+/**
+ * Decide where `plans/`, `decisions/`, and `guides/` go.
+ *
+ * A repository that already owns `docs/` is asked rather than merged into silently. `init`
+ * never overwrites, so the merge would in fact be safe — but "safe" and "expected" are
+ * different things, and quietly adding three directories to a tree someone else curates is
+ * the kind of surprise this tool exists to avoid.
+ */
+async function chooseDocsRoot(repoRoot, flags) {
+  if (flags.docs !== undefined) {
+    if (!isUsableRootName(flags.docs)) {
+      throw new Error(`invalid --docs value \`${flags.docs}\`: expected a single directory name`);
+    }
+    return flags.docs;
+  }
+
+  const recorded = loadProfileSelection(repoRoot, { allowMissing: true })?.docs;
+  if (recorded) return recorded;
+
+  const candidate = path.join(repoRoot, DEFAULT_DOCS_ROOT);
+  const occupied = fs.existsSync(candidate) && fs.readdirSync(candidate).length > 0;
+  if (!occupied) return DEFAULT_DOCS_ROOT;
+
+  if (!process.stdin.isTTY) {
+    throw new Error(
+      `\`${DEFAULT_DOCS_ROOT}/\` already exists and this is not an interactive terminal. ` +
+        `Re-run with \`--docs ${DEFAULT_DOCS_ROOT}\` to use it, or \`--docs <dir>\` to pick another.`,
+    );
+  }
+
+  process.stdout.write(
+    `cg init: \`${DEFAULT_DOCS_ROOT}/\` already exists here.\n` +
+      `  Contract Graph adds ${DEFAULT_DOCS_ROOT}/plans/, ${DEFAULT_DOCS_ROOT}/decisions/, and ` +
+      `${DEFAULT_DOCS_ROOT}/guides/.\n` +
+      "  Nothing existing is replaced — init never overwrites a file.\n",
+  );
+
+  const prompt = prompter();
+  try {
+    const reuse = (await prompt.ask(`  Use \`${DEFAULT_DOCS_ROOT}/\` for these? [Y/n] `)).toLowerCase();
+    if (reuse === "" || reuse === "y" || reuse === "yes") return DEFAULT_DOCS_ROOT;
+
+    const chosen = await prompt.ask("  Directory to bootstrap instead: ");
+    if (!isUsableRootName(chosen)) {
+      throw new Error(`invalid directory name \`${chosen}\`: expected a single directory name`);
+    }
+    return chosen;
+  } catch (error) {
+    throw new Error(
+      `${error.message}. Re-run with \`--docs <dir>\` to choose without being asked.`,
+    );
+  } finally {
+    prompt.close();
+  }
+}
+
+/**
+ * Pick concrete harnesses and preserve every recorded selection. Re-running init is additive:
+ * removing a profile would leave discovery files whose ownership is ambiguous, so that remains
+ * a deliberate repository edit rather than a side effect of revisiting the installer.
+ */
+async function chooseProfiles(repoRoot, flags) {
+  const recorded = loadProfileSelection(repoRoot, { allowMissing: true });
+  const installed = recorded ? expandProfileAliases(recorded.profiles) : [];
+
+  if (flags.profile !== undefined) {
+    const requested = flags.profile.split(",").map((name) => name.trim()).filter(Boolean);
+    const additions = expandProfileAliases(requested);
+    return [...new Set([...installed, ...additions])];
+  }
+
+  if (process.stdin.isTTY && process.stdout.isTTY) {
+    return multiSelect(profileChoices(), {
+      selectedValues: installed,
+      lockedValues: installed,
+      title: installed.length
+        ? "Add IDEs and agent harnesses (installed selections stay enabled)"
+        : "Select IDEs and agent harnesses for Contract Graph",
+    });
+  }
+
+  return installed.length ? installed : selectableProfiles();
+}
+
+/** Existing root guidance is never overwritten, but adding its first-line entry is visible. */
+function rootInstructionNotices(repoRoot, profiles) {
+  const { rootPointers } = resolveProfiles(profiles);
+  return Object.entries(rootPointers).flatMap(([relative, prefix]) => {
+    const file = path.join(repoRoot, relative);
+    if (!fs.existsSync(file)) return [];
+    const current = fs.readFileSync(file, "utf8");
+    const firstLine = current.split(/\r?\n/, 1)[0];
+    return firstLine === renderRootReference(relative, prefix) ? [] : [relative];
+  });
+}
+
+async function main(argv) {
+  const [command, ...rest] = argv;
+  if (!command || command === "-h" || command === "--help" || command === "help") {
+    process.stdout.write(USAGE);
+    return 0;
+  }
+  if (command === "--version") {
+    process.stdout.write(rest.includes("--json") ? `${JSON.stringify(runtimeIdentity(), null, 2)}\n` : `${VERSION}\n`);
+    return 0;
+  }
+
+  const { positional, flags } = parseArgs(rest);
+  if (flags.help) {
+    process.stdout.write(USAGE);
+    return 0;
+  }
+
+  if (command === "analyse") {
+    for (const key of Object.keys(flags)) if (!["report", "json"].includes(key)) throw new Error(`--${key} is not supported by analyse`);
+    if (positional.length > 1) throw new Error("usage: cg analyse [dir] [--report external-file] [--json]");
+    const { analyse, renderAnalysisPrompt } = await import("./inspection/analyse.js");
+    const context = analyse(path.resolve(positional[0] ?? "."), { report: flags.report });
+    process.stdout.write(flags.json ? `${JSON.stringify(context, null, 2)}\n` : renderAnalysisPrompt(context));
+    return 0;
+  }
+  if (flags.standalone !== undefined && (command !== "next" || flags.for !== "cg-produce" || flags.programme)) throw new Error("--standalone requires next --for cg-produce without --programme");
+  if (flags.compact && !((command === "status" && flags.summary) || (command === "contract" && positional[0] === "route" && flags.hydrate))) throw new Error("--compact requires status --summary or contract route --hydrate");
+  if (flags.report !== undefined) throw new Error("--report is supported only by analyse");
+  for (const flag of ["select", "clear-selection", "summary"]) if (flags[flag] !== undefined && command !== "status") throw new Error(`--${flag} is supported only by status`);
+  for (const flag of ["suggest", "hydrate", "limit"]) if (flags[flag] !== undefined && !(command === "contract" && positional[0] === "route")) throw new Error(`--${flag} is supported only by contract route`);
+  if (flags.limit !== undefined && !flags.suggest && !flags.hydrate) throw new Error("--limit requires --suggest or --hydrate");
+  if (flags.category !== undefined && command !== "guidelines") throw new Error("--category is supported only by guidelines show");
+
+
+  if (command === "contract" && positional[0] === "dependencies") {
+    for (const key of Object.keys(flags)) if (!["ecosystem", "json"].includes(key)) throw new Error(`--${key} is not supported by contract dependencies`);
+    if (positional.length > 2) throw new Error("usage: cg contract dependencies [dir] --ecosystem dart [--json]");
+    const { checkDependencies, renderDependencies } = await import("./verification/dependency-check.js");
+    const report = checkDependencies(path.resolve(positional[1] ?? "."), { ecosystem: flags.ecosystem });
+    process.stdout.write(flags.json ? `${JSON.stringify(report, null, 2)}\n` : renderDependencies(report));
+    return report.ok ? 0 : 1;
+  }
+  if (flags.ecosystem !== undefined) throw new Error("--ecosystem is supported only by contract dependencies");
+
+  if (command === "contract" && positional[0] === "inspect") {
+    const allowed = new Set(["id", "unit", "entry", "json"]);
+    for (const key of Object.keys(flags)) if (!allowed.has(key)) throw new Error(`--${key} is not supported by contract inspect`);
+    if (positional.length > 2 || (flags.id !== undefined && (!flags.id || flags.id.startsWith("--")))) throw new Error("usage: cg contract inspect [dir] --id selector|--unit path [--entry file] [--json]");
+    const { inspectContract, renderInspection } = await import("./inspection/contract-inspection.js");
+    const report = inspectContract(path.resolve(positional[1] ?? "."), { id: flags.id, unit: flags.unit, entries: flags.entry });
+    process.stdout.write(flags.json ? `${JSON.stringify(report, null, 2)}\n` : renderInspection(report));
+    return 0;
+  }
+  if (flags.unit !== undefined || flags.entry !== undefined) throw new Error("--unit and --entry are supported only by contract inspect");
+
+  if (command === "contract" || command === "graph") {
+    const action = positional[0] ?? "show";
+    const graphActions = command === "graph" ? ["show", "verify"] : ["show", "context", "children", "parents", "surface", "route", "verify"];
+    if (!graphActions.includes(action)) {
+      throw new Error(`unknown ${command} action \`${action}\`; expected ${graphActions.join(", ")}`);
+    }
+    const graphRoot = path.resolve(positional[1] ?? ".");
+    const binding = loadBindingCatalog(path.join(graphRoot, BINDING_FILENAME), { repoRoot: graphRoot });
+    const graph = loadContractGraph(graphRoot, { hierarchy: binding.hierarchy.transitions });
+    const reportFailures = () => {
+      if (!graph.failures.length) return false;
+      process.stderr.write(`cg ${command} ${action}: FAIL — ${graph.failures.length} problem(s)\n`);
+      for (const failure of graph.failures) process.stderr.write(`  ${failure}\n`);
+      return true;
+    };
+
+    if (action === "verify") {
+      if (reportFailures()) return 1;
+      process.stdout.write(`cg ${command} verify: OK — ${graph.records.length} contract(s), one closed composition graph\n`);
+      return 0;
+    }
+    if (reportFailures()) return 1;
+
+    if (command === "graph") {
+      const format = flags.json ? "json" : flags.format ?? "tree";
+      if (format === "json") process.stdout.write(`${JSON.stringify(graphTree(graph), null, 2)}\n`);
+      else if (format === "mermaid") process.stdout.write(renderMermaid(graph));
+      else if (format === "tree") process.stdout.write(renderGraph(graph));
+      else throw new Error(`unknown graph format \`${format}\`; expected tree, json, or mermaid`);
+      return 0;
+    }
+
+    if (action === "route") {
+      if (!flags.task) throw new Error("usage: cg contract route [dir] --task \"request\"");
+      const matches = flags.suggest ? routeSuggestions(graph, flags.task) : routeContracts(graph, flags.task);
+      if (flags.hydrate || flags.suggest) {
+        if (flags.format && flags.format !== "json") throw new Error("route suggestions and hydration support only JSON format");
+        const report = hydratedRoutes(graph, matches, flags.hydrate ? loadBindingPrinciples(graphRoot) : new Map(), { limit: flags.limit === undefined ? 3 : Number(flags.limit), compact: flags.compact });
+        if (!flags.hydrate) { delete report.contexts; delete report.rules; }
+        process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+        return matches.length ? 0 : 1;
+      }
+      if (flags.json || flags.format === "json") {
+        process.stdout.write(`${JSON.stringify(matches.map((match) => ({
+          owner: match.owner,
+          route: match.route,
+          matched: match.matched,
+          contracts: match.contracts.map((record) => ({ id: record.contract.id, unit: record.contract.unit, contract: record.relative })),
+        })), null, 2)}\n`);
+      } else if (!matches.length) {
+        process.stdout.write("no contract route matched — retry with --suggest; if absent or ambiguous, browse cg contract show then cg contract children --id <id>, and select cg contract context --id <id>\n");
+      } else {
+        for (const match of matches) {
+          process.stdout.write(`${match.owner}/${match.route} (matched: ${match.matched.join(", ")})\n`);
+          for (const record of match.contracts) process.stdout.write(`  ${record.contract.id}\t${record.relative}\n`);
+        }
+      }
+      return matches.length ? 0 : 1;
+    }
+
+    const record = findContract(graph, flags.id || null);
+    if (!record) throw new Error(`contract not found: ${flags.id}`);
+    if (action === "show") {
+      if (flags.json || flags.format === "json") process.stdout.write(`${JSON.stringify(record.contract, null, 2)}\n`);
+      else process.stdout.write(renderContract(record));
+      return 0;
+    }
+    if (action === "context") {
+      const context = contractContext(graph, record, loadBindingPrinciples(graphRoot));
+      if (flags.json || flags.format === "json") {
+        process.stdout.write(`${JSON.stringify({
+          contract: record.contract,
+          ancestors: context.ancestors.map((item) => item.contract),
+          children: context.children.map((item) => item.contract),
+          dependencies: context.dependencies.map((item) => item.contract),
+          rules: context.rules,
+        }, null, 2)}\n`);
+      } else process.stdout.write(renderContext(context));
+      return 0;
+    }
+    if (action === "children") {
+      const children = record.contract.relations.children.map((ref) => graph.byFile.get(ref.contract)).filter(Boolean);
+      if (flags.json || flags.format === "json") process.stdout.write(`${JSON.stringify(children.map((item) => item.contract), null, 2)}\n`);
+      else for (const item of children) process.stdout.write(`${item.contract.id}\t${item.relative}\t${item.contract.summary}\n`);
+      return 0;
+    }
+    if (action === "parents") {
+      const parents = parentChain(graph, record);
+      if (flags.json || flags.format === "json") process.stdout.write(`${JSON.stringify(parents.map((item) => item.contract), null, 2)}\n`);
+      else for (const item of parents) process.stdout.write(`${item.contract.id}\t${item.relative}\n`);
+      return 0;
+    }
+    if (action === "surface") {
+      if (flags.json || flags.format === "json") process.stdout.write(`${JSON.stringify(record.contract.surface, null, 2)}\n`);
+      else if (!record.contract.surface.length) process.stdout.write("no public surface declared\n");
+      else for (const item of record.contract.surface) process.stdout.write(`${item.id}\t${item.kind}\t${item.path}\t${item.summary}\n`);
+      return 0;
+    }
+  }
+
+  if (command === "intent") {
+    const action = positional[0];
+    if (positional.length > 2 || Object.keys(flags).some(flag => !["json", "evidence"].includes(flag))) throw new Error("usage: cg intent <status|review|approve|verify> [dir] [--evidence file] [--json]");
+    const result = intentAction(path.resolve(positional[1] ?? "."), action, { evidence: flags.evidence });
+    if (flags.json) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+    else {
+      process.stdout.write(`cg intent: ${result.state} — ${result.reason}\n`);
+      if (result.snapshot) process.stdout.write(`  snapshot: ${result.snapshot}\n`);
+      if (result.file) process.stdout.write(`  file: ${result.file}\n`);
+    }
+    return action === "verify" && !result.ready ? 1 : 0;
+  }
+
+  if (command === "prototype" || command === "delivery") {
+    const action = positional[0];
+    const root = path.resolve(positional[1] ?? ".");
+    if (command === "delivery" && action === "verify") {
+      if (action !== "verify" || !flags.base || !flags.gate) throw new Error("usage: cg delivery verify [dir] --base <trusted target ref> --gate <required command>");
+      const result = deliveryReadiness(root, { base: flags.base, gate: flags.gate });
+      if (flags.json) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      else process.stdout.write(`cg delivery: ${result.failures.length ? "FAIL" : "OK"}\n${result.failures.map(f => `  ${f}\n`).join("")}`);
+      return result.failures.length ? 1 : 0;
+    }
+    const result = deliveryAction(root, action, { programme: flags.programme, evidence: flags.evidence, gate: flags.gate, session: flags.session, format: flags.format });
+    // Routine lifecycle output is a view, not another copy of the full evidence archive.
+    const summary = record => ({ programme: record.programme, status: record.status,
+      file: record.file ?? `.agents/cg/deliveries/${record.programme}.json`,
+      historyEvents: record.history.length, completionRequest: record.completionRequest ?? null,
+      sessions: (record.sessions ?? []).map(({ session, state, writes, resources, peers, unregisteredProgrammes }) =>
+        ({ session, state, writes, resources, peers, unregisteredProgrammes })),
+      latestDeliveryAttempt: record.deliveryAttempts?.at(-1) ?? null });
+    const output = flags.json || action === "compact" ? result : Array.isArray(result) ? result.map(summary) : summary(result);
+    process.stdout.write(`${JSON.stringify(output, null, 2)}\n`);
+    return 0;
+  }
+
+  // All repository commands accept an optional directory as their first positional argument.
+  const repoRoot = path.resolve(positional[0] ?? ".");
+
+  if (command === "migrate-principles") {
+    if (positional.length > 1) throw new Error("usage: cg migrate-principles [dir] [--reasons file] [--write] [--json]");
+    for (const flag of Object.keys(flags)) {
+      if (!["write", "reasons", "json"].includes(flag)) throw new Error(`migrate-principles does not accept --${flag}`);
+    }
+    const reasons = flags.reasons ? JSON.parse(fs.readFileSync(path.resolve(flags.reasons), "utf8")) : {};
+    const result = migratePrinciples(repoRoot, { write: Boolean(flags.write), reasons });
+    if (flags.json) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+    else {
+      process.stdout.write(`cg migrate-principles: ${flags.write ? "apply" : "preview"} — ${result.changed.length} catalog(s) need conversion, ${result.written.length} written\n`);
+      for (const item of result.changed) process.stdout.write(`  ${item.file}\n`);
+      for (const item of result.missingReasons) process.stdout.write(`  needs reason: ${item.id} — ${item.statement}\n`);
+      for (const file of result.backups) process.stdout.write(`  backup: ${file}\n`);
+      for (const failure of result.failures) process.stderr.write(`  ${failure}\n`);
+      if (!flags.write && result.changed.length) process.stdout.write("  Use --json to inspect proposed YAML; provide missing rationale with --reasons <json-file>, then --write to apply.\n");
+      if (result.written.length && !result.failures.length) process.stdout.write("  Next: cg init --yes with the repository's existing docs root and profiles, then cg verify.\n");
+    }
+    return result.failures.length ? 1 : 0;
+  }
+
+  if (command === "build") {
+    let result;
+    try {
+      result = build(repoRoot, { write: !flags.check });
+    } catch (error) {
+      if (error instanceof BuildError) throw new Error(error.message);
+      throw error;
+    }
+    if (flags.check) {
+      if (result.changed.length || result.removed.length) {
+        process.stderr.write(
+          `cg build --check: FAIL — dist/build/ differs from its package sources\n`,
+        );
+        for (const file of result.changed) process.stderr.write(`  stale or missing ${file}\n`);
+        for (const file of result.removed) process.stderr.write(`  unexpected ${file}\n`);
+        return 1;
+      }
+      if (!flags.quiet) process.stdout.write(`cg build --check: OK — ${result.files.length} file(s) verified\n`);
+      return 0;
+    }
+    if (!flags.quiet) {
+      process.stdout.write(
+        `cg build: ${result.files.length} file(s) from ` +
+          `${result.compilers.length} compiler(s) in ${path.relative(repoRoot, result.root)}/\n`,
+      );
+      for (const file of result.changed) process.stdout.write(`  wrote ${file}\n`);
+      for (const file of result.removed) process.stdout.write(`  removed ${file}\n`);
+      if (!result.changed.length && !result.removed.length) process.stdout.write("  output is reproducible and up to date\n");
+    }
+    return 0;
+  }
+
+  if (command === "harvest") {
+    const manifest = positional[0];
+    if (!manifest) throw new Error("usage: cg harvest <manifest> [--stage close]");
+    const stage = flags.stage ?? "classify";
+    if (!["classify", "close"].includes(stage)) {
+      throw new Error(`unknown --stage \`${stage}\`; expected classify or close`);
+    }
+    let result;
+    try {
+      result = checkHarvest(path.resolve(manifest), {
+        decisionLog: flags["decision-log"] ? path.resolve(flags["decision-log"]) : null,
+        stage,
+        preparation: flags.preparation ? path.resolve(flags.preparation) : null,
+      });
+    } catch (error) {
+      if (error instanceof HarvestError) throw new Error(error.message);
+      throw error;
+    }
+    if (result.failures.length) {
+      process.stderr.write(`cg harvest: FAIL — ${result.failures.length} problem(s)\n`);
+      for (const message of result.failures) process.stderr.write(`  ${message}\n`);
+      return 1;
+    }
+    process.stdout.write(
+      `cg harvest: OK — cohort \`${result.cohort}\` at stage ${stage}: ` +
+        `${result.counts.eligible} decision(s), ${result.counts.promoted} promoted, ` +
+        `${result.counts.dropped} dropped\n  classification digest: ${result.digest}\n`,
+    );
+    return 0;
+  }
+
+  if (command === "modules") {
+    const graph = loadContractGraph(repoRoot);
+    const governed = graph.records.map((record) => record.contract.unit);
+    const { detected, unmapped } = moduleCoverage(repoRoot, governed);
+    const descent = graph.failures.length ? [] : openDescent(repoRoot, graph.records);
+    if (!detected.length && !descent.length) {
+      process.stdout.write("no module roots detected — no build manifest found\n");
+      return 0;
+    }
+    const gap = new Set(unmapped.map((m) => m.path));
+    for (const module of detected) {
+      const state = gap.has(module.path) ? "UNMAPPED" : "governed";
+      process.stdout.write(`${state.padEnd(9)} ${module.path}  (${module.manifest})\n`);
+    }
+    for (const row of descent) {
+      process.stdout.write(
+        `DESCEND   ${row.unit}  (${row.count} undeclared packages — apply graph.recurse or record Leaf rationale)\n`,
+      );
+    }
+    process.stdout.write(
+      `\n${detected.length} detected, ${unmapped.length} unmapped, ${descent.length} need descent\n` +
+        (unmapped.length || descent.length
+          ? "run the `cg-warmup` skill: UNMAPPED rows still need a contract; DESCEND rows need graph.recurse\n"
+          : ""),
+    );
+    return unmapped.length || descent.length ? 1 : 0;
+  }
+
+  if (command === "profiles") {
+    const profiles = profileChoices();
+    process.stdout.write(
+      profiles.length
+        ? `${profiles.map(({ value, label }) => `${value}\t${label}`).join("\n")}\n`
+        : "no editor profiles bundled\n",
+    );
+    return 0;
+  }
+
+  if (command === "init") {
+    const existing = fs.existsSync(path.join(repoRoot, ".agents/cg/manifest.json")) ||
+      fs.existsSync(path.join(repoRoot, ".agents/cg/contract.yaml"));
+    if (existing) {
+      process.stdout.write(
+        `cg ${command}: ${flags.check ? "previewing" : "about to apply"} installed release ${PACKAGE_VERSION} to ${repoRoot}\n` +
+        "  Warning: stop active agents and finish or checkpoint open work before upgrading.\n" +
+        "  Open plans and evidence are preserved; completing every plan first is not required.\n" +
+        "  Retired prepare/auto-run skills are removed with backups. Reload skills and reconcile preserved workflow/phase policy before resuming; old auto-run sessions are not automatically converted.\n" +
+        "  This command does not download the latest release or install a global CLI.\n"
+      );
+    }
+    if (!(await confirmInitLocation(repoRoot, positional[0] !== undefined, flags))) return 1;
+    const profiles = await chooseProfiles(repoRoot, flags);
+    const docs = await chooseDocsRoot(repoRoot, flags);
+    const reasons = flags.reasons ? JSON.parse(fs.readFileSync(path.resolve(flags.reasons), "utf8")) : {};
+
+    const instructionNotices = rootInstructionNotices(repoRoot, profiles);
+    if (instructionNotices.length) {
+      process.stdout.write(
+        "cg init: existing agent instruction file(s) will receive a first-line Contract Graph entry\n",
+      );
+      for (const relative of instructionNotices) {
+        process.stdout.write(`  ${relative} — existing content will be preserved\n`);
+      }
+    }
+
+    // One command, whatever the repository. Copying without generating leaves a scaffold
+    // that fails its own verifier — no root pointers, no wrappers, and no graph validation —
+    // and every later `init` (a changed profile, a restored file) has the same gap. Sync is
+    // not a second concern; it produces half the scaffold.
+    // Framework core is replaced, so a re-run can discard local edits to a skill. Nothing is
+    // written until the plan has been shown and accepted: `cg init` is the one verb a user is
+    // likely to type from memory, and typing it must never be how they find out.
+    const plan = init(repoRoot, { profiles, docs, reasons, dryRun: true });
+    if (plan.policyNotices.length) {
+      process.stdout.write("cg init: retained phase policy differs from the installed skill defaults:\n");
+      for (const notice of plan.policyNotices) process.stdout.write(`  ${notice}\n`);
+      process.stdout.write("  Policy is preserved, not automatically reconciled. Review it with /cg-warmup; a clean scaffold check does not establish workflow readiness.\n");
+    }
+    if (plan.pendingReasons.length) {
+      process.stdout.write(`cg init: product migration needs /cg-warmup (${plan.pendingReasons.length} missing rationale). Original product.yaml will be preserved.\n`);
+      for (const item of plan.pendingReasons) process.stdout.write(`  ${item.id}: ${item.statement}\n`);
+    }
+    if (plan.replaced.length || plan.removed.length) {
+      process.stdout.write(
+        `cg init: ${plan.replaced.length} file(s) will be updated with this version\n`,
+      );
+      for (const file of plan.replaced) {
+        process.stdout.write(`  ${path.relative(repoRoot, file)}\n`);
+      }
+      for (const file of plan.removed) process.stdout.write(`  retire (with backup): ${path.relative(repoRoot, file)}\n`);
+      for (const item of plan.catalogUpdates) {
+        process.stdout.write(`  ${item.action}: ${path.relative(repoRoot, item.file)}\n    backup: ${item.backup}\n`);
+      }
+      process.stdout.write(
+        `  Architecture and engineering use this release's defaults. Product rules retain their content during format conversion.\n` +
+        `  Contract and enforcement content is preserved; known legacy schema URLs are updated.\n` +
+        `  Workflow, phase policy, and \`${plan.docs}/\` are preserved.\n`,
+      );
+      if (flags.check) return 1;
+      if (!flags.yes) {
+        if (!process.stdin.isTTY) {
+          throw new Error("refusing to update installation files without confirmation — re-run with --yes");
+        }
+        const rl = prompter();
+        try {
+          const answer = await rl.ask("  Apply the listed updates? [y/N] ");
+          if (!/^y(es)?$/i.test(answer)) {
+            process.stdout.write("cg init: cancelled, nothing was written\n");
+            return 1;
+          }
+        } finally {
+          rl.close();
+        }
+      }
+    } else if (flags.check) {
+      process.stdout.write(
+        `cg init: ${plan.written.length} file(s) would be written, 0 replaced\n`,
+      );
+      return plan.written.length || plan.pendingReasons.length ? 1 : 0;
+    }
+
+    const result = init(repoRoot, { profiles, docs, reasons });
+    if (result.pendingReasons.length) {
+      process.stdout.write(`cg init: installation updated; product migration remains incomplete.\n`);
+      for (const file of result.backups) process.stdout.write(`  upgrade backup: ${path.relative(repoRoot, file)}\n`);
+      process.stdout.write(`  Next: reload editor skills, then run /cg-warmup in your coding agent.\n  Warmup will review missing product reasons with you, finish migration, and run cg verify.\n  Sync and verification are deferred; this is not a verified upgrade.\n`);
+      return 1;
+    }
+    const { changed } = sync(repoRoot);
+    const { failures, advisories, counts } = verify(repoRoot);
+
+    process.stdout.write(
+      `cg init: ${result.written.length} file(s) written` +
+        (result.replaced.length ? `, ${result.replaced.length} replaced` : "") +
+        (result.skipped.length ? `, ${result.skipped.length} already present` : "") +
+        `, ${changed.length} generated` +
+        `\n  profiles: ${result.profiles.join(", ")} · cg ${result.cgVersion} · docs: ${result.docs}/\n`,
+    );
+
+    for (const message of advisories) process.stdout.write(`  ${message}\n`);
+    for (const file of result.backups) process.stdout.write(`  upgrade backup: ${path.relative(repoRoot, file)}\n`);
+    if (result.skipped.some(file => file.endsWith("workflow.md"))) {
+      process.stdout.write("  prototype: repository workflow was preserved. /cg-prototype can adopt its scoped workflow exception.\n");
+    }
+
+    const rivals = detectRivalDocTrees(repoRoot, result.docs);
+    if (rivals.length) {
+      process.stdout.write(
+        `\n  note: this repository already documents under ${rivals.map((n) => `\`${n}/\``).join(", ")}.\n` +
+          `        Contract Graph keeps plans, decisions, and guides inside one root, so it\n` +
+          `        created \`${result.docs}/\` beside them — you now have two documentation trees.\n` +
+          `        Re-run with \`--docs <dir>\` to choose another root, or migrate the existing\n` +
+          `        trees into \`${result.docs}/\`. \`cg-warmup\` will raise this as a decision if you\n` +
+          `        leave it.\n`,
+      );
+    }
+
+    if (failures.length) {
+      process.stderr.write(`cg init: FAIL — ${failures.length} problem(s) after scaffolding\n`);
+      for (const message of failures) process.stderr.write(`  ${message}\n`);
+      return 1;
+    }
+
+    process.stdout.write(
+      `  verified: ${counts.folders} contract(s), ${counts.roots} root entry file(s), ` +
+        `${counts.skills} skill(s), ${counts.engineering} engineering guideline(s)\n`,
+    );
+    process.stdout.write("  adoption: run cg intent status; scaffold verification does not establish owner-approved intent.\n");
+    if (result.brownfield) {
+      const unmapped = counts.modules?.unmapped ?? 0;
+      const descentCount = counts.modules?.descent ?? 0;
+      const previous = result.previousCgVersion;
+      const versionNote =
+        previous && previous !== result.cgVersion
+          ? ` (was ${previous} → cg ${result.cgVersion})`
+          : "";
+      if (unmapped || descentCount) {
+        const gaps = [];
+        if (unmapped) gaps.push(`${unmapped} module root(s) are not governed yet`);
+        if (descentCount) gaps.push(`${descentCount} need descent`);
+        process.stdout.write(
+          `\n  next: run \`/cg-warmup\` (adoption)${versionNote}` +
+            ` — ${gaps.join(", ")}` +
+            "\n        until then `cg verify: OK` means the scaffold is well-formed,\n" +
+            "        not that this repository is governed.\n",
+        );
+      } else {
+        process.stdout.write(
+          `\n  next: run \`/cg-warmup\` (reseed — additive; catalogs preserved)${versionNote}\n` +
+            "        existing contracts and P IDs are not rewritten.\n",
+        );
+      }
+    } else {
+      process.stdout.write(
+        "\n  next: run `/cg-warmup` (greenfield) to confirm project intent and establish the initial root context before planning.\n",
+      );
+    }
+    return 0;
+  }
+
+  if (command === "guidelines") {
+    for (const flag of Object.keys(flags)) if (!["id", "category", "json"].includes(flag)) throw new Error(`--${flag} is not supported by guidelines show`);
+    if (positional.length > 2 || positional[0] !== "show" || (!flags.id && !flags.category)) throw new Error("usage: cg guidelines show [dir] --id E01,E01-01 or --category <name>");
+    const root = path.resolve(positional[1] ?? ".");
+    const catalog = loadEngineeringMap(root);
+    if (!catalog) throw new Error("engineering catalogue is missing");
+    const ids = flags.id ? flags.id.split(",") : [];
+    const known = new Set(catalog.principles.flatMap(group => [group.id, ...group.rules.map(rule => rule.id)]));
+    for (const id of ids) if (!known.has(id)) throw new Error(`unknown advisory ID: ${id}`);
+    if (flags.category && !catalog.categories.includes(flags.category)) throw new Error(`unknown advisory category: ${flags.category}`);
+    const entries = catalog.principles.filter(group => !flags.category || group.category === flags.category).flatMap(group => group.rules
+      .filter(rule => !ids.length || ids.includes(group.id) || ids.includes(rule.id)).map(rule => ({ ...rule, group: group.id, category: group.category })));
+    process.stdout.write(`${JSON.stringify({ binding: "advisory", source: ".agents/cg/guidelines/engineering.yaml", entries }, null, 2)}\n`);
+    return 0;
+  }
+
+  if (command === "status") {
+    if ((flags.select || flags["clear-selection"]) && (flags.programme || flags.summary)) throw new Error("selection mutation cannot be combined with --programme or --summary");
+    if (flags.select && flags["clear-selection"]) throw new Error("choose --select or --clear-selection");
+    if (flags.select || flags["clear-selection"]) {
+      const result = selectProgramme(repoRoot, flags.select, { clear: flags["clear-selection"] });
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`); return 0;
+    }
+    if (flags.summary && flags.programme) throw new Error("--summary cannot be combined with --programme");
+    if (flags.summary) {
+      const result = statusSummary(repoRoot, { compact: flags.compact });
+      process.stdout.write(flags.json ? `${JSON.stringify(result, null, 2)}\n` : [...result.problems.map(problem => `Problem: ${problem}\n`), ...(result.installation.requiresInit ? [`${result.installation.reason}\n`] : []), ...result.programmes.map(item => `${item.programme}: ${item.receipt?.status ?? item.state} — ${item.nextAction ?? (["closed", "suspended", "abandoned"].includes(item.state) ? "None" : "resolve blockers")}\n`)].join(""));
+      return result.hasProblems || result.problems.length || result.installation.requiresInit || result.programmes.some(item => item.problems.length || item.installation?.requiresInit) ? 1 : 0;
+    }
+    const result = status(repoRoot, { programme: flags.programme });
+    if (flags.json) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+    else {
+      process.stdout.write(`cg status: ${result.programme ?? "selection unresolved"} — ${result.state}\n`);
+      process.stdout.write(`  installation: ${result.installation.state}; CLI: ${result.installation.runtime.executable}\n`);
+      if (result.installation.reason) process.stdout.write(`  ${result.installation.reason}\n`);
+      for (const candidate of result.signOffRecovery.candidates) process.stdout.write(`  resumable sign-off: ${candidate.mode} for ${candidate.programme} — ${candidate.scope}\n`);
+      if (result.reason) process.stdout.write(`  ${result.reason}\n`);
+      if (result.programmes.length) process.stdout.write(`  programmes: ${result.programmes.join(", ")}\n`);
+      if (result.receipt) process.stdout.write(`  delivery: ${result.receipt.status}; completion request: ${result.receipt.completionRequest?.state ?? "none"}\n`);
+      for (const step of result.remainingSteps) process.stdout.write(`  ${step.file} — ${step.status}: ${step.title}\n${step.blockedBy ? `    blocked by: ${step.blockedBy}\n` : ""}`);
+      for (const finding of result.findings) process.stdout.write(`  repair: ${finding.file}: ${finding.reason}\n`);
+      for (const item of [...(result.residue?.blocking ?? []), ...(result.residue?.otherProgrammes ?? [])]) {
+        process.stdout.write(`  residue [${item.scope}; owner: ${item.programme ?? "shared/unassigned"}]: ${item.path}\n`);
+      }
+      process.stdout.write(`  next: ${result.nextAction ?? (["closed", "suspended", "abandoned"].includes(result.state) ? "None" : "resolve selection or reported errors")}${result.programme ? ` (programme ${result.programme})` : ""}\n`);
+      for (const problem of result.problems) process.stderr.write(`  ${problem}\n`);
+    }
+    return result.problems.length || result.state === "selection-required" || result.installation.requiresInit ? 1 : 0;
+  }
+
+  if (command === "next") {
+    const result = next(repoRoot, { programme: flags.programme, skill: flags.for, standalone: flags.standalone });
+    if (flags.json) {
+      process.stdout.write(`${JSON.stringify(
+        {
+          state: result.state,
+          stage: result.stage,
+          reason: result.reason ?? null,
+          step: result.step ? { file: result.step.file, title: result.step.title } : null,
+          problems: result.problems,
+          programme: result.programme ?? null,
+          programmes: result.programmes ?? [],
+          findings: result.findings ?? [],
+          repairableQueue: result.repairableQueue ?? false,
+          repairablePlan: result.repairablePlan ?? false,
+          installation: result.installation,
+          intent: result.intent, delivery: result.delivery,
+          signOffRecovery: result.signOffRecovery,
+          selectionSource: result.selectionSource ?? null,
+          ...(result.scopeReview ? { scopeReview: result.scopeReview, overlaps: result.overlaps, unknown: result.unknown, task: result.task, writes: result.writes } : {}),
+          ...(result.cleanup ? { cleanup: result.cleanup } : {}),
+          ...(result.receipt ? { receipt: { programme: result.receipt.programme, status: result.receipt.status,
+            completionRequest: result.receipt.completionRequest ? { state: result.receipt.completionRequest.state, session: result.receipt.completionRequest.session } : null } } : {}),
+          ...(flags.for ? { for: flags.for, ...permits(result, flags.for) } : {}),
+        },
+        null,
+        2,
+      )}\n`);
+    } else {
+      process.stdout.write(`cg next: ${result.state} — ${result.stage ?? "nothing dispatchable"}\n`);
+      if (result.intent?.required && !result.intent.ready) process.stderr.write(`  intent: ${result.intent.reason}\n`);
+      if (result.installation.reason) process.stderr.write(`  ${result.installation.reason}\n`);
+      if (result.reason) process.stdout.write(`  ${result.reason}\n`);
+      for (const problem of result.problems) process.stderr.write(`  ${problem}\n`);
+    }
+
+    if (flags.for) {
+      const verdict = permits(result, flags.for);
+      if (!flags.json) {
+        process.stdout.write(`  ${verdict.allowed ? "allow" : "deny"} ${flags.for}: ${verdict.reason}\n`);
+        if (verdict.executionAllowed === false) process.stdout.write("  executionAllowed: false — preparation only; no implementation Step is selected.\n");
+      }
+      return verdict.allowed ? 0 : 1;
+    }
+    return result.state === "unreadable" || result.installation.requiresInit ? 1 : 0;
+  }
+
+  if (command === "residue") {
+    const result = residue(repoRoot, { programme: flags.programme });
+    if (flags.json) {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+    } else if (!result.residue.length) {
+      process.stdout.write(
+        `cg residue: none — ${result.claimed} document(s) under ${result.docs}/plans/ are all reachable\n`,
+      );
+    } else {
+      process.stdout.write(`cg residue: ${result.residue.length} unclaimed under ${result.docs}/plans/; ${result.blocking.length} in check scope\n`);
+      for (const item of result.residue) process.stdout.write(`  ${item.path} [${item.scope}; owner: ${item.programme ?? "shared/unassigned"}]\n    ${item.why}\n`);
+      process.stdout.write(
+        `  roots: ${result.roots.join(", ") || "none"}\n` +
+          "  Unreferenced does not mean disposable. Link useful evidence to its consumer; inspect\n" +
+          "  superseded work before archiving or deleting it. Other programmes retain their owners.\n",
+      );
+    }
+    return result.blocking.length ? 1 : 0;
+  }
+
+  if (command === "sync") {
+    const { changed, counts } = sync(repoRoot, { dryRun: Boolean(flags.check) });
+    const verb = flags.check ? "would rewrite" : "rewrote";
+    if (!changed.length) {
+      process.stdout.write(
+        `cg sync: up to date — ${counts.folders} contract(s), ${counts.roots} root entry file(s), ` +
+          `${counts.wrappers} wrapper(s)\n`,
+      );
+      return 0;
+    }
+    process.stdout.write(`cg sync: ${verb} ${changed.length} file(s)\n`);
+    for (const file of changed) process.stdout.write(`  ${path.relative(repoRoot, file)}\n`);
+    return flags.check ? 1 : 0;
+  }
+
+  if (command === "verify") {
+    process.stdout.write("Scope: authored graph and registered structural checks. Product checks may be declared in contracts; their execution and product-intent conformance are not established by this command. Use cg intent verify for approval freshness.\n");
+    const { failures, advisories, counts } = verify(repoRoot);
+    for (const message of advisories) process.stderr.write(`  ${message}\n`);
+    if (!failures.length) {
+      process.stdout.write(
+        `cg verify: OK — ${counts.folders} boundary contract(s), ${counts.roots} root entry file(s), ` +
+          `${counts.skills} skill(s), and ${counts.engineering} engineering guideline(s) verified\n`,
+      );
+      return 0;
+    }
+    const label = flags.warn ? "WARN" : "FAIL";
+    process.stderr.write(`cg verify: ${label} — ${failures.length} problem(s)\n`);
+    for (const message of failures) process.stderr.write(`  ${message}\n`);
+    return flags.warn ? 0 : 1;
+  }
+
+  process.stderr.write(`cg: unknown command \`${command}\`\n\n${USAGE}`);
+  return 2;
+}
+
+try {
+  // Allow buffered output (especially full migration previews) to drain before exiting.
+  process.exitCode = await main(process.argv.slice(2));
+} catch (error) {
+  process.stderr.write(`cg: ${error.message}\n`);
+  process.exitCode = 1;
+}

@@ -1,3 +1,7 @@
+/**
+ * @file Check catalog authority, schema agreement, migration safety and binding detectors.
+ * @see ../src/runtime/verification/.agent/contract.md
+ */
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
@@ -6,14 +10,14 @@ import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 import Ajv2020 from "ajv/dist/2020.js";
-import { init } from "../src/scripts/init.js";
-import { sync } from "../src/scripts/sync.js";
-import { verify } from "../src/scripts/verify.js";
-import { loadPrinciplesCatalog, loadBindingPrinciples } from "../src/scripts/model.js";
-import { parseContractYaml, stringifyContractYaml, loadContractGraph, contractContext, findContract } from "../src/scripts/contracts.js";
-import { migratePrinciples } from "../src/scripts/migrate-principles.js";
-import { validateBindingCatalog } from "../src/scripts/binding.js";
-import { validateGuidelineCatalog } from "../src/scripts/catalog.js";
+import { init } from "../src/runtime/installation/init.js";
+import { sync } from "../src/runtime/installation/sync.js";
+import { verify } from "../src/runtime/verification/verify.js";
+import { loadPrinciplesCatalog, loadBindingPrinciples } from "../src/runtime/verification/policy.js";
+import { parseContractYaml, stringifyContractYaml, loadContractGraph, contractContext, findContract } from "../src/runtime/graph/contracts.js";
+import { migratePrinciples } from "../src/runtime/installation/migrate-principles.js";
+import { validateBindingCatalog } from "../src/runtime/verification/binding.js";
+import { validateGuidelineCatalog } from "../src/runtime/verification/catalog.js";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const files = {
@@ -109,8 +113,8 @@ test("default E loading does not grant binding authority", (t) => {
   const file = ".agents/cg/phases.json";
   const phases = JSON.parse(read(dir, file));
   for (const entry of Object.values(phases.phases)) {
-    assert.deepEqual(entry.always, ["A", "P", "E"]);
-    assert.deepEqual(entry.conditional, []);
+    assert.deepEqual(entry.always, ["A", "P"]);
+    assert.deepEqual(entry.conditional, ["E"]);
   }
   write(dir, file, JSON.stringify(phases));
   sync(dir);
@@ -570,4 +574,21 @@ test("an existing product rationale is preserved and cannot be overwritten by su
   delete reasons["P01-01"];
   assert.deepEqual(migratePrinciples(dir, { reasons, write: true }).failures, []);
   assert.equal(loadPrinciplesCatalog(path.join(dir, files.product)).principles[0].entries[0].reason, ownerReason);
+});
+
+test("binding projections read product YAML once and revalidate on the next query", t => {
+  const dir = fixture(t);
+  const product = path.join(dir, files.product);
+  const original = fs.readFileSync;
+  let reads = 0;
+  fs.readFileSync = function(file, ...args) {
+    if (String(file) === product) reads++;
+    return original.call(this, file, ...args);
+  };
+  try {
+    assert.ok(loadBindingPrinciples(dir).has("A01"));
+    assert.equal(reads, 1);
+  } finally { fs.readFileSync = original; }
+  write(dir, files.product, "not: a valid catalog\n");
+  assert.throws(() => loadBindingPrinciples(dir), /missing/);
 });

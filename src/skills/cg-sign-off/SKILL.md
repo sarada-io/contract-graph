@@ -5,17 +5,19 @@ description: Finish and verify an accepted delivery handoff within the requested
 
 # CG Sign Off
 
-For CLI commands, follow `.agents/cg/contract-graph-agent.md`'s launcher guidance. Use bare `cg` after a global npm install with lifecycle scripts enabled; if Windows PowerShell blocks `cg.ps1`, use the installed `cg.cmd` fallback throughout this skill and its references with the same arguments and required checks. A blocked `cg.ps1` launcher does not authorize changing execution policy or skipping verification.
+Read the shared Lifecycle bootstrap in `.agents/cg/contract-graph-agent.md` once per session. For programme recovery, perform its selection check immediately after this skill and the bootstrap, before following links to the root contract, workflow, catalogs or other references. Reuse unchanged context.
 
-For chat, decision reviews and results, read [owner communication](../cg-unblock/references/owner-communication.md). Explain outcomes and choices for functional leaders; keep framework commands and approval mechanics in internal evidence.
+After scope is known, for chat, decision reviews and results, read [owner communication](../cg-unblock/references/owner-communication.md). Explain outcomes and choices for functional leaders; keep framework commands and approval mechanics in internal evidence.
 
-Use one completion procedure for every accepted delivery. The way the implementation was developed does not select a sign-off mode. Read [delivery completion](references/delivery-completion.md), the selected master plan, delivery record, root contract, `.agents/cg/profile.json`, `.agents/cg/workflow.md` and the families selected for sign-off in `.agents/cg/phases.json`. A and applicable P bind; E is advisory. Route through contracts before bounded source reading. Run `cg intent verify` and `cg status --programme <slug>`.
+Use one completion procedure for every accepted delivery. The way the implementation was developed does not select a sign-off mode. Select the requested outcome below before loading finishing references or implementation. Then read [delivery completion](references/delivery-completion.md), the selected plan's criteria/deferred obligations and delivery record, and shared context under the bootstrap. A and applicable P bind; E is advisory. Route through contracts before bounded source reading. Run `cg intent verify` and `cg status --programme <slug>`. Preserve the complete applicable final checks; bounded entry reading does not narrow accepted scope or waive verification.
 
 ## Select the requested outcome
 
-Apply the user's explicit scope first. Otherwise recover the applicable completion request through `cg status --json` and `cg next --for cg-sign-off --json`. Use the conversation and linked plan to resolve the intended outcome; never select another programme merely because its queue is ready or older. Ask one plain-language question only when the target or authority remains ambiguous. A narrower item, phase or sprint request cannot grant whole-programme authority.
+Apply the shared selection gate and the user's explicit scope first. Otherwise use `cg status` and, only for recovery of a single actual completion request, `cg next --for cg-sign-off`. Retrieve scoped JSON only for a missing evidence field. Multiple plausible outcomes require one scope question, not per-programme receipt inspection or Git archaeology. Use the conversation and selected plan to resolve the intended outcome; never select another programme merely because its queue is ready or older. A narrower item, phase or sprint request cannot grant whole-programme authority.
 
 A request to finish authorizes necessary in-scope finishing and repairs. An assessment-only request permits inspection and reporting, not edits, acceptance or closure. Reuse actual recorded authority without asking for another stage invocation. Do not create a completion request merely because a plan or delivery record exists.
+
+A Closed record permits only assessment of retained plan cleanup and shared consumers. `entry: cleanup-review` grants no new handoff, production or closure authority. With no retained files, report no next action. Apply the [closure applicability table](references/closure-checks.md#required-outcome); a queue or harvest cohort is required only when it already applies to this scope.
 
 ## Require the shared handoff
 

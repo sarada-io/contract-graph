@@ -1,5 +1,8 @@
 #!/usr/bin/env node
-/** Contract Graph's repository menu. Not a generic task runner or configuration format. */
+/**
+ * @file Offer the repository maintenance menu for local validation and requested release actions.
+ * @see ../src/runtime/distribution/.agent/contract.md
+ */
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';

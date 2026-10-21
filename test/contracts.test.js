@@ -1,3 +1,7 @@
+/**
+ * @file Check YAML graph validation, navigation, routing and projections.
+ * @see ../src/runtime/graph/.agent/contract.md
+ */
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
 import fs from "node:fs";
@@ -6,9 +10,9 @@ import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 
-import { init } from "../src/scripts/init.js";
-import { loadBindingPrinciples } from "../src/scripts/model.js";
-import { sync } from "../src/scripts/sync.js";
+import { init } from "../src/runtime/installation/init.js";
+import { loadBindingPrinciples } from "../src/runtime/verification/policy.js";
+import { sync } from "../src/runtime/installation/sync.js";
 import {
   CONTRACT_FILENAME,
   CONTRACT_SCHEMA_ID,
@@ -24,7 +28,7 @@ import {
   renderMermaid,
   routeContracts,
   stringifyContractYaml,
-} from "../src/scripts/contracts.js";
+} from "../src/runtime/graph/contracts.js";
 
 const TEST_DIR = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(TEST_DIR, "..");
@@ -413,4 +417,112 @@ test("a graph may mix a two-level module leaf with a five-kind nest", () => {
     ),
     ["repository", "module", "submodule", "component", "library"],
   );
+});
+
+test('suggestions preserve exact matches, explain reordered phrases, avoid unrelated matches and bound hydration', async t => {
+  const { routeSuggestions, hydratedRoutes } = await import('../src/runtime/graph/contracts.js');
+  const dir = fixture(); t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  editContract(dir, ROOT, c => { c.routes = [{ id: 'card-animation', when: ['fix card movement animation'], contracts: [MODULE] }]; });
+  const graph = loadContractGraph(dir);
+  const corpus = [
+    ['fix card movement animation', true], ['animation movement card repair', true], ['cards animation movement', true],
+    ['configure billing refunds', false], ['database backup restore', false], ['rename authentication provider', false],
+    ['repair jitter when cards move', true],
+  ];
+  const observed = corpus.map(([task, relevant]) => ({ task, relevant, found: routeSuggestions(graph, task).length > 0 }));
+  assert.equal(observed.filter(x => !x.relevant && x.found).length, 0);
+  assert.equal(observed.filter(x => x.relevant && x.found).length, 3);
+  t.diagnostic('routing-corpus-v1: 3/4 relevant queries retrieved; 0/3 unrelated queries matched; semantic miss uses explicit browse recovery');
+  assert.match(hydratedRoutes(graph, []).recovery, /children --id/);
+  assert.equal(routeSuggestions(graph, 'fix card movement animation')[0].method, 'exact');
+  assert.equal(routeContracts(graph, 'animation movement card repair').length, 0);
+  const suggested = routeSuggestions(graph, 'animation movement card repair');
+  assert.equal(suggested[0].method, 'lexical');
+  assert.deepEqual(suggested[0].evidence, ['card', 'movement', 'animation']);
+  assert.deepEqual(routeSuggestions(graph, 'configure billing refunds'), []);
+  assert.deepEqual(routeSuggestions(graph, 'repair jitter when cards move'), [], 'semantic paraphrase remains an honest unsupported lexical match');
+  const context = hydratedRoutes(graph, suggested, loadBindingPrinciples(dir), { limit: 1 });
+  assert.equal(context.contexts[0].id, graph.byFile.get(MODULE).contract.id);
+  assert.deepEqual(context.contexts[0].rules, contractContext(graph, graph.byFile.get(MODULE), loadBindingPrinciples(dir)).rules.map(rule => rule.id));
+  assert.throws(() => hydratedRoutes(graph, suggested, new Map(), { limit: 0 }), /limit/);
+  const call = (...args) => spawnSync(process.execPath, [path.join(REPO, 'bin/cg.js'), ...args], { encoding: 'utf8' });
+  const routed = call('contract', 'route', dir, '--task', 'animation movement card repair', '--suggest', '--hydrate', '--json');
+  assert.equal(routed.status, 0, routed.stderr); assert.equal(JSON.parse(routed.stdout).candidates[0].method, 'lexical');
+  const advisory = call('guidelines', 'show', dir, '--id', 'E01-01', '--json');
+  assert.equal(advisory.status, 0, advisory.stderr); assert.equal(JSON.parse(advisory.stdout).binding, 'advisory');
+  assert.equal(JSON.parse(advisory.stdout).entries.length, 1);
+  assert.notEqual(call('guidelines', 'show', dir, '--id', 'E99-99').status, 0);
+});
+
+test('routing ties, normalised duplicate words, omissions and advisory intersections stay explicit', async t => {
+  const { routeSuggestions, hydratedRoutes } = await import('../src/runtime/graph/contracts.js');
+  const dir = fixture(); t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  editContract(dir, ROOT, c => { c.routes = [
+    { id: 'first', when: ['billing refund'], contracts: [MODULE] },
+    { id: 'second', when: ['refund billing'], contracts: [MODULE] },
+    { id: 'duplicate', when: ['tokens token otherword'], contracts: [MODULE] },
+  ]; });
+  const graph = loadContractGraph(dir);
+  const ties = routeSuggestions(graph, 'billing and refund');
+  assert.deepEqual(ties.map(m => m.route), ['first', 'second']);
+  assert.deepEqual(routeSuggestions(graph, 'token'), []);
+  const report = hydratedRoutes(graph, ties, new Map(), { limit: 1 });
+  assert.equal(report.ambiguous, true); assert.equal(report.omittedCandidates, 1);
+  assert.equal(report.contexts.length, 1);
+  ties[0].matched = ['x'.repeat(5000)];
+  graph.byFile.get(MODULE).contract.responsibilities.owns = ['x'.repeat(5000)];
+  const bounded = hydratedRoutes(graph, ties);
+  assert.deepEqual(bounded.candidates[0].matched, { omitted: true });
+  assert.ok(bounded.omissions.every(item => item.retrieve));
+  assert.ok(JSON.stringify(bounded).length < 5000);
+  const call = (...args) => spawnSync(process.execPath, [path.join(REPO, 'bin/cg.js'), ...args], { encoding: 'utf8' });
+  const selected = JSON.parse(call('guidelines', 'show', dir, '--id', 'E01-01').stdout).entries[0];
+  const category = JSON.parse(call('guidelines', 'show', dir, '--category', selected.category).stdout);
+  assert.ok(category.entries.some(entry => entry.id === selected.id));
+  assert.ok(category.entries.every(entry => entry.category === selected.category));
+  const both = call('guidelines', 'show', dir, '--category', selected.category, '--id', selected.id);
+  assert.deepEqual(JSON.parse(both.stdout).entries, [selected]);
+  for (const args of [
+    ['guidelines', 'show', dir, '--category', 'unknown'],
+    ['status', dir, '--summary', '--programme', 'example'],
+    ['status', dir, '--select', 'example', '--clear-selection'],
+    ['contract', 'route', dir, '--task', 'billing', '--limit', '2'],
+    ['contract', 'route', dir, '--task', 'billing', '--suggest', '--limit', '1.5'],
+    ['status', dir, '--hydrate'],
+  ]) assert.notEqual(call(...args).status, 0, args.join(' '));
+});
+
+test('compact hydration shares ancestor bodies and preserves all context relationships', async t => {
+  const { hydratedRoutes } = await import('../src/runtime/graph/contracts.js');
+  const dir = fixture(); t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  const leaves = [MODULE];
+  for (let i = 0; i < 3; i++) {
+    const c = readContract(dir, MODULE); c.id = `leaf-${i}`; c.unit = `leaf-${i}`;
+    const file = `${c.unit}/.agents/cg/contract.yaml`;
+    fs.mkdirSync(path.dirname(path.join(dir, file)), { recursive: true });
+    fs.writeFileSync(path.join(dir, file), stringifyContractYaml(c)); leaves.push(file);
+  }
+  editContract(dir, ROOT, c => { c.relations.children.push(...leaves.slice(1).map(contract => ({ contract, uses: 'Fixture boundary' }))); c.routes = [{ id: 'fixture', when: ['multi context'], contracts: leaves }]; });
+  const graph = loadContractGraph(dir), rules = loadBindingPrinciples(dir), matches = routeContracts(graph, 'multi context');
+  const start = performance.now(); const expanded = hydratedRoutes(graph, matches, rules, { limit: 4 }); const middle = performance.now();
+  const compact = hydratedRoutes(graph, matches, rules, { limit: 4, compact: true }); const end = performance.now();
+  assert.deepEqual(compact.rules, expanded.rules); assert.deepEqual(compact.candidates, expanded.candidates);
+  for (let i = 0; i < compact.contexts.length; i++) {
+    const actual = compact.contexts[i], expected = expanded.contexts[i];
+    assert.deepEqual(actual.ancestors, expected.ancestors.map(a => a.contract));
+    for (const field of ['children', 'dependencies', 'rules']) assert.deepEqual(actual[field], expected[field]);
+    assert.deepEqual(compact.nodes.find(n => n.contract === actual.contract).responsibilities, expected.responsibilities);
+  }
+  assert.equal(compact.nodes.filter(n => n.contract === ROOT).length, 1);
+  assert.ok(compact.nodes.every(n => !Object.hasOwn(n, 'forbids')));
+  const bytes = value => Buffer.byteLength(JSON.stringify(value, null, 2) + '\n');
+  assert.ok(bytes(compact) < bytes(expanded)); assert.ok(bytes(compact) <= 65536);
+  t.diagnostic(JSON.stringify({ fixture: 'four-contexts-v1', expandedBytes: bytes(expanded), compactBytes: bytes(compact), expandedMs: middle-start, compactMs: end-middle }));
+  const none = hydratedRoutes(graph, [], rules, { compact: true }); assert.equal(none.matched, false); assert.deepEqual(none.contexts, []);
+  const largeRules = new Map(Array.from({ length: 100 }, (_, i) => [`A${String(i).padStart(2, '0')}`, 'x'.repeat(2000)]));
+  const truncated = hydratedRoutes(graph, matches, largeRules, { limit: 4, compact: true });
+  assert.ok(bytes(truncated) <= 65536); assert.ok(truncated.omissions.some(item => item.field === 'context'));
+  assert.ok(truncated.omissions.every(item => item.retrieve));
+  for (const context of truncated.contexts) assert.ok(context.rules.every(id => truncated.rules.some(rule => rule.id === id)));
+
 });

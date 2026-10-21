@@ -1,3 +1,7 @@
+/**
+ * @file Check attributed intent approval and invalidation when its evidence changes.
+ * @see ../src/runtime/delivery/.agent/contract.md
+ */
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
@@ -5,12 +9,12 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
-import { sync } from "../src/scripts/sync.js";
-import { init } from "../src/scripts/init.js";
-import { intentAction, intentStatus, INTENT_RECORD } from "../src/scripts/intent.js";
-import { next, permits } from "../src/scripts/next.js";
-import { status } from "../src/scripts/status.js";
-import { deliveryAction } from "../src/scripts/delivery.js";
+import { sync } from "../src/runtime/installation/sync.js";
+import { init } from "../src/runtime/installation/init.js";
+import { intentAction, intentStatus, INTENT_RECORD } from "../src/runtime/delivery/intent.js";
+import { next, permits } from "../src/runtime/delivery/next.js";
+import { status } from "../src/runtime/delivery/status.js";
+import { deliveryAction } from "../src/runtime/delivery/delivery.js";
 import { approveFixtureIntent, fixtureIntent } from "./helpers/intent.mjs";
 const CLI = fileURLToPath(new URL("../bin/cg.js", import.meta.url));
 const HOOK = fileURLToPath(new URL("../src/install/hooks/cg-gate.mjs", import.meta.url));
