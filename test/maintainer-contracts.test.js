@@ -33,13 +33,13 @@ test("website modules join the same maintainer map without generated output", t 
   assert.deepEqual(checkMaintainerContracts(root), []);
 
   fs.writeFileSync(path.join(root, "web/site/.agent/contract.md"), "Parent: [website](../../.agent/contract.md).\n");
-  const disconnected = checkMaintainerContracts(root).filter(error => error.startsWith("web/site/shell/.agent/contract.md:"));
+  const disconnected = checkMaintainerContracts(root).filter(error => error.startsWith(`${path.join("web", "site", "shell", ".agent", "contract.md")}:`));
   assert.ok(disconnected.some(error => error.includes("parent has no link back")));
   assert.ok(disconnected.some(error => error.includes("unreachable")));
   fs.writeFileSync(path.join(root, "web/site/.agent/contract.md"), publication);
 
   fs.writeFileSync(path.join(root, "web/site/publication.mjs"), "export const changed = true;\n");
-  assert.ok(checkMaintainerContracts(root).some(error => error.includes("web/site/publication.mjs: missing or unknown @see")));
+  assert.ok(checkMaintainerContracts(root).some(error => error.includes(`${path.join("web", "site", "publication.mjs")}: missing or unknown @see`)));
 });
 
 test("maintainer check detects broken navigation and ownership without consumer state", t => {
