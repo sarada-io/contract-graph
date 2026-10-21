@@ -4,6 +4,10 @@ This directory builds the public website from the same repository as the `contra
 
 The reviewed source snapshot came from `sarada-io/contract-graph-web` commit `cc807595cf8dc40ded01d214ba75756828718c54`. Git history, installed `.agents/` content, delivery receipts, intent records, local working plans, deployment state and credentials were excluded. The original repository remains unchanged. Published paper sources retain their own attribution and licence under [papers](../papers/README.md), outside both build outputs.
 
+## Maintainer graph
+
+Start at [the website application contract](.agent/contract.md). Its [Publication](site/.agent/contract.md) child composes [Shell](site/shell/.agent/contract.md), [Pages](site/pages/.agent/contract.md), [Presentation](site/presentation/.agent/contract.md), [Interactions](site/interactions/.agent/contract.md) and [Static resources](site/static/.agent/contract.md). [Operations](scripts/.agent/contract.md) owns build/preview commands. Each node records entry points, dependencies, boundary promises and the relevant checks; follow the selected responsibility before reading code. These are repository-only Markdown contracts, excluded from served output and the npm package.
+
 ## Source ownership
 
 | Content | Canonical source |

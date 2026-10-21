@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * @file Publication for the website target.
- * @see ../.agent/contract.md
+ * @see .agent/contract.md
  */
 /** Assemble only declared website inputs. Shared inputs use the root build-only Markdown dependency; no network or external checkout is required. */
 import fs from 'node:fs';

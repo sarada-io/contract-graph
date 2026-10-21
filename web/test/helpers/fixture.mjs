@@ -1,6 +1,6 @@
 /**
  * @file Build disposable website fixtures with explicitly shared canonical inputs.
- * @see ../../.agent/contract.md
+ * @see ../../site/.agent/contract.md
  */
 import fs from 'node:fs';
 import os from 'node:os';

@@ -1,6 +1,6 @@
 /**
  * @file Verify canonical content propagation, shared-input confinement and published links.
- * @see ../.agent/contract.md
+ * @see ../site/.agent/contract.md
  */
 import assert from 'node:assert/strict';
 import fs from 'node:fs';

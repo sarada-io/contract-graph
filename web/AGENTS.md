@@ -2,7 +2,7 @@
 
 # Agent guide: Contract Graph Dev Kit website
 
-This file applies to web/ within the combined public repository. Start at ../.agent/contract.md and then .agent/contract.md for maintenance ownership. Read it before editing. It records
+This file applies to web/ within the combined public repository. Start at [the repository contract](../.agent/contract.md), follow [the website application contract](.agent/contract.md), then select its responsible child before reading implementation. Read this guide before editing. It records
 owner decisions from the website work on 24 September 2026, not just generic
 coding advice. Its purpose is to prevent agents from undoing accepted decisions,
 duplicating content, or replacing the design without consultation.
@@ -33,8 +33,7 @@ duplicating content, or replacing the design without consultation.
 ## 2. Repository and runtime
 
 The owner approved source composition and automatic generation before deployment
-on 25 September 2026. Start with `site/EDITING.md` to locate the smallest editing
-surface. The design and page ownership decisions below remain authoritative.
+on 25 September 2026. Use the maintainer graph for responsibility and [site/EDITING.md](site/EDITING.md) for its concrete editing surface. The design and page ownership decisions below remain authoritative.
 
 This directory owns the website for **Contract Graph Dev Kit**. The CLI lives at ../src/; canonical human guides live at ../docs/ and schemas at ../src/cg/schema/. The merge is authorised; preserve the existing website stack, design and routes.
 

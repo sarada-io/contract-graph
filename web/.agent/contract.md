@@ -1,21 +1,31 @@
-# Website publication contract
+# Website application contract
 
-Parent: [repository](../../.agent/contract.md). Owns the static website target, its presentation, shared-content rendering and local operations.
+Parent: [repository](../../.agent/contract.md). Owns contractgraph.dev as the public website target, composed from canonical product sources and website presentation.
 
-## Entry points and ownership
+## Route a website change
 
-- [publication.mjs](../site/publication.mjs) assembles the explicit [manifest](../site/manifest.json) into ignored `web/public/`; [render.mjs](../site/shell/render.mjs) owns the shared shell.
-- [documentation.mjs](../site/documentation.mjs) renders the ten canonical [human guides](../../docs/README.md), translates repository links, preserves old anchors and validates the derived architecture figures against their Markdown source hashes. It selects exactly three shared [schema definitions](../../src/cg/schema/) for both canonical and legacy URLs and the two shared WebP marks from [docs/assets](../../docs/assets/).
-- [site](../site/) owns marketing bodies, page metadata, shell, ordered styles, browser behaviour and static assets. Technical article bodies are generated; never restore a second authored article or schema payload here.
-- [build-site.mjs](../scripts/build-site.mjs) owns the website build gate; [assets.mjs](../scripts/maintenance/assets.mjs) checks required generated files. [urun.mjs](../scripts/urun.mjs), [paths.mjs](../scripts/paths.mjs), [server.mjs](../scripts/preview/server.mjs) and the [launchers](../urun) own local preview/operations.
-- [tests](../test/) cover publication, content provenance, compatibility routes and local operations. [AGENTS.md](../AGENTS.md) retains accepted design decisions; [DEPLOY.md](../DEPLOY.md) owns hosting and cutover. The deployment job in [CI](../../.github/workflows/ci.yml) owns publication to the existing Worker after the Linux, Windows and reusable public-source checks pass.
+Start here, choose the responsible child, then read its selected implementation and tests. Follow sibling links only when their promises change. These repository-only Markdown contracts use the same maintainer map as the CLI; they are excluded from website output and do not install consumer YAML governance.
 
-## Boundary promises
+| Request | Next contract | Starting surface |
+| --- | --- | --- |
+| Build output, source selection, generated guide prose, schemas, anchors or stale figures | [Publication](../site/.agent/contract.md) | `site/publication.mjs`, `site/documentation.mjs`, `site/manifest.json` |
+| Page copy, metadata, documentation hero, page-specific styles or derived figures | [Pages](../site/pages/.agent/contract.md) | The selected page's body and metadata |
+| Header, footer, common head, active navigation or pre-paint theme | [Shell](../site/shell/.agent/contract.md) | Shared HTML and `render.mjs` |
+| Theme colours, shared layout, CSS order or responsive styling | [Presentation](../site/presentation/.agent/contract.md) | `entry.json` and the relevant stylesheet |
+| Mobile menu, theme switching, command controls, video or analytics | [Interactions](../site/interactions/.agent/contract.md) | `entry.json` and the relevant browser fragment |
+| Images, fonts, redirects, crawler metadata or old URL fallbacks | [Static resources](../site/static/.agent/contract.md) | Declared static file and manifest entry |
+| Local menu, preview server, paths, required-file checks or build gate | [Operations](../scripts/.agent/contract.md) | Existing script or launcher |
+| Hosting, production deployment, rollback or release alignment | This boundary; [deployment guide](../DEPLOY.md) | [Wrangler configuration](../wrangler.jsonc), [CI](../../.github/workflows/ci.yml) |
 
-Keep plain HTML/CSS/JavaScript, the existing shell and browser startup order, light/dark themes, navigation, copy controls and local preview. Build-only dependencies belong in root devDependencies and must support Node 18.17+. The [Authoring](../../src/skills/.agent/contract.md) owner retains human guide meaning and the [Verification](../../src/runtime/verification/.agent/contract.md) owner retains schema semantics.
+Direct children are [Publication](../site/.agent/contract.md) and [Operations](../scripts/.agent/contract.md). Publication decomposes the editable application into shell, pages, presentation, interactions and static resources. Tests under [web/test](../test) verify those owners; they are not a separate application subsystem.
 
-Only `web/public/` is served. Both targets select explicit inputs; website source, papers, governance, secrets and internal records must not enter the npm package. Shared-content reads use an explicit allowlist and reject symlinks and path traversal. Keep schema bytes and identities unchanged, including the `/contract-graph/schema/` aliases. Do not copy credentials, installed governance, receipts, local paths or unreviewed source history into this public repository.
+## Integration promises
 
-Build and preview never publish. After the one-time setup in DEPLOY.md, successful current `main` pushes publish through GitHub Actions; pull requests and other branches never deploy. Production jobs are serialised and skip superseded commits. Keep hosted previews disabled and disable the old Cloudflare Git-build publisher so only one deployment path remains. Store credentials in GitHub Actions secrets, exposed only to the deploy step. Merging to `main` is the website publication decision: technical guidance must describe the released npm package or clearly identify upcoming capabilities. npm publication remains separate.
+- Keep the existing plain HTML/CSS/JavaScript application, design, navigation, light/dark themes, accessibility and compatibility URLs. [AGENTS.md](../AGENTS.md) retains accepted product decisions; [BRANDING.md](../BRANDING.md) owns brand guidance.
+- [Authoring](../../src/skills/.agent/contract.md) owns canonical guide meaning in `docs/`; [Verification](../../src/runtime/verification/.agent/contract.md) owns schema semantics in `src/cg/schema/`. Website children own their rendering and presentation, never a second authored guide or schema definition.
+- Only generated `web/public/` is served or uploaded. Website source, maintainer contracts, papers, credentials and local records remain outside both the served assets and npm package. [Distribution](../../src/runtime/distribution/.agent/contract.md) owns the package boundary and CI orchestration.
+- Build-only dependencies stay in root devDependencies and support Node.js 18.17+. Root npm commands retain their library target; website commands are separate.
+- Building and previewing never publish. Successful current `main` pushes deploy through GitHub Actions after Linux, Windows and security checks; other branches only validate. Keep Cloudflare Git builds and hosted previews disabled. Production deployments are serialised, skip superseded commits and expose credentials only to the deployment step.
+- Merging to `main` is the website publication decision. Guidance must describe released npm capabilities or clearly identify upcoming features. npm publication remains separate; follow DEPLOY.md for production verification and rollback.
 
-Verification: `npm run web:build`, `npm run web:check`, `npm run check:maintainer`, `npm run check:public`, and `npm test`. Package separation changes also require `npm run pack` and tarball inspection. Review desktop/mobile and light/dark rendering when presentation changes.
+Verification: `npm run check:maintainer`, `npm run check:public`, `npm run web:build`, `npm run web:check` and `npm test`. Review desktop/mobile and both themes for presentation changes. Package-selection changes also require Distribution's package checks. The maintainer checker verifies links, parent backlinks, reachability and module owner pointers; it does not prove semantic ownership, implementation confinement or safe parallel edits.

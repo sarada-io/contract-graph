@@ -1,6 +1,6 @@
 /**
  * @file Sitemap.test for the website target.
- * @see ../.agent/contract.md
+ * @see ../site/static/.agent/contract.md
  */
 import assert from 'node:assert/strict';
 import fs from 'node:fs';

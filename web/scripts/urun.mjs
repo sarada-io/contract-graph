@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * @file Urun for the website target.
- * @see ../.agent/contract.md
+ * @see .agent/contract.md
  */
 /** contractgraph.dev's repository menu. Not a generic task runner or configuration format. */
 import { spawnSync } from 'node:child_process';

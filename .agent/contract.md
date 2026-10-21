@@ -32,7 +32,7 @@ not mechanically enforced import boundaries.
 | A/E/P catalogs, schemas, binding detectors, aggregate verification | [Verification](../src/runtime/verification/.agent/contract.md) |
 | Skills, lifecycle instructions, templates, human documentation | [Authoring](../src/skills/.agent/contract.md) |
 | Build, package, runtime identity, local development and release tools | [Distribution](../src/runtime/distribution/.agent/contract.md) |
-| Website assembly, presentation, preview and hosting handoff | [Website](../web/.agent/contract.md) |
+| Website application, publication, browser behaviour, preview and hosting | [Website](../web/.agent/contract.md) |
 
 ### Find a specific task
 
@@ -123,7 +123,7 @@ The children jointly cover `src/runtime/`, shipped assets and maintainer tooling
 beside this logical graph in `test/`; they verify their named owner rather than forming another
 product capability. Human-facing topic routes remain in [docs/README.md](../docs/README.md).
 
-The [website boundary](../web/.agent/contract.md) consumes canonical human guides and schemas from this same repository and assembles only `web/public/`. Its source, tests and published [papers](../papers/README.md) are excluded from the npm target. Website maintenance uses this Markdown map; the old site's installed governance and internal records are not imported.
+The [website boundary](../web/.agent/contract.md) consumes canonical human guides and schemas from this same repository and assembles only `web/public/`. Its source, tests and published [papers](../papers/README.md) are excluded from the npm target. Follow its publication and operations children, then the selected shell/page/presentation/interaction/static boundary before implementation. Website maintenance uses this Markdown map; the old site's installed governance and internal records are not imported.
 
 ## Maintainer context and tests
 
@@ -142,8 +142,7 @@ by Installation. Edit the authored source for a product change, not generated `d
 
 ## Keep this map small and true
 
-This is the minimal maintainer graph: `.agent/contract.md` →
-`src/runtime/<responsibility>/.agent/contract.md` → local source files and their existing tests.
+The maintainer graph starts at `.agent/contract.md`, then selects `src/runtime/<responsibility>/.agent/contract.md`, Authoring or the website boundary. The website continues through `web/site/.agent/contract.md` and `web/scripts/.agent/contract.md`; publication routes to its shell, pages, presentation, interactions and static-resource children before local source and tests.
 Authoring lives at `src/skills/.agent/contract.md`: one shared boundary for all lifecycle
 and expert skills, including their references, assets and host metadata.
 Source headers point back to their owning node. These comments refer to the source checkout;

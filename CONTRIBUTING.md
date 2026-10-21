@@ -358,7 +358,7 @@ For communication changes, walk through a material product choice, an already-au
 
 ### Colocated maintainer contracts
 
-Start at `.agent/contract.md`, then follow the owner contract beside its source: `src/runtime/<owner>/.agent/contract.md` or `src/skills/.agent/contract.md`. One `src/skills/.agent/` covers all lifecycle and expert skills, including their references, assets and host metadata; individual skills do not get separate maintainer contracts. Create deeper contracts only for distinct responsibility boundaries, not every folder. JSDoc `@see` links point to the local owner. Move an existing contract rather than duplicate its promises centrally.
+Start at `.agent/contract.md`, then follow the owner contract beside its source: `src/runtime/<owner>/.agent/contract.md` or `src/skills/.agent/contract.md`. Website work continues through [web/.agent/contract.md](web/.agent/contract.md), its publication/operations children and the selected shell, page, presentation, interaction or static-resource boundary. One `src/skills/.agent/` covers all lifecycle and expert skills, including their references, assets and host metadata; individual skills do not get separate maintainer contracts. Create deeper contracts only for distinct responsibility boundaries, not every folder. JSDoc `@see` links point to the local owner. Move an existing contract rather than duplicate its promises centrally.
 
 Run `npm run check:maintainer` for a dependency-free check of local contract links, parent
 backlinks, root reachability and runtime/script/launcher ownership pointers. `npm test` includes

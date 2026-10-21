@@ -1,6 +1,6 @@
 /**
  * @file Paths for the website target.
- * @see ../.agent/contract.md
+ * @see .agent/contract.md
  */
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';

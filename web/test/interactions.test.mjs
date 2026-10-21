@@ -1,6 +1,6 @@
 /**
  * @file Interactions.test for the website target.
- * @see ../.agent/contract.md
+ * @see ../site/interactions/.agent/contract.md
  */
 import assert from 'node:assert/strict';
 import test from 'node:test';

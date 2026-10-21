@@ -1,6 +1,6 @@
 /**
  * @file Render for the website target.
- * @see ../../.agent/contract.md
+ * @see .agent/contract.md
  */
 /** Render the website's common shell. Inputs are repository-owned HTML and metadata. */
 export function renderTemplate(template, slots) {
