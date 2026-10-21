@@ -45,7 +45,7 @@ same metadata exclusions. The agent expands scope for related edits or records w
 unrelated. This is an observation at review time; it does not infer who edited a file or block
 approval because unrelated work is dirty.
 
-## Receipt storage in 0.7.0
+## Receipt storage and compatibility
 
 New receipts use storage version 2: repeated large JSON values are stored once in a local evidence
 table and referenced by SHA-256. Readers reconstruct the complete logical record and check every
@@ -71,6 +71,9 @@ receipts and migrated receipts continue using v2 on later updates, including res
 Upgrade all writers and CI readers to 0.7.0 or newer before creating or migrating v2 receipts;
 older tooling cannot read them. Hashes detect damaged evidence, not deliberate forgery by someone
 able to rewrite the whole receipt. No history pruning or age-based deletion is supported.
+
+Version 1.1.0 also supports optional v3 delta compression; new receipts still default to v2.
+See [receipt compatibility](upgrade.md#shared-delivery-records-and-sign-off) before opting in or rolling back to an older CLI.
 
 ## Working side by side
 

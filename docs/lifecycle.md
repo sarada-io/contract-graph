@@ -65,7 +65,7 @@ adopting repository whose installed catalog is missing a key is stale. Refresh i
 
 Each skill starts with the requested outcome and existing progress, then reads the contracts and evidence needed for its next action. Recovery checks selection after the skill and shared startup instructions, before opening the root contract or workflow for task discovery. Ambiguity pauses for a target question before inspecting candidate plans or histories. Unchanged shared context is reused. Recovery does not restart an entire programme survey, and a targeted change does not require reading unrelated implementations. Warmup still performs its selected adoption survey, while sign-off retains the complete applicable final checks. Recorded answers and existing execution authority are reused.
 
-The 0.7.0 delivery path is plan → produce → sign-off, with review and repair loops. Preparation belongs partly to planning readiness and partly to production. Automatic continuation is part of an authorised sprint-completion request.
+The delivery path is plan → produce → sign-off, with review and repair loops. Preparation belongs partly to planning readiness and partly to production. Automatic continuation is part of an authorised sprint-completion request.
 
 | Skill | Responsibility |
 |---|---|
@@ -111,6 +111,6 @@ invariants are unchanged. A structural change is incomplete until those graph fa
 ## Related
 
 - [Workflow](workflow.md) — how an outcome becomes phases, steps, and a lasting graph.
-- [Upgrade](upgrade.md) — Install 0.7.0 through `cg init`, preserving repository choices.
+- [Upgrade](upgrade.md) — Refresh an existing installation through `cg init`, preserving repository choices.
 - [Contracts](contracts.md) — node shape and what verification proves today.
 - [Vision](vision.md) — why the graph exists.
