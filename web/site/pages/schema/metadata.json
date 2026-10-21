@@ -1,0 +1,19 @@
+{
+  "output": "schema/index.html",
+  "title": "Public schemas — Contract Graph Dev Kit",
+  "description": "Canonical public JSON Schemas for Contract Graph contracts, principles, guidelines, and enforcement maps.",
+  "canonical": "https://contractgraph.dev/schema/",
+  "ogType": "website",
+  "ogTitle": "Public schemas — Contract Graph Dev Kit",
+  "ogDescription": "Stable JSON Schema identities used by Contract Graph files.",
+  "twitterCard": "summary",
+  "socialImage": "",
+  "socialWidth": "",
+  "socialHeight": "",
+  "socialAlt": "",
+  "faviconIco": false,
+  "bodyClass": "",
+  "current": "",
+  "styleVersion": "20260924-40",
+  "scriptVersion": "20260923-1"
+}

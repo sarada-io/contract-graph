@@ -1,0 +1,22 @@
+[
+  {
+    "sha256": "1fef855964d62edbbc9af612aaaf042b12e254590d4bb2f4e68b8a4042091d27",
+    "source": "pages/docs/architecture/figure-1.html"
+  },
+  {
+    "sha256": "b7d83c97bae92579a59e9d840114b552d7ddb32990349b4bd64c0b9d85ef6061",
+    "source": "pages/docs/architecture/figure-2.html"
+  },
+  {
+    "sha256": "4a76bcbd7ed63986ff5824268874947e43596ebeac06e108ba18dea0af60e4c3",
+    "source": "pages/docs/architecture/figure-3.html"
+  },
+  {
+    "sha256": "2de632d9cd2a73d1585affd7682968ba3e90a27ad6580d27f0d08ceb7dbb7da6",
+    "source": "pages/docs/architecture/figure-4.html"
+  },
+  {
+    "sha256": "6634f44233fa667a2543487373ae2cbcd01e5e074130f8ce8103e6265a84ab8d",
+    "source": "pages/docs/architecture/figure-5.html"
+  }
+]

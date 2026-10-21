@@ -1,0 +1,17 @@
+title = "Contract Graph public-source scanning"
+
+[extend]
+useDefault = true
+
+# The Dart inspection table describes generated/implicit members. The generic
+# API-key detector mistakes that ordinary prose for a value following "APIs,".
+# Both the exact non-secret phrase AND this guide path must match. Other values,
+# rules and files retain the complete default detector set.
+[[rules]]
+id = "generic-api-key"
+  [[rules.allowlists]]
+  description = "Dart source-inspection terminology"
+  condition = "AND"
+  regexTarget = "secret"
+  regexes = ['''^generated/implicit$''']
+  paths = ['''(^|/)docs/contracts\.md$''']

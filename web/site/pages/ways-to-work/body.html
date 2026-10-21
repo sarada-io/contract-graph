@@ -1,0 +1,66 @@
+
+
+  <main id="main">
+    <section class="page-hero">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb"><a href="/">Home</a><span aria-hidden="true">/</span><span>How to use</span></nav>
+        <p class="eyebrow">How to use</p>
+        <h1>Two ways to use the Dev Kit.</h1>
+        <p class="page-lede">Both modes use the same contract graph. Plan and deliver when the outcome is already understood. Explore through prototyping when you still need to see the experience. You review the working result. Sign-off completes what that acceptance left open.</p>
+        <div class="page-actions">
+          <a class="button" href="#deliver">Plan and deliver</a>
+          <a class="button button-secondary" href="#explore">Explore through prototyping</a>
+        </div>
+      </div>
+    </section>
+
+    <section id="deliver">
+      <div class="container">
+        <div class="section-heading">
+          <p class="status-label">Understood outcome</p>
+          <h2>Plan and deliver.</h2>
+          <p>Use this when you can already say what the work should achieve. <code>/cg-plan</code> agrees a sprint, or an epic made of several sprints. <code>/cg-produce</code> implements that scope. <code>/cg-sign-off</code> completes it. A sprint is one reviewable increment: the outcome, and what you will accept.</p>
+        </div>
+        <div class="cycle cycle-3" aria-label="Plan, produce, sign off">
+          <div class="cycle-step accent">/cg-plan</div>
+          <div class="cycle-step">/cg-produce</div>
+          <div class="cycle-step accent">/cg-sign-off</div>
+        </div>
+        <ol class="workflow-steps" style="margin-top:2.2rem">
+          <li><span>01</span><div><h3>Plan</h3><p><code>/cg-plan</code> agrees the goal, the acceptance criteria, and the scope. The agent locates the contracts the work will touch. Asking for a plan agrees that plan. Ask for the sprint or epic when you want it built.</p></div></li>
+          <li><span>02</span><div><h3>Produce</h3><p><code>/cg-produce</code> builds the agreed scope and shows you a working result. Scope and review cadence are separate choices. The agent asks whether to review the selected work together, or to review each item. If either answer is missing, it collects those choices together, as separate selectable questions when the host supports them. Answers you already gave are reused. Agreed work that does not depend on an open decision can continue. A material decision that is still unresolved still needs you.</p></div></li>
+          <li><span>03</span><div><h3>Sign off</h3><p>After you accept the result, <code>/cg-sign-off</code> completes the outstanding implementation obligations, required tests, documentation, verification, and decision consolidation inside the authorized scope. Accepting what you tried is the review. Sign-off is the completion of what that review left open. It does not merge or publish the work.</p></div></li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="section-tint" id="explore">
+      <div class="container">
+        <div class="section-heading">
+          <p class="status-label">Uncertain experience</p>
+          <h2>Explore through prototyping.</h2>
+          <p>Use this when you need to use the product to discover the result. <code>/cg-prototype</code> puts a working version in front of you. <code>/cg-sign-off</code> finishes the accepted scope. You do not need a complete implementation plan before the first preview.</p>
+        </div>
+        <div class="cycle cycle-2" aria-label="Prototype, then sign off">
+          <div class="cycle-step">/cg-prototype</div>
+          <div class="cycle-step accent">/cg-sign-off</div>
+        </div>
+        <ol class="workflow-steps" style="margin-top:2.2rem">
+          <li><span>01</span><div><h3>Prototype</h3><p><code>/cg-prototype</code> starts from the relevant contracts, launches the application, and changes it from your feedback. You say when the experience is right. Silence does not accept it. The agent can continue agreed changes that do not depend on an open decision.</p></div></li>
+          <li><span>02</span><div><h3>Sign off</h3><p>The same completion as plan and deliver. <code>/cg-sign-off</code> finishes outstanding implementation, required tests, documentation, verification, and decision consolidation for the accepted prototype. Liking the prototype leaves that work still to do.</p></div></li>
+        </ol>
+        <div class="callout"><p>Accepting a prototype records the experience you approved. Sign-off completes the remaining obligations in that scope. Merging or publishing stays your decision.</p></div>
+      </div>
+    </section>
+
+    <section id="you">
+      <div class="container">
+        <div class="section-heading">
+          <p class="status-label">Your part</p>
+          <h2>You decide the product. The agent carries the agreed work.</h2>
+          <p>Inside a sprint, epic, or prototype you have already asked to complete, the agent can continue agreed work that stands on its own. Review, and any material decision the work cannot proceed without, still wait for you. Installation is <code>npm install -g contract-graph</code> and <code>cg init</code>. Then run <code>/cg-warmup</code> and confirm the project context before either path. <a href="/start/">Get started</a>.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+

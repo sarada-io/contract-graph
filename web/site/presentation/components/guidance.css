@@ -1,0 +1,191 @@
+.tutorial-points {
+  display: grid;
+  gap: 1.25rem;
+  margin-top: 2.2rem;
+}
+
+.tutorial-points article {
+  padding-top: 1.15rem;
+  border-top: 1px solid var(--border);
+}
+
+.tutorial-points h3 { color: var(--ink); font-size: 1rem; }
+.tutorial-points p { margin-top: 0.5rem; color: var(--text-muted); font-size: 0.92rem; }
+
+.workflow-steps {
+  display: grid;
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.workflow-steps li {
+  display: grid;
+  grid-template-columns: 2.3rem minmax(0, 1fr);
+  gap: 0.85rem;
+  padding: 1.35rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.workflow-steps li > span {
+  color: var(--teal-soft);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.workflow-steps h3 { color: var(--ink); font-size: 1.1rem; }
+.workflow-steps p { margin: 0.55rem 0 0.8rem; color: var(--text-muted); font-size: 0.92rem; }
+.tutorial-support-grid { margin-top: 1.25rem; }
+.tutorial-support-grid code { display: inline-block; margin-top: 0.8rem; }
+
+.tutorial-split {
+  display: grid;
+  gap: clamp(2rem, 5vw, 4rem);
+  align-items: start;
+}
+
+.anatomy-list {
+  margin: 1.6rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.anatomy-list li {
+  display: grid;
+  gap: 0.25rem;
+  padding-block: 0.8rem;
+  border-top: 1px solid var(--border);
+}
+
+.anatomy-list strong { color: var(--ink); font-size: 0.95rem; }
+.anatomy-list span { color: var(--text-muted); font-size: 0.9rem; }
+
+.yaml-card {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--code-bg);
+  box-shadow: var(--card-shadow);
+}
+
+.code-title {
+  padding: 0.75rem 1.2rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.13);
+  color: #B9D3DA;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.yaml-card pre { margin: 0; border-radius: 0; }
+
+.mechanics-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.mechanics-grid article {
+  padding: 1.4rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.mechanics-grid article > span {
+  color: var(--teal-soft);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.mechanics-grid h3 { margin-top: 0.55rem; color: var(--ink); font-size: 1.05rem; }
+.mechanics-grid p { margin-top: 0.55rem; color: var(--text-muted); font-size: 0.91rem; }
+
+.command-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-top: 1.4rem;
+}
+
+.command-row code {
+  padding: 0.45rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--inline-code-bg);
+  color: var(--ink);
+  font-size: 0.79rem;
+}
+
+.adoption-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.adoption-grid > article {
+  padding: clamp(1.4rem, 4vw, 2rem);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.adoption-grid h3 { color: var(--ink); font-size: 1.2rem; }
+.adoption-grid .section-copy { margin-top: 0.7rem; }
+.adoption-grid + .skill-list { margin-top: 1.4rem; }
+.adoption-grid ol { margin: 1.2rem 0 0; padding-left: 1.3rem; }
+.adoption-grid li { color: var(--text-muted); font-size: 0.93rem; }
+.adoption-grid li + li { margin-top: 0.6rem; }
+.adoption-grid li::marker { color: var(--teal-soft); font-weight: 700; }
+
+.tutorial-documents { margin-top: 1.25rem; }
+
+.callout {
+  margin-top: 2rem;
+  padding: 1.35rem 1.5rem;
+  border-left: 3px solid var(--accent);
+  border-radius: 0 10px 10px 0;
+  background: var(--callout-bg);
+}
+
+.callout strong { color: var(--ink); }
+.callout p + p { margin-top: 0.75rem; }
+
+.beta-callout {
+  border-left-color: var(--warn-border);
+  background: var(--warn-bg);
+}
+
+.cycle {
+  display: grid;
+  gap: 0.7rem;
+  margin-top: 2rem;
+}
+
+.cycle-step {
+  position: relative;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 0.93rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.cycle-step:not(:last-child)::after {
+  content: "\2193";
+  position: absolute;
+  left: 50%;
+  bottom: -1.16rem;
+  z-index: 1;
+  color: var(--teal-soft);
+  transform: translateX(-50%);
+}
+
+.cycle-step.accent { border-color: rgba(17, 183, 165, 0.8); box-shadow: inset 0 3px 0 var(--accent); }
+

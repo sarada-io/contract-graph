@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 700" width="760" height="700" role="img" aria-labelledby="title desc">
+  <title id="title">Encapsulation pockets and the contract graph</title>
+  <desc id="desc">Each pocket hides an interior and presents a contract. Nested contracts form a graph the agent walks.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#111111"/>
+    </marker>
+    <marker id="arrowBlue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1f3a5f"/>
+    </marker>
+  </defs>
+
+  <text x="20" y="22" font-family="Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#111111">(a) A pocket: interior hidden, contract as the public face</text>
+
+  <rect x="20" y="36" width="720" height="280" rx="6" fill="#fafafa" stroke="#222222" stroke-width="1.6"/>
+  <rect x="20" y="36" width="720" height="36" rx="6" fill="#1f3a5f"/>
+  <rect x="20" y="54" width="720" height="18" fill="#1f3a5f"/>
+  <text x="36" y="58" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="#ffffff">Repository contract -- how the product is used; children; routes</text>
+  <text x="36" y="88" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#555555">repository pocket</text>
+  <text x="378" y="92" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#111111">uses B's contract</text>
+
+  <rect x="36" y="104" width="340" height="192" rx="5" fill="#ffffff" stroke="#222222" stroke-width="1.4"/>
+  <rect x="36" y="104" width="340" height="32" rx="5" fill="#2c5f8a"/>
+  <rect x="36" y="120" width="340" height="16" fill="#2c5f8a"/>
+  <text x="50" y="124" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="#ffffff">Module A contract -- surface, next children</text>
+  <text x="50" y="152" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#555555">module A pocket</text>
+
+  <rect x="52" y="164" width="148" height="116" rx="4" fill="#ffffff" stroke="#222222" stroke-width="1.2"/>
+  <rect x="52" y="164" width="148" height="26" rx="4" fill="#3d7ea6"/>
+  <rect x="52" y="178" width="148" height="12" fill="#3d7ea6"/>
+  <text x="60" y="181" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="700" fill="#ffffff">Component contract</text>
+  <rect x="64" y="200" width="124" height="68" rx="3" fill="#ececec" stroke="#888888" stroke-dasharray="3 2"/>
+  <text x="74" y="230" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#333333">interior</text>
+  <text x="74" y="246" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#333333">implementation</text>
+
+  <rect x="212" y="164" width="148" height="116" rx="4" fill="#ffffff" stroke="#222222" stroke-width="1.2"/>
+  <rect x="212" y="164" width="148" height="26" rx="4" fill="#3d7ea6"/>
+  <rect x="212" y="178" width="148" height="12" fill="#3d7ea6"/>
+  <text x="220" y="181" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="700" fill="#ffffff">Component contract</text>
+  <rect x="224" y="200" width="124" height="68" rx="3" fill="#ececec" stroke="#888888" stroke-dasharray="3 2"/>
+  <text x="234" y="230" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#333333">interior</text>
+  <text x="234" y="246" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#333333">implementation</text>
+
+  <rect x="456" y="104" width="264" height="192" rx="5" fill="#ffffff" stroke="#222222" stroke-width="1.4"/>
+  <rect x="456" y="104" width="264" height="32" rx="5" fill="#2c5f8a"/>
+  <rect x="456" y="120" width="264" height="16" fill="#2c5f8a"/>
+  <text x="470" y="124" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="#ffffff">Module B contract</text>
+  <text x="470" y="152" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#555555">module B pocket</text>
+  <rect x="476" y="168" width="224" height="112" rx="3" fill="#ececec" stroke="#888888" stroke-dasharray="3 2"/>
+  <text x="490" y="220" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#333333">interior (hidden)</text>
+  <text x="490" y="236" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#333333">implementation</text>
+
+  <line x1="376" y1="152" x2="450" y2="152" stroke="#111111" stroke-width="1.8" stroke-dasharray="6 3" marker-end="url(#arrow)"/>
+
+  <text x="20" y="346" font-family="Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#111111">(b) The graph the agent walks is the contracts, not the interiors</text>
+
+  <rect x="20" y="368" width="100" height="36" rx="4" fill="#ffffff" stroke="#1f3a5f" stroke-width="1.5"/>
+  <text x="40" y="390" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#111111">request</text>
+  <line x1="120" y1="386" x2="168" y2="386" stroke="#1f3a5f" stroke-width="2.2" marker-end="url(#arrowBlue)"/>
+
+  <rect x="176" y="360" width="200" height="52" rx="6" fill="#1f3a5f"/>
+  <text x="196" y="382" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="#ffffff">Repository contract</text>
+  <text x="196" y="398" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#ffffff">routes the task</text>
+
+  <line x1="220" y1="412" x2="175" y2="458" stroke="#111111" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <line x1="320" y1="412" x2="475" y2="458" stroke="#111111" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <text x="80" y="438" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#111111">compose</text>
+  <text x="500" y="430" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#111111">compose</text>
+
+  <rect x="80" y="464" width="190" height="44" rx="6" fill="#2c5f8a"/>
+  <text x="98" y="491" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="#ffffff">Module A contract</text>
+
+  <rect x="380" y="464" width="190" height="44" rx="6" fill="#2c5f8a"/>
+  <text x="398" y="491" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="#ffffff">Module B contract</text>
+
+  <line x1="270" y1="486" x2="372" y2="486" stroke="#111111" stroke-width="1.8" stroke-dasharray="6 3" marker-end="url(#arrow)"/>
+  <text x="288" y="456" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#111111">uses B's contract</text>
+
+  <line x1="140" y1="508" x2="100" y2="548" stroke="#111111" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <line x1="210" y1="508" x2="260" y2="548" stroke="#111111" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <text x="24" y="532" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#111111">compose</text>
+
+  <rect x="20" y="554" width="170" height="40" rx="6" fill="#3d7ea6"/>
+  <text x="36" y="578" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="#ffffff">Component contract</text>
+  <rect x="210" y="554" width="170" height="40" rx="6" fill="#3d7ea6"/>
+  <text x="226" y="578" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="#ffffff">Component contract</text>
+
+  <line x1="105" y1="594" x2="105" y2="628" stroke="#1f3a5f" stroke-width="2.2" marker-end="url(#arrowBlue)"/>
+  <text x="114" y="618" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#111111">then read code</text>
+  <rect x="28" y="636" width="154" height="28" rx="4" fill="#ececec" stroke="#888888" stroke-dasharray="3 2"/>
+  <text x="54" y="654" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#333333">implementation</text>
+
+  <line x1="475" y1="508" x2="475" y2="628" stroke="#888888" stroke-width="1.6" marker-end="url(#arrow)"/>
+  <rect x="398" y="636" width="154" height="28" rx="4" fill="#ececec" stroke="#888888" stroke-dasharray="3 2"/>
+  <text x="424" y="654" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#333333">implementation</text>
+
+  <rect x="590" y="360" width="150" height="120" rx="4" fill="#ffffff" stroke="#cccccc"/>
+  <text x="602" y="380" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="700" fill="#111111">Legend</text>
+  <line x1="602" y1="396" x2="638" y2="396" stroke="#111111" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <text x="646" y="400" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#111111">composition</text>
+  <line x1="602" y1="418" x2="638" y2="418" stroke="#111111" stroke-width="1.6" stroke-dasharray="6 3" marker-end="url(#arrow)"/>
+  <text x="646" y="422" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#111111">uses contract</text>
+  <rect x="602" y="434" width="28" height="14" fill="#2c5f8a"/>
+  <text x="636" y="445" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#111111">contract node</text>
+  <rect x="602" y="456" width="28" height="14" fill="#ececec" stroke="#888888" stroke-dasharray="2 2"/>
+  <text x="636" y="467" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#111111">interior (hidden)</text>
+</svg>

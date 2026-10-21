@@ -1,0 +1,31 @@
+name: Public source safety
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  source-safety:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24.x"
+      - name: Reject private records and local-machine metadata
+        run: node scripts/check-public-source.mjs
+      - name: Scan Git history with redacted diagnostics
+        run: >-
+          docker run --rm --network none -v "$GITHUB_WORKSPACE:/repo:ro"
+          -e GIT_CONFIG_COUNT=1 -e GIT_CONFIG_KEY_0=safe.directory -e GIT_CONFIG_VALUE_0=/repo
+          ghcr.io/gitleaks/gitleaks:v8.30.1@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f
+          git --redact --no-banner --config /repo/.gitleaks.toml --log-opts="--all" /repo
+      - name: Scan current files with redacted diagnostics
+        run: >-
+          docker run --rm --network none -v "$GITHUB_WORKSPACE:/repo:ro"
+          ghcr.io/gitleaks/gitleaks:v8.30.1@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f
+          dir --redact --no-banner --config /repo/.gitleaks.toml /repo

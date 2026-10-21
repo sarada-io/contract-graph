@@ -1,0 +1,22 @@
+/* Keep setup aligned with the kit contents on the Get Started page. */
+.start-steps {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2.5rem;
+}
+
+.start-steps .prose { max-width: none; }
+.start-steps .yaml-card pre { margin-top: 0; }
+.start-workflow { margin-top: 3rem; }
+
+@media (min-width: 880px) {
+  .start-page .page-hero h1 {
+    max-width: none;
+    font-size: clamp(2rem, 3.5vw, 3rem);
+  }
+  .start-page .page-lede { max-width: 52rem; }
+  .start-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .start-steps .yaml-card pre { min-height: 6rem; }
+  .start-page .page-hero ~ section { padding-block: 3rem; }
+}
+

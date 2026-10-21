@@ -1,0 +1,19 @@
+{
+  "output": "docs/workflow/index.html",
+  "title": "Workflow — Contract Graph Dev Kit",
+  "description": "How a Contract Graph programme is split into sprints, run through produce and sign-off, and left on disk for the next session.",
+  "canonical": "https://contractgraph.dev/docs/workflow/",
+  "ogType": "article",
+  "ogTitle": "Workflow — Contract Graph Dev Kit",
+  "ogDescription": "Sprint and epic outcomes, production review, shared delivery records, and what remains after a plan is deleted.",
+  "twitterCard": "summary_large_image",
+  "socialImage": "https://contractgraph.dev/assets/contract-graph-og-v2.jpg",
+  "socialWidth": "",
+  "socialHeight": "",
+  "socialAlt": "",
+  "faviconIco": false,
+  "bodyClass": "",
+  "current": "",
+  "styleVersion": "20260924-40",
+  "scriptVersion": "20260923-1"
+}

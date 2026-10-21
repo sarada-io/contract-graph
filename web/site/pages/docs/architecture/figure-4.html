@@ -1,0 +1,17 @@
+<figure class="composition-figure">
+            <p class="visually-hidden" id="fig4-title">Declared entry and an illustrative bypass</p>
+            <p class="visually-hidden" id="fig4-desc">A caller enters an owning boundary through its declared surface, which leads to implementation and internal state. A separate dashed route from the caller to internal state illustrates an undeclared bypass requiring review.</p>
+            <div class="arch-diagram" role="img" aria-labelledby="fig4-title" aria-describedby="fig4-desc">
+              <p class="arch-node">Parent or dependent</p>
+              <p class="arch-arrow">declared entry</p>
+              <div class="arch-cluster">
+                <p>Owning boundary</p>
+                <p class="arch-node">Declared surface</p>
+                <p class="arch-arrow">then</p>
+                <p class="arch-node is-muted">Implementation</p>
+                <p class="arch-arrow">then</p>
+                <p class="arch-node is-muted">Internal state</p>
+              </div>
+              <p class="arch-arrow is-dashed">undeclared bypass → internal state, requiring review</p>
+            </div>
+          </figure>

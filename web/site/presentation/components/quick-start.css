@@ -1,0 +1,135 @@
+/* ---------- Quick start ---------- */
+.quick-start-card {
+  scroll-margin-top: 5.5rem;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--accent);
+  border-radius: var(--radius);
+  background: var(--card-bg);
+  box-shadow: var(--card-shadow);
+}
+
+.quick-start-wide { display: grid; }
+
+.quick-start-intro {
+  min-width: 0;
+  padding: clamp(1.4rem, 4vw, 2rem);
+  background: linear-gradient(145deg, var(--glow-teal), var(--glow-blue));
+}
+
+.quick-start-intro .status-label { margin-bottom: 0.55rem; }
+.quick-start-intro h2 { font-size: clamp(1.35rem, 3vw, 1.8rem); }
+.quick-start-intro > p:not(.status-label) { margin-top: 0.8rem; color: var(--text-muted); font-size: 0.95rem; }
+.quick-start-commands { min-width: 0; background: var(--surface); }
+
+.quick-start-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.4rem 1.5rem 1.1rem;
+}
+
+.quick-start-heading .status-label { margin-bottom: 0.55rem; }
+.quick-start-heading h2 { font-size: clamp(1.2rem, 2vw, 1.45rem); }
+
+.quick-start-tabs {
+  display: flex;
+  gap: 0.35rem;
+  padding: 0 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.quick-start-tabs button {
+  appearance: none;
+  margin-bottom: -1px;
+  padding: 0.65rem 0.9rem;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.quick-start-tabs button[aria-selected="true"] {
+  border-bottom-color: var(--accent);
+  color: var(--ink);
+}
+
+.quick-start-panel { padding: 1.2rem 1.5rem 1.4rem; }
+.quick-start-panel[hidden] { display: none; }
+.quick-start-panel > p:first-child { color: var(--text-muted); font-size: 0.91rem; }
+
+.quick-start-panel pre,
+.yaml-card pre {
+  margin: 1rem 0 0;
+  padding: 1.1rem 1.2rem;
+  overflow-x: auto;
+  max-width: 100%;
+  border-radius: 10px;
+  background: var(--code-bg);
+  color: var(--code-fg);
+  font-size: 0.82rem;
+  line-height: 1.65;
+  font-weight: 500;
+}
+
+.quick-start-panel pre code,
+.yaml-card pre code { color: inherit; }
+
+.code-block {
+  position: relative;
+  margin-top: 1rem;
+}
+
+.code-block pre { margin-top: 0; padding-right: 4.5rem; }
+
+.copy-btn {
+  position: absolute;
+  top: 0.7rem;
+  right: 0.7rem;
+  padding: 0.28rem 0.55rem;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #D7EEF1;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.copy-btn:hover { background: rgba(17, 183, 165, 0.22); }
+
+.quick-start-note {
+  margin-top: 0.9rem;
+  color: var(--text-muted);
+  font-size: 0.81rem;
+}
+
+.quick-start-note code,
+.workflow-steps code,
+.support-card code,
+.adoption-grid code,
+.section-copy code,
+.skill-row code {
+  padding: 0.08rem 0.28rem;
+  border-radius: 4px;
+  background: var(--inline-code-bg);
+  color: var(--ink);
+  font-size: 0.88em;
+}
+
+.quick-start-link {
+  display: inline-block;
+  margin-top: 1rem;
+  font-size: 0.86rem;
+  font-weight: 600;
+  border-bottom: 1px solid var(--link-line);
+}
+
+.quick-start-link:hover { border-bottom-color: var(--accent); }
+

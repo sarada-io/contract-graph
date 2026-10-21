@@ -5,10 +5,9 @@ upgrade source; 1.0.0 is the baseline.** Both can upgrade directly to 1.1.0 with
 command. An intermediate installation of 1.0.0 is unnecessary. Both releases already
 use the shared principles schema, so their standard catalogs need no format conversion.
 
-## Upgrade to 1.1.0
+## Update an existing installation
 
-Install the intended 1.1.0 CLI first. Once published, use `npm install --global contract-graph@1.1.0`;
-for an unpublished release, install its independently packed tarball. Repository initialization
+Install the latest published CLI with `npm install --global contract-graph@latest`, or select an explicit released version when coordinating readers. For an unpublished release, install its independently packed tarball. Repository initialization
 does not fetch packages or change the global CLI.
 
 Stop active coding agents and finish or checkpoint their work. Open plans need not be completed:
@@ -201,3 +200,7 @@ Init may leave the three legacy `architecture.schema.json`, `engineering.schema.
 `product.schema.json` files in an older installation. Converted catalogs use only
 `principles.schema.json`; the legacy files can be removed after migration. Contract and
 enforcement schemas remain in use.
+
+## Warmup after upgrading
+
+After refreshing the installation, reload the agent host and run `/cg-warmup`. Unmapped boundaries need adoption; an already mapped graph needs an additive reseed only where current evidence calls for it. Reseed preserves authored purpose, exclusions and P IDs. It does not move application code, infer complete implementation correspondence, convert old auto-run sessions or replace existing contracts with templates. An unchanged reseed should write nothing. Review the diff after verification before resuming delivery.

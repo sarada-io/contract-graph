@@ -1,0 +1,37 @@
+# Public short links and former sarada.io Contract Graph paths
+/cg / 301
+/cg/ / 301
+/watch /#watch 302
+/community/contract-graph / 301
+/community/contract-graph/ / 301
+/community/contract-graph/vision /docs/vision/ 301
+/community/contract-graph/vision/ /docs/vision/ 301
+/community/contract-graph/contracts /docs/contracts/ 301
+/community/contract-graph/contracts/ /docs/contracts/ 301
+/community/contract-graph/workflow /docs/workflow/ 301
+/community/contract-graph/workflow/ /docs/workflow/ 301
+/community/contract-graph/lifecycle /docs/lifecycle/ 301
+/community/contract-graph/lifecycle/ /docs/lifecycle/ 301
+/community/contract-graph/upgrade /docs/upgrade/ 301
+/community/contract-graph/upgrade/ /docs/upgrade/ 301
+/community/contract-graph/architecture /docs/architecture/ 301
+/community/contract-graph/architecture/ /docs/architecture/ 301
+/community/contract-graph/product /ways-to-work/ 301
+/community/contract-graph/product/ /ways-to-work/ 301
+/community/contract-graph/developers /whats-included/ 301
+/community/contract-graph/developers/ /whats-included/ 301
+/contract-graph / 301
+/contract-graph/ / 301
+/contract-graph/schema /schema/ 301
+/contract-graph/schema/ /schema/ 301
+/contract-graph/schema/contract-v1.schema.json /schema/contract-v1.schema.json 301
+/contract-graph/schema/enforcement-v1.schema.json /schema/enforcement-v1.schema.json 301
+/for-product-managers /ways-to-work/ 301
+/for-product-managers/ /ways-to-work/ 301
+/for-developers /whats-included/ 301
+/for-developers/ /whats-included/ 301
+/contract-graph/schema/principles-v1.schema.json /schema/principles-v1.schema.json 301
+
+# Included content now lives with setup
+/whats-included /start/#whats-included 301
+/whats-included/ /start/#whats-included 301

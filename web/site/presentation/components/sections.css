@@ -1,0 +1,57 @@
+/* ---------- Sticky in-page nav ---------- */
+.tutorial-nav {
+  position: sticky;
+  top: var(--header-h);
+  z-index: 4;
+  overflow-x: auto;
+  border-block: 1px solid var(--border);
+  background: var(--header-bg);
+  box-shadow: var(--header-shadow);
+  backdrop-filter: blur(12px);
+}
+
+.tutorial-nav-inner {
+  display: flex;
+  gap: 1.35rem;
+  min-width: max-content;
+  padding-right: 0.5rem;
+}
+
+.tutorial-nav a {
+  padding-block: 0.78rem;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+  white-space: nowrap;
+  border-bottom: 2px solid transparent;
+}
+
+.tutorial-nav a:hover,
+.tutorial-nav a:focus-visible {
+  color: var(--ink);
+  border-bottom-color: var(--accent);
+}
+
+#overview, #start, #model, #workflow, #contract, #inspect, #adopt, #limits,
+#roles, #why, #quick-start { scroll-margin-top: 6.6rem; }
+
+.section-tint { background: var(--section-tint); }
+
+.section-heading {
+  max-width: 40rem;
+  margin-bottom: 2.25rem;
+}
+
+.section-heading p {
+  margin-top: 0.8rem;
+  color: var(--text-muted);
+}
+
+.section-copy {
+  max-width: 42rem;
+  margin-top: 1.2rem;
+  color: var(--text-muted);
+}
+
+.executive-heading { max-width: 46rem; }
+

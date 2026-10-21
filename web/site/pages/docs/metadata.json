@@ -1,0 +1,19 @@
+{
+  "output": "docs/index.html",
+  "title": "Dev Kit Docs — Contract Graph Dev Kit",
+  "description": "Guides for Contract Graph Dev Kit: project context, plan and deliver, explore through prototyping, and updating an existing installation.",
+  "canonical": "https://contractgraph.dev/docs/",
+  "ogType": "website",
+  "ogTitle": "Dev Kit Docs — Contract Graph Dev Kit",
+  "ogDescription": "Guides for people who want more than the product story.",
+  "twitterCard": "summary_large_image",
+  "socialImage": "https://contractgraph.dev/assets/contract-graph-og-v2.jpg",
+  "socialWidth": "",
+  "socialHeight": "",
+  "socialAlt": "Contract Graph title card with a network diagram and the text “Give every AI coding session the map.”",
+  "faviconIco": false,
+  "bodyClass": "",
+  "current": "docs",
+  "styleVersion": "20260924-40",
+  "scriptVersion": "20260923-1"
+}

@@ -24,3 +24,24 @@ dist/
 /cg-gate-*.json
 /cg-npm-cache/
 /node-compile-cache/
+
+# Public-source boundary: credentials, local deployment state and installed working records.
+.env
+.env.*
+!.env.example
+.dev.vars*
+!.dev.vars.example
+.npmrc
+*.pem
+*.key
+*.p12
+*.pfx
+.wrangler/
+web/public/
+web/.site-build-*
+web/.site-build.lock
+**/.agents/
+!/src/install/templates/module/.agents/
+!/src/install/templates/module/.agents/cg/
+!/src/install/templates/module/.agents/cg/contract.yaml
+**/.claude/settings.local.json

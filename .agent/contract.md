@@ -32,6 +32,7 @@ not mechanically enforced import boundaries.
 | A/E/P catalogs, schemas, binding detectors, aggregate verification | [Verification](../src/runtime/verification/.agent/contract.md) |
 | Skills, lifecycle instructions, templates, human documentation | [Authoring](../src/skills/.agent/contract.md) |
 | Build, package, runtime identity, local development and release tools | [Distribution](../src/runtime/distribution/.agent/contract.md) |
+| Website assembly, presentation, preview and hosting handoff | [Website](../web/.agent/contract.md) |
 
 ### Find a specific task
 
@@ -82,6 +83,8 @@ contract to read; the last column narrows reading after that contract.
 | Windows npm global install, bare `cg` blocked by `cg.ps1`, package postinstall wrapper correction | [Distribution](../src/runtime/distribution/.agent/contract.md) | `windows-launcher.js`, release metadata in `build.js`; Authoring owns setup/fallback guidance |
 | Local menu, clean/build/pack/publish, tarball install, editor development fixtures | [Distribution](../src/runtime/distribution/.agent/contract.md) | `scripts/urun.mjs`, `urun`, `urun.cmd`, `scripts/try-editor.mjs`; release actions need explicit scope |
 | CI configuration, npm test runner, scratch directories, mutation-test harness | [Distribution](../src/runtime/distribution/.agent/contract.md) | `.github/workflows/ci.yml`, `scripts/test.mjs`, `scripts/check-principles-mutations.mjs` |
+| Public-source checks, credential scanning and import privacy | [Distribution](../src/runtime/distribution/.agent/contract.md) | `scripts/check-public-source.mjs`, `.github/workflows/security.yml`; scan reviewed files and Git history before publication |
+| Website guides, shared schemas, page styles, local web preview or Cloudflare cutover | [Website](../web/.agent/contract.md) | `web/site/publication.mjs`, `web/site/documentation.mjs`, `web/DEPLOY.md`; Authoring owns canonical guide prose and Verification owns schema semantics |
 | CLI help (`cg help`, `--help`, `-h`), flags, arguments, prompts, output formatting or exit codes | [Root composition](#root-surface-and-composition) | `bin/cg.js`, `cli.js`; consult the affected behavior's child as well |
 | This maintainer graph, source ownership pointers or repository-only planning | [Maintainer context](#maintainer-context-and-tests) | `.agent/`, `AGENTS.md`; distinct from installed `.agents/cg/` |
 
@@ -119,6 +122,8 @@ API belongs to Graph. CLI changes use the affected child's tests and `npm test`.
 The children jointly cover `src/runtime/`, shipped assets and maintainer tooling. Tests sit
 beside this logical graph in `test/`; they verify their named owner rather than forming another
 product capability. Human-facing topic routes remain in [docs/README.md](../docs/README.md).
+
+The [website boundary](../web/.agent/contract.md) consumes canonical human guides and schemas from this same repository and assembles only `web/public/`. Its source, tests and published [papers](../papers/README.md) are excluded from the npm target. Website maintenance uses this Markdown map; the old site's installed governance and internal records are not imported.
 
 ## Maintainer context and tests
 

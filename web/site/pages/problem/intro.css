@@ -1,0 +1,40 @@
+.drift-note {
+  min-width: 0;
+  margin: 0;
+  padding: 1.1rem 1.35rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.04);
+}
+
+.drift-note-label {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-bottom: 0.65rem;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+
+.drift-note-label svg { width: 1rem; height: 1rem; }
+.drift-note p { margin: 0; color: var(--ink); font-size: 1rem; }
+.drift-note p.drift-note-impact { margin-top: 0.5rem; color: var(--text-muted); }
+
+.drift-intro {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.5rem;
+  align-items: center;
+}
+
+.drift-intent { min-width: 0; }
+.drift-intent .eyebrow { margin-top: 0; }
+
+@media (min-width: 880px) {
+  .drift-intro {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+    gap: 3rem;
+  }
+}

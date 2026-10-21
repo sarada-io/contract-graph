@@ -1,0 +1,8 @@
+/* ---------- Footer ---------- */
+.site-footer {
+  margin-top: clamp(2rem, 6vw, 4rem);
+  padding-block: clamp(3.5rem, 8vw, 5.5rem) 2.5rem;
+  background: linear-gradient(135deg, var(--footer-from), var(--footer-to));
+  color: var(--footer-text);
+}
+

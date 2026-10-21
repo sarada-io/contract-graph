@@ -1,0 +1,56 @@
+.footer-grid {
+  display: grid;
+  gap: 2rem;
+}
+
+.footer-contact h2 { color: #fff; }
+
+.footer-email {
+  display: inline-block;
+  margin-top: 1rem;
+  font-size: clamp(1.05rem, 3vw, 1.5rem);
+  font-weight: 500;
+  color: var(--footer-text);
+  overflow-wrap: anywhere;
+  border-bottom: 2px solid rgba(17, 183, 165, 0.58);
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+.footer-email:hover { color: #fff; border-bottom-color: var(--accent); }
+.footer-email:focus-visible { outline-color: var(--accent); }
+
+.footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem 1.4rem;
+}
+
+.footer-links a {
+  color: var(--footer-link);
+  font-size: 0.92rem;
+  font-weight: 500;
+}
+
+.footer-links a:hover { color: #fff; }
+
+.footer-bottom {
+  margin-top: 3.5rem;
+  padding-top: 1.75rem;
+  border-top: 1px solid var(--footer-rule);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.5rem;
+  font-size: 0.9rem;
+  color: var(--footer-muted);
+}
+
+.footer-bottom .brand-mark {
+  width: 34px;
+  height: 34px;
+  color: var(--footer-text);
+}
+
+.footer-bottom a { color: #D7EEF1; border-bottom: 1px solid rgba(17, 183, 165, 0.4); }
+.footer-bottom a:hover { border-bottom-color: var(--accent); }
+

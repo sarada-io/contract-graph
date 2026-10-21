@@ -282,7 +282,7 @@ These are recommendations or product decisions, not universal A requirements:
 - Confirmation before every external side effect regardless of existing authorization.
 - One UI, tenancy model, billing model, or solo-maintainer operating model.
 
-E offers advice about these decisions. Shipped phase defaults require reading E as context;
+E offers advice about these decisions. Fresh phase defaults load E when relevant;
 **reading a recommendation does not adopt it as a binding**. Retained repository phase policy
 can choose different loading. P is the place for deliberately adopted product-specific bindings.
 

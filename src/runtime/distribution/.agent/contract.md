@@ -19,8 +19,9 @@ maintainer development/release tooling.
   reachability and runtime/script/launcher `@see` targets. Covered by
   [maintainer-contracts.test.js](../../../../test/maintainer-contracts.test.js) in `npm test`;
   no consumer graph validation or semantic architecture enforcement.
-- [ci.yml](../../../../.github/workflows/ci.yml): CI orchestration of tests and package checks;
+- [ci.yml](../../../../.github/workflows/ci.yml): CI orchestration of tests, package checks and the reusable public-source workflow. Its main-only website deployment waits for all checks and uses the Website owner's build/configuration;
   assertions and fixtures remain with the behavior's owner.
+- [check-public-source.mjs](../../../../scripts/check-public-source.mjs): dependency-free check of candidate public file names, private working records, local-machine paths and obvious credential patterns. [security.yml](../../../../.github/workflows/security.yml), called by CI on pull requests and main pushes, also runs pinned Gitleaks over history and the checkout with redacted diagnostics; no detector proves the absence of all sensitive information.
 
 Package `src/diagnostics/` as `agent/diagnostics/`, include it in runtime identity, and keep it outside Installation’s scaffold mappings. The portable skill is available for user-level harness installation without configuring a harness or changing a target repository.
 
@@ -29,6 +30,7 @@ Package `src/diagnostics/` as `agent/diagnostics/`, include it in runtime identi
 Exclude every `.agent/` entry from recursively packaged source trees. Maintainer contracts and local agent guidance stay beside source but do not enter the tarball or build manifest. Runtime identity skips the same entries, so maintainer-only edits do not invalidate installed builds. Keep shipped singular `agent/` assets and adopter `.agents/` governance distinct from this exclusion.
 
 The complete release target is `dist/build`; generated output is not the source of truth.
+The [website](../../../../web/.agent/contract.md) is an independent build target at `web/public/`. Website source, build-only dependencies, papers and internal records never enter the npm allowlist. Preserve that separation when changing package mappings or root scripts. Both targets share canonical schema definitions; only the website renders human guides.
 Map `src/runtime/` recursively to packaged `script/`, retaining owner directories. The installed
 CLI stays at `script/cli.js`; `contract-graph` and `contract-graph/contracts` export
 `script/graph/contracts.js`. Windows postinstall runs `script/distribution/windows-launcher.js`.

@@ -1,0 +1,30 @@
+{
+  "output": "styles.css",
+  "sources": [
+    "presentation/theme/tokens.css",
+    "presentation/components/base.css",
+    "presentation/navigation/header.css",
+    "presentation/components/actions.css",
+    "pages/home/styles.css",
+    "presentation/components/quick-start.css",
+    "presentation/components/sections.css",
+    "pages/problem/cards.css",
+    "presentation/components/cards.css",
+    "pages/docs/diagrams.css",
+    "presentation/components/guidance.css",
+    "presentation/components/inner-pages.css",
+    "pages/problem/layout.css",
+    "presentation/components/prose.css",
+    "presentation/components/lists.css",
+    "presentation/components/video.css",
+    "presentation/navigation/footer.css",
+    "presentation/components/legacy-layout.css",
+    "presentation/navigation/footer-detail.css",
+    "presentation/components/responsive-grids.css",
+    "presentation/navigation/desktop.css",
+    "presentation/components/responsive-content.css",
+    "pages/start/styles.css",
+    "pages/problem/intro.css"
+  ],
+  "wrapper": "none"
+}

@@ -48,3 +48,5 @@ For repository-only maintainer plans, read [repo-plan](.agent/skills/repo-plan/S
 Keep one master plan with a concise Executive Summary above full agent detail. Do not invoke
 the shipped lifecycle merely to maintain its implementation; temporary plans under ignored
 `docs/plan/` must not be required to understand the product.
+
+The public website is a separate build target in this repository. Route website work through [its maintenance contract](web/.agent/contract.md); keep canonical guide prose in `docs/` and schema semantics with Verification. Follow [public repository safety](CONTRIBUTING.md#public-repository-safety) for imports, sensitive records and publication checks.

@@ -1,0 +1,13 @@
+{
+  "output": "site.js",
+  "sources": [
+    "interactions/analytics/startup.js",
+    "interactions/navigation/startup.js",
+    "interactions/theme/startup.js",
+    "interactions/commands/tabs.js",
+    "interactions/video/startup.js",
+    "interactions/commands/copy.js",
+    "interactions/analytics/engagement.js"
+  ],
+  "wrapper": "iife"
+}

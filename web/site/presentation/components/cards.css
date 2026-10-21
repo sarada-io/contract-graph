@@ -1,0 +1,84 @@
+.executive-grid,
+.document-grid,
+.boundary-grid,
+.support-grid,
+.feature-grid,
+.host-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+.executive-grid article,
+.document-card,
+.boundary-card,
+.support-card,
+.feature-card,
+.host-card {
+  padding: clamp(1.35rem, 4vw, 1.85rem);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.executive-grid h2 {
+  color: var(--ink);
+  font-size: 1.2rem;
+}
+
+@media (min-width: 760px) {
+  .executive-grid.drift-lead { grid-template-columns: 1fr 1fr; }
+}
+
+.executive-grid + .section-heading,
+.executive-grid + .executive-grid.drift-lead {
+  margin-top: 2.25rem;
+}
+
+.executive-grid h3,
+.document-card h3,
+.boundary-card h3,
+.support-card h3,
+.feature-card h3,
+.host-card h3 {
+  color: var(--ink);
+  font-size: 1.08rem;
+}
+
+.executive-grid p,
+.document-card p,
+.boundary-card p,
+.support-card p,
+.feature-card p,
+.host-card p {
+  margin-top: 0.65rem;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+.document-card a {
+  display: inline-block;
+  margin-top: 1.15rem;
+  font-weight: 600;
+  border-bottom: 1px solid var(--link-line);
+}
+
+.document-card a:hover { border-bottom-color: var(--accent); }
+
+.principle-statement {
+  display: grid;
+  gap: 0.2rem;
+  margin-top: 1.6rem;
+  padding-left: 1rem;
+  border-left: 3px solid var(--accent);
+}
+
+.principle-statement strong {
+  color: var(--teal-soft);
+  font-size: 0.73rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.principle-statement span { color: var(--ink); font-weight: 600; }
+

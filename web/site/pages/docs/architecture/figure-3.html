@@ -1,0 +1,39 @@
+<figure class="composition-figure">
+            <p class="visually-hidden" id="fig3-title">Decide where a change belongs</p>
+            <p class="visually-hidden" id="fig3-desc">Determine whether the work belongs to the candidate owner. If not, route elsewhere. If it introduces a distinct responsibility within that owner, add a child and repeat. Otherwise stay, amending the contract when its facts change.</p>
+            <ol class="arch-decide" aria-labelledby="fig3-title">
+              <li>
+                <p class="arch-node">Read candidate contract</p>
+              </li>
+              <li>
+                <p class="arch-node is-decision">Belongs to this owner?</p>
+                <div class="arch-split arch-split-2">
+                  <div>
+                    <p class="arch-arrow">No</p>
+                    <p class="arch-node">Elsewhere: route to owner</p>
+                  </div>
+                  <div>
+                    <p class="arch-arrow">Yes</p>
+                    <p class="arch-node is-decision">Distinct responsibility?</p>
+                    <div class="arch-split arch-split-2">
+                      <div>
+                        <p class="arch-arrow">Yes</p>
+                        <p class="arch-node">Add child and reciprocal edges</p>
+                        <p class="arch-arrow">then</p>
+                        <p class="arch-node is-muted">Repeat inside child</p>
+                      </div>
+                      <div>
+                        <p class="arch-arrow">No</p>
+                        <p class="arch-node">Stay on this node</p>
+                        <p class="arch-arrow">Contract facts change?</p>
+                        <div class="arch-split arch-split-2">
+                          <p class="arch-node">Amend affected contract</p>
+                          <p class="arch-node is-muted">Keep contract unchanged</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </li>
+            </ol>
+          </figure>

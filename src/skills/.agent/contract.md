@@ -18,6 +18,7 @@ This single `.agent/` owns all of `src/skills/`: the six lifecycle skills, their
   and [install templates](../../install/templates): initial context and authoring aids.
 - [docs index](../../../docs/README.md), [README](../../../README.md) and
   [CONTRIBUTING](../../../CONTRIBUTING.md): canonical human explanations and contributor validation.
+- [papers](../../../papers/README.md): published paper sources, retaining their own attribution and licence, outside both distribution targets.
 
 [Diagnostic procedure](../../diagnostics/analyse.md) and [portable cg-analyse skill](../../diagnostics/cg-analyse/SKILL.md) guide pre-adoption assessment using warmup’s existing analysis. They are package-only resources, not repository-installed lifecycle skills. Diagnosis never invokes adoption; explicit adoption hands off to init and existing lifecycle owners.
 
@@ -41,6 +42,7 @@ replacement/preservation policy; changing an asset does not authorize overwritin
 `src/install/templates/module/AGENTS.md` is the single authored module-pointer body. Installation supplies the selected AGENTS/CLAUDE filenames; its `discovery.js` renderer adapts that template to the unit name and depth.
 [Distribution](../../runtime/distribution/.agent/contract.md) owns packaging. Keep human docs at one canonical page per topic,
 and preserve durable facts before retiring temporary delivery records.
+The [website owner](../../../web/.agent/contract.md) renders the ten product guides directly from `docs/`, retaining website metadata, navigation and presentation. Update guide meaning here rather than maintaining parallel technical HTML. Preserve existing published anchors through the website compatibility map. Agent procedure under `src/` remains separate from human-facing guides.
 
 The agent entry owns installed CLI launcher guidance. Lifecycle skills use bare `cg` after global npm launch correction and retain `cg.cmd` as the Windows PowerShell fallback when `cg.ps1` is blocked. The portable assessment skill supplies the same bootstrap before repository adoption. Launcher recovery preserves arguments and exit semantics; it does not authorize execution-policy changes, downloads or manual substitutes for verification. README owns human Windows setup and script-disabled installation limits; topic guides link to it.
 

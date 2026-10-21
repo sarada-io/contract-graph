@@ -1,0 +1,174 @@
+{
+  "pages": [
+    "pages/docs/analyse",
+    "pages/docs/architecture",
+    "pages/docs/contracts",
+    "pages/docs/experts",
+    "pages/docs",
+    "pages/docs/intent",
+    "pages/docs/lifecycle",
+    "pages/docs/prototype",
+    "pages/docs/upgrade",
+    "pages/docs/vision",
+    "pages/docs/workflow",
+    "pages/home",
+    "pages/problem",
+    "pages/schema",
+    "pages/start",
+    "pages/ways-to-work"
+  ],
+  "copies": [
+    {
+      "source": "static/_headers",
+      "output": "_headers"
+    },
+    {
+      "source": "static/_redirects",
+      "output": "_redirects"
+    },
+    {
+      "source": "static/assets/apple-touch-icon.png",
+      "output": "assets/apple-touch-icon.png"
+    },
+    {
+      "source": "static/assets/contract-graph-composition-spine.svg",
+      "output": "assets/contract-graph-composition-spine.svg"
+    },
+    {
+      "source": "static/assets/contract-graph-mark-white.svg",
+      "output": "assets/contract-graph-mark-white.svg"
+    },
+    {
+      "source": "static/assets/contract-graph-mark.svg",
+      "output": "assets/contract-graph-mark.svg"
+    },
+    {
+      "source": "static/assets/contract-graph-og-v2.jpg",
+      "output": "assets/contract-graph-og-v2.jpg"
+    },
+    {
+      "source": "static/assets/contract-graph-video-poster-v2-1280.webp",
+      "output": "assets/contract-graph-video-poster-v2-1280.webp"
+    },
+    {
+      "source": "static/assets/contract-graph-video-poster-v2-800.webp",
+      "output": "assets/contract-graph-video-poster-v2-800.webp"
+    },
+    {
+      "source": "static/assets/contract-graph-video-poster-v2.jpg",
+      "output": "assets/contract-graph-video-poster-v2.jpg"
+    },
+    {
+      "source": "static/assets/favicon-32.png",
+      "output": "assets/favicon-32.png"
+    },
+    {
+      "source": "static/assets/favicon.ico",
+      "output": "assets/favicon.ico"
+    },
+    {
+      "source": "static/assets/favicon.svg",
+      "output": "assets/favicon.svg"
+    },
+    {
+      "source": "static/assets/fonts/OFL.txt",
+      "output": "assets/fonts/OFL.txt"
+    },
+    {
+      "source": "static/assets/fonts/ibm-plex-mono-latin-400.woff2",
+      "output": "assets/fonts/ibm-plex-mono-latin-400.woff2"
+    },
+    {
+      "source": "static/assets/fonts/ibm-plex-mono-latin-500.woff2",
+      "output": "assets/fonts/ibm-plex-mono-latin-500.woff2"
+    },
+    {
+      "source": "static/assets/fonts/ibm-plex-sans-latin.woff2",
+      "output": "assets/fonts/ibm-plex-sans-latin.woff2"
+    },
+    {
+      "source": "static/assets/mark.svg",
+      "output": "assets/mark.svg"
+    },
+    {
+      "source": "static/cg/index.html",
+      "output": "cg/index.html"
+    },
+    {
+      "source": "static/community/contract-graph/architecture/index.html",
+      "output": "community/contract-graph/architecture/index.html"
+    },
+    {
+      "source": "static/community/contract-graph/contracts/index.html",
+      "output": "community/contract-graph/contracts/index.html"
+    },
+    {
+      "source": "static/community/contract-graph/developers/index.html",
+      "output": "community/contract-graph/developers/index.html"
+    },
+    {
+      "source": "static/community/contract-graph/index.html",
+      "output": "community/contract-graph/index.html"
+    },
+    {
+      "source": "static/community/contract-graph/lifecycle/index.html",
+      "output": "community/contract-graph/lifecycle/index.html"
+    },
+    {
+      "source": "static/community/contract-graph/product/index.html",
+      "output": "community/contract-graph/product/index.html"
+    },
+    {
+      "source": "static/community/contract-graph/upgrade/index.html",
+      "output": "community/contract-graph/upgrade/index.html"
+    },
+    {
+      "source": "static/community/contract-graph/vision/index.html",
+      "output": "community/contract-graph/vision/index.html"
+    },
+    {
+      "source": "static/community/contract-graph/workflow/index.html",
+      "output": "community/contract-graph/workflow/index.html"
+    },
+    {
+      "source": "static/contract-graph/index.html",
+      "output": "contract-graph/index.html"
+    },
+    {
+      "source": "static/contract-graph/schema/index.html",
+      "output": "contract-graph/schema/index.html"
+    },
+    {
+      "source": "static/for-developers/index.html",
+      "output": "for-developers/index.html"
+    },
+    {
+      "source": "static/for-product-managers/index.html",
+      "output": "for-product-managers/index.html"
+    },
+    {
+      "source": "static/robots.txt",
+      "output": "robots.txt"
+    },
+    {
+      "source": "static/sitemap.xml",
+      "output": "sitemap.xml"
+    },
+    {
+      "source": "static/watch/index.html",
+      "output": "watch/index.html"
+    },
+    {
+      "source": "static/whats-included/index.html",
+      "output": "whats-included/index.html"
+    },
+    {
+      "source": "static/assets/contract-graph-overview.jpg",
+      "output": "assets/contract-graph-overview.jpg"
+    }
+  ],
+  "bundles": [
+    "presentation/entry.json",
+    "interactions/entry.json"
+  ]
+}

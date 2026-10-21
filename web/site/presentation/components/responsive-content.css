@@ -1,0 +1,66 @@
+@media (min-width: 880px) {
+  .doc-shell { grid-template-columns: 12.5rem minmax(0, 1fr); }
+  .doc-nav { position: sticky; top: 5.2rem; }
+  .skill-row {
+    grid-template-columns: 9.5rem minmax(0, 1fr);
+    gap: 1rem;
+    align-items: start;
+  }
+  .home-hero-layout {
+    grid-template-columns: minmax(0, 1fr) minmax(16.5rem, 20.5rem);
+    gap: 1rem;
+    align-items: stretch;
+  }
+  .home-support {
+    grid-template-columns: minmax(0, 1.15fr) minmax(16rem, 22rem);
+    gap: 1.75rem;
+  }
+  .home-aside { min-height: 100%; }
+  .home-roles {
+    flex: 1 1 auto;
+    min-height: 0;
+    grid-template-rows: 1fr 1fr;
+  }
+  .home-role { height: 100%; }
+}
+
+@media (min-width: 960px) {
+  .feature-grid, .boundary-grid, .support-grid, .host-grid, .executive-grid, .tutorial-points {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .executive-grid.drift-lead { grid-template-columns: 1fr 1fr; }
+  .cycle { grid-template-columns: repeat(4, 1fr); }
+  .cycle-3 { grid-template-columns: repeat(3, 1fr); }
+  .cycle-2 { grid-template-columns: repeat(2, 1fr); }
+  .cycle-step:not(:last-child)::after {
+    content: "\2192";
+    left: auto;
+    right: -0.88rem;
+    bottom: auto;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+  .audience-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (min-width: 1080px) {
+  .docs-index { grid-template-columns: repeat(3, 1fr); }
+  .quick-start-wide { grid-template-columns: minmax(0, 0.95fr) minmax(22rem, 1.05fr); }
+  .quick-start-intro { border-right: 1px solid var(--border); }
+  .tutorial-split { grid-template-columns: minmax(0, 0.95fr) minmax(20rem, 1.05fr); }
+}
+
+@media (max-width: 640px) {
+  .quick-start-intro,
+  .quick-start-heading,
+  .quick-start-panel { padding-inline: 1.1rem; }
+  .quick-start-tabs { padding-inline: 1.1rem; }
+  .page-actions { flex-direction: column; align-items: stretch; }
+  .page-actions .button { width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .skip-link, .button { transition: none; }
+}
+

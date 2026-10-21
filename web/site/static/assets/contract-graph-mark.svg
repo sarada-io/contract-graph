@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 320" width="320" height="320" role="img" aria-labelledby="title desc" color="#111111">
+  <title id="title">Contract Graph mark</title>
+  <desc id="desc">A C-shaped contract boundary encloses eight connected square nodes forming a branching capital G.</desc>
+  <g fill="currentColor">
+    <path d="M280 24H52C36.536 24 24 36.536 24 52V268C24 283.464 36.536 296 52 296H280C288.837 296 296 288.837 296 280V272C296 263.163 288.837 256 280 256H72C67.582 256 64 252.418 64 248V72C64 67.582 67.582 64 72 64H280C288.837 64 296 56.837 296 48V40C296 31.163 288.837 24 280 24Z"/>
+    <path d="M224 104H134L90 160L134 216H270M224 216V160H168" fill="none" stroke="currentColor" stroke-width="6" stroke-linejoin="round"/>
+    <rect x="76" y="146" width="28" height="28" rx="4"/>
+    <rect x="120" y="90" width="28" height="28" rx="4"/>
+    <rect x="210" y="90" width="28" height="28" rx="4"/>
+    <rect x="154" y="146" width="28" height="28" rx="4"/>
+    <rect x="210" y="146" width="28" height="28" rx="4"/>
+    <rect x="120" y="202" width="28" height="28" rx="4"/>
+    <rect x="210" y="202" width="28" height="28" rx="4"/>
+    <rect x="256" y="202" width="28" height="28" rx="4"/>
+
+  </g>
+</svg>

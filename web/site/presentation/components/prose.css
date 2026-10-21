@@ -1,0 +1,103 @@
+.explain-hero h1 {
+  max-width: none;
+  font-size: clamp(1.65rem, 3vw, 2rem);
+}
+
+.page-lede {
+  max-width: 40rem;
+  margin-top: 1.25rem;
+  color: var(--text-muted);
+  font-size: clamp(1rem, 2.6vw, 1.28rem);
+}
+
+.doc-shell {
+  display: grid;
+  gap: 2.5rem;
+  align-items: start;
+}
+
+.doc-nav {
+  padding: 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.doc-nav p {
+  margin-bottom: 0.8rem;
+  color: var(--ink);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.doc-nav ul { list-style: none; margin: 0; padding: 0; }
+.doc-nav li + li { margin-top: 0.48rem; }
+.doc-nav a { color: var(--text-muted); font-size: 0.91rem; }
+.doc-nav a:hover {
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-color: var(--accent);
+  text-underline-offset: 3px;
+}
+
+.prose { min-width: 0; max-width: 48rem; }
+.prose > :first-child { margin-top: 0; }
+.prose h2 { margin-top: 3.5rem; font-size: clamp(1.55rem, 3vw, 2rem); scroll-margin-top: 5.5rem; }
+.prose h3 { margin-top: 2rem; color: var(--ink); font-size: 1.18rem; }
+.prose p { margin-top: 1rem; }
+.prose .yaml-card { margin-top: 1.4rem; }
+.prose ul, .prose ol { margin: 1rem 0 0; padding-left: 1.35rem; }
+.prose li + li { margin-top: 0.45rem; }
+.prose li::marker { color: var(--teal-soft); }
+.prose strong { color: var(--ink); }
+.prose code {
+  padding: 0.1rem 0.32rem;
+  border-radius: 4px;
+  background: var(--inline-code-bg);
+  color: var(--ink);
+  font-size: 0.9em;
+}
+
+.prose pre {
+  margin: 1.4rem 0 0;
+  padding: 1.25rem 1.35rem;
+  overflow-x: auto;
+  border-radius: 10px;
+  background: var(--code-bg);
+  color: var(--code-fg);
+  font-size: 0.86rem;
+  line-height: 1.65;
+  font-weight: 500;
+}
+
+.prose pre code { padding: 0; background: none; color: inherit; font-size: inherit; }
+
+.table-wrap { margin-top: 1.4rem; overflow-x: auto; }
+.prose table { width: 100%; border-collapse: collapse; font-size: 0.93rem; }
+.prose th, .prose td { padding: 0.8rem; border: 1px solid var(--border); text-align: left; vertical-align: top; }
+.prose th { background: var(--inline-code-bg); color: var(--ink); }
+
+.principle {
+  margin-top: 1.4rem;
+  padding: 1.35rem 1.5rem;
+  border-left: 3px solid var(--accent);
+  background: var(--principle-bg);
+  color: var(--ink);
+  font-size: 1.08rem;
+  font-weight: 600;
+}
+
+.page-next {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 4rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+}
+
+.page-next a { font-weight: 600; }
+
