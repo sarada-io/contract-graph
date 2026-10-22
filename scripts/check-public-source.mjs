@@ -26,7 +26,7 @@ export function checkPublicSource(root = repository) {
     if (parts.includes('.agents') && !authoredTemplate || parts.includes('.wrangler') ||
         /^(?:\.env(?:\..*)?|\.dev\.vars.*|\.npmrc|id_rsa|id_ed25519)$/.test(base) && !['.env.example', '.dev.vars.example'].includes(base) ||
         /\.(?:pem|key|p12|pfx)$/.test(base) ||
-        name.startsWith('web/public/') || name.startsWith('docs/plan/') && name !== 'docs/plan/windows-launcher.md') {
+        name.startsWith('web/public/') || name.startsWith('docs/plan/')) {
       errors.push(`${name}: private or generated file must not be published`);
       continue;
     }

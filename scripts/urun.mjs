@@ -7,6 +7,7 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { DEV_PORT, LIVE_URL } from '../web/scripts/paths.mjs';
 
 export const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const VERSION_PATTERN = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
@@ -41,6 +42,18 @@ export function getMoreItems() {
   ];
 }
 
+export function getWebsiteItems() {
+  return [
+    { label: 'Build & Test Website', detail: 'Generate web/public and run the website deployment checks.', kind: 'web-build' },
+    { label: 'Run Local Website Server', detail: `Build and preview at http://localhost:${DEV_PORT}. Ctrl+C stops the server.`, kind: 'web-serve' },
+    { label: 'Check Website Build', detail: 'Reject stale, missing or extra generated files.', kind: 'web-check' },
+    { label: 'Open the Live Website', detail: 'Open contractgraph.dev without publishing.', kind: 'web-live' },
+    { label: 'How the Website Deploys', detail: 'Show the merge-to-main publication path.', kind: 'web-deploy' },
+    { label: 'Clean Local Cloudflare State', detail: 'Ask before deleting web/.wrangler; preserves source and credentials elsewhere.', kind: 'web-clean' },
+    { label: 'Back', detail: 'Return to the main menu.', kind: 'back' },
+  ];
+}
+
 export function getMenuItems(root = repositoryRoot) {
   const version = getPackageVersion(root);
   const tarball = getReleaseTarballRelative(root);
@@ -50,6 +63,7 @@ export function getMenuItems(root = repositoryRoot) {
     { label: `Clean, Build Release Tarball (${version})`, detail: 'Ask for a version, update package.json when it changes, delete dist/build, then replace dist/tar/contract-graph-<version>.tgz.', kind: 'pack' },
     { label: 'Install Release Tarball to Machine', detail: `Install an independent copy of ${tarball} on this machine's PATH, replacing any development link. Builds the tarball first if it is missing.`, kind: 'install-tarball' },
     { label: 'Publish Release Tarball to NPM', detail: `Log in to npm if needed, then publish ${tarball} as a public package. Builds the tarball first if it is missing.`, kind: 'publish' },
+    { label: 'Website', detail: 'Build, test, preview and check contractgraph.dev.', kind: 'website' },
     { label: 'More', detail: 'Build check, editor fixtures, CLI help, environment checks, and cleaning generated files.', kind: 'more' },
     { label: 'Exit', detail: 'Return to your terminal.', kind: 'exit' },
   ];
@@ -59,8 +73,8 @@ export function listMenuLines(root = repositoryRoot) {
   const lines = [];
   for (const item of getMenuItems(root)) {
     lines.push(item.label);
-    if (item.kind === 'more') {
-      for (const child of getMoreItems()) {
+    if (item.kind === 'more' || item.kind === 'website') {
+      for (const child of item.kind === 'website' ? getWebsiteItems() : getMoreItems()) {
         if (child.kind === 'back') continue;
         lines.push(`  ${child.label}`);
       }
@@ -223,6 +237,36 @@ export async function invokeMenuItem(item, hooks = {}) {
 
   if (item.script) return run('npm', ['run', item.script]);
   switch (item.kind) {
+    case 'website': {
+      const outcome = await runWebsiteMenu(hooks);
+      return outcome.status;
+    }
+    case 'web-build':
+      return run(process.execPath, ['web/scripts/build-site.mjs']);
+    case 'web-check':
+      return run(process.execPath, ['web/site/publication.mjs', '--check']);
+    case 'web-serve': {
+      const start = hooks.startLocalServer ?? (await import('../web/scripts/preview/server.mjs')).startLocalServer;
+      return start({ open: isInteractive() });
+    }
+    case 'web-live': {
+      const open = hooks.openUrl ?? (await import('../web/scripts/preview/server.mjs')).openUrl;
+      open(LIVE_URL);
+      return 0;
+    }
+    case 'web-deploy':
+      process.stdout.write('Successful current main pushes publish through GitHub Actions after Linux, Windows and security checks. Pull requests only validate. See web/DEPLOY.md. npm publication remains separate.\n');
+      return 0;
+    case 'web-clean': {
+      const choice = await choose('Delete Local Cloudflare State?', [
+        { label: 'Keep Files and Go Back', detail: 'Nothing will be deleted.' },
+        { label: 'Delete web/.wrangler', detail: 'Deletes this website target’s local Cloudflare state only.' },
+      ]);
+      if (choice !== 1) return null;
+      const target = path.join(repositoryRoot, 'web', '.wrangler');
+      if (exists(target)) remove(target);
+      return 0;
+    }
     case 'clean-build': {
       wipePackageBuild();
       return run('npm', ['run', 'build']);
@@ -335,13 +379,13 @@ export async function pauseAfterCommand(status, destination = 'the menu') {
   });
 }
 
-export async function runMoreMenu(hooks = {}) {
+async function runSubmenu(title, items, hooks = {}) {
   const choose = hooks.readMenuChoice ?? readMenuChoice;
   const pause = hooks.pauseAfterCommand ?? pauseAfterCommand;
   let lastStatus = null;
   while (true) {
-    const extras = getMoreItems();
-    const choice = await choose('More', extras);
+    const extras = items;
+    const choice = await choose(title, extras);
     if (choice < 0 || extras[choice].kind === 'back') return { status: lastStatus, exit: false };
     try {
       const result = await invokeMenuItem(extras[choice], hooks);
@@ -351,15 +395,45 @@ export async function runMoreMenu(hooks = {}) {
       process.stdout.write(`\x1b[31m${error.message}\x1b[0m\n`);
       lastStatus = 1;
     }
-    const resume = await pause(lastStatus, 'More');
+    const resume = await pause(lastStatus, title);
     if (resume === 'exit') return { status: lastStatus, exit: true };
   }
 }
 
+export function runMoreMenu(hooks = {}) {
+  return runSubmenu('More', getMoreItems(), hooks);
+}
+
+export function runWebsiteMenu(hooks = {}) {
+  return runSubmenu('Website', getWebsiteItems(), hooks);
+}
+
+export function parseArgs(argv) {
+  if (argv.length === 0) return { command: 'menu' };
+  if (argv.length === 1 && ['--help', '-h'].includes(argv[0])) return { command: 'help' };
+  if (argv[0] !== 'web') throw new Error('Usage: ./urun [web build|check|serve [--port N]] [--help]');
+  if (argv.length === 1) return { command: 'website' };
+  if (argv.length === 2 && ['build', 'check'].includes(argv[1])) return { command: argv[1] };
+  if (argv[1] === 'serve' && (argv.length === 2 || argv.length === 4 && argv[2] === '--port')) {
+    const portText = argv[3] ?? process.env.PORT ?? String(DEV_PORT);
+    const port = Number(portText);
+    if (!/^\d+$/.test(portText) || !Number.isInteger(port) || port < 1 || port > 65535) throw new Error('port must be a number between 1 and 65535.');
+    return { command: 'serve', port };
+  }
+  throw new Error('Usage: ./urun web build|check|serve [--port N]');
+}
+
 export async function startRepositoryMenu(argv = process.argv.slice(2)) {
-  const help = argv.includes('--help') || argv.includes('-h');
+  const options = parseArgs(argv);
+  if (options.command === 'build' || options.command === 'check') return invokeMenuItem({ kind: `web-${options.command}` });
+  if (options.command === 'serve') {
+    const { startLocalServer } = await import('../web/scripts/preview/server.mjs');
+    return startLocalServer({ port: options.port, open: isInteractive() });
+  }
+  const help = options.command === 'help';
+  if (options.command === 'website' && isInteractive()) return (await runWebsiteMenu()).status ?? 0;
   if (help || !isInteractive()) {
-    process.stdout.write('Contract Graph Dev Kit - repository menu\n');
+    process.stdout.write('Contract Graph Dev Kit - repository menu\n\nUsage: ./urun [web build|check|serve [--port N]] [--help]\n');
     for (const line of listMenuLines()) process.stdout.write(`  ${line}\n`);
     if (help) return 0;
     process.stderr.write('Open an interactive terminal and run ./urun or urun.cmd to select with arrow keys. Nothing was executed.\n');
@@ -370,8 +444,8 @@ export async function startRepositoryMenu(argv = process.argv.slice(2)) {
     const menu = getMenuItems();
     const choice = await readMenuChoice('Contract Graph Dev Kit', menu);
     if (choice < 0 || menu[choice].kind === 'exit') return lastStatus;
-    if (menu[choice].kind === 'more') {
-      const outcome = await runMoreMenu();
+    if (menu[choice].kind === 'more' || menu[choice].kind === 'website') {
+      const outcome = await (menu[choice].kind === 'website' ? runWebsiteMenu() : runMoreMenu());
       if (outcome.exit) return outcome.status ?? lastStatus;
       if (outcome.status != null) lastStatus = outcome.status;
       continue;

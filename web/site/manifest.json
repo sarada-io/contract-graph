@@ -1,16 +1,6 @@
 {
   "pages": [
-    "pages/docs/analyse",
-    "pages/docs/architecture",
-    "pages/docs/contracts",
-    "pages/docs/experts",
     "pages/docs",
-    "pages/docs/intent",
-    "pages/docs/lifecycle",
-    "pages/docs/prototype",
-    "pages/docs/upgrade",
-    "pages/docs/vision",
-    "pages/docs/workflow",
     "pages/home",
     "pages/problem",
     "pages/schema",
@@ -149,10 +139,6 @@
     {
       "source": "static/robots.txt",
       "output": "robots.txt"
-    },
-    {
-      "source": "static/sitemap.xml",
-      "output": "sitemap.xml"
     },
     {
       "source": "static/watch/index.html",

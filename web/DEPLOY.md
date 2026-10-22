@@ -1,6 +1,6 @@
 # Deploying contractgraph.dev
 
-Cloudflare Workers Static Assets hosts the existing `contract-graph-web` Worker at `contractgraph.dev` and `www.contractgraph.dev`. Keep the Worker name, domains, routing, canonical apex, analytics and redirect rules unchanged. GitHub Actions in this repository is the production publisher after the one-time setup below. No npm publication is performed by this workflow.
+Cloudflare Workers Static Assets hosts the existing `contract-graph-web` Worker at `contractgraph.dev` and `www.contractgraph.dev`. Keep the Worker name, domains, routing, canonical apex, analytics and redirect rules unchanged. GitHub Actions in `sarada-io/contract-graph` is the sole production publisher. Cloudflare Git-triggered Workers Builds is disconnected; keep it disconnected. No npm publication is performed by this workflow.
 
 ## Automatic publication from main
 
@@ -18,24 +18,29 @@ With that configuration, `assets.directory: ./public` resolves to `web/public/`.
 
 All `main` changes run the complete checks; there are no path filters that could miss shared documentation or schema changes. Builds, tests and local preview commands never deploy on their own.
 
-## One-time GitHub and Cloudflare setup
+## Maintained platform configuration
 
-Complete this setup before merging the deployment workflow into `main`. Until activation, the old repository's Cloudflare integration remains the production publisher. Changing these settings does not itself deploy the new source.
+These settings support the active deployment path. Check them when changing access, rotating credentials or recovering a failed deployment; they are not an outstanding repository-migration checklist. Platform access and credentials are managed outside this public repository.
 
-1. Create an account-owned Cloudflare API token with **Specified Workers → contract-graph-web → Editor** and a separate **Specified Domains → contractgraph.dev** policy granting **Workers Routes Write** and **Zone Read**. Remove unrelated permissions if starting from a template. Choose an expiration and rotate the token before it expires. Follow Cloudflare's [individual Worker permissions](https://developers.cloudflare.com/changelog/post/2026-09-15-granular-worker-permissions/) and [GitHub Actions authentication instructions](https://developers.cloudflare.com/workers/ci-cd/external-cicd/github-actions/). Do not commit or paste credentials into source, issues or build output.
-2. In `sarada-io/contract-graph`, create the GitHub Actions environment **website-production**. Restrict its deployment branches to **main**. Leave required-reviewer and wait-timer rules off if publication should proceed automatically after CI. Add these environment secrets (repository Actions secrets with the same names also work):
+- **Cloudflare:** retain the existing `contract-graph-web` Worker, its custom domains and routing in [wrangler.jsonc](wrangler.jsonc). Keep Workers Builds Git integration disconnected, hosted Preview URLs off and `preview_urls: false`. No Cloudflare Git connection, build command or watch-path configuration is required for GitHub Actions.
+- **Deployment token:** use an account-owned API token with **Specified Workers → contract-graph-web → Editor** and a separate **Specified Domains → contractgraph.dev** policy granting **Workers Routes Write** and **Zone Read**. Keep unrelated permissions out and rotate the token before its configured expiration. Follow Cloudflare's [individual Worker permissions](https://developers.cloudflare.com/changelog/post/2026-09-15-granular-worker-permissions/) and [GitHub Actions authentication instructions](https://developers.cloudflare.com/workers/ci-cd/external-cicd/github-actions/).
+- **GitHub environment:** `website-production` permits deployments from `main` only. Automatic publication currently uses no required environment reviewer or wait timer. Store the following as encrypted environment secrets; repository Actions secrets with the same names are also accepted by the workflow.
 
-   | Secret | Value |
-   | --- | --- |
-   | `CLOUDFLARE_API_TOKEN` | The scoped deployment token |
-   | `CLOUDFLARE_ACCOUNT_ID` | The account ID containing `contract-graph-web` |
+  | Secret | Value |
+  | --- | --- |
+  | `CLOUDFLARE_API_TOKEN` | The scoped deployment token |
+  | `CLOUDFLARE_ACCOUNT_ID` | The account ID containing `contract-graph-web` |
 
-3. Protect `main` with pull-request review and the Linux, Windows and public-source checks. Merging to `main` is the website publication decision; branch protection prevents unreviewed production changes. Do not require the deployment job itself as a pull-request check, because it intentionally skips pull requests.
-4. Disable the existing Worker's Git-triggered **Workers Builds** deployment from `sarada-io/contract-graph-web` before enabling the new publisher. Retain the Worker, domains and previous successful deployment. Do not reconnect Workers Builds to the combined repository as well: GitHub Actions is the single deployment path and waits for CI and security checks. Keep hosted Preview URLs off and non-production builds disabled; `preview_urls: false` remains in Wrangler configuration.
-5. Merge the reviewed branch into `main`. In GitHub Actions, verify that all checks pass and **Deploy contractgraph.dev** succeeds. Missing or invalid credentials fail publication while leaving the previous deployment live. A push to this feature branch cannot deploy. If setup is repaired after a failed run, rerun the failed jobs for the current `main` commit.
-6. Verify the production homepage, documentation routes, both schema URL families, redirects and old anchors. Compare deployed schemas with the intended npm release and check both apex and www domains. Confirm the old repository cannot deploy, then consider making it read-only. Preserve its public history for provenance and existing links; do not import it wholesale.
+- **Main protection:** require a pull request, resolved conversations and the up-to-date Linux, Windows and public-source checks, including for administrators. The current configuration requires no additional approving reviewer. Merging is the website publication decision. Do not require the deployment job as a pull-request check: it intentionally skips pull requests.
+- **Single publisher:** neither the old website repository nor a Cloudflare Git build publishes this site. Preserve the previous repository's history for provenance and existing links; its retirement is separate from normal deployment.
 
-No new Cloudflare Git connection, build command or watch-path setting is needed for this GitHub Actions approach. Store private platform outcomes outside public source. Local implementation and dry-run validation do not prove the external secrets, permissions or live deployment are working.
+Never commit token values, account exports or private platform records, or paste credentials into issues or build output. Local implementation and dry-run validation do not prove that platform permissions, encrypted secrets or live publication work.
+
+## Verify a production deployment
+
+After a reviewed change merges, open its `main` workflow run and confirm **Deploy contractgraph.dev** succeeds. A pull-request run validates the change and skips deployment. Check whether a superseded commit was deliberately skipped before diagnosing a missing upload. Missing or invalid credentials fail publication while leaving the previous deployment live. After repairing setup, rerun the failed jobs for the current `main` commit.
+
+Check the homepage, documentation hub and affected guides on both apex and www. Verify old anchors and redirects, including `/whats-included/#skills` and legacy community URLs. Compare all three schema files at both `/schema/` and `/contract-graph/schema/` with `src/cg/schema/`; the aliases must retain identical bytes and canonical `$id` values. Review compatibility with the published npm release separately from website delivery. Verify the host's redirects on production: the local server serves fallback HTML instead of applying Cloudflare host rules.
 
 ## Release alignment
 
@@ -43,4 +48,4 @@ Every successful current `main` merge can publish the website, including technic
 
 ## Rollback
 
-Select the previous successful deployment in the existing Cloudflare Worker for an immediate rollback. Revert the offending source change on `main` so the next successful pipeline preserves the correction. Remember that later successful `main` deployments replace a manual rollback. If the workflow itself is faulty, disable its production job while repairing it; restoring the old repository's publisher is a deliberate fallback, and must not leave two active deployment paths. Recheck schemas and compatibility URLs after rollback.
+Select the previous successful deployment in the existing Cloudflare Worker for an immediate rollback. Revert the offending source change on `main` so the next successful pipeline preserves the correction. Remember that later successful `main` deployments replace a manual rollback. If the workflow itself is faulty, disable its production job while repairing it. Keep the Cloudflare Git integration disconnected; switching publishers requires an explicit operational decision and a single active publisher. Recheck schemas and compatibility URLs after rollback.

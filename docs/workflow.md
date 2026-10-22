@@ -38,7 +38,7 @@ For new work, `/cg-plan` agrees a goal, objectives and expected outcomes in one 
 
 A request to complete a sprint or epic authorizes this continuation without repeated skill invocations. Human acceptance and material product choices still require actual answers. A request merely to agree a plan does not authorize implementation; completion does not itself authorize merging or publication. `/cg-unblock` records decisions against stable sprint and item IDs.
 
-New roadmaps declare `Delivery: sprint`. Their existing Phase map rows represent sprints, prepared queues hold finishing work, and delivery records retain review and completion evidence. Version 0.7.0 retires the separate preparation and auto-run skills. There is no parallel legacy delivery workflow. Repository-owned workflow policy survives upgrades; reconcile deliberate restrictions rather than silently replacing them.
+New roadmaps declare `Delivery: sprint`. Their existing Phase map rows represent sprints, prepared queues hold finishing work, and delivery records retain review and completion evidence. The separate preparation and auto-run skills remain retired. There is no parallel legacy delivery workflow. Repository-owned workflow policy survives upgrades; reconcile deliberate restrictions rather than silently replacing them.
 
 ## Organising a Sprint or Epic Plan
 
@@ -259,7 +259,7 @@ write confinement or prove semantic independence. For hook dispatch, set
 `CG_STANDALONE` to the request path in the hook process environment and clear it
 when returning to programme work. Existing completion-chain scope remains binding.
 
-Closed records now recommend no action when their programme plan directory is
+Closed records recommend no action when their programme plan directory is
 empty. Retained files recommend `cg-sign-off` for cleanup assessment only, with
 `entry: cleanup-review` and `handoffReady: false`; neither production nor another
 closure is authorised. Suspended and Abandoned work still needs an actual resume request.

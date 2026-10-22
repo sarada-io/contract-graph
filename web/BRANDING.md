@@ -18,14 +18,15 @@ honest system for people building and maintaining software with coding agents.
 - IBM Plex Sans for product and documentation voice
 - IBM Plex Mono for commands, YAML, and CLI
 
-Bright teal and blue are decorative colors. Body copy and small text should use
-navy or dark teal so contrast remains accessible.
+These are the base light-theme colours. Use the semantic variables in [theme/tokens.css](site/presentation/theme/tokens.css) for implementation: dark mode supplies its own light text and link colours. Bright accents suit decoration and controls with contrasting foregrounds; body text, small text and links use the appropriate theme tokens. Palette membership alone does not establish accessible contrast.
 
 The site theme follows the visitor's `prefers-color-scheme` setting. The header
 control can override that choice; without an override, OS theme changes are
 followed live.
 
 ## Site assets
+
+Website-owned SVGs, icons, fonts and image files live under `web/site/static/assets/`. The shared WebP marks are canonical in root `docs/assets/` and feed both the repository README and website. Publication emits these assets under `/assets/`; do not restore copied brand marks inside the website source.
 
 | Asset | Use |
 | --- | --- |

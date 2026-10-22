@@ -6,18 +6,60 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import MarkdownIt from 'markdown-it';
+import { fileURLToPath } from 'node:url';
 
-export const guides = Object.freeze({
-  analyse: 'docs/analyse.md', architecture: 'docs/architecture-considerations.md',
-  contracts: 'docs/contracts.md', experts: 'docs/experts.md', intent: 'docs/intent.md',
-  lifecycle: 'docs/lifecycle.md', prototype: 'docs/prototype.md',
-  upgrade: 'docs/upgrade.md', vision: 'docs/vision.md', workflow: 'docs/workflow.md',
-});
+const defaultWebRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const schemaNames = Object.freeze(['contract', 'principles', 'enforcement']);
 export const brandNames = Object.freeze(['contract-graph-mark.webp', 'contract-graph-mark-white.webp']);
-const sharedInputs = new Set([...Object.values(guides), ...schemaNames.map(name => `src/cg/schema/${name}.schema.json`), ...brandNames.map(name => `docs/assets/${name}`)]);
-const routes = new Map(Object.entries(guides).map(([slug, source]) => [source, `/docs/${slug}/`]));
-routes.set('docs/README.md', '/docs/');
+const fixedInputs = new Set(['docs/README.md', ...schemaNames.map(name => `src/cg/schema/${name}.schema.json`), ...brandNames.map(name => `docs/assets/${name}`)]);
+// A published route predates the canonical filename. New guides need no route entry.
+const legacySlugs = new Map([['architecture-considerations', 'architecture']]);
+
+function readCanonical(webRoot, relative) {
+  const root = fs.realpathSync(path.dirname(webRoot));
+  const file = path.join(root, relative);
+  if (fs.realpathSync(file) !== file || !fs.statSync(file).isFile()) throw new Error(`Shared input must be a regular file without symlinks: ${relative}`);
+  return fs.readFileSync(file);
+}
+
+/** The marked canonical index table is the public opt-in, never a recursive docs scan. */
+export function loadGuides(webRoot = defaultWebRoot) {
+  const index = readCanonical(webRoot, 'docs/README.md').toString();
+  const start = '<!-- public-guides:start -->', end = '<!-- public-guides:end -->';
+  if (index.split(start).length !== 2 || index.split(end).length !== 2 || index.indexOf(end) < index.indexOf(start)) throw new Error('Documentation index requires one public-guides table');
+  const md = new MarkdownIt();
+  const tokens = md.parse(index.split(start)[1].split(end)[0], {});
+  if (tokens.filter(token => token.type === 'table_open').length !== 1 || tokens[0]?.type !== 'table_open' || tokens.at(-1)?.type !== 'table_close') throw new Error('Public guides must be one Markdown table');
+  const rows = [];
+  let cells;
+  for (const token of tokens) {
+    if (token.type === 'tr_open') cells = [];
+    if (token.type === 'inline') cells.push(token);
+    if (token.type === 'tr_close') rows.push(cells);
+  }
+  if (rows[0]?.map(cell => cell.content).join('|') !== 'Read|What it answers' || rows.length < 2) throw new Error('Public guide table requires Read and What it answers columns');
+  const sources = new Set(), slugs = new Set();
+  return rows.slice(1).map(row => {
+    const children = row[0]?.children ?? [];
+    const link = children[0];
+    const filename = link?.attrGet('href');
+    if (row.length !== 2 || link?.type !== 'link_open' || children.at(-1)?.type !== 'link_close' || children.filter(token => token.type === 'link_open').length !== 1 || !/^[a-z0-9]+(?:-[a-z0-9]+)*\.md$/.test(filename ?? '') || ['readme.md', 'agents.md', 'claude.md', 'skill.md'].includes(filename)) throw new Error('Public guide must link directly to a lowercase Markdown basename');
+    const plain = ts => ts.filter(token => ['text', 'code_inline', 'softbreak'].includes(token.type)).map(token => token.type === 'softbreak' ? ' ' : token.content).join('');
+    const label = plain(children), description = plain(row[1].children);
+    if (!label.trim() || !description.trim() || row[1].children.some(token => token.type === 'html_inline')) throw new Error('Public guide requires a plain label and description');
+    const source = 'docs/' + filename;
+    const basename = filename.slice(0, -3), slug = legacySlugs.get(basename) ?? basename;
+    if (sources.has(source) || slugs.has(slug)) throw new Error(`Duplicate public guide: ${filename}`);
+    sources.add(source); slugs.add(slug);
+    const markdown = readCanonical(webRoot, source).toString();
+    const body = md.parse(markdown, {});
+    if (body[0]?.type !== 'heading_open' || body[0].tag !== 'h1' || body.filter(token => token.type === 'heading_open' && token.tag === 'h1').length !== 1) throw new Error(`Guide requires one opening title: ${source}`);
+    const title = plain(body[1].children);
+    if (!title.trim()) throw new Error(`Guide requires a text title: ${source}`);
+    return { source, slug, label, description, title, markdown };
+  });
+}
+
 const repositoryUrl = 'https://github.com/sarada-io/contract-graph/blob/main/';
 const escape = value => String(value).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
 
@@ -36,21 +78,20 @@ const aliases = {
 };
 
 export function readSharedInput(webRoot, relative) {
-  if (!sharedInputs.has(relative)) throw new Error(`Undeclared shared input: ${relative}`);
-  const root = fs.realpathSync(path.dirname(webRoot));
-  const file = path.join(root, relative);
-  if (fs.realpathSync(file) !== file || !fs.statSync(file).isFile()) throw new Error(`Shared input must be a regular file without symlinks: ${relative}`);
-  return fs.readFileSync(file);
+  if (!fixedInputs.has(relative) && !loadGuides(webRoot).some(guide => guide.source === relative)) throw new Error(`Undeclared shared input: ${relative}`);
+  return readCanonical(webRoot, relative);
 }
 
-export function documentationLink(href, source) {
+export function documentationLink(href, source, guides = loadGuides()) {
   if (/^(?:[a-z][a-z\d+.-]*:|\/|#)/i.test(href)) return href;
   const split = href.search(/[?#]/);
   const filename = split < 0 ? href : href.slice(0, split);
   const suffix = split < 0 ? '' : href.slice(split);
   const target = path.posix.normalize(path.posix.join(path.posix.dirname(source), decodeURIComponent(filename)));
   if (target.startsWith('../')) throw new Error(`Documentation link escapes the repository: ${href}`);
-  if (routes.has(target)) return routes.get(target) + suffix;
+  if (target === 'docs/README.md') return '/docs/' + suffix;
+  const guide = guides.find(guide => guide.source === target);
+  if (guide) return `/docs/${guide.slug}/` + suffix;
   if (['docs/assets/contract-graph-mark.webp', 'docs/assets/contract-graph-mark-white.webp'].includes(target)) return '/assets/' + path.posix.basename(target) + suffix;
   return repositoryUrl + target.split('/').map(encodeURIComponent).join('/') + suffix;
 }
@@ -59,11 +100,9 @@ export function headingSlug(text) {
   return text.toLowerCase().replace(/[^\p{L}\p{N}_ -]/gu, '').replaceAll(' ', '-');
 }
 
-export function renderDocumentation(webRoot, directory, readSite) {
-  const slug = directory.slice('pages/docs/'.length);
-  const source = guides[slug];
-  if (!source || directory !== `pages/docs/${slug}`) throw new Error(`Unknown documentation guide: ${directory}`);
-  const markdown = readSharedInput(webRoot, source).toString();
+export function renderDocumentation(webRoot, guide, readSite, guides = loadGuides(webRoot)) {
+  const { slug, source, markdown } = guide;
+  const legacyAnchors = aliases[slug] ?? {};
   const md = new MarkdownIt({ html: true, linkify: false });
   const tokens = md.parse(markdown, {});
   const headings = [];
@@ -79,27 +118,28 @@ export function renderDocumentation(webRoot, directory, readSite) {
     headings.push({ id, title, tag: tokens[i].tag });
   }
   const ids = new Set(headings.map(h => h.id));
-  for (const [alias, target] of Object.entries(aliases[slug])) {
+  for (const [alias, target] of Object.entries(legacyAnchors)) {
     if (!ids.has(target)) throw new Error(`Legacy anchor ${slug}#${alias} has no target: ${target}`);
   }
   const heading = md.renderer.rules.heading_open ?? ((ts, idx, options, env, self) => self.renderToken(ts, idx, options));
   md.renderer.rules.heading_open = (ts, idx, options, env, self) => {
     const id = ts[idx].attrGet('id');
-    const anchors = Object.entries(aliases[slug]).filter(([alias, target]) => target === id && alias !== id && !ids.has(alias)).map(([alias]) => `<span id="${escape(alias)}" aria-hidden="true"></span>`).join('');
+    const anchors = Object.entries(legacyAnchors).filter(([alias, target]) => target === id && alias !== id && !ids.has(alias)).map(([alias]) => `<span id="${escape(alias)}" aria-hidden="true"></span>`).join('');
     return anchors + heading(ts, idx, options, env, self);
   };
   const link = md.renderer.rules.link_open ?? ((ts, idx, options, env, self) => self.renderToken(ts, idx, options));
   md.renderer.rules.link_open = (ts, idx, options, env, self) => {
-    ts[idx].attrSet('href', documentationLink(ts[idx].attrGet('href'), source));
+    ts[idx].attrSet('href', documentationLink(ts[idx].attrGet('href'), source, guides));
     return link(ts, idx, options, env, self);
   };
   const image = md.renderer.rules.image;
   md.renderer.rules.image = (ts, idx, options, env, self) => {
-    ts[idx].attrSet('src', documentationLink(ts[idx].attrGet('src'), source));
+    ts[idx].attrSet('src', documentationLink(ts[idx].attrGet('src'), source, guides));
     return image(ts, idx, options, env, self);
   };
   let diagram = 0, code = 0;
-  const figures = ['architecture', 'lifecycle'].includes(slug) ? JSON.parse(readSite(`pages/docs/${slug}/figures.json`)) : [];
+  const figures = tokens.some(token => token.type === 'fence' && token.info.trim() === 'mermaid')
+    ? JSON.parse(readSite(`pages/docs/${slug}/figures.json`)) : [];
   md.renderer.rules.fence = (ts, idx) => {
     const token = ts[idx];
     if (token.info.trim() === 'mermaid') {
@@ -116,7 +156,7 @@ export function renderDocumentation(webRoot, directory, readSite) {
   // The existing hero supplies the single h1; keep its canonical ID available for deep links.
   const title = headings.find(h => h.tag === 'h1');
   if (!title || tokens[0].type !== 'heading_open' || tokens[0].tag !== 'h1') throw new Error(`Guide requires an opening title: ${source}`);
-  const titleAliases = Object.entries(aliases[slug]).filter(([alias, target]) => target === title.id && alias !== title.id).map(([alias]) => `<span id="${escape(alias)}" aria-hidden="true"></span>`).join('');
+  const titleAliases = Object.entries(legacyAnchors).filter(([alias, target]) => target === title.id && alias !== title.id).map(([alias]) => `<span id="${escape(alias)}" aria-hidden="true"></span>`).join('');
   const body = md.renderer.render(tokens.slice(3), md.options, {});
   if (diagram !== figures.length) throw new Error('Guide figure inventory does not match the canonical guide');
   const navigation = headings.filter(h => h.tag === 'h2').map(h => `<li><a href="#${escape(h.id)}">${escape(h.title)}</a></li>`).join('');

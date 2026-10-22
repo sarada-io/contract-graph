@@ -56,7 +56,7 @@ This reduces duplicate storage; it does not cap unique history or replace audit 
 
 Use `cg delivery status --programme <slug> --json` to inspect the reconstructed record. Routine delivery commands return current-state summaries; `--json` returns full reconstructed evidence
 when inspection needs it. Existing v1
-receipts remain readable and stay v1 when updated. To explicitly migrate a Closed receipt:
+receipts remain readable and retain v1 during active work. Successful closure writes v2 automatically while preserving the complete logical evidence. To explicitly migrate an already Closed v1 receipt:
 
 ```sh
 cg delivery compact --programme <slug>
@@ -68,8 +68,7 @@ lifecycle event and reports sizes and a logical evidence digest. Small receipts 
 external attachments remain untouched. Active receipts cannot be explicitly compacted. New v2
 receipts and migrated receipts continue using v2 on later updates, including resumption.
 
-Upgrade all writers and CI readers to 0.7.0 or newer before creating or migrating v2 receipts;
-older tooling cannot read them. Hashes detect damaged evidence, not deliberate forgery by someone
+All writers and CI readers must understand the receipt format in use. Follow the [supported upgrade range](upgrade.md) before refreshing shared tooling; readers that predate v2 cannot read its envelopes. Hashes detect damaged evidence, not deliberate forgery by someone
 able to rewrite the whole receipt. No history pruning or age-based deletion is supported.
 
 Version 1.1.0 also supports optional v3 delta compression; new receipts still default to v2.
@@ -135,7 +134,7 @@ The prototype loop records acceptance and the completion request separately, rec
 
 Sign-off then uses one delivery-completion procedure shared with plan/produce. It selects the requested outcome and scope, not a workflow type. It completes remaining tests and useful docs, routes implementation and contract repairs to produce, and verifies the final result. Existing code and applicable evidence are reused. Ambiguous target selection requires one question; an older ready queue never overrides the requested programme. Assessment-only remains inspection and reporting.
 
-A worker assigned one phase retains that scope; it cannot grant itself permission to finish an entire prototype. An explicit completion request carries necessary production, finishing and repairs within its recorded scope. The separate cg-prepare and cg-auto-run skills are retired in 0.7.0. Visible changes to the accepted experience
+A worker assigned one phase retains that scope; it cannot grant itself permission to finish an entire prototype. An explicit completion request carries necessary production, finishing and repairs within its recorded scope. The separate cg-prepare and cg-auto-run skills remain retired. Visible changes to the accepted experience
 return for affected human acceptance; tests and internal repairs that preserve it do not require
 repeating the entire prototype review. Closing a prototype does not merge code or close your chat.
 

@@ -7,10 +7,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { renderPage } from './shell/render.mjs';
-import { guides, renderDocumentation, sharedSchemas, sharedBrandAssets } from './documentation.mjs';
+import { renderPage, renderTemplate } from './shell/render.mjs';
+import { loadGuides, renderDocumentation, sharedSchemas, sharedBrandAssets } from './documentation.mjs';
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const escape = value => String(value).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
 const privateNames = new Set(['AGENTS.md', 'CLAUDE.md', 'SKILL.md']);
 
 export function validateAssetPath(relative) {
@@ -44,18 +45,38 @@ export function assembleSite(root = repositoryRoot) {
     if (output.has(relative)) throw new Error(`Duplicate output path: ${relative}`);
     output.set(relative, Buffer.isBuffer(bytes) ? bytes : Buffer.from(bytes));
   };
+  const guides = loadGuides(root);
+  const canonicalUrls = [];
+  const guideCard = readInput(sourceRoot, 'pages/docs/card.html').toString();
+  let guideDefaults;
   for (const directory of manifest.pages) {
     validateAssetPath(directory);
     const metadata = JSON.parse(readInput(sourceRoot, directory + '/metadata.json'));
     if (!metadata.output?.endsWith('/index.html') && metadata.output !== 'index.html') throw new Error('Full pages must output a directory index');
     let body = readInput(sourceRoot, directory + '/body.html').toString();
-    if (Object.keys(guides).some(slug => directory === `pages/docs/${slug}`)) {
-      if (body.split('{{documentation}}').length !== 2) throw new Error(`Guide shell requires one documentation slot: ${directory}`);
-      body = body.replace('{{documentation}}', () => renderDocumentation(root, directory, relative => readInput(sourceRoot, relative)));
+    if (directory === 'pages/docs') {
+      guideDefaults = metadata;
+      const cards = guides.map(guide => renderTemplate(guideCard, { label: escape(guide.label), description: escape(guide.description), url: `/docs/${guide.slug}/` })).join('');
+      body = renderTemplate(body, { guides: cards });
     }
     const structured = metadata.structuredData ? readInput(sourceRoot, directory + '/structured-data.html').toString() : '';
     add(metadata.output, renderPage(metadata, body, templates, structured));
+    canonicalUrls.push(metadata.canonical);
   }
+  if (!guideDefaults) throw new Error('Site manifest must declare the docs hub');
+  const guideTemplate = readInput(sourceRoot, 'pages/docs/guide.html').toString();
+  for (const guide of guides) {
+    const canonical = `https://contractgraph.dev/docs/${guide.slug}/`;
+    const title = `${guide.title} — Contract Graph Dev Kit`;
+    const metadata = { ...guideDefaults, output: `docs/${guide.slug}/index.html`, canonical, title,
+      description: guide.description, ogType: 'article', ogTitle: title, ogDescription: guide.description, current: 'docs' };
+    const documentation = renderDocumentation(root, guide, relative => readInput(sourceRoot, relative), guides);
+    const body = renderTemplate(guideTemplate, { label: escape(guide.label), title: escape(guide.title), description: escape(guide.description), documentation });
+    add(metadata.output, renderPage(metadata, body, templates));
+    canonicalUrls.push(canonical);
+  }
+  // lastmod is optional; omit it rather than inventing a build-time content-change date.
+  add('sitemap.xml', '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + canonicalUrls.sort().map(url => `  <url><loc>${escape(url)}</loc></url>`).join('\n') + '\n</urlset>\n');
   for (const copy of manifest.copies) {
     if (!copy || Object.keys(copy).some(key => !['source', 'output'].includes(key))) throw new Error('Invalid copy entry');
     add(copy.output, readInput(sourceRoot, copy.source));

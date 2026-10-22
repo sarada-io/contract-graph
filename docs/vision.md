@@ -278,11 +278,12 @@ Contract Graph Dev Kit currently:
 
 - scaffolds and verifies one schema-backed YAML contract per governed boundary;
 - routes tasks through contract-owned routes and supports recursive child traversal;
-- discovers brownfield module roots and writes their first contracts;
+- discovers brownfield module candidates for warmup agents to inspect and map with authored contracts;
+- provides read-only source inspection and an opt-in Dart package-dependency comparison, with explicit coverage limits;
 - applies ambient A architecture principles and resolves contract-scoped P rule IDs without duplicating text;
 - generates editor discovery artifacts for several coding-agent harnesses;
 - preserves repository-owned project context beside the root contract and checks attributed approval against its reviewed content and declared sources;
-- supports Sprint/Epic plans, working-result review and scoped completion using existing queues and receipts;
+- supports Sprint/Epic plans, working-result review and scoped completion using existing queues and receipts, plus direct bounded corrections when their scope and checks are clear;
 - provides a contract-driven delivery lifecycle and state-derived Step routing; and
 - verifies rule coverage, contract shape, reciprocal edges, acyclicity, root reachability,
   surface paths, invariant/verification links, and transient-plan boundaries.

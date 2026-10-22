@@ -39,7 +39,7 @@
     "clean": "node --input-type=module -e \"import fs from 'node:fs'; for (const dir of ['build', 'dist', 'tmp', 'compiled']) fs.rmSync(dir, { recursive: true, force: true })\"",
     "web:build": "node web/scripts/build-site.mjs",
     "web:check": "node web/site/publication.mjs --check",
-    "web:serve": "node web/scripts/urun.mjs serve",
+    "web:serve": "node scripts/urun.mjs web serve",
     "check:public": "node scripts/check-public-source.mjs"
   },
   "keywords": [
