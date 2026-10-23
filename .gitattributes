@@ -5,6 +5,5 @@
 /web/site/interactions/** whitespace=-blank-at-eof
 /web/site/presentation/** whitespace=-blank-at-eof
 /web/site/pages/** whitespace=-blank-at-eof
-# Frozen third-party licence bytes and published Markdown hard breaks stay intact.
+# Preserve frozen third-party licence bytes.
 /web/site/static/assets/fonts/OFL.txt -text -whitespace
-/papers/authored-recursive-contract-graph/ZENODO.md whitespace=-blank-at-eol

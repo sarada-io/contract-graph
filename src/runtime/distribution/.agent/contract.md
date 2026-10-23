@@ -30,7 +30,7 @@ Package `src/diagnostics/` as `agent/diagnostics/`, include it in runtime identi
 Exclude every `.agent/` entry from recursively packaged source trees. Maintainer contracts and local agent guidance stay beside source but do not enter the tarball or build manifest. Runtime identity skips the same entries, so maintainer-only edits do not invalidate installed builds. Keep shipped singular `agent/` assets and adopter `.agents/` governance distinct from this exclusion.
 
 The complete release target is `dist/build`; generated output is not the source of truth.
-The [website](../../../../web/.agent/contract.md) is an independent build target at `web/public/`. Website source, build-only dependencies, papers and internal records never enter the npm allowlist. Preserve that separation when changing package mappings or root scripts. Both targets share canonical schema definitions; only the website renders human guides.
+The [website](../../../../web/.agent/contract.md) is an independent build target at `web/public/`. Website source, build-only dependencies and internal records never enter the npm allowlist. Preserve that separation when changing package mappings or root scripts. Both targets share canonical schema definitions; only the website renders human guides. Scholarly sources are maintained separately in Sarada's research archive.
 Map `src/runtime/` recursively to packaged `script/`, retaining owner directories. The installed
 CLI stays at `script/cli.js`; `contract-graph` and `contract-graph/contracts` export
 `script/graph/contracts.js`. Windows postinstall runs `script/distribution/windows-launcher.js`.
