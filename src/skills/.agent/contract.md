@@ -18,7 +18,6 @@ This single `.agent/` owns all of `src/skills/`: the six lifecycle skills, their
   and [install templates](../../install/templates): initial context and authoring aids.
 - [docs index](../../../docs/README.md), [README](../../../README.md) and
   [CONTRIBUTING](../../../CONTRIBUTING.md): canonical human explanations and contributor validation.
-- [papers](../../../papers/README.md): published paper sources, retaining their own attribution and licence, outside both distribution targets.
 
 [Diagnostic procedure](../../diagnostics/analyse.md) and [portable cg-analyse skill](../../diagnostics/cg-analyse/SKILL.md) guide pre-adoption assessment using warmup’s existing analysis. They are package-only resources, not repository-installed lifecycle skills. Diagnosis never invokes adoption; explicit adoption hands off to init and existing lifecycle owners.
 

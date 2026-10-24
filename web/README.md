@@ -2,7 +2,7 @@
 
 This directory builds the public website from the same repository as the `contract-graph` npm package. Plain HTML, CSS and JavaScript retain the existing design and browser behaviour; the Node assembler adds canonical Markdown guides using a root development dependency. Read [root AGENTS.md](../AGENTS.md), [the maintenance contract](.agent/contract.md) and [site/EDITING.md](site/EDITING.md) before changing website code.
 
-The reviewed source snapshot came from `sarada-io/contract-graph-web` commit `cc807595cf8dc40ded01d214ba75756828718c54`. Git history, installed `.agents/` content, delivery receipts, intent records, local working plans, deployment state and credentials were excluded. The original repository remains unchanged. Published paper sources retain their own attribution and licence under [papers](../papers/README.md), outside both build outputs.
+The reviewed source snapshot came from `sarada-io/contract-graph-web` commit `cc807595cf8dc40ded01d214ba75756828718c54`. Git history, installed `.agents/` content, delivery receipts, intent records, local working plans, deployment state and credentials were excluded. The original repository remains unchanged. Scholarly paper sources retain their attribution and licences in Sarada's separate research archive; they are not product or website build inputs.
 
 ## Maintainer graph
 
@@ -40,7 +40,7 @@ npm run check:public
 
 `web:build` assembles the complete site, checks required files, runs all website tests and verifies output freshness. `web:serve` builds and serves the site at `http://localhost:4173`; reload after content edits. Restart the preview after changing the assembler or shared renderer modules. Root `./urun` or `.\urun.cmd` offers both npm and Website menus. Run `./urun web build`, `./urun web check` or `./urun web serve --port 8000` from the root for noninteractive use. From this directory use `../urun web serve` on macOS/Linux or `..\urun.cmd web serve` on Windows.
 
-The assembler selects allowlisted inputs and rejects traversal, symlinks, missing sources, unknown slots and output collisions before replacing output. Only `web/public/` is uploaded to Cloudflare; no package installation or website build publishes anything. The npm target remains `dist/build/`, with archives in `dist/tar/`; web files, papers and Markdown build dependencies are excluded from that package.
+The assembler selects allowlisted inputs and rejects traversal, symlinks, missing sources, unknown slots and output collisions before replacing output. Only `web/public/` is uploaded to Cloudflare; no package installation or website build publishes anything. The npm target remains `dist/build/`, with archives in `dist/tar/`; web files and Markdown build dependencies are excluded from that package.
 
 ## Publication
 

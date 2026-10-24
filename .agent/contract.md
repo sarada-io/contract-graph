@@ -123,7 +123,7 @@ The children jointly cover `src/runtime/`, shipped assets and maintainer tooling
 beside this logical graph in `test/`; they verify their named owner rather than forming another
 product capability. Human-facing topic routes remain in [docs/README.md](../docs/README.md).
 
-The [website boundary](../web/.agent/contract.md) consumes canonical human guides and schemas from this same repository and assembles only `web/public/`. Its source, tests and published [papers](../papers/README.md) are excluded from the npm target. Follow its publication and operations children, then the selected shell/page/presentation/interaction/static boundary before implementation. Website maintenance uses this Markdown map; the old site's installed governance and internal records are not imported.
+The [website boundary](../web/.agent/contract.md) consumes canonical human guides and schemas from this same repository and assembles only `web/public/`. Its source and tests are excluded from the npm target. Follow its publication and operations children, then the selected shell/page/presentation/interaction/static boundary before implementation. Website maintenance uses this Markdown map; the old site's installed governance and internal records are not imported. Scholarly paper sources are maintained separately by Sarada.
 
 ## Maintainer context and tests
 
